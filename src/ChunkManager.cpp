@@ -7,6 +7,10 @@ ChunkManager::ChunkManager(int worldChunksX, int worldChunksY, int chunkSize, in
     : WORLD_CHUNKS_X(worldChunksX), WORLD_CHUNKS_Y(worldChunksY),
     CHUNK_SIZE(chunkSize), TILE_SIZE(tileSize)
 {
+    noise.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
+    noise.SetFrequency(0.001f);
+    noise.SetSeed(1337);
+
     // Pre-generate all chunks synchronously
     chunks.resize(WORLD_CHUNKS_X * WORLD_CHUNKS_Y);
     for (int y = 0; y < WORLD_CHUNKS_Y; ++y) {
@@ -35,18 +39,21 @@ Chunk ChunkManager::generateChunk(int chunkX, int chunkY) {
             float tilePosX = static_cast<float>((chunkX * CHUNK_SIZE + x) * TILE_SIZE);
             float tilePosY = static_cast<float>((chunkY * CHUNK_SIZE + y) * TILE_SIZE);
 
+            float nx = tilePosX / (WORLD_CHUNKS_X * CHUNK_SIZE * TILE_SIZE);
+            float ny = tilePosY / (WORLD_CHUNKS_Y * CHUNK_SIZE * TILE_SIZE);
+
+            float height = noise.GetNoise(tilePosX, tilePosY, 0.0f);
+            height = (height + 1.0f) / 2.0f;
+
             sf::Color color;
-            if (chunkY == WORLD_CHUNKS_Y / 2) {
-                color = sf::Color::Green;
+            if (height > 0.5f) {
+                color = sf::Color(231, 232, 234);
+                if (height > 0.8f) {
+                    color = sf::Color(139, 69, 19);
+                }
             }
             else {
-                // Alternate between land and water tiles to create a checkerboard pattern
-                if (((chunkX * CHUNK_SIZE + x) + (chunkY * CHUNK_SIZE + y)) % 2 == 0) {
-                    color = sf::Color::Green;
-                }
-                else {
-                    color = sf::Color::Blue;
-                }
+                color = sf::Color(174, 223, 246);
             }
 
             // Define the four corners of the quad
@@ -60,6 +67,18 @@ Chunk ChunkManager::generateChunk(int chunkX, int chunkY) {
             chunk.vertices.append(topRight);
             chunk.vertices.append(bottomRight);
             chunk.vertices.append(bottomLeft);
+
+            // Add contour lines at specific height thresholds
+            float contourThreshold = 0.5f; // Example threshold
+            if (std::abs(height - contourThreshold) < 0.02f) { // Adjust sensitivity
+                // Draw horizontal line
+                chunk.contourLines.append(sf::Vertex(sf::Vector2f(tilePosX, tilePosY + tileSizeF / 2), sf::Color::White));
+                chunk.contourLines.append(sf::Vertex(sf::Vector2f(tilePosX + tileSizeF, tilePosY + tileSizeF / 2), sf::Color::White));
+
+                // Draw vertical line
+                chunk.contourLines.append(sf::Vertex(sf::Vector2f(tilePosX + tileSizeF / 2, tilePosY), sf::Color::White));
+                chunk.contourLines.append(sf::Vertex(sf::Vector2f(tilePosX + tileSizeF / 2, tilePosY + tileSizeF), sf::Color::White));
+            }
         }
     }
     return chunk;

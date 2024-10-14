@@ -4,6 +4,7 @@
 #include "Chunk.h"
 #include <vector>
 #include <SFML/Graphics.hpp>
+#include "FastNoiseLite.h"
 
 class ChunkManager {
 public:
@@ -23,4 +24,6 @@ private:
     int CHUNK_SIZE;
     int TILE_SIZE;
     std::vector<Chunk> chunks;
+
+    FastNoiseLite noise;
 };

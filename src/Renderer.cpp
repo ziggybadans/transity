@@ -72,6 +72,9 @@ void Renderer::drawChunks() {
 
                     // Draw the chunk with the applied transform
                     window.draw(currentChunk.vertices, transform);
+
+                    // Draw the contour lines
+                    //window.draw(currentChunk.contourLines, transform);
                 }
             }
         }

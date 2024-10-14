@@ -146,6 +146,7 @@
   <ItemGroup>
     <ClInclude Include="src\Chunk.h" />
     <ClInclude Include="src\ChunkManager.h" />
+    <ClInclude Include="src\FastNoiseLite.h" />
     <ClInclude Include="src\Game.h" />
     <ClInclude Include="src\InputHandler.h" />
     <ClInclude Include="src\Renderer.h" />

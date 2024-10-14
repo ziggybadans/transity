@@ -15,8 +15,9 @@ struct ChunkCoord {
 
 struct Chunk {
     sf::VertexArray vertices;
+    sf::VertexArray contourLines;
 
-    Chunk() : vertices(sf::Quads) {}
+    Chunk() : vertices(sf::Quads), contourLines(sf::Lines) {}
 };
 
 // Specialize std::hash to allow ChunkCoord to be used as a key in unordered_map
