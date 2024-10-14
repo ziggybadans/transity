@@ -27,16 +27,24 @@ Game::Game(int chunkSize, int tileSize)
     view.setCenter(worldSizeX / 2.0f, worldSizeY / 2.0f);
 
     // Pre-generate all chunks synchronously
+    chunks.resize(WORLD_CHUNKS_X * WORLD_CHUNKS_Y);
     for (int y = 0; y < WORLD_CHUNKS_Y; ++y) {
         for (int x = 0; x < WORLD_CHUNKS_X; ++x) {
-            ChunkCoord coord = { x, y };
-            chunks[coord] = generateChunk(x, y);
+            int index = y * WORLD_CHUNKS_X + x;
+            chunks[index] = generateChunk(x, y);
         }
     }
 }
 
 // Destructor
 Game::~Game() {
+}
+
+// Access chunks using calculated index
+int Game::getChunkIndex(int x, int y) {
+    x = wrapCoordinate(x, WORLD_CHUNKS_X);
+    y = wrapCoordinate(y, WORLD_CHUNKS_Y);
+    return y * WORLD_CHUNKS_X + x;
 }
 
 // Main game loop
@@ -72,7 +80,7 @@ void Game::processEvents() {
     }
 
     // Handle input for camera movement
-    const float cameraSpeed = 20.0f;
+    const float cameraSpeed = 10.0f;
 
     // Move the view based on keyboard input
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) {
@@ -114,32 +122,41 @@ Chunk Game::generateChunk(int chunkX, int chunkY) {
     int totalTilesX = WORLD_CHUNKS_X * CHUNK_SIZE;
     int totalTilesY = WORLD_CHUNKS_Y * CHUNK_SIZE;
 
+    // Calculate tile size in float for positioning
+    float tileSizeF = static_cast<float>(TILE_SIZE);
+
     // Generate a chunk of tiles at the specified chunk coordinates
     for (int y = 0; y < CHUNK_SIZE; ++y) {
         for (int x = 0; x < CHUNK_SIZE; ++x) {
-            sf::RectangleShape tile(sf::Vector2f(static_cast<float>(TILE_SIZE), static_cast<float>(TILE_SIZE)));
-
-            // Calculate tile's world position without additional wrapping
-            // Since the world is already wrapped by chunk indices, direct positioning suffices
+            // Calculate tile's world position
             float tilePosX = static_cast<float>((chunkX * CHUNK_SIZE + x) * TILE_SIZE);
             float tilePosY = static_cast<float>((chunkY * CHUNK_SIZE + y) * TILE_SIZE);
-            tile.setPosition(tilePosX, tilePosY);
 
-            // Create a line of land tiles in the middle of the world
+            sf::Color color;
             if (chunkY == WORLD_CHUNKS_Y / 2) {
-                tile.setFillColor(sf::Color::Green);
+                color = sf::Color::Green;
             }
             else {
                 // Alternate between land and water tiles to create a checkerboard pattern
                 if (((chunkX * CHUNK_SIZE + x) + (chunkY * CHUNK_SIZE + y)) % 2 == 0) {
-                    tile.setFillColor(sf::Color::Green); // Land
+                    color = sf::Color::Green;
                 }
                 else {
-                    tile.setFillColor(sf::Color::Blue);  // Water
+                    color = sf::Color::Blue;
                 }
             }
 
-            chunk.tiles.push_back(tile);
+            // Define the four corners of the quad
+            sf::Vertex topLeft(sf::Vector2f(tilePosX, tilePosY), color);
+            sf::Vertex topRight(sf::Vector2f(tilePosX + tileSizeF, tilePosY), color);
+            sf::Vertex bottomRight(sf::Vector2f(tilePosX + tileSizeF, tilePosY + tileSizeF), color);
+            sf::Vertex bottomLeft(sf::Vector2f(tilePosX, tilePosY + tileSizeF), color);
+
+            // Append the quad to the vertex array
+            chunk.vertices.append(topLeft);
+            chunk.vertices.append(topRight);
+            chunk.vertices.append(bottomRight);
+            chunk.vertices.append(bottomLeft);
         }
     }
     return chunk;
@@ -162,93 +179,64 @@ void Game::render() {
 
     // Calculate the bounds of the view
     float leftBound = center.x - size.x / 2;
-    float rightBound = center.x + size.x / 2;
     float topBound = center.y - size.y / 2;
-    float bottomBound = center.y + size.y / 2;
 
-    // Convert bounds to chunk indices, adding a buffer of 1 to cover partially visible chunks
-    int left = static_cast<int>(std::floor(leftBound / (CHUNK_SIZE * TILE_SIZE))) - 1;
-    int right = static_cast<int>(std::floor(rightBound / (CHUNK_SIZE * TILE_SIZE))) + 1;
-    int top = static_cast<int>(std::floor(topBound / (CHUNK_SIZE * TILE_SIZE))) - 1;
-    int bottom = static_cast<int>(std::floor(bottomBound / (CHUNK_SIZE * TILE_SIZE))) + 1;
+    // Calculate the range of visible chunks
+    int firstChunkX = static_cast<int>(std::floor(leftBound / (CHUNK_SIZE * TILE_SIZE)));
+    int firstChunkY = static_cast<int>(std::floor(topBound / (CHUNK_SIZE * TILE_SIZE)));
 
-    // Wrap the coordinates to stay within the world bounds
-    left = wrapCoordinate(left, WORLD_CHUNKS_X);
-    right = wrapCoordinate(right, WORLD_CHUNKS_X);
-    top = wrapCoordinate(top, WORLD_CHUNKS_Y);
-    bottom = wrapCoordinate(bottom, WORLD_CHUNKS_Y);
+    // Number of chunks visible horizontally and vertically
+    int visibleChunksX = static_cast<int>(std::ceil(size.x / (CHUNK_SIZE * TILE_SIZE))) + 2; // +2 for buffer
+    int visibleChunksY = static_cast<int>(std::ceil(size.y / (CHUNK_SIZE * TILE_SIZE))) + 2; // +2 for buffer
 
-    // Calculate the number of chunks to iterate over
-    int stepsY = calculateSteps(top, bottom, WORLD_CHUNKS_Y) + 1;
-    int stepsX = calculateSteps(left, right, WORLD_CHUNKS_X) + 1;
+    // Iterate over the 3x3 grid
+    for (int dx = -1; dx <= 1; ++dx) {
+        for (int dy = -1; dy <= 1; ++dy) {
+            // Calculate the base chunk indices
+            int baseChunkX = firstChunkX + dx * WORLD_CHUNKS_X;
+            int baseChunkY = firstChunkY + dy * WORLD_CHUNKS_Y;
 
-    // Determine if the view is near the edges based on half the view size
-    bool nearLeft = (center.x - size.x / 2) < (CHUNK_SIZE * TILE_SIZE / 2);
-    bool nearRight = (center.x + size.x / 2) > (worldSizeX - (CHUNK_SIZE * TILE_SIZE / 2));
-    bool nearTop = (center.y - size.y / 2) < (CHUNK_SIZE * TILE_SIZE / 2);
-    bool nearBottom = (center.y + size.y / 2) > (worldSizeY - (CHUNK_SIZE * TILE_SIZE / 2));
+            // Iterate through all visible chunks
+            for (int y = 0; y < visibleChunksY; ++y) {
+                for (int x = 0; x < visibleChunksX; ++x) {
+                    int chunkX = baseChunkX + x;
+                    int chunkY = baseChunkY + y;
 
-    // Render all the tiles in the visible chunks
-    for (int i = 0; i < stepsY; ++i) {
-        int chunkY = (top + i) % WORLD_CHUNKS_Y;
-        for (int j = 0; j < stepsX; ++j) {
-            int chunkX = (left + j) % WORLD_CHUNKS_X;
-            ChunkCoord coord = { chunkX, chunkY };
+                    // Wrap the chunk indices
+                    int wrappedChunkX = wrapCoordinate(chunkX, WORLD_CHUNKS_X);
+                    int wrappedChunkY = wrapCoordinate(chunkY, WORLD_CHUNKS_Y);
 
-            // Access the chunk directly without locking since all chunks are pre-generated
-            auto it = chunks.find(coord);
-            if (it != chunks.end()) {
-                const Chunk& currentChunk = it->second;
+                    int index = getChunkIndex(wrappedChunkX, wrappedChunkY);
 
-                // Draw original chunk
-                for (const auto& tile : currentChunk.tiles) {
-                    window.draw(tile);
-                }
+                    if (index >= 0 && index < chunks.size()) {
+                        const Chunk& currentChunk = chunks[index];
 
-                // Always draw wrapped duplicates
-                sf::Transform transformRight;
-                sf::Transform transformLeft;
-                sf::Transform transformTop;
-                sf::Transform transformBottom;
+                        // Calculate the position shift based on the grid offset
+                        float shiftX = dx * worldSizeX;
+                        float shiftY = dy * worldSizeY;
 
-                transformRight.translate(worldSizeX, 0);
-                transformLeft.translate(-worldSizeX, 0);
-                transformTop.translate(0, -worldSizeY);
-                transformBottom.translate(0, worldSizeY);
+                        // Create a transform for the shifted position
+                        sf::Transform transform;
+                        transform.translate(shiftX, shiftY);
 
-                // Draw horizontally wrapped duplicates
-                for (const auto& tile : currentChunk.tiles) {
-                    window.draw(tile, transformRight);
-                    window.draw(tile, transformLeft);
-                }
+                        // Draw the chunk with the applied transform
+                        window.draw(currentChunk.vertices, transform);
 
-                // Draw vertically wrapped duplicates
-                for (const auto& tile : currentChunk.tiles) {
-                    window.draw(tile, transformTop);
-                    window.draw(tile, transformBottom);
-                }
-
-                // Draw corner wrapped duplicates
-                sf::Transform transformRightBottom;
-                sf::Transform transformRightTop;
-                sf::Transform transformLeftBottom;
-                sf::Transform transformLeftTop;
-
-                transformRightBottom.translate(worldSizeX, worldSizeY);
-                transformRightTop.translate(worldSizeX, -worldSizeY);
-                transformLeftBottom.translate(-worldSizeX, worldSizeY);
-                transformLeftTop.translate(-worldSizeX, -worldSizeY);
-
-                for (const auto& tile : currentChunk.tiles) {
-                    window.draw(tile, transformRightBottom);
-                    window.draw(tile, transformRightTop);
-                    window.draw(tile, transformLeftBottom);
-                    window.draw(tile, transformLeftTop);
+                        // Optionally, draw chunk outlines for debugging
+                        /*
+                        sf::RectangleShape outline(sf::Vector2f(CHUNK_SIZE * TILE_SIZE, CHUNK_SIZE * TILE_SIZE));
+                        outline.setFillColor(sf::Color::Transparent);
+                        outline.setOutlineColor(sf::Color::Red);
+                        outline.setOutlineThickness(1.0f);
+                        outline.setPosition((chunkX % WORLD_CHUNKS_X) * CHUNK_SIZE * TILE_SIZE + shiftX,
+                                           (chunkY % WORLD_CHUNKS_Y) * CHUNK_SIZE * TILE_SIZE + shiftY);
+                        window.draw(outline);
+                        */
+                    }
                 }
             }
         }
     }
-
 
     // Display the rendered frame
     window.display();

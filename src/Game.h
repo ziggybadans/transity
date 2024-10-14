@@ -42,7 +42,7 @@ private:
     const int TILE_SIZE;  // Size of each tile in pixels
 
     // A map to keep track of generated chunks
-    std::unordered_map<ChunkCoord, Chunk> chunks;
+    std::vector<Chunk> chunks;
 
     // Synchronization mutex for chunks map
     std::mutex chunksMutex;
@@ -58,6 +58,7 @@ private:
     void wrapView();
 
     int calculateSteps(int start, int end, int max);
+    int getChunkIndex(int x, int y);
 
     /**
      * @brief Generates a chunk of tiles.
