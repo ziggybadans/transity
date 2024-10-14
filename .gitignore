@@ -17,3 +17,11 @@
 /.vs/Transity/FileContentIndex/a1b308d0-ee36-43de-a876-51b5f322d32e.vsidx
 /.vs/Transity/FileContentIndex/f5d26ee6-42d6-442f-8acf-327a86ffe09c.vsidx
 /.vs/Transity/FileContentIndex/f8e7815a-2584-445a-aa48-049644f53584.vsidx
+*.vsidx
+*.ipch
+/.vs/Transity/v17/.suo
+/.vs/Transity/v17/Browse.VC.db
+/.vs/Transity/v17/Browse.VC.db-shm
+/.vs/Transity/v17/Browse.VC.db-wal
+/.vs/Transity/v17/Browse.VC.opendb
+/.vs/Transity/v17/DocumentLayout.json
