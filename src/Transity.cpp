@@ -1,14 +1,30 @@
-// src/main.cpp
-#include "core/Game.h"  // Includes the Game class definition
-#include "systems/MainMenuState.h" // Includes the MainMenuState class definition, which will be implemented separately
+#include <SFML/Graphics.hpp>
 
 int main() {
-    Game game; // Create an instance of the Game class
-    //game.pushState(std::make_unique<MainMenuState>(game)); // Add the MainMenuState to the game state stack using a unique pointer
-    game.run(); // Start the game loop
-    return 0; // End the program with a success status code
-}
+    // Create a window with dimensions 800x600 and title "2D Transport Game"
+    sf::RenderWindow window(sf::VideoMode(800, 600), "2D Transport Game");
 
-// Summary:
-// This file is the entry point for the game application. It creates an instance of the Game class,
-// pushes the initial game state (MainMenuState), and starts the game loop using the run() method.
+    // Set a frame rate limit
+    window.setFramerateLimit(60);
+
+    // Main game loop
+    while (window.isOpen()) {
+        // Event processing
+        sf::Event event;
+        while (window.pollEvent(event)) {
+            // Close the window if the close button is pressed
+            if (event.type == sf::Event::Closed)
+                window.close();
+        }
+
+        // Clear the screen with a black color
+        window.clear(sf::Color::Black);
+
+        // Update and draw everything here (future steps)
+
+        // Display the current frame
+        window.display();
+    }
+
+    return 0;
+}

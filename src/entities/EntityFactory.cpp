@@ -1,18 +1,28 @@
 // src/entities/EntityFactory.cpp
 #include "EntityFactory.h"
 
-// Method to create a player entity and add it to the EntityManager
+// Example implementation for player creation (assuming player has Position and Velocity)
 Entity EntityFactory::createPlayer(EntityManager& entityManager) {
-    Entity player = entityManager.createEntity(); // Create a new entity and assign it as the player
-
-    // Attach Position and Velocity components to the player entity
-    // e.g., componentManager.addComponent<Position>(player.getID(), Position{0.f, 0.f});
-    // This allows the player to have positional data and potentially movement capabilities
-
-    return player; // Return the created player entity
+    Entity player = entityManager.createEntity();
+    Position pos = { 0.0f, 0.0f };
+    Velocity vel = { 0.0f, 0.0f };
+    entityManager.addComponent<Position>(player.getID(), pos);
+    entityManager.addComponent<Velocity>(player.getID(), vel);
+    // Add other player-specific components here
+    return player;
 }
 
-// Summary:
-// The EntityFactory::createPlayer method is responsible for creating a player entity using the EntityManager.
-// Components such as Position or Velocity can be attached to the player to define its attributes and behaviors.
-// This function serves as the basis for instantiating player-specific logic within the game.
+Entity EntityFactory::createTerrain(EntityManager& entityManager, float x, float y, Terrain::Type type, float height) {
+    Entity terrain = entityManager.createEntity();
+    Position pos = { x, y };
+    Terrain terr = { type };
+    Height h = { height };
+
+    entityManager.addComponent<Position>(terrain.getID(), pos);
+    entityManager.addComponent<Terrain>(terrain.getID(), terr);
+    if (type == Terrain::Type::Land) {
+        entityManager.addComponent<Height>(terrain.getID(), h);
+    }
+    // Water might not need a Height component or could have a default value
+    return terrain;
+}

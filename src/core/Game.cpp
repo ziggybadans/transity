@@ -1,6 +1,6 @@
 // src/core/Game.cpp
 #include "Game.h"
-#include "../systems/MainMenuState.h"
+#include "../states/MainMenuState.h"
 
 // Constructor for the Game class. Initializes the game window with specific dimensions (800x600) and a title.
 Game::Game() : window(sf::VideoMode(800, 600), "Transport Management Game") {}

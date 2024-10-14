@@ -11,4 +11,11 @@ struct Velocity {
     float vy;
 };
 
-// Add more components as needed
+// New Components
+struct Terrain {
+    enum class Type { Land, Water } type;
+};
+
+struct Height {
+    float value;
+};
