@@ -1,5 +1,6 @@
 // src/states/MainMenuState.cpp
 #include "MainMenuState.h"
+#include "../core/Game.h"
 
 // Constructor for the MainMenuState. Binds keys for interactions in the main menu.
 MainMenuState::MainMenuState(Game& game) : State(game) {
@@ -24,7 +25,13 @@ void MainMenuState::update(sf::Time deltaTime) {
 
 // Renders the main menu screen, including drawing any UI elements.
 void MainMenuState::render() {
-    game.getWindow().clear(sf::Color::Blue);
-    renderer.render(game.getWindow());
-    game.getWindow().display();
+    game.getWindow().clear(sf::Color::Blue); // Clear the window with a background color (e.g., blue for the main menu).
+    renderer.render(game.getWindow()); // Render all UI elements using the Renderer.
+    game.getWindow().display(); // Display the rendered frame.
 }
+
+// Summary:
+// The MainMenuState implementation sets up key bindings for menu interactions, such as pressing Enter to transition to gameplay.
+// The handleEvent method delegates input handling to the InputManager, while update and render methods are responsible for
+// updating UI elements and drawing the menu screen. This state acts as the entry point for the player to interact with the game,
+// allowing them to start playing, adjust settings, or quit.

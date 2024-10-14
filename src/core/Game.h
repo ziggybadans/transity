@@ -1,50 +1,28 @@
-// src/core/Game.h
+// Game.h
 #pragma once
+#include <SFML/Graphics.hpp>  // Include the SFML graphics library for rendering
+#include <memory>             // Include for managing unique pointers
+#include <vector>             // Include for storing the game states
+#include "State.h"          // Include the base State class for game states
 
-// Include the SFML Graphics library for rendering
-#include <SFML/Graphics.hpp>
-// Include memory management utilities (for smart pointers)
-#include <memory>
-// Include the "State" header, which defines the game states
-#include "State.h"
-#include "../systems/ResourceManager.h"
-
-// Game class definition
 class Game {
 public:
-    // Constructor: Initializes the game
-    Game();
+    Game();  // Constructor to initialize the game
+    void run();  // Method to start the main game loop
 
-    // Main game loop: Runs the game until it is closed
-    void run();
+    void pushState(std::unique_ptr<State> state);  // Add a new state to the stack
+    void popState();  // Remove the top state from the stack
+    void changeState(std::unique_ptr<State> state);  // Replace the current state with a new one
 
-    // Push a new state onto the stack
-    // This allows adding a new game state without removing the current one
-    void pushState(std::unique_ptr<State> state);
-
-    // Pop the current state from the stack
-    // This removes the current state and resumes the previous one
-    void popState();
-
-    // Replace the current state with a new one
-    // This is useful when transitioning to a completely different game state
-    void changeState(std::unique_ptr<State> state);
-
-    // Get a reference to the RenderWindow
-    // This allows other objects to draw onto the window
-    sf::RenderWindow& getWindow();
+    sf::RenderWindow& getWindow();  // Accessor for the render window
 
 private:
-    // The main rendering window for the game
-    sf::RenderWindow window;
-
-    // A stack of unique pointers to State objects
-    // This allows managing multiple game states, such as menus, gameplay, etc.
-    std::vector<std::unique_ptr<State>> states;
-
-    // The time interval for each frame (targeting 60 frames per second)
-    const sf::Time TimePerFrame = sf::seconds(1.f / 60.f);
-
-    ResourceManager<sf::Texture> textureManager;
-    ResourceManager<sf::Font> fontManager;
+    sf::RenderWindow window;  // The window where the game is rendered
+    std::vector<std::unique_ptr<State>> states;  // Stack of game states
+    const sf::Time TimePerFrame = sf::seconds(1.f / 60.f);  // Fixed time step for frame updates, set to 60 FPS
 };
+
+// Summary:
+// The Game class handles the overall management of the game, including maintaining the game state stack
+// and running the main game loop. It uses SFML for rendering and manages states using unique pointers
+// to ensure proper memory management.

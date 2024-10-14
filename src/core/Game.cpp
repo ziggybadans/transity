@@ -1,5 +1,6 @@
 // src/core/Game.cpp
 #include "Game.h"
+#include "../systems/MainMenuState.h"
 
 // Constructor for the Game class. Initializes the game window with specific dimensions (800x600) and a title.
 Game::Game() : window(sf::VideoMode(800, 600), "Transport Management Game") {}
@@ -58,3 +59,9 @@ void Game::changeState(std::unique_ptr<State> state) {
 sf::RenderWindow& Game::getWindow() {
     return window;
 }
+
+// Summary:
+// The Game class is responsible for managing the game loop, handling game states, and rendering. The main game
+// loop ensures that the game runs at a consistent frame rate. The class maintains a stack of states, allowing
+// for flexible transitions between different game states (e.g., menus, gameplay). State management is done using
+// unique pointers to ensure that memory is handled correctly, preventing leaks.

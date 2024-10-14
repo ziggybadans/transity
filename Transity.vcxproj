@@ -142,6 +142,7 @@
     <ClCompile Include="src\systems\MovementSystem.cpp" />
     <ClCompile Include="src\systems\Renderer.cpp" />
     <ClCompile Include="src\Transity.cpp" />
+    <ClCompile Include="src\utils\Logger.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\components\Component.h" />
@@ -157,7 +158,8 @@
     <ClInclude Include="src\systems\MovementSystem.h" />
     <ClInclude Include="src\systems\Renderer.h" />
     <ClInclude Include="src\systems\ResourceManager.h" />
-    <ClInclude Include="src\systems\ResourceManager.hpp" />
+    <ClInclude Include="src\utils\FastNoiseLite.h" />
+    <ClInclude Include="src\utils\Logger.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitignore" />

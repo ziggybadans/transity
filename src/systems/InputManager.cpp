@@ -15,3 +15,8 @@ void InputManager::handleEvent(const sf::Event& event) {
 void InputManager::bindKey(sf::Keyboard::Key key, KeyCallback callback) {
     keyBindings[key] = callback; // Store the key and its callback in the keyBindings map.
 }
+
+// Summary:
+// The InputManager implementation processes input events by invoking callbacks registered to specific keys.
+// The handleEvent method listens for key press events and, if the pressed key is bound to a callback, it invokes that callback.
+// The bindKey method is used to bind keys to their respective callback actions, allowing flexible and modular input handling.

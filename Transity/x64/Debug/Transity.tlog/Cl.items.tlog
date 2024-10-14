@@ -1,1 +1,10 @@
-C:\Users\Ziggy\Documents\Transity\Transity\Transity.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Debug\Transity.obj
+C:\Users\Ziggy\Documents\Transity\Transity\src\core\Game.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Debug\Game.obj
+C:\Users\Ziggy\Documents\Transity\Transity\src\entities\EntityFactory.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Debug\EntityFactory.obj
+C:\Users\Ziggy\Documents\Transity\Transity\src\entities\EntityManager.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Debug\EntityManager.obj
+C:\Users\Ziggy\Documents\Transity\Transity\src\events\EventDispatcher.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Debug\EventDispatcher.obj
+C:\Users\Ziggy\Documents\Transity\Transity\src\systems\InputManager.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Debug\InputManager.obj
+C:\Users\Ziggy\Documents\Transity\Transity\src\systems\MainMenuState.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Debug\MainMenuState.obj
+C:\Users\Ziggy\Documents\Transity\Transity\src\systems\MovementSystem.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Debug\MovementSystem.obj
+C:\Users\Ziggy\Documents\Transity\Transity\src\systems\Renderer.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Debug\Renderer.obj
+C:\Users\Ziggy\Documents\Transity\Transity\src\Transity.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Debug\Transity.obj
+C:\Users\Ziggy\Documents\Transity\Transity\src\utils\Logger.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Debug\Logger.obj
