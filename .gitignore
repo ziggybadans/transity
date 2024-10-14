@@ -1,0 +1,19 @@
+# Build directories
+/build/
+/Debug/
+/Release/
+
+# Visual Studio files
+*.sdf
+*.vcxproj.user
+
+# SFML DLLs
+/lib/bin/
+
+# Other
+*.log
+/.vs/Transity/FileContentIndex/0564c6af-e34d-464e-b45b-5f010f6396b1.vsidx
+/.vs/Transity/FileContentIndex/0e3bf893-2fcd-4a6b-8c7a-b476d23b2432.vsidx
+/.vs/Transity/FileContentIndex/a1b308d0-ee36-43de-a876-51b5f322d32e.vsidx
+/.vs/Transity/FileContentIndex/f5d26ee6-42d6-442f-8acf-327a86ffe09c.vsidx
+/.vs/Transity/FileContentIndex/f8e7815a-2584-445a-aa48-049644f53584.vsidx
