@@ -133,45 +133,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="src\core\Game.cpp" />
-    <ClCompile Include="src\entities\ContourDrawable.cpp" />
-    <ClCompile Include="src\entities\EntityFactory.cpp" />
-    <ClCompile Include="src\entities\LandDrawable.cpp" />
-    <ClCompile Include="src\entities\WaterDrawable.cpp" />
-    <ClCompile Include="src\events\EventDispatcher.cpp" />
-    <ClCompile Include="src\states\GameplayState.cpp" />
-    <ClCompile Include="src\systems\InputManager.cpp" />
-    <ClCompile Include="src\states\MainMenuState.cpp" />
-    <ClCompile Include="src\systems\MovementSystem.cpp" />
-    <ClCompile Include="src\systems\Renderer.cpp" />
-    <ClCompile Include="src\systems\TerrainGenerationSystem.cpp" />
+    <ClCompile Include="src\Game.cpp" />
     <ClCompile Include="src\Transity.cpp" />
-    <ClCompile Include="src\utils\Logger.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="src\components\Component.h" />
-    <ClInclude Include="src\core\Game.h" />
-    <ClInclude Include="src\core\State.h" />
-    <ClInclude Include="src\entities\ContourDrawable.h" />
-    <ClInclude Include="src\entities\Entity.h" />
-    <ClInclude Include="src\entities\EntityFactory.h" />
-    <ClInclude Include="src\entities\EntityManager.h" />
-    <ClInclude Include="src\entities\LandDrawable.h" />
-    <ClInclude Include="src\entities\WaterDrawable.h" />
-    <ClInclude Include="src\events\Event.h" />
-    <ClInclude Include="src\events\EventDispatcher.h" />
-    <ClInclude Include="src\states\GameplayState.h" />
-    <ClInclude Include="src\systems\InputManager.h" />
-    <ClInclude Include="src\states\MainMenuState.h" />
-    <ClInclude Include="src\systems\MovementSystem.h" />
-    <ClInclude Include="src\systems\Renderer.h" />
-    <ClInclude Include="src\systems\ResourceManager.h" />
-    <ClInclude Include="src\systems\TerrainGenerationSystem.h" />
-    <ClInclude Include="src\utils\FastNoiseLite.h" />
-    <ClInclude Include="src\utils\Logger.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitignore" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\Chunk.h" />
+    <ClInclude Include="src\Game.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
