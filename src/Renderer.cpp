@@ -8,15 +8,7 @@
 Renderer::Renderer(sf::RenderWindow& win, sf::View& viewRef, const ChunkManager& cm, int chunkSize, int tileSize, const sf::Vector2f& defaultSize)
     : window(win), view(viewRef), chunkManager(cm), m_chunkSize(chunkSize), m_tileSize(tileSize), defaultViewSize(defaultSize)
 {
-    for (int dy = -1; dy <= 1; ++dy) {
-        for (int dx = -1; dx <= 1; ++dx) {
-            float shiftX = dx * (chunkManager.WORLD_CHUNKS_X * m_chunkSize * m_tileSize);
-            float shiftY = dy * (chunkManager.WORLD_CHUNKS_Y * m_chunkSize * m_tileSize);
-            sf::Transform transform;
-            transform.translate(shiftX, shiftY);
-            m_gridTransforms.emplace_back(transform);
-        }
-    }
+
 }
 
 void Renderer::renderFrame() {
@@ -58,64 +50,42 @@ void Renderer::drawChunks() {
     int visibleChunksX = static_cast<int>(std::ceil(size.x / (m_chunkSize * m_tileSize))) + 2; // +2 for buffer
     int visibleChunksY = static_cast<int>(std::ceil(size.y / (m_chunkSize * m_tileSize))) + 2; // +2 for buffer
 
-    // Iterate over the 3x3 grid
-    int transformIndex = 0;
-    for (int dx = -1; dx <= 1; ++dx) {
-        for (int dy = -1; dy <= 1; ++dy) {
-            sf::Transform& gridTransform = m_gridTransforms[transformIndex++];
+    // Iterate through visible chunks without wrapping
+    for (int y = 0; y < visibleChunksY; ++y) {
+        for (int x = 0; x < visibleChunksX; ++x) {
+            int chunkX = firstChunkX + x;
+            int chunkY = firstChunkY + y;
 
-            // Calculate the base chunk indices
-            int baseChunkX = firstChunkX + dx * chunkManager.WORLD_CHUNKS_X;
-            int baseChunkY = firstChunkY + dy * chunkManager.WORLD_CHUNKS_Y;
+            // Clamp chunk indices to stay within world boundaries
+            chunkX = std::clamp(chunkX, 0, chunkManager.WORLD_CHUNKS_X - 1);
+            chunkY = std::clamp(chunkY, 0, chunkManager.WORLD_CHUNKS_Y - 1);
 
-            // Iterate through all visible chunks
-            for (int y = 0; y < visibleChunksY; ++y) {
-                for (int x = 0; x < visibleChunksX; ++x) {
-                    int chunkX = baseChunkX + x;
-                    int chunkY = baseChunkY + y;
+            // Access the chunk
+            const Chunk& currentChunk = chunkManager.getChunk(chunkX, chunkY);
 
-                    // Wrap the x-axis and clamp the y-axis
-                    int wrappedChunkX = Utilities::wrapCoordinate(chunkX, chunkManager.WORLD_CHUNKS_X);
-                    int wrappedChunkY = chunkY;
-
-                    // Clamp y-axis
-                    if (chunkY < 0)
-                        wrappedChunkY = 0;
-                    if (chunkY >= chunkManager.WORLD_CHUNKS_Y)
-                        wrappedChunkY = chunkManager.WORLD_CHUNKS_Y - 1;
-
-                    // Access the chunk
-                    const Chunk& currentChunk = chunkManager.getChunk(wrappedChunkX, wrappedChunkY);
-
-                    // Select the appropriate LOD vertex array
-                    const sf::VertexArray* verticesToDraw;
-                    switch (currentLOD) {
-                    case 0:
-                        verticesToDraw = &currentChunk.verticesLOD0;
-                        break;
-                    case 1:
-                        verticesToDraw = &currentChunk.verticesLOD1;
-                        break;
-                    case 2:
-                        verticesToDraw = &currentChunk.verticesLOD2;
-                        break;
-                    default:
-                        verticesToDraw = &currentChunk.verticesLOD0;
-                        break;
-                    }
-
-                    // Draw the chunk with the applied transform
-                    window.draw(*verticesToDraw, gridTransform);
-
-                    /* // Optionally, draw contour lines only for high detail
-                    if (currentLOD == 0) {
-                        window.draw(currentChunk.contourLines, gridTransform);
-                    }*/
-                }
+            // Select the appropriate LOD vertex array
+            const sf::VertexArray* verticesToDraw;
+            switch (currentLOD) {
+            case 0:
+                verticesToDraw = &currentChunk.verticesLOD0;
+                break;
+            case 1:
+                verticesToDraw = &currentChunk.verticesLOD1;
+                break;
+            case 2:
+                verticesToDraw = &currentChunk.verticesLOD2;
+                break;
+            default:
+                verticesToDraw = &currentChunk.verticesLOD0;
+                break;
             }
+
+            // Draw the chunk without any additional transform
+            window.draw(*verticesToDraw);
         }
     }
 }
+
 
 int Renderer::determineLODLevel() {
     float currentScaleX = view.getSize().x / defaultViewSize.x;

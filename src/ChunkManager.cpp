@@ -64,8 +64,9 @@ void ChunkManager::regenerateWorld() {
 }
 
 Chunk ChunkManager::generateChunk(int chunkX, int chunkY) {
-    chunkX = Utilities::wrapCoordinate(chunkX, WORLD_CHUNKS_X);
-    chunkY = Utilities::wrapCoordinate(chunkY, WORLD_CHUNKS_Y);
+    // Clamp chunk indices to stay within world boundaries
+    chunkX = std::clamp(chunkX, 0, WORLD_CHUNKS_X - 1);
+    chunkY = std::clamp(chunkY, 0, WORLD_CHUNKS_Y - 1);
 
     Chunk chunk;
     int totalTilesX = WORLD_CHUNKS_X * CHUNK_SIZE;
@@ -207,9 +208,10 @@ Chunk ChunkManager::generateChunk(int chunkX, int chunkY) {
 }
 
 const Chunk& ChunkManager::getChunk(int x, int y) const {
-    int wrappedX = Utilities::wrapCoordinate(x, WORLD_CHUNKS_X);
-    int wrappedY = Utilities::wrapCoordinate(y, WORLD_CHUNKS_Y);
-    int index = wrappedY * WORLD_CHUNKS_X + wrappedX;
+    // Clamp chunk indices to stay within world boundaries
+    int clampedX = std::clamp(x, 0, WORLD_CHUNKS_X - 1);
+    int clampedY = std::clamp(y, 0, WORLD_CHUNKS_Y - 1);
+    int index = clampedY * WORLD_CHUNKS_X + clampedX;
     return chunks.at(index);
 }
 

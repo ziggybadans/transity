@@ -77,12 +77,18 @@ void Game::wrapView() {
     float worldSizeY = chunkManager.WORLD_CHUNKS_Y * CHUNK_SIZE * TILE_SIZE;
 
     sf::Vector2f center = view.getCenter();
+    sf::Vector2f size = view.getSize();
 
-    // Wrap the x-coordinate
-    center.x = Utilities::wrapFloat(center.x, worldSizeX);
+    float halfViewWidth = size.x / 2.0f;
+    float halfViewHeight = size.y / 2.0f;
 
-    // Clamp the y-coordinate
-    float halfViewHeight = view.getSize().y / 2.0f;
+    // Clamp x-coordinate
+    if (center.x - halfViewWidth < 0.0f)
+        center.x = halfViewWidth;
+    if (center.x + halfViewWidth > worldSizeX)
+        center.x = worldSizeX - halfViewWidth;
+
+    // Clamp y-coordinate
     if (center.y - halfViewHeight < 0.0f)
         center.y = halfViewHeight;
     if (center.y + halfViewHeight > worldSizeY)
