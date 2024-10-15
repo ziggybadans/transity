@@ -16,9 +16,16 @@ public:
     // Access a chunk by its wrapped indices
     const Chunk& getChunk(int x, int y) const;
 
+    void updateSettings(float newFrequency, int newSeed, float newLandThreshold);
+    void regenerateWorld();
+
     // Total chunks in X and Y directions
     int WORLD_CHUNKS_X;
     int WORLD_CHUNKS_Y;
+
+    float noiseFrequency;
+    int noiseSeed;
+    float landThreshold;
 
 private:
     int CHUNK_SIZE;
@@ -26,4 +33,7 @@ private:
     std::vector<Chunk> chunks;
 
     FastNoiseLite noise;
+
+    float worldWidth;
+    float worldHeight;
 };

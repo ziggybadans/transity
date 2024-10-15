@@ -2,6 +2,8 @@
 #include "Renderer.h"
 #include "Utilities.h"
 #include <cmath>
+#include <imgui.h>
+#include <imgui-SFML.h>
 
 Renderer::Renderer(sf::RenderWindow& win, sf::View& viewRef, const ChunkManager& cm, int chunkSize, int tileSize)
     : window(win), view(viewRef), chunkManager(cm), CHUNK_SIZE(chunkSize), TILE_SIZE(tileSize)
@@ -16,6 +18,8 @@ void Renderer::renderFrame() {
 
     // Draw all relevant chunks
     drawChunks();
+
+    ImGui::SFML::Render(window);
 
     // Display the rendered frame
     window.display();

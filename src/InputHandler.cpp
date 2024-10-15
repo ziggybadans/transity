@@ -2,6 +2,9 @@
 #include "InputHandler.h"
 #include "Utilities.h"
 
+#include <imgui.h>
+#include <imgui-SFML.h>
+
 InputHandler::InputHandler(sf::View& viewRef, const sf::Vector2f& defaultSize)
     : view(viewRef), defaultViewSize(defaultSize)
 {
@@ -10,6 +13,7 @@ InputHandler::InputHandler(sf::View& viewRef, const sf::Vector2f& defaultSize)
 void InputHandler::processEvents(sf::RenderWindow& window) {
     sf::Event event;
     while (window.pollEvent(event)) {
+        ImGui::SFML::ProcessEvent(event);
         // Close the window if the close button is pressed
         if (event.type == sf::Event::Closed) {
             window.close();

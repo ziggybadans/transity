@@ -70,6 +70,12 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <IncludePath>C:\Users\Ziggy\Downloads\imgui-sfml-2.6;C:\Users\Ziggy\Downloads\imgui-1.89.9\misc\cpp;C:\Users\Ziggy\Downloads\imgui-1.89.9\backends;C:\Users\Ziggy\Downloads\imgui-1.89.9;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <IncludePath>C:\Users\Ziggy\Downloads\imgui-sfml-2.6;C:\Users\Ziggy\Downloads\imgui-1.89.9\misc\cpp;C:\Users\Ziggy\Downloads\imgui-1.89.9\backends;C:\Users\Ziggy\Downloads\imgui-1.89.9;$(IncludePath)</IncludePath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -110,7 +116,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>C:\Tools\SFML-2.6.1\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>sfml-graphics-d.lib;sfml-window-d.lib;sfml-system-d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>sfml-graphics-d.lib;sfml-window-d.lib;sfml-system-d.lib;%(AdditionalDependencies);opengl32.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -129,10 +135,15 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>C:\Tools\SFML-2.6.1\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>sfml-graphics.lib;sfml-window.lib;sfml-system.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>sfml-graphics.lib;sfml-window.lib;sfml-system.lib;%(AdditionalDependencies);opengl32.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\Downloads\imgui-1.89.9\imgui.cpp" />
+    <ClCompile Include="..\..\..\Downloads\imgui-1.89.9\imgui_draw.cpp" />
+    <ClCompile Include="..\..\..\Downloads\imgui-1.89.9\imgui_tables.cpp" />
+    <ClCompile Include="..\..\..\Downloads\imgui-1.89.9\imgui_widgets.cpp" />
+    <ClCompile Include="..\..\..\Downloads\imgui-sfml-2.6\imgui-SFML.cpp" />
     <ClCompile Include="src\ChunkManager.cpp" />
     <ClCompile Include="src\Game.cpp" />
     <ClCompile Include="src\InputHandler.cpp" />
@@ -144,6 +155,10 @@
     <None Include=".gitignore" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\Downloads\imgui-1.89.9\imconfig.h" />
+    <ClInclude Include="..\..\..\Downloads\imgui-1.89.9\imgui.h" />
+    <ClInclude Include="..\..\..\Downloads\imgui-sfml-2.6\imgui-SFML.h" />
+    <ClInclude Include="..\..\..\Downloads\imgui-sfml-2.6\imgui-SFML_export.h" />
     <ClInclude Include="src\Chunk.h" />
     <ClInclude Include="src\ChunkManager.h" />
     <ClInclude Include="src\FastNoiseLite.h" />

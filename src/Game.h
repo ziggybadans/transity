@@ -15,6 +15,9 @@ public:
     void run();
 
 private:
+    int windowSizeX;
+    int windowSizeY;
+
     // Window and view
     sf::RenderWindow window;
     sf::View view;
@@ -30,4 +33,9 @@ private:
 
     // Helper function to wrap the view's center
     void wrapView();
+    void drawDebugGUI();
+
+    bool needsRegeneration = false;
+    sf::Clock regenClock;
+    sf::Time regenDelay = sf::seconds(0.5f); // 0.5-second delay
 };
