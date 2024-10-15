@@ -26,6 +26,8 @@ public:
     float noiseFrequency;
     int noiseSeed;
     float landThreshold;
+    float borderWidth;
+    int attenuationFactor;
 
 private:
     int CHUNK_SIZE;

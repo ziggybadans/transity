@@ -6,7 +6,7 @@
 ChunkManager::ChunkManager(int worldChunksX, int worldChunksY, int chunkSize, int tileSize)
     : WORLD_CHUNKS_X(worldChunksX), WORLD_CHUNKS_Y(worldChunksY),
     CHUNK_SIZE(chunkSize), TILE_SIZE(tileSize),
-    noiseFrequency(0.005f), noiseSeed(1337), landThreshold(0.5f)
+    noiseFrequency(0.005f), noiseSeed(1337), landThreshold(0.5f), borderWidth(1.0f), attenuationFactor(2)
 {
     // Calculate world dimensions
     worldWidth = static_cast<float>(WORLD_CHUNKS_X * CHUNK_SIZE * TILE_SIZE);
@@ -70,8 +70,20 @@ Chunk ChunkManager::generateChunk(int chunkX, int chunkY) {
             float normalizedX = worldX / worldWidth;
             float normalizedY = worldY / worldHeight;
 
+            // Calculate distance to the nearest edge (normalized between 0 and 1)
+            float distanceToEdgeX = std::min(normalizedX, 1.0f - normalizedX);
+            float distanceToEdgeY = std::min(normalizedY, 1.0f - normalizedY);
+            float distanceToEdge = std::min(distanceToEdgeX, distanceToEdgeY) * borderWidth;
+
+            // Introduce an attenuation factor that decreases as we approach the edges
+            // The factor is squared to create a more gradual effect
+            float edgeAttenuationFactor = std::pow(distanceToEdge, attenuationFactor);
+
             float height = noise.GetNoise(worldX, worldY, 0.0f);
             height = (height + 1.0f) / 2.0f;
+
+            // Apply the attenuation factor to reduce height near edges
+            height *= edgeAttenuationFactor;
 
             sf::Color color;
             if (height > landThreshold) {

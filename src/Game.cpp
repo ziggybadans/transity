@@ -68,6 +68,12 @@ void Game::drawDebugGUI() {
     // Threshold for Land/Water
     ImGui::SliderFloat("Land Threshold", &chunkManager.landThreshold, 0.3f, 0.7f, "%.2f");
 
+    // Border width
+    ImGui::SliderFloat("Mask Border Width", &chunkManager.borderWidth, 0.0f, 10.0f, "%.2f");
+
+    // Attenuation factor
+    ImGui::SliderInt("Mask Attenuation Factor", &chunkManager.attenuationFactor, 1, 10);
+
     // Button to Regenerate World
     if (ImGui::Button("Regenerate World")) {
         chunkManager.updateSettings(chunkManager.noiseFrequency, chunkManager.noiseSeed, chunkManager.landThreshold);
