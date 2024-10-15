@@ -1,10 +1,12 @@
 // src/ChunkManager.cpp
 #include "ChunkManager.h"
 #include "Utilities.h"
+
 #include <cmath>
 #include <thread>
 #include <vector>
 #include <future>
+#include <iostream>
 
 constexpr float DEFAULT_LAND_THRESHOLD = 0.5f;
 constexpr float DEFAULT_BORDER_WIDTH = 4.35f;
@@ -13,11 +15,23 @@ constexpr float DEFAULT_ATTENUATION_FACTOR = 0.243f;
 ChunkManager::ChunkManager(int worldChunksX, int worldChunksY, int chunkSize, int tileSize)
     : WORLD_CHUNKS_X(worldChunksX), WORLD_CHUNKS_Y(worldChunksY),
     CHUNK_SIZE(chunkSize), TILE_SIZE(tileSize),
-    landThreshold(DEFAULT_LAND_THRESHOLD), borderWidth(DEFAULT_BORDER_WIDTH), attenuationFactor(DEFAULT_ATTENUATION_FACTOR), totalAmplitude(0.0f)
+    landThreshold(DEFAULT_LAND_THRESHOLD), borderWidth(DEFAULT_BORDER_WIDTH), attenuationFactor(DEFAULT_ATTENUATION_FACTOR), totalAmplitude(0.0f),
+    heightMap(nullptr)
 {
     initializeNoiseLayers();
     initializeWorldDimensions();
     regenerateWorld();
+}
+
+void ChunkManager::setHeightMap(HeightMap* hm) {
+    heightMap = hm;
+    if (heightMap) {
+        useRealHeightMap = true;
+    }
+    else {
+        useRealHeightMap = false;
+    }
+    regenerateWorld(); // Regenerate world with the new heightmap
 }
 
 // Function to regenerate the entire world
@@ -73,26 +87,42 @@ Chunk ChunkManager::generateChunk(int chunkX, int chunkY) {
             float worldX = static_cast<float>((chunkX * CHUNK_SIZE + x) * TILE_SIZE);
             float worldY = static_cast<float>((chunkY * CHUNK_SIZE + y) * TILE_SIZE);
 
-            float nx = worldX / (WORLD_CHUNKS_X * CHUNK_SIZE * TILE_SIZE);
-            float ny = worldY / (WORLD_CHUNKS_Y * CHUNK_SIZE * TILE_SIZE);
+            // Calculate tile coordinates
+            int tileX = chunkX * CHUNK_SIZE + x;
+            int tileY = chunkY * CHUNK_SIZE + y;
 
-            float normalizedX = worldX * invWorldWidth;
-            float normalizedY = worldY * invWorldHeight;
-
-            float edgeDistance = calculateEdgeDistance(normalizedX, normalizedY);
-            float edgeAttenuationFactor = std::pow(edgeDistance, attenuationFactor);
-
-            // Combine noise layers
             float height = 0.0f;
-            for (const auto& layer : noiseLayers) {
-                float noiseValue = layer.noise.GetNoise(worldX, worldY, 0.0f);
-                noiseValue = (noiseValue + 1.0f) / 2.0f;
-                height += noiseValue * layer.amplitude;
-            }
-            height /= totalAmplitude;
+            if (useRealHeightMap && heightMap) {
+                float invScaleX = static_cast<float>(heightMap->getWidth()) / totalTilesX;
+                float invScaleY = static_cast<float>(heightMap->getHeight()) / totalTilesY;
 
-            // Apply the attenuation factor to reduce height near edges
-            height *= edgeAttenuationFactor;
+                // Use tile coordinates instead of world coordinates for heightmap
+                height = heightMap->getScaledHeight(static_cast<float>(tileX), static_cast<float>(tileY), invScaleX, invScaleY);
+                landThreshold = 0.0f;
+            }
+            else {
+
+                float nx = worldX / (WORLD_CHUNKS_X * CHUNK_SIZE * TILE_SIZE);
+                float ny = worldY / (WORLD_CHUNKS_Y * CHUNK_SIZE * TILE_SIZE);
+
+                float normalizedX = worldX * invWorldWidth;
+                float normalizedY = worldY * invWorldHeight;
+
+                float edgeDistance = calculateEdgeDistance(normalizedX, normalizedY);
+                float edgeAttenuationFactor = std::pow(edgeDistance, attenuationFactor);
+
+                // Combine noise layers
+                height = 0.0f;
+                for (const auto& layer : noiseLayers) {
+                    float noiseValue = layer.noise.GetNoise(worldX, worldY, 0.0f);
+                    noiseValue = (noiseValue + 1.0f) / 2.0f;
+                    height += noiseValue * layer.amplitude;
+                }
+                height /= totalAmplitude;
+
+                // Apply the attenuation factor to reduce height near edges
+                height *= edgeAttenuationFactor;
+            }
 
             sf::Color color;
             if (height > landThreshold) {
@@ -230,9 +260,15 @@ void ChunkManager::initializeNoiseLayers() {
 }
 
 void ChunkManager::initializeWorldDimensions() {
-    // Calculate world dimensions
-    worldWidth = static_cast<float>(WORLD_CHUNKS_X * CHUNK_SIZE * TILE_SIZE);
-    worldHeight = static_cast<float>(WORLD_CHUNKS_Y * CHUNK_SIZE * TILE_SIZE);
+    if (useRealHeightMap && heightMap) {
+        worldWidth = static_cast<float>(WORLD_CHUNKS_X * CHUNK_SIZE * TILE_SIZE);
+        worldHeight = static_cast<float>(WORLD_CHUNKS_Y * CHUNK_SIZE * TILE_SIZE);
+    }
+    else {
+        // Procedural generation
+        worldWidth = static_cast<float>(WORLD_CHUNKS_X * CHUNK_SIZE * TILE_SIZE);
+        worldHeight = static_cast<float>(WORLD_CHUNKS_Y * CHUNK_SIZE * TILE_SIZE);
+    }
 
     // Pre-generate all chunks synchronously
     chunks.resize(WORLD_CHUNKS_X * WORLD_CHUNKS_Y);
@@ -242,4 +278,20 @@ float ChunkManager::calculateEdgeDistance(float normalizedX, float normalizedY) 
     float distanceToEdgeX = (normalizedX < 0.5f) ? normalizedX : (1.0f - normalizedX);
     float distanceToEdgeY = (normalizedY < 0.5f) ? normalizedY : (1.0f - normalizedY);
     return std::min(distanceToEdgeX, distanceToEdgeY) * borderWidth;
+}
+
+void ChunkManager::enableProceduralGeneration() {
+    heightMap = nullptr;
+    useRealHeightMap = false;
+    regenerateWorld();
+}
+
+void ChunkManager::enableHeightMapGeneration(const std::string& heightMapPath) {
+    try {
+        HeightMap* hm = new HeightMap(heightMapPath);
+        setHeightMap(hm);
+    }
+    catch (const std::exception& e) {
+        std::cerr << "Failed to load heightmap: " << e.what() << "\n";
+    }
 }

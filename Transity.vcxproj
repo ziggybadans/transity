@@ -148,6 +148,7 @@
     <ClCompile Include="..\..\..\Downloads\imgui-sfml-2.6\imgui-SFML.cpp" />
     <ClCompile Include="src\ChunkManager.cpp" />
     <ClCompile Include="src\Game.cpp" />
+    <ClCompile Include="src\HeightMap.cpp" />
     <ClCompile Include="src\InputHandler.cpp" />
     <ClCompile Include="src\Renderer.cpp" />
     <ClCompile Include="src\Transity.cpp" />
@@ -165,6 +166,7 @@
     <ClInclude Include="src\ChunkManager.h" />
     <ClInclude Include="src\FastNoiseLite.h" />
     <ClInclude Include="src\Game.h" />
+    <ClInclude Include="src\HeightMap.h" />
     <ClInclude Include="src\InputHandler.h" />
     <ClInclude Include="src\Renderer.h" />
     <ClInclude Include="src\Utilities.h" />

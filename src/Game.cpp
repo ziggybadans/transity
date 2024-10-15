@@ -4,16 +4,31 @@
 
 #include <imgui.h>
 #include <imgui-SFML.h>
+#include <iostream>
 
 // Constructor
-Game::Game(int chunkSize, int tileSize, int WORLD_CHUNKS_X, int WORLD_CHUNKS_Y)
+Game::Game(int chunkSize, int tileSize, int WORLD_CHUNKS_X, int WORLD_CHUNKS_Y, const std::string& heightMapPath)
     : CHUNK_SIZE(chunkSize), TILE_SIZE(tileSize),
     chunkManager(WORLD_CHUNKS_X, WORLD_CHUNKS_Y, CHUNK_SIZE, TILE_SIZE),
     windowSizeX(1920), windowSizeY(1080),
     view(sf::FloatRect(0, 0, windowSizeX, windowSizeY)),
     inputHandler(view, sf::Vector2f(windowSizeX, windowSizeY)),
-    renderer(window, view, chunkManager, CHUNK_SIZE, TILE_SIZE, sf::Vector2f(windowSizeX, windowSizeY))
+    renderer(window, view, chunkManager, CHUNK_SIZE, TILE_SIZE, sf::Vector2f(windowSizeX, windowSizeY)),
+    heightMap(nullptr)
 {
+    if (!heightMapPath.empty()) {
+        try {
+            heightMap = new HeightMap(heightMapPath);
+            std::cout << "Heightmap loaded successfully.\n";
+        }
+        catch (const std::exception& e) {
+            std::cerr << e.what() << "\nProceeding with procedural generation.\n";
+        }
+    }
+
+    // Pass heightMap to ChunkManager
+    chunkManager.setHeightMap(heightMap); // You'll need to implement this method
+
     // Calculate world size in pixels
     float worldSizeX = chunkManager.WORLD_CHUNKS_X * CHUNK_SIZE * TILE_SIZE;
     float worldSizeY = chunkManager.WORLD_CHUNKS_Y * CHUNK_SIZE * TILE_SIZE;
@@ -38,7 +53,7 @@ void Game::run() {
     while (window.isOpen()) {
         sf::Time deltaTime = deltaClock.restart();
 
-        inputHandler.processEvents(window);
+        inputHandler.processEvents(window, deltaTime);
         ImGui::SFML::Update(window, deltaTime);
         drawDebugGUI();
 
@@ -71,6 +86,21 @@ void Game::wrapView() {
 void Game::drawDebugGUI() {
     // Create a window for debug controls
     ImGui::Begin("Debug Controls");
+
+    // Generation Mode Selection
+    static int generationMode = 0; // 0: Procedural, 1: HeightMap
+    const char* modes[] = { "Procedural", "HeightMap" };
+    if (ImGui::Combo("Generation Mode", &generationMode, modes, IM_ARRAYSIZE(modes))) {
+        if (generationMode == 0) {
+            chunkManager.enableProceduralGeneration();
+        }
+        else if (generationMode == 1) {
+            // Prompt user to input heightmap path
+            // For simplicity, using a fixed path. Integrate a file dialog for flexibility.
+            std::string heightMapPath = "assets/heightmaps/world_heightmap.png";
+            chunkManager.enableHeightMapGeneration(heightMapPath);
+        }
+    }
 
     // Display current settings
     ImGui::Text("World Generation Settings:");
@@ -133,8 +163,6 @@ void Game::drawDebugGUI() {
                     needsRegeneration = true;
                 }
             }
-
-            // Add similar conditional blocks for other noise types if needed
         }
     }
 

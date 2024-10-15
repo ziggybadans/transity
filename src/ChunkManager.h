@@ -2,6 +2,8 @@
 #pragma once
 
 #include "Chunk.h"
+#include "HeightMap.h"
+
 #include <vector>
 #include <SFML/Graphics.hpp>
 #include <unordered_map>
@@ -50,6 +52,9 @@ class ChunkManager {
 public:
     ChunkManager(int worldChunksX, int worldChunksY, int chunkSize, int tileSize);
 
+    // New method to set HeightMap
+    void setHeightMap(HeightMap* hm);
+
     // Generate a chunk at specified coordinates
     Chunk generateChunk(int chunkX, int chunkY);
 
@@ -68,6 +73,12 @@ public:
 
     // Noise layers
     std::vector<NoiseLayer> noiseLayers;
+
+    // Switch to procedural generation
+    void enableProceduralGeneration();
+
+    // Switch to heightmap-based generation
+    void enableHeightMapGeneration(const std::string& heightMapPath);
 private:
     int CHUNK_SIZE;
     int TILE_SIZE;
@@ -83,4 +94,7 @@ private:
     void initializeWorldDimensions();
     float calculateEdgeDistance(float normalizedX, float normalizedY) const;
     sf::Color aggregateTiles(const std::vector<sf::Color>& tileColors, int x, int y, int stepSize) const;
+
+    HeightMap* heightMap;
+    bool useRealHeightMap = false; // Flag to switch generation mode
 };

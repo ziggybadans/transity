@@ -5,10 +5,11 @@
 #include "ChunkManager.h"
 #include "InputHandler.h"
 #include "Renderer.h"
+#include "HeightMap.h"
 
 class Game {
 public:
-    Game(int chunkSize, int tileSize, int WORLD_CHUNKS_X, int WORLD_CHUNKS_Y);
+    Game(int chunkSize, int tileSize, int WORLD_CHUNKS_X, int WORLD_CHUNKS_Y, const std::string& heightMapPath = "");
     ~Game();
 
     // Run the main game loop
@@ -30,6 +31,7 @@ private:
     ChunkManager chunkManager;
     InputHandler inputHandler;
     Renderer renderer;
+    HeightMap* heightMap;
 
     // Helper function to wrap the view's center
     void wrapView();
