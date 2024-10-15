@@ -16,18 +16,26 @@ public:
     // Access a chunk by its wrapped indices
     const Chunk& getChunk(int x, int y) const;
 
-    void updateSettings(float newFrequency, int newSeed, float newLandThreshold);
     void regenerateWorld();
 
     // Total chunks in X and Y directions
     int WORLD_CHUNKS_X;
     int WORLD_CHUNKS_Y;
 
+    FastNoiseLite::NoiseType noiseType;
     float noiseFrequency;
     int noiseSeed;
     float landThreshold;
     float borderWidth;
     int attenuationFactor;
+
+    int fractalOctaves;
+    float fractalLacunarity;
+    float fractalGain;
+
+    FastNoiseLite::CellularDistanceFunction cellularDistanceFunction;
+    FastNoiseLite::CellularReturnType cellularReturnType;
+    float cellularJitter;
 
 private:
     int CHUNK_SIZE;

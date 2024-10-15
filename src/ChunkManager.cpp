@@ -6,14 +6,17 @@
 ChunkManager::ChunkManager(int worldChunksX, int worldChunksY, int chunkSize, int tileSize)
     : WORLD_CHUNKS_X(worldChunksX), WORLD_CHUNKS_Y(worldChunksY),
     CHUNK_SIZE(chunkSize), TILE_SIZE(tileSize),
-    noiseFrequency(0.005f), noiseSeed(1337), landThreshold(0.5f), borderWidth(1.0f), attenuationFactor(2)
+    noiseType(FastNoiseLite::NoiseType_Perlin), noiseFrequency(0.005f), noiseSeed(1337), landThreshold(0.5f), borderWidth(1.0f), attenuationFactor(2),
+    fractalOctaves(3), fractalLacunarity(2.0f), fractalGain(0.5f),
+    cellularDistanceFunction(FastNoiseLite::CellularDistanceFunction_Euclidean),
+    cellularReturnType(FastNoiseLite::CellularReturnType_CellValue), cellularJitter(1.0f)
 {
     // Calculate world dimensions
     worldWidth = static_cast<float>(WORLD_CHUNKS_X * CHUNK_SIZE * TILE_SIZE);
     worldHeight = static_cast<float>(WORLD_CHUNKS_Y * CHUNK_SIZE * TILE_SIZE);
 
     // Initialize noise settings
-    noise.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
+    noise.SetNoiseType(noiseType);
     noise.SetFrequency(noiseFrequency); // Adjustable
     noise.SetSeed(noiseSeed);           // Adjustable
 
@@ -24,26 +27,32 @@ ChunkManager::ChunkManager(int worldChunksX, int worldChunksY, int chunkSize, in
 
 // Function to regenerate the entire world
 void ChunkManager::regenerateWorld() {
+    noise.SetNoiseType(noiseType);
+    noise.SetFrequency(noiseFrequency);
+    noise.SetSeed(noiseSeed);
+
+    // Set additional noise parameters based on noise type
+    switch (noiseType) {
+    case FastNoiseLite::NoiseType_Perlin:
+        break;
+    case FastNoiseLite::NoiseType_Cellular:
+        noise.SetCellularDistanceFunction(cellularDistanceFunction);
+        noise.SetCellularReturnType(cellularReturnType);
+        noise.SetCellularJitter(cellularJitter);
+        break;
+    default:
+        noise.SetFractalOctaves(fractalOctaves);
+        noise.SetFractalLacunarity(fractalLacunarity);
+        noise.SetFractalGain(fractalGain);
+    }
+
+
     for (int y = 0; y < WORLD_CHUNKS_Y; ++y) {
         for (int x = 0; x < WORLD_CHUNKS_X; ++x) {
             int index = y * WORLD_CHUNKS_X + x;
             chunks[index] = generateChunk(x, y);
         }
     }
-}
-
-// Update settings and regenerate world
-void ChunkManager::updateSettings(float newFrequency, int newSeed, float newLandThreshold) {
-    noiseFrequency = newFrequency;
-    noiseSeed = newSeed;
-    landThreshold = newLandThreshold;
-
-    // Update noise generator with new settings
-    noise.SetFrequency(noiseFrequency);
-    noise.SetSeed(noiseSeed);
-
-    // Regenerate all chunks with new settings
-    regenerateWorld();
 }
 
 Chunk ChunkManager::generateChunk(int chunkX, int chunkY) {

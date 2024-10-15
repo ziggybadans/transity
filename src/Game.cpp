@@ -59,16 +59,62 @@ void Game::drawDebugGUI() {
     // Display current settings
     ImGui::Text("World Generation Settings:");
 
+    // Noise Type Combo Box
+    const char* noiseTypes[] = { "OpenSimplex2", "OpenSimplex2S", "Cellular", "Perlin", "ValueCubic", "Value" };
+    int currentNoiseType = static_cast<int>(chunkManager.noiseType);
+    if (ImGui::Combo("Noise Type", &currentNoiseType, noiseTypes, IM_ARRAYSIZE(noiseTypes))) {
+        chunkManager.noiseType = static_cast<FastNoiseLite::NoiseType>(currentNoiseType);
+        needsRegeneration = true;
+    }
+
     // Noise Frequency Slider
     if (ImGui::SliderFloat("Noise Frequency", &chunkManager.noiseFrequency, 0.001f, 0.01f, "%.5f")) {
-        chunkManager.updateSettings(chunkManager.noiseFrequency, chunkManager.noiseSeed, chunkManager.landThreshold);
         needsRegeneration = true;
     }
 
     // Noise Seed Input
     if (ImGui::InputInt("Noise Seed", &chunkManager.noiseSeed)) {
-        chunkManager.updateSettings(chunkManager.noiseFrequency, chunkManager.noiseSeed, chunkManager.landThreshold);
         needsRegeneration = true;
+    }
+
+    // Additional parameters based on noise type
+    switch (chunkManager.noiseType) {
+    case FastNoiseLite::NoiseType_OpenSimplex2:
+    case FastNoiseLite::NoiseType_OpenSimplex2S:
+    case FastNoiseLite::NoiseType_Perlin:
+    case FastNoiseLite::NoiseType_ValueCubic:
+    case FastNoiseLite::NoiseType_Value:
+        // Fractal parameters
+        if (ImGui::SliderInt("Fractal Octaves", &chunkManager.fractalOctaves, 1, 8)) {
+            needsRegeneration = true;
+        }
+        if (ImGui::SliderFloat("Fractal Lacunarity", &chunkManager.fractalLacunarity, 1.0f, 4.0f, "%.2f")) {
+            needsRegeneration = true;
+        }
+        if (ImGui::SliderFloat("Fractal Gain", &chunkManager.fractalGain, 0.0f, 1.0f, "%.2f")) {
+            needsRegeneration = true;
+        }
+        break;
+    case FastNoiseLite::NoiseType_Cellular:
+        // Cellular parameters
+        const char* cellularDistanceFunctions[] = { "Euclidean", "EuclideanSq", "Manhattan", "Hybrid" };
+        int currentDistanceFunction = static_cast<int>(chunkManager.cellularDistanceFunction);
+        if (ImGui::Combo("Cellular Distance Function", &currentDistanceFunction, cellularDistanceFunctions, IM_ARRAYSIZE(cellularDistanceFunctions))) {
+            chunkManager.cellularDistanceFunction = static_cast<FastNoiseLite::CellularDistanceFunction>(currentDistanceFunction);
+            needsRegeneration = true;
+        }
+
+        const char* cellularReturnTypes[] = { "CellValue", "Distance", "Distance2", "Distance2Add", "Distance2Sub", "Distance2Mul", "Distance2Div" };
+        int currentReturnType = static_cast<int>(chunkManager.cellularReturnType);
+        if (ImGui::Combo("Cellular Return Type", &currentReturnType, cellularReturnTypes, IM_ARRAYSIZE(cellularReturnTypes))) {
+            chunkManager.cellularReturnType = static_cast<FastNoiseLite::CellularReturnType>(currentReturnType);
+            needsRegeneration = true;
+        }
+
+        if (ImGui::SliderFloat("Cellular Jitter", &chunkManager.cellularJitter, 0.0f, 1.0f, "%.2f")) {
+            needsRegeneration = true;
+        }
+        break;
     }
 
     // Threshold for Land/Water
