@@ -14,10 +14,17 @@ struct ChunkCoord {
 };
 
 struct Chunk {
-    sf::VertexArray vertices;
+    // Vertex arrays for different LOD levels
+    sf::VertexArray verticesLOD0; // High Detail
+    sf::VertexArray verticesLOD1; // Medium Detail
+    sf::VertexArray verticesLOD2; // Low Detail
     sf::VertexArray contourLines;
 
-    Chunk() : vertices(sf::Quads), contourLines(sf::Lines) {}
+    Chunk()
+        : verticesLOD0(sf::Quads),
+        verticesLOD1(sf::Quads),
+        verticesLOD2(sf::Quads),
+        contourLines(sf::Lines) {}
 };
 
 // Specialize std::hash to allow ChunkCoord to be used as a key in unordered_map

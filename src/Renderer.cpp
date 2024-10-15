@@ -5,9 +5,21 @@
 #include <imgui.h>
 #include <imgui-SFML.h>
 
-Renderer::Renderer(sf::RenderWindow& win, sf::View& viewRef, const ChunkManager& cm, int chunkSize, int tileSize)
-    : window(win), view(viewRef), chunkManager(cm), CHUNK_SIZE(chunkSize), TILE_SIZE(tileSize)
+Renderer::Renderer(sf::RenderWindow& win, sf::View& viewRef, const ChunkManager& cm, int chunkSize, int tileSize, const sf::Vector2f& defaultSize)
+    : window(win), view(viewRef), chunkManager(cm), CHUNK_SIZE(chunkSize), TILE_SIZE(tileSize), defaultViewSize(defaultSize)
 {
+    // Precompute chunk local positions within a grid
+    std::vector<sf::Transform> chunkLocalTransforms;
+    chunkLocalTransforms.reserve(CHUNK_SIZE * CHUNK_SIZE); // Adjust based on your chunk structure
+
+    // This can be done once during initialization
+    for (int y = 0; y < CHUNK_SIZE; ++y) {
+        for (int x = 0; x < CHUNK_SIZE; ++x) {
+            sf::Transform localTransform;
+            localTransform.translate(x * TILE_SIZE, y * TILE_SIZE);
+            chunkLocalTransforms.emplace_back(localTransform);
+        }
+    }
 }
 
 void Renderer::renderFrame() {
@@ -26,6 +38,9 @@ void Renderer::renderFrame() {
 }
 
 void Renderer::drawChunks() {
+    // Determine current LOD level
+    int currentLOD = determineLODLevel();
+
     // Determine which chunks need to be rendered based on the view
     sf::Vector2f center = view.getCenter();
     sf::Vector2f size = view.getSize();
@@ -46,9 +61,26 @@ void Renderer::drawChunks() {
     int visibleChunksX = static_cast<int>(std::ceil(size.x / (CHUNK_SIZE * TILE_SIZE))) + 2; // +2 for buffer
     int visibleChunksY = static_cast<int>(std::ceil(size.y / (CHUNK_SIZE * TILE_SIZE))) + 2; // +2 for buffer
 
+    // Precompute all necessary transforms for the 3x3 grid
+    std::vector<sf::Transform> gridTransforms;
+    gridTransforms.reserve(9);
+
+    for (int dy = -1; dy <= 1; ++dy) {
+        for (int dx = -1; dx <= 1; ++dx) {
+            float shiftX = dx * worldSizeX;
+            float shiftY = dy * worldSizeY;
+            sf::Transform transform;
+            transform.translate(shiftX, shiftY);
+            gridTransforms.emplace_back(transform);
+        }
+    }
+
     // Iterate over the 3x3 grid
+    int transformIndex = 0;
     for (int dx = -1; dx <= 1; ++dx) {
         for (int dy = -1; dy <= 1; ++dy) {
+            sf::Transform& gridTransform = gridTransforms[transformIndex++];
+
             // Calculate the base chunk indices
             int baseChunkX = firstChunkX + dx * chunkManager.WORLD_CHUNKS_X;
             int baseChunkY = firstChunkY + dy * chunkManager.WORLD_CHUNKS_Y;
@@ -66,21 +98,51 @@ void Renderer::drawChunks() {
                     // Access the chunk
                     const Chunk& currentChunk = chunkManager.getChunk(wrappedChunkX, wrappedChunkY);
 
-                    // Calculate position shift based on grid offset
-                    float shiftX = dx * worldSizeX;
-                    float shiftY = dy * worldSizeY;
-
-                    // Create a transform for the shifted position
-                    sf::Transform transform;
-                    transform.translate(shiftX, shiftY);
+                    // Select the appropriate LOD vertex array
+                    const sf::VertexArray* verticesToDraw;
+                    switch (currentLOD) {
+                    case 0:
+                        verticesToDraw = &currentChunk.verticesLOD0;
+                        break;
+                    case 1:
+                        verticesToDraw = &currentChunk.verticesLOD1;
+                        break;
+                    case 2:
+                        verticesToDraw = &currentChunk.verticesLOD2;
+                        break;
+                    default:
+                        verticesToDraw = &currentChunk.verticesLOD0;
+                        break;
+                    }
 
                     // Draw the chunk with the applied transform
-                    window.draw(currentChunk.vertices, transform);
+                    window.draw(*verticesToDraw, gridTransform);
 
-                    // Draw the contour lines
-                    //window.draw(currentChunk.contourLines, transform);
+                    /* // Optionally, draw contour lines only for high detail
+                    if (currentLOD == 0) {
+                        window.draw(currentChunk.contourLines, gridTransform);
+                    }*/
                 }
             }
         }
     }
+}
+
+int Renderer::determineLODLevel() const {
+    float currentScaleX = view.getSize().x / defaultViewSize.x;
+
+    if (currentScaleX != lastZoom) {
+        lastZoom = currentScaleX;
+        if (currentScaleX < LOD1_THRESHOLD) {
+            cachedLOD = 0;
+        }
+        else if (currentScaleX < LOD2_THRESHOLD) {
+            cachedLOD = 1;
+        }
+        else {
+            cachedLOD = 2;
+        }
+    }
+
+    return cachedLOD;
 }

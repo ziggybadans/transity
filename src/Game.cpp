@@ -12,7 +12,7 @@ Game::Game(int chunkSize, int tileSize, int WORLD_CHUNKS_X, int WORLD_CHUNKS_Y)
     windowSizeX(1920), windowSizeY(1080),
     view(sf::FloatRect(0, 0, windowSizeX, windowSizeY)),
     inputHandler(view, sf::Vector2f(windowSizeX, windowSizeY)),
-    renderer(window, view, chunkManager, CHUNK_SIZE, TILE_SIZE)
+    renderer(window, view, chunkManager, CHUNK_SIZE, TILE_SIZE, sf::Vector2f(windowSizeX, windowSizeY))
 {
     // Calculate world size in pixels
     float worldSizeX = chunkManager.WORLD_CHUNKS_X * CHUNK_SIZE * TILE_SIZE;

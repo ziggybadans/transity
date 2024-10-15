@@ -4,6 +4,8 @@
 #include "Chunk.h"
 #include <vector>
 #include <SFML/Graphics.hpp>
+#include <unordered_map>
+#include <mutex>
 #include "FastNoiseLite.h"
 
 // Structure to represent each noise layer
@@ -75,4 +77,5 @@ private:
 
     float worldWidth;
     float worldHeight;
+    float totalAmplitude;
 };
