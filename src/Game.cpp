@@ -40,6 +40,11 @@ Game::Game(int chunkSize, int tileSize, int WORLD_CHUNKS_X, int WORLD_CHUNKS_Y, 
     ImGui::SFML::Init(window);
 
     view.setCenter(worldSizeX / 2.0f, worldSizeY / 2.0f);
+
+    // Dynamically calculate minZoomFactor based on window and world size
+    float zoomX = static_cast<float>(windowSizeX) / worldSizeX;
+    float zoomY = static_cast<float>(windowSizeY) / worldSizeY;
+    inputHandler.minZoom = std::min(zoomX, zoomY); // Ensure entire world fits within the view when zoomed out
 }
 
 // Destructor
@@ -67,20 +72,24 @@ void Game::run() {
     }
 }
 
-// Helper function to wrap the view's center
 void Game::wrapView() {
     float worldSizeX = chunkManager.WORLD_CHUNKS_X * CHUNK_SIZE * TILE_SIZE;
     float worldSizeY = chunkManager.WORLD_CHUNKS_Y * CHUNK_SIZE * TILE_SIZE;
 
     sf::Vector2f center = view.getCenter();
 
-    // Wrap the center coordinates
+    // Wrap the x-coordinate
     center.x = Utilities::wrapFloat(center.x, worldSizeX);
-    center.y = Utilities::wrapFloat(center.y, worldSizeY);
+
+    // Clamp the y-coordinate
+    float halfViewHeight = view.getSize().y / 2.0f;
+    if (center.y - halfViewHeight < 0.0f)
+        center.y = halfViewHeight;
+    if (center.y + halfViewHeight > worldSizeY)
+        center.y = worldSizeY - halfViewHeight;
 
     view.setCenter(center);
 }
-
 
 // Modified drawDebugGUI function
 void Game::drawDebugGUI() {

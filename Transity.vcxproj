@@ -171,6 +171,9 @@
     <ClInclude Include="src\Renderer.h" />
     <ClInclude Include="src\Utilities.h" />
   </ItemGroup>
+  <ItemGroup>
+    <Image Include="assets\heightmaps\world_heightmap_old.png" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

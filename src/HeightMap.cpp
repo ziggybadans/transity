@@ -22,7 +22,7 @@ void HeightMap::worldToPixel(float worldX, float worldY, int& pixelX, int& pixel
     if (pixelY >= height) pixelY = height - 1;
 }
 
-float HeightMap::getHeight(float worldX, float worldY) const {
+float HeightMap::getNormalizedHeight(float worldX, float worldY) const {
     int pixelX, pixelY;
     worldToPixel(worldX, worldY, pixelX, pixelY);
     sf::Color color = image.getPixel(pixelX, pixelY);
@@ -34,14 +34,35 @@ float HeightMap::getHeight(float worldX, float worldY) const {
 
 float HeightMap::getScaledHeight(float tileX, float tileY, float invScaleX, float invScaleY) const {
     // Convert tile coordinates to heightmap pixel coordinates
-    int pixelX = static_cast<int>(tileX * invScaleX);
-    int pixelY = static_cast<int>(tileY * invScaleY);
+    float scaledX = tileX * invScaleX;
+    float scaledY = tileY * invScaleY;
 
-    // Clamp to image boundaries
-    pixelX = std::clamp(pixelX, 0, width - 1);
-    pixelY = std::clamp(pixelY, 0, height - 1);
+    // Use interpolation for smoother height transitions
+    int pixelX = static_cast<int>(scaledX);
+    int pixelY = static_cast<int>(scaledY);
 
-    sf::Color color = image.getPixel(pixelX, pixelY);
-    float normalizedHeight = color.r / 255.0f; // Assuming grayscale, R = G = B
-    return normalizedHeight;
+    float fracX = scaledX - pixelX;
+    float fracY = scaledY - pixelY;
+
+    // Clamp to ensure we don't go out of bounds
+    pixelX = std::clamp(pixelX, 0, width - 2);
+    pixelY = std::clamp(pixelY, 0, height - 2);
+
+    // Bilinear interpolation for smoother height values
+    sf::Color c00 = image.getPixel(pixelX, pixelY);
+    sf::Color c10 = image.getPixel(pixelX + 1, pixelY);
+    sf::Color c01 = image.getPixel(pixelX, pixelY + 1);
+    sf::Color c11 = image.getPixel(pixelX + 1, pixelY + 1);
+
+    float h00 = c00.r / 255.0f;
+    float h10 = c10.r / 255.0f;
+    float h01 = c01.r / 255.0f;
+    float h11 = c11.r / 255.0f;
+
+    // Interpolate
+    float h0 = h00 + fracX * (h10 - h00);
+    float h1 = h01 + fracX * (h11 - h01);
+    float interpolatedHeight = h0 + fracY * (h1 - h0);
+
+    return interpolatedHeight;
 }

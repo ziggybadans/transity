@@ -19,8 +19,8 @@ private:
 
     std::vector<sf::Transform> m_gridTransforms;
 
-    static constexpr float LOD1_THRESHOLD = 3.0f;
-    static constexpr float LOD2_THRESHOLD = 7.0f;
+    static constexpr float LOD1_THRESHOLD = 1.0f;
+    static constexpr float LOD2_THRESHOLD = 3.0f;
 
     sf::Vector2f defaultViewSize;
 

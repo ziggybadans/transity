@@ -10,7 +10,7 @@ InputHandler::InputHandler(sf::View& viewRef, const sf::Vector2f& defaultSize)
 {
 }
 
-void InputHandler::processEvents(sf::RenderWindow& window) {
+void InputHandler::processEvents(sf::RenderWindow& window, sf::Time deltaTime) {
     sf::Event event;
     while (window.pollEvent(event)) {
         ImGui::SFML::ProcessEvent(event);
@@ -25,25 +25,32 @@ void InputHandler::processEvents(sf::RenderWindow& window) {
     }
 
     // Handle camera movement based on keyboard input
-    handleCameraMovement();
-
-    // Wrap the view to ensure it stays within world boundaries
-    wrapView();
+    handleCameraMovement(deltaTime);
 }
 
-void InputHandler::handleCameraMovement() {
+void InputHandler::handleCameraMovement(sf::Time deltaTime) {
+    float deltaSeconds = deltaTime.asSeconds();
+
+    // Adjust camera speed based on current zoom level
+    float currentZoom = view.getSize().x / defaultViewSize.x;
+    float adjustedCameraSpeed = cameraSpeed * currentZoom;
+
+    sf::Vector2f movement(0.0f, 0.0f);
+
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) {
-        view.move(-cameraSpeed, 0);
+        movement.x -= adjustedCameraSpeed * deltaSeconds;
     }
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) {
-        view.move(cameraSpeed, 0);
+        movement.x += adjustedCameraSpeed * deltaSeconds;
     }
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::W)) {
-        view.move(0, -cameraSpeed);
+        movement.y -= adjustedCameraSpeed * deltaSeconds;
     }
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) {
-        view.move(0, cameraSpeed);
+        movement.y += adjustedCameraSpeed * deltaSeconds;
     }
+
+    view.move(movement);
 }
 
 void InputHandler::handleZoom(sf::Event& event, sf::RenderWindow& window)
@@ -72,9 +79,4 @@ void InputHandler::handleZoom(sf::Event& event, sf::RenderWindow& window)
     sf::Vector2f afterZoom = window.mapPixelToCoords(pixelPos, view);
     // Adjust the view center to zoom towards the mouse position
     view.move(beforeZoom - afterZoom);
-}
-
-void InputHandler::wrapView() {
-    // Assuming world size is known or passed; otherwise, consider passing as parameters
-    // For demonstration, we'll leave this empty or implement if world size is accessible
 }

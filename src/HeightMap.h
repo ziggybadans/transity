@@ -10,7 +10,7 @@ public:
     HeightMap(const std::string& filepath);
 
     // Get normalized height (0.0f to 1.0f) at given world coordinates
-    float getHeight(float worldX, float worldY) const;
+    float getNormalizedHeight(float worldX, float worldY) const;
     float getScaledHeight(float worldX, float worldY, float scaleX, float scaleY) const;
 
     // Get dimensions

@@ -40,7 +40,7 @@ void ChunkManager::regenerateWorld() {
     chunks.resize(totalChunks);
 
     unsigned int numThreads = std::thread::hardware_concurrency();
-    if (numThreads == 0) numThreads = 4;
+    if (numThreads == 0) numThreads = 8;
 
     std::vector<std::future<void>> futures;
     int chunksPerThread = totalChunks / numThreads;
@@ -93,12 +93,12 @@ Chunk ChunkManager::generateChunk(int chunkX, int chunkY) {
 
             float height = 0.0f;
             if (useRealHeightMap && heightMap) {
-                float invScaleX = static_cast<float>(heightMap->getWidth()) / totalTilesX;
-                float invScaleY = static_cast<float>(heightMap->getHeight()) / totalTilesY;
-
+                // Correctly calculate invScaleX and invScaleY
+                float invScaleX = (static_cast<float>(heightMap->getWidth()) - 1.0f) / (static_cast<float>(totalTilesX) - 1.0f);
+                float invScaleY = (static_cast<float>(heightMap->getHeight()) - 1.0f) / (static_cast<float>(totalTilesY) - 1.0f);
                 // Use tile coordinates instead of world coordinates for heightmap
                 height = heightMap->getScaledHeight(static_cast<float>(tileX), static_cast<float>(tileY), invScaleX, invScaleY);
-                landThreshold = 0.0f;
+                landThreshold = 0.01f;
             }
             else {
 
@@ -215,8 +215,8 @@ const Chunk& ChunkManager::getChunk(int x, int y) const {
 
 sf::Color ChunkManager::aggregateTiles(const std::vector<sf::Color>& tileColors,
     int x, int y, int stepSize) const {
-    unsigned int tempR = 0, tempG = 0, tempB = 0, tempA = 0;
-    int tilesAggregated = 0;
+    int landCount = 0;
+    int waterCount = 0;
 
     for (int dy = 0; dy < stepSize; ++dy) {
         for (int dx = 0; dx < stepSize; ++dx) {
@@ -225,24 +225,24 @@ sf::Color ChunkManager::aggregateTiles(const std::vector<sf::Color>& tileColors,
 
             if (currentX < CHUNK_SIZE && currentY < CHUNK_SIZE) {
                 sf::Color color = tileColors[currentY * CHUNK_SIZE + currentX];
-                tempR += color.r;
-                tempG += color.g;
-                tempB += color.b;
-                tempA += color.a;
-                tilesAggregated++;
+                if (color == sf::Color(231, 232, 234)) { // Land color
+                    landCount++;
+                }
+                else if (color == sf::Color(174, 223, 246)) { // Water color
+                    waterCount++;
+                }
             }
         }
     }
 
-    sf::Color aggregatedColor(0, 0, 0);
-    if (tilesAggregated > 0) {
-        aggregatedColor.r = static_cast<sf::Uint8>(tempR / tilesAggregated);
-        aggregatedColor.g = static_cast<sf::Uint8>(tempG / tilesAggregated);
-        aggregatedColor.b = static_cast<sf::Uint8>(tempB / tilesAggregated);
-        aggregatedColor.a = static_cast<sf::Uint8>(tempA / tilesAggregated);
+    if (landCount >= waterCount) {
+        return sf::Color(231, 232, 234); // Dominant land
     }
-    return aggregatedColor;
+    else {
+        return sf::Color(174, 223, 246); // Dominant water
+    }
 }
+
 
 void ChunkManager::initializeNoiseLayers() {
     noiseLayers.emplace_back(FastNoiseLite::NoiseType_Perlin, 0.0075f, 0.6f, 1337);
@@ -260,15 +260,9 @@ void ChunkManager::initializeNoiseLayers() {
 }
 
 void ChunkManager::initializeWorldDimensions() {
-    if (useRealHeightMap && heightMap) {
-        worldWidth = static_cast<float>(WORLD_CHUNKS_X * CHUNK_SIZE * TILE_SIZE);
-        worldHeight = static_cast<float>(WORLD_CHUNKS_Y * CHUNK_SIZE * TILE_SIZE);
-    }
-    else {
-        // Procedural generation
-        worldWidth = static_cast<float>(WORLD_CHUNKS_X * CHUNK_SIZE * TILE_SIZE);
-        worldHeight = static_cast<float>(WORLD_CHUNKS_Y * CHUNK_SIZE * TILE_SIZE);
-    }
+    // World dimensions remain consistent regardless of heightmap resolution
+    worldWidth = static_cast<float>(WORLD_CHUNKS_X * CHUNK_SIZE * TILE_SIZE);
+    worldHeight = static_cast<float>(WORLD_CHUNKS_Y * CHUNK_SIZE * TILE_SIZE);
 
     // Pre-generate all chunks synchronously
     chunks.resize(WORLD_CHUNKS_X * WORLD_CHUNKS_Y);

@@ -74,9 +74,15 @@ void Renderer::drawChunks() {
                     int chunkX = baseChunkX + x;
                     int chunkY = baseChunkY + y;
 
-                    // Wrap the chunk indices
+                    // Wrap the x-axis and clamp the y-axis
                     int wrappedChunkX = Utilities::wrapCoordinate(chunkX, chunkManager.WORLD_CHUNKS_X);
-                    int wrappedChunkY = Utilities::wrapCoordinate(chunkY, chunkManager.WORLD_CHUNKS_Y);
+                    int wrappedChunkY = chunkY;
+
+                    // Clamp y-axis
+                    if (chunkY < 0)
+                        wrappedChunkY = 0;
+                    if (chunkY >= chunkManager.WORLD_CHUNKS_Y)
+                        wrappedChunkY = chunkManager.WORLD_CHUNKS_Y - 1;
 
                     // Access the chunk
                     const Chunk& currentChunk = chunkManager.getChunk(wrappedChunkX, wrappedChunkY);
