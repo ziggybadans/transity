@@ -21,7 +21,7 @@ private:
 
     const float zoomFactorIncrement = 1.1f;
     const float minZoom = 0.5f;
-    const float maxZoom = 5.0f;
+    const float maxZoom = 10.0f;
 
     sf::Vector2f defaultViewSize;
 };

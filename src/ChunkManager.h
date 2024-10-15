@@ -6,6 +6,44 @@
 #include <SFML/Graphics.hpp>
 #include "FastNoiseLite.h"
 
+// Structure to represent each noise layer
+struct NoiseLayer {
+    FastNoiseLite noise;
+    float amplitude;
+    float frequency;
+    FastNoiseLite::NoiseType noiseType;
+    int seed;
+
+    // Properties specific to Cellular noise
+    FastNoiseLite::CellularDistanceFunction cellularDistanceFunction;
+    FastNoiseLite::CellularReturnType cellularReturnType;
+    float cellularJitter;
+
+    // Constructor for convenience
+    NoiseLayer(FastNoiseLite::NoiseType type = FastNoiseLite::NoiseType_Perlin,
+        float freq = 0.005f, float amp = 1.0f, int s = 1337)
+        : amplitude(amp), frequency(freq), noiseType(type), seed(s),
+        cellularDistanceFunction(FastNoiseLite::CellularDistanceFunction_Euclidean),
+        cellularReturnType(FastNoiseLite::CellularReturnType_CellValue),
+        cellularJitter(0.5f) // Default jitter
+    {
+        noise.SetNoiseType(noiseType);
+        noise.SetFrequency(frequency);
+        noise.SetSeed(seed);
+        configureNoise();
+    }
+
+    // Method to apply specific configurations based on noise type
+    void configureNoise() {
+        if (noiseType == FastNoiseLite::NoiseType_Cellular) {
+            noise.SetCellularDistanceFunction(cellularDistanceFunction);
+            noise.SetCellularReturnType(cellularReturnType);
+            noise.SetCellularJitter(cellularJitter);
+        }
+        // Add configurations for other noise types if necessary
+    }
+};
+
 class ChunkManager {
 public:
     ChunkManager(int worldChunksX, int worldChunksY, int chunkSize, int tileSize);
@@ -22,21 +60,12 @@ public:
     int WORLD_CHUNKS_X;
     int WORLD_CHUNKS_Y;
 
-    FastNoiseLite::NoiseType noiseType;
-    float noiseFrequency;
-    int noiseSeed;
     float landThreshold;
     float borderWidth;
-    int attenuationFactor;
+    float attenuationFactor;
 
-    int fractalOctaves;
-    float fractalLacunarity;
-    float fractalGain;
-
-    FastNoiseLite::CellularDistanceFunction cellularDistanceFunction;
-    FastNoiseLite::CellularReturnType cellularReturnType;
-    float cellularJitter;
-
+    // Noise layers
+    std::vector<NoiseLayer> noiseLayers;
 private:
     int CHUNK_SIZE;
     int TILE_SIZE;

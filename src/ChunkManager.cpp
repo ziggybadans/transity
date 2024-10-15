@@ -6,19 +6,25 @@
 ChunkManager::ChunkManager(int worldChunksX, int worldChunksY, int chunkSize, int tileSize)
     : WORLD_CHUNKS_X(worldChunksX), WORLD_CHUNKS_Y(worldChunksY),
     CHUNK_SIZE(chunkSize), TILE_SIZE(tileSize),
-    noiseType(FastNoiseLite::NoiseType_Perlin), noiseFrequency(0.005f), noiseSeed(1337), landThreshold(0.5f), borderWidth(1.0f), attenuationFactor(2),
-    fractalOctaves(3), fractalLacunarity(2.0f), fractalGain(0.5f),
-    cellularDistanceFunction(FastNoiseLite::CellularDistanceFunction_Euclidean),
-    cellularReturnType(FastNoiseLite::CellularReturnType_CellValue), cellularJitter(1.0f)
+    landThreshold(0.5f), borderWidth(4.35f), attenuationFactor(0.243f)
 {
     // Calculate world dimensions
     worldWidth = static_cast<float>(WORLD_CHUNKS_X * CHUNK_SIZE * TILE_SIZE);
     worldHeight = static_cast<float>(WORLD_CHUNKS_Y * CHUNK_SIZE * TILE_SIZE);
 
-    // Initialize noise settings
-    noise.SetNoiseType(noiseType);
-    noise.SetFrequency(noiseFrequency); // Adjustable
-    noise.SetSeed(noiseSeed);           // Adjustable
+    // Initialize multiple noise layers
+    // Layer 1: Base terrain using Perlin noise
+    NoiseLayer baseLayer(FastNoiseLite::NoiseType_Perlin, 0.0075f, 0.6f, 1337);
+    noiseLayers.push_back(baseLayer);
+
+    // Layer 2: Elevation details using Cellular noise
+    NoiseLayer cellularLayer(FastNoiseLite::NoiseType_OpenSimplex2, 0.001f, 1.0f, 42);
+    // Customize cellular-specific properties
+    cellularLayer.cellularDistanceFunction = FastNoiseLite::CellularDistanceFunction_EuclideanSq;
+    cellularLayer.cellularReturnType = FastNoiseLite::CellularReturnType_Distance2;
+    cellularLayer.cellularJitter = 0.8f;
+    cellularLayer.configureNoise();
+    noiseLayers.push_back(cellularLayer);
 
     // Pre-generate all chunks synchronously
     chunks.resize(WORLD_CHUNKS_X * WORLD_CHUNKS_Y);
@@ -27,26 +33,6 @@ ChunkManager::ChunkManager(int worldChunksX, int worldChunksY, int chunkSize, in
 
 // Function to regenerate the entire world
 void ChunkManager::regenerateWorld() {
-    noise.SetNoiseType(noiseType);
-    noise.SetFrequency(noiseFrequency);
-    noise.SetSeed(noiseSeed);
-
-    // Set additional noise parameters based on noise type
-    switch (noiseType) {
-    case FastNoiseLite::NoiseType_Perlin:
-        break;
-    case FastNoiseLite::NoiseType_Cellular:
-        noise.SetCellularDistanceFunction(cellularDistanceFunction);
-        noise.SetCellularReturnType(cellularReturnType);
-        noise.SetCellularJitter(cellularJitter);
-        break;
-    default:
-        noise.SetFractalOctaves(fractalOctaves);
-        noise.SetFractalLacunarity(fractalLacunarity);
-        noise.SetFractalGain(fractalGain);
-    }
-
-
     for (int y = 0; y < WORLD_CHUNKS_Y; ++y) {
         for (int x = 0; x < WORLD_CHUNKS_X; ++x) {
             int index = y * WORLD_CHUNKS_X + x;
@@ -65,6 +51,12 @@ Chunk ChunkManager::generateChunk(int chunkX, int chunkY) {
 
     // Calculate tile size in float for positioning
     float tileSizeF = static_cast<float>(TILE_SIZE);
+
+    // Precompute total amplitude for normalization
+    float totalAmplitude = 0.0f;
+    for (const auto& layer : noiseLayers) {
+        totalAmplitude += layer.amplitude;
+    }
 
     // Generate a chunk of tiles at the specified chunk coordinates
     for (int y = 0; y < CHUNK_SIZE; ++y) {
@@ -88,8 +80,17 @@ Chunk ChunkManager::generateChunk(int chunkX, int chunkY) {
             // The factor is squared to create a more gradual effect
             float edgeAttenuationFactor = std::pow(distanceToEdge, attenuationFactor);
 
-            float height = noise.GetNoise(worldX, worldY, 0.0f);
-            height = (height + 1.0f) / 2.0f;
+            // Combine noise layers
+            float height = 0.0f;
+            for (const auto& layer : noiseLayers) {
+                float noiseValue = layer.noise.GetNoise(worldX, worldY, 0.0f);
+                // Normalize noise value from [-1, 1] to [0, 1]
+                noiseValue = (noiseValue + 1.0f) / 2.0f;
+                height += noiseValue * layer.amplitude;
+            }
+
+            // Normalize the combined height
+            height /= totalAmplitude;
 
             // Apply the attenuation factor to reduce height near edges
             height *= edgeAttenuationFactor;
