@@ -6,18 +6,15 @@
 #include <imgui-SFML.h>
 
 Renderer::Renderer(sf::RenderWindow& win, sf::View& viewRef, const ChunkManager& cm, int chunkSize, int tileSize, const sf::Vector2f& defaultSize)
-    : window(win), view(viewRef), chunkManager(cm), CHUNK_SIZE(chunkSize), TILE_SIZE(tileSize), defaultViewSize(defaultSize)
+    : window(win), view(viewRef), chunkManager(cm), m_chunkSize(chunkSize), m_tileSize(tileSize), defaultViewSize(defaultSize)
 {
-    // Precompute chunk local positions within a grid
-    std::vector<sf::Transform> chunkLocalTransforms;
-    chunkLocalTransforms.reserve(CHUNK_SIZE * CHUNK_SIZE); // Adjust based on your chunk structure
-
-    // This can be done once during initialization
-    for (int y = 0; y < CHUNK_SIZE; ++y) {
-        for (int x = 0; x < CHUNK_SIZE; ++x) {
-            sf::Transform localTransform;
-            localTransform.translate(x * TILE_SIZE, y * TILE_SIZE);
-            chunkLocalTransforms.emplace_back(localTransform);
+    for (int dy = -1; dy <= 1; ++dy) {
+        for (int dx = -1; dx <= 1; ++dx) {
+            float shiftX = dx * (chunkManager.WORLD_CHUNKS_X * m_chunkSize * m_tileSize);
+            float shiftY = dy * (chunkManager.WORLD_CHUNKS_Y * m_chunkSize * m_tileSize);
+            sf::Transform transform;
+            transform.translate(shiftX, shiftY);
+            m_gridTransforms.emplace_back(transform);
         }
     }
 }
@@ -46,40 +43,26 @@ void Renderer::drawChunks() {
     sf::Vector2f size = view.getSize();
 
     // Calculate world size in pixels
-    float worldSizeX = chunkManager.WORLD_CHUNKS_X * CHUNK_SIZE * TILE_SIZE;
-    float worldSizeY = chunkManager.WORLD_CHUNKS_Y * CHUNK_SIZE * TILE_SIZE;
+    float worldSizeX = chunkManager.WORLD_CHUNKS_X * m_chunkSize * m_tileSize;
+    float worldSizeY = chunkManager.WORLD_CHUNKS_Y * m_chunkSize * m_tileSize;
 
     // Calculate the bounds of the view
     float leftBound = center.x - size.x / 2;
     float topBound = center.y - size.y / 2;
 
     // Calculate the range of visible chunks
-    int firstChunkX = static_cast<int>(std::floor(leftBound / (CHUNK_SIZE * TILE_SIZE)));
-    int firstChunkY = static_cast<int>(std::floor(topBound / (CHUNK_SIZE * TILE_SIZE)));
+    int firstChunkX = static_cast<int>(std::floor(leftBound / (m_chunkSize * m_tileSize)));
+    int firstChunkY = static_cast<int>(std::floor(topBound / (m_chunkSize * m_tileSize)));
 
     // Number of chunks visible horizontally and vertically
-    int visibleChunksX = static_cast<int>(std::ceil(size.x / (CHUNK_SIZE * TILE_SIZE))) + 2; // +2 for buffer
-    int visibleChunksY = static_cast<int>(std::ceil(size.y / (CHUNK_SIZE * TILE_SIZE))) + 2; // +2 for buffer
-
-    // Precompute all necessary transforms for the 3x3 grid
-    std::vector<sf::Transform> gridTransforms;
-    gridTransforms.reserve(9);
-
-    for (int dy = -1; dy <= 1; ++dy) {
-        for (int dx = -1; dx <= 1; ++dx) {
-            float shiftX = dx * worldSizeX;
-            float shiftY = dy * worldSizeY;
-            sf::Transform transform;
-            transform.translate(shiftX, shiftY);
-            gridTransforms.emplace_back(transform);
-        }
-    }
+    int visibleChunksX = static_cast<int>(std::ceil(size.x / (m_chunkSize * m_tileSize))) + 2; // +2 for buffer
+    int visibleChunksY = static_cast<int>(std::ceil(size.y / (m_chunkSize * m_tileSize))) + 2; // +2 for buffer
 
     // Iterate over the 3x3 grid
     int transformIndex = 0;
     for (int dx = -1; dx <= 1; ++dx) {
         for (int dy = -1; dy <= 1; ++dy) {
-            sf::Transform& gridTransform = gridTransforms[transformIndex++];
+            sf::Transform& gridTransform = m_gridTransforms[transformIndex++];
 
             // Calculate the base chunk indices
             int baseChunkX = firstChunkX + dx * chunkManager.WORLD_CHUNKS_X;
@@ -128,21 +111,21 @@ void Renderer::drawChunks() {
     }
 }
 
-int Renderer::determineLODLevel() const {
+int Renderer::determineLODLevel() {
     float currentScaleX = view.getSize().x / defaultViewSize.x;
 
-    if (currentScaleX != lastZoom) {
-        lastZoom = currentScaleX;
+    if (currentScaleX != m_lastZoom) {
+        m_lastZoom = currentScaleX;
         if (currentScaleX < LOD1_THRESHOLD) {
-            cachedLOD = 0;
+            m_cachedLOD = 0;
         }
         else if (currentScaleX < LOD2_THRESHOLD) {
-            cachedLOD = 1;
+            m_cachedLOD = 1;
         }
         else {
-            cachedLOD = 2;
+            m_cachedLOD = 2;
         }
     }
 
-    return cachedLOD;
+    return m_cachedLOD;
 }

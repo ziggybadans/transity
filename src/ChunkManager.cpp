@@ -4,36 +4,19 @@
 #include <cmath>
 #include <thread>
 #include <vector>
+#include <future>
+
+constexpr float DEFAULT_LAND_THRESHOLD = 0.5f;
+constexpr float DEFAULT_BORDER_WIDTH = 4.35f;
+constexpr float DEFAULT_ATTENUATION_FACTOR = 0.243f;
 
 ChunkManager::ChunkManager(int worldChunksX, int worldChunksY, int chunkSize, int tileSize)
     : WORLD_CHUNKS_X(worldChunksX), WORLD_CHUNKS_Y(worldChunksY),
     CHUNK_SIZE(chunkSize), TILE_SIZE(tileSize),
-    landThreshold(0.5f), borderWidth(4.35f), attenuationFactor(0.243f), totalAmplitude(0.0f)
+    landThreshold(DEFAULT_LAND_THRESHOLD), borderWidth(DEFAULT_BORDER_WIDTH), attenuationFactor(DEFAULT_ATTENUATION_FACTOR), totalAmplitude(0.0f)
 {
-    // Calculate world dimensions
-    worldWidth = static_cast<float>(WORLD_CHUNKS_X * CHUNK_SIZE * TILE_SIZE);
-    worldHeight = static_cast<float>(WORLD_CHUNKS_Y * CHUNK_SIZE * TILE_SIZE);
-
-    // Initialize multiple noise layers
-    // Layer 1: Base terrain using Perlin noise
-    NoiseLayer baseLayer(FastNoiseLite::NoiseType_Perlin, 0.0075f, 0.6f, 1337);
-    noiseLayers.push_back(baseLayer);
-
-    // Layer 2: Elevation details using Cellular noise
-    NoiseLayer cellularLayer(FastNoiseLite::NoiseType_OpenSimplex2, 0.001f, 1.0f, 42);
-    // Customize cellular-specific properties
-    cellularLayer.cellularDistanceFunction = FastNoiseLite::CellularDistanceFunction_EuclideanSq;
-    cellularLayer.cellularReturnType = FastNoiseLite::CellularReturnType_Distance2;
-    cellularLayer.cellularJitter = 0.8f;
-    cellularLayer.configureNoise();
-    noiseLayers.push_back(cellularLayer);
-
-    for (const auto& layer : noiseLayers) {
-        totalAmplitude += layer.amplitude;
-    }
-
-    // Pre-generate all chunks synchronously
-    chunks.resize(WORLD_CHUNKS_X * WORLD_CHUNKS_Y);
+    initializeNoiseLayers();
+    initializeWorldDimensions();
     regenerateWorld();
 }
 
@@ -42,27 +25,27 @@ void ChunkManager::regenerateWorld() {
     int totalChunks = WORLD_CHUNKS_X * WORLD_CHUNKS_Y;
     chunks.resize(totalChunks);
 
-    // Determine the number of hardware threads
     unsigned int numThreads = std::thread::hardware_concurrency();
-    if (numThreads == 0) numThreads = 4; // Fallback
+    if (numThreads == 0) numThreads = 4;
 
-    std::vector<std::thread> threads;
+    std::vector<std::future<void>> futures;
     int chunksPerThread = totalChunks / numThreads;
 
     for (unsigned int t = 0; t < numThreads; ++t) {
         int start = t * chunksPerThread;
         int end = (t == numThreads - 1) ? totalChunks : start + chunksPerThread;
-        threads.emplace_back([this, start, end]() {
+
+        futures.emplace_back(std::async(std::launch::async, [this, start, end]() {
             for (int i = start; i < end; ++i) {
                 int x = i % WORLD_CHUNKS_X;
                 int y = i / WORLD_CHUNKS_X;
                 chunks[i] = generateChunk(x, y);
             }
-            });
+            }));
     }
 
-    for (auto& thread : threads) {
-        thread.join();
+    for (auto& future : futures) {
+        future.get();
     }
 }
 
@@ -86,12 +69,6 @@ Chunk ChunkManager::generateChunk(int chunkX, int chunkY) {
     // Generate a chunk of tiles at the specified chunk coordinates
     for (int y = 0; y < CHUNK_SIZE; ++y) {
         for (int x = 0; x < CHUNK_SIZE; ++x) {
-            // Determine which LOD levels this tile should appear in
-            // For simplicity:
-            // - LOD0: every tile
-            // - LOD1: every 2nd tile
-            // - LOD2: every 4th tile
-
             // Calculate tile's world position
             float worldX = static_cast<float>((chunkX * CHUNK_SIZE + x) * TILE_SIZE);
             float worldY = static_cast<float>((chunkY * CHUNK_SIZE + y) * TILE_SIZE);
@@ -102,14 +79,8 @@ Chunk ChunkManager::generateChunk(int chunkX, int chunkY) {
             float normalizedX = worldX * invWorldWidth;
             float normalizedY = worldY * invWorldHeight;
 
-            // Calculate distance to the nearest edge (normalized between 0 and 1)
-            float distanceToEdgeX = (normalizedX < 0.5f) ? normalizedX : (1.0f - normalizedX);
-            float distanceToEdgeY = (normalizedY < 0.5f) ? normalizedY : (1.0f - normalizedY);
-            float distanceToEdge = std::min(distanceToEdgeX, distanceToEdgeY) * borderWidth;
-
-            // Introduce an attenuation factor that decreases as we approach the edges
-            // The factor is squared to create a more gradual effect
-            float edgeAttenuationFactor = std::pow(distanceToEdge, attenuationFactor);
+            float edgeDistance = calculateEdgeDistance(normalizedX, normalizedY);
+            float edgeAttenuationFactor = std::pow(edgeDistance, attenuationFactor);
 
             // Combine noise layers
             float height = 0.0f;
@@ -165,32 +136,7 @@ Chunk ChunkManager::generateChunk(int chunkX, int chunkY) {
     // Second pass: Aggregate LOD1 (2x2 tiles)
     for (int y = 0; y < CHUNK_SIZE; y += 2) {
         for (int x = 0; x < CHUNK_SIZE; x += 2) {
-            sf::Color aggregatedColor(0, 0, 0);
-            unsigned int tempR = 0, tempG = 0, tempB = 0, tempA = 0;
-            int tilesAggregated = 0;
-
-            for (int dy = 0; dy < 2; ++dy) {
-                for (int dx = 0; dx < 2; ++dx) {
-                    int currentX = x + dx;
-                    int currentY = y + dy;
-
-                    if (currentX < CHUNK_SIZE && currentY < CHUNK_SIZE) {
-                        sf::Color tileColor = tileColors[currentY * CHUNK_SIZE + currentX];
-                        tempR += tileColor.r;
-                        tempG += tileColor.g;
-                        tempB += tileColor.b;
-                        tempA += tileColor.a;
-                        tilesAggregated++;
-                    }
-                }
-            }
-
-            if (tilesAggregated > 0) {
-                aggregatedColor.r = static_cast<sf::Uint8>(tempR / tilesAggregated);
-                aggregatedColor.g = static_cast<sf::Uint8>(tempG / tilesAggregated);
-                aggregatedColor.b = static_cast<sf::Uint8>(tempB / tilesAggregated);
-                aggregatedColor.a = static_cast<sf::Uint8>(tempA / tilesAggregated);
-            }
+            sf::Color aggregatedColor = aggregateTiles(tileColors, x, y, 2);
 
             float aggWorldX = static_cast<float>((chunkX * CHUNK_SIZE + x) * TILE_SIZE);
             float aggWorldY = static_cast<float>((chunkY * CHUNK_SIZE + y) * TILE_SIZE);
@@ -210,32 +156,7 @@ Chunk ChunkManager::generateChunk(int chunkX, int chunkY) {
     // Third pass: Aggregate LOD2 (4x4 tiles)
     for (int y = 0; y < CHUNK_SIZE; y += 4) {
         for (int x = 0; x < CHUNK_SIZE; x += 4) {
-            sf::Color aggregatedColor(0, 0, 0);
-            unsigned int tempR = 0, tempG = 0, tempB = 0, tempA = 0;
-            int tilesAggregated = 0;
-
-            for (int dy = 0; dy < 4; ++dy) {
-                for (int dx = 0; dx < 4; ++dx) {
-                    int currentX = x + dx;
-                    int currentY = y + dy;
-
-                    if (currentX < CHUNK_SIZE && currentY < CHUNK_SIZE) {
-                        sf::Color tileColor = tileColors[currentY * CHUNK_SIZE + currentX];
-                        tempR += tileColor.r;
-                        tempG += tileColor.g;
-                        tempB += tileColor.b;
-                        tempA += tileColor.a;
-                        tilesAggregated++;
-                    }
-                }
-            }
-
-            if (tilesAggregated > 0) {
-                aggregatedColor.r = static_cast<sf::Uint8>(tempR / tilesAggregated);
-                aggregatedColor.g = static_cast<sf::Uint8>(tempG / tilesAggregated);
-                aggregatedColor.b = static_cast<sf::Uint8>(tempB / tilesAggregated);
-                aggregatedColor.a = static_cast<sf::Uint8>(tempA / tilesAggregated);
-            }
+            sf::Color aggregatedColor = aggregateTiles(tileColors, x, y, 4);
 
             float aggWorldX = static_cast<float>((chunkX * CHUNK_SIZE + x) * TILE_SIZE);
             float aggWorldY = static_cast<float>((chunkY * CHUNK_SIZE + y) * TILE_SIZE);
@@ -260,4 +181,65 @@ const Chunk& ChunkManager::getChunk(int x, int y) const {
     int wrappedY = Utilities::wrapCoordinate(y, WORLD_CHUNKS_Y);
     int index = wrappedY * WORLD_CHUNKS_X + wrappedX;
     return chunks.at(index);
+}
+
+sf::Color ChunkManager::aggregateTiles(const std::vector<sf::Color>& tileColors,
+    int x, int y, int stepSize) const {
+    unsigned int tempR = 0, tempG = 0, tempB = 0, tempA = 0;
+    int tilesAggregated = 0;
+
+    for (int dy = 0; dy < stepSize; ++dy) {
+        for (int dx = 0; dx < stepSize; ++dx) {
+            int currentX = x + dx;
+            int currentY = y + dy;
+
+            if (currentX < CHUNK_SIZE && currentY < CHUNK_SIZE) {
+                sf::Color color = tileColors[currentY * CHUNK_SIZE + currentX];
+                tempR += color.r;
+                tempG += color.g;
+                tempB += color.b;
+                tempA += color.a;
+                tilesAggregated++;
+            }
+        }
+    }
+
+    sf::Color aggregatedColor(0, 0, 0);
+    if (tilesAggregated > 0) {
+        aggregatedColor.r = static_cast<sf::Uint8>(tempR / tilesAggregated);
+        aggregatedColor.g = static_cast<sf::Uint8>(tempG / tilesAggregated);
+        aggregatedColor.b = static_cast<sf::Uint8>(tempB / tilesAggregated);
+        aggregatedColor.a = static_cast<sf::Uint8>(tempA / tilesAggregated);
+    }
+    return aggregatedColor;
+}
+
+void ChunkManager::initializeNoiseLayers() {
+    noiseLayers.emplace_back(FastNoiseLite::NoiseType_Perlin, 0.0075f, 0.6f, 1337);
+
+    NoiseLayer cellularLayer(FastNoiseLite::NoiseType_OpenSimplex2, 0.001f, 1.0f, 42);
+    cellularLayer.cellularDistanceFunction = FastNoiseLite::CellularDistanceFunction_EuclideanSq;
+    cellularLayer.cellularReturnType = FastNoiseLite::CellularReturnType_Distance2;
+    cellularLayer.cellularJitter = 0.8f;
+    cellularLayer.configureNoise();
+    noiseLayers.push_back(cellularLayer);
+
+    for (const auto& layer : noiseLayers) {
+        totalAmplitude += layer.amplitude;
+    }
+}
+
+void ChunkManager::initializeWorldDimensions() {
+    // Calculate world dimensions
+    worldWidth = static_cast<float>(WORLD_CHUNKS_X * CHUNK_SIZE * TILE_SIZE);
+    worldHeight = static_cast<float>(WORLD_CHUNKS_Y * CHUNK_SIZE * TILE_SIZE);
+
+    // Pre-generate all chunks synchronously
+    chunks.resize(WORLD_CHUNKS_X * WORLD_CHUNKS_Y);
+}
+
+float ChunkManager::calculateEdgeDistance(float normalizedX, float normalizedY) const {
+    float distanceToEdgeX = (normalizedX < 0.5f) ? normalizedX : (1.0f - normalizedX);
+    float distanceToEdgeY = (normalizedY < 0.5f) ? normalizedY : (1.0f - normalizedY);
+    return std::min(distanceToEdgeX, distanceToEdgeY) * borderWidth;
 }

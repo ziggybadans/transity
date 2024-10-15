@@ -78,4 +78,9 @@ private:
     float worldWidth;
     float worldHeight;
     float totalAmplitude;
+    
+    void initializeNoiseLayers();
+    void initializeWorldDimensions();
+    float calculateEdgeDistance(float normalizedX, float normalizedY) const;
+    sf::Color aggregateTiles(const std::vector<sf::Color>& tileColors, int x, int y, int stepSize) const;
 };

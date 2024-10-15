@@ -52,6 +52,21 @@ void Game::run() {
     }
 }
 
+// Helper function to wrap the view's center
+void Game::wrapView() {
+    float worldSizeX = chunkManager.WORLD_CHUNKS_X * CHUNK_SIZE * TILE_SIZE;
+    float worldSizeY = chunkManager.WORLD_CHUNKS_Y * CHUNK_SIZE * TILE_SIZE;
+
+    sf::Vector2f center = view.getCenter();
+
+    // Wrap the center coordinates
+    center.x = Utilities::wrapFloat(center.x, worldSizeX);
+    center.y = Utilities::wrapFloat(center.y, worldSizeY);
+
+    view.setCenter(center);
+}
+
+
 // Modified drawDebugGUI function
 void Game::drawDebugGUI() {
     // Create a window for debug controls
@@ -159,18 +174,4 @@ void Game::drawDebugGUI() {
     }
 
     ImGui::End();
-}
-
-// Helper function to wrap the view's center
-void Game::wrapView() {
-    float worldSizeX = chunkManager.WORLD_CHUNKS_X * CHUNK_SIZE * TILE_SIZE;
-    float worldSizeY = chunkManager.WORLD_CHUNKS_Y * CHUNK_SIZE * TILE_SIZE;
-
-    sf::Vector2f center = view.getCenter();
-
-    // Wrap the center coordinates
-    center.x = Utilities::wrapFloat(center.x, worldSizeX);
-    center.y = Utilities::wrapFloat(center.y, worldSizeY);
-
-    view.setCenter(center);
 }

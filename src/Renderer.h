@@ -8,26 +8,26 @@ class Renderer {
 public:
     Renderer(sf::RenderWindow& window, sf::View& view, const ChunkManager& chunkManager, int chunkSize, int tileSize, const sf::Vector2f& defaultSize);
 
-    // Render the current frame
     void renderFrame();
 
 private:
     sf::RenderWindow& window;
     sf::View& view;
     const ChunkManager& chunkManager;
-    int CHUNK_SIZE;
-    int TILE_SIZE;
+    const int m_chunkSize;
+    const int m_tileSize;
 
-    // Define zoom thresholds
-    float LOD1_THRESHOLD = 5.0f; // Example value
-    float LOD2_THRESHOLD = 10.0f; // Example value
+    std::vector<sf::Transform> m_gridTransforms;
 
-    // Store the default view size
+    static constexpr float LOD1_THRESHOLD = 5.0f;
+    static constexpr float LOD2_THRESHOLD = 10.0f;
+
     sf::Vector2f defaultViewSize;
 
-    mutable int cachedLOD = -1;
-    mutable float lastZoom = 0.0f;
+    int m_cachedLOD = -1;
+    float m_lastZoom = 0.0f;
+
+    int determineLODLevel();
 
     void drawChunks();
-    int determineLODLevel() const;
 };
