@@ -19,8 +19,51 @@ ChunkManager::ChunkManager(int worldChunksX, int worldChunksY, int chunkSize, in
     heightMap(nullptr)
 {
     initializeNoiseLayers();
-    initializeWorldDimensions();
-    regenerateWorld();
+}
+
+void ChunkManager::regenerateChunk(int chunkX, int chunkY) {
+    ChunkCoord coord{ chunkX, chunkY };
+    std::lock_guard<std::mutex> lock(chunksMutex);
+    auto it = loadedChunks.find(coord);
+    if (it != loadedChunks.end()) {
+        // Regenerate the chunk
+        it->second = generateChunk(chunkX, chunkY);
+    }
+}
+
+// Asynchronous chunk loading
+std::future<Chunk> ChunkManager::loadChunkAsync(int chunkX, int chunkY) {
+    return std::async(std::launch::async, [this, chunkX, chunkY]() -> Chunk {
+        Chunk newChunk = generateChunk(chunkX, chunkY);
+        ChunkCoord coord{ chunkX, chunkY };
+        std::lock_guard<std::mutex> lock(chunksMutex);
+        loadedChunks[coord] = newChunk;
+        return newChunk;
+        });
+}
+
+void ChunkManager::unloadChunk(int chunkX, int chunkY) {
+    ChunkCoord coord{ chunkX, chunkY };
+    std::lock_guard<std::mutex> lock(chunksMutex);
+    loadedChunks.erase(coord);
+}
+
+bool ChunkManager::isChunkLoaded(int chunkX, int chunkY) const {
+    ChunkCoord coord{ chunkX, chunkY };
+    std::lock_guard<std::mutex> lock(chunksMutex);
+    return loadedChunks.find(coord) != loadedChunks.end();
+}
+
+const Chunk& ChunkManager::getChunk(int chunkX, int chunkY) const {
+    ChunkCoord coord{ chunkX, chunkY };
+    std::lock_guard<std::mutex> lock(chunksMutex);
+    auto it = loadedChunks.find(coord);
+    if (it != loadedChunks.end()) {
+        return it->second;
+    }
+    else {
+        throw std::runtime_error("Chunk not loaded: (" + std::to_string(chunkX) + ", " + std::to_string(chunkY) + ")");
+    }
 }
 
 void ChunkManager::setHeightMap(HeightMap* hm) {
@@ -31,35 +74,10 @@ void ChunkManager::setHeightMap(HeightMap* hm) {
     else {
         useRealHeightMap = false;
     }
-    regenerateWorld(); // Regenerate world with the new heightmap
-}
-
-// Function to regenerate the entire world
-void ChunkManager::regenerateWorld() {
-    int totalChunks = WORLD_CHUNKS_X * WORLD_CHUNKS_Y;
-    chunks.resize(totalChunks);
-
-    unsigned int numThreads = std::thread::hardware_concurrency();
-    if (numThreads == 0) numThreads = 8;
-
-    std::vector<std::future<void>> futures;
-    int chunksPerThread = totalChunks / numThreads;
-
-    for (unsigned int t = 0; t < numThreads; ++t) {
-        int start = t * chunksPerThread;
-        int end = (t == numThreads - 1) ? totalChunks : start + chunksPerThread;
-
-        futures.emplace_back(std::async(std::launch::async, [this, start, end]() {
-            for (int i = start; i < end; ++i) {
-                int x = i % WORLD_CHUNKS_X;
-                int y = i / WORLD_CHUNKS_X;
-                chunks[i] = generateChunk(x, y);
-            }
-            }));
-    }
-
-    for (auto& future : futures) {
-        future.get();
+    // Regenerate all currently loaded chunks with the new heightmap
+    std::lock_guard<std::mutex> lock(chunksMutex);
+    for (auto& [coord, chunk] : loadedChunks) {
+        chunk = generateChunk(coord.x, coord.y);
     }
 }
 
@@ -207,14 +225,6 @@ Chunk ChunkManager::generateChunk(int chunkX, int chunkY) {
     return chunk;
 }
 
-const Chunk& ChunkManager::getChunk(int x, int y) const {
-    // Clamp chunk indices to stay within world boundaries
-    int clampedX = std::clamp(x, 0, WORLD_CHUNKS_X - 1);
-    int clampedY = std::clamp(y, 0, WORLD_CHUNKS_Y - 1);
-    int index = clampedY * WORLD_CHUNKS_X + clampedX;
-    return chunks.at(index);
-}
-
 sf::Color ChunkManager::aggregateTiles(const std::vector<sf::Color>& tileColors,
     int x, int y, int stepSize) const {
     int landCount = 0;
@@ -247,6 +257,11 @@ sf::Color ChunkManager::aggregateTiles(const std::vector<sf::Color>& tileColors,
 
 
 void ChunkManager::initializeNoiseLayers() {
+    // Clear any existing layers and reset totalAmplitude
+    noiseLayers.clear();
+    totalAmplitude = 0.0f;
+
+    // Add initial noise layers
     noiseLayers.emplace_back(FastNoiseLite::NoiseType_Perlin, 0.0075f, 0.6f, 1337);
 
     NoiseLayer cellularLayer(FastNoiseLite::NoiseType_OpenSimplex2, 0.001f, 1.0f, 42);
@@ -261,14 +276,6 @@ void ChunkManager::initializeNoiseLayers() {
     }
 }
 
-void ChunkManager::initializeWorldDimensions() {
-    // World dimensions remain consistent regardless of heightmap resolution
-    worldWidth = static_cast<float>(WORLD_CHUNKS_X * CHUNK_SIZE * TILE_SIZE);
-    worldHeight = static_cast<float>(WORLD_CHUNKS_Y * CHUNK_SIZE * TILE_SIZE);
-
-    // Pre-generate all chunks synchronously
-    chunks.resize(WORLD_CHUNKS_X * WORLD_CHUNKS_Y);
-}
 
 float ChunkManager::calculateEdgeDistance(float normalizedX, float normalizedY) const {
     float distanceToEdgeX = (normalizedX < 0.5f) ? normalizedX : (1.0f - normalizedX);
@@ -279,7 +286,11 @@ float ChunkManager::calculateEdgeDistance(float normalizedX, float normalizedY) 
 void ChunkManager::enableProceduralGeneration() {
     heightMap = nullptr;
     useRealHeightMap = false;
-    regenerateWorld();
+    // Regenerate all currently loaded chunks procedurally
+    std::lock_guard<std::mutex> lock(chunksMutex);
+    for (auto& [coord, chunk] : loadedChunks) {
+        chunk = generateChunk(coord.x, coord.y);
+    }
 }
 
 void ChunkManager::enableHeightMapGeneration(const std::string& heightMapPath) {
@@ -290,4 +301,9 @@ void ChunkManager::enableHeightMapGeneration(const std::string& heightMapPath) {
     catch (const std::exception& e) {
         std::cerr << "Failed to load heightmap: " << e.what() << "\n";
     }
+}
+
+std::unordered_map<ChunkCoord, Chunk> ChunkManager::getLoadedChunks() const {
+    std::lock_guard<std::mutex> lock(chunksMutex);
+    return loadedChunks;
 }

@@ -8,6 +8,7 @@
 #include <SFML/Graphics.hpp>
 #include <unordered_map>
 #include <mutex>
+#include <future>
 #include "FastNoiseLite.h"
 
 // Structure to represent each noise layer
@@ -58,10 +59,17 @@ public:
     // Generate a chunk at specified coordinates
     Chunk generateChunk(int chunkX, int chunkY);
 
-    // Access a chunk by its wrapped indices
-    const Chunk& getChunk(int x, int y) const;
+    // Get a copy of currently loaded chunks for rendering
+    std::unordered_map<ChunkCoord, Chunk> getLoadedChunks() const;
 
-    void regenerateWorld();
+    // Methods to regenerate specific chunks
+    void regenerateChunk(int chunkX, int chunkY);
+
+    // Methods to handle dynamic chunk loading
+    std::future<Chunk> loadChunkAsync(int chunkX, int chunkY);
+    void unloadChunk(int chunkX, int chunkY);
+    bool isChunkLoaded(int chunkX, int chunkY) const;
+    const Chunk& getChunk(int chunkX, int chunkY) const;
 
     // Total chunks in X and Y directions
     int WORLD_CHUNKS_X;
@@ -82,7 +90,9 @@ public:
 private:
     int CHUNK_SIZE;
     int TILE_SIZE;
-    std::vector<Chunk> chunks;
+    // Change chunks to a dynamic map
+    std::unordered_map<ChunkCoord, Chunk> loadedChunks;
+    mutable std::mutex chunksMutex; // To protect loadedChunks
 
     FastNoiseLite noise;
 

@@ -5,6 +5,7 @@
 #include <imgui.h>
 #include <imgui-SFML.h>
 #include <iostream>
+#include <cmath>
 
 // Constructor
 Game::Game(int chunkSize, int tileSize, int WORLD_CHUNKS_X, int WORLD_CHUNKS_Y, const std::string& heightMapPath)
@@ -14,7 +15,8 @@ Game::Game(int chunkSize, int tileSize, int WORLD_CHUNKS_X, int WORLD_CHUNKS_Y, 
     view(sf::FloatRect(0, 0, windowSizeX, windowSizeY)),
     inputHandler(view, sf::Vector2f(windowSizeX, windowSizeY)),
     renderer(window, view, chunkManager, CHUNK_SIZE, TILE_SIZE, sf::Vector2f(windowSizeX, windowSizeY)),
-    heightMap(nullptr)
+    heightMap(nullptr),
+    renderDistance(2.0f)
 {
     if (!heightMapPath.empty()) {
         try {
@@ -45,11 +47,15 @@ Game::Game(int chunkSize, int tileSize, int WORLD_CHUNKS_X, int WORLD_CHUNKS_Y, 
     float zoomX = static_cast<float>(windowSizeX) / worldSizeX;
     float zoomY = static_cast<float>(windowSizeY) / worldSizeY;
     inputHandler.minZoom = std::min(zoomX, zoomY); // Ensure entire world fits within the view when zoomed out
+
+    // Initialize activeChunks based on the initial view
+    updateVisibleChunks();
 }
 
 // Destructor
 Game::~Game() {
     ImGui::SFML::Shutdown();
+    delete heightMap;
 }
 
 // Main game loop
@@ -63,11 +69,16 @@ void Game::run() {
         drawDebugGUI();
 
         if (needsRegeneration && regenClock.getElapsedTime() > regenDelay) {
-            chunkManager.regenerateWorld();
+            // Regenerate all loaded chunks
+            std::unordered_map<ChunkCoord, Chunk> currentChunks = chunkManager.getLoadedChunks();
+            for (const auto& [coord, _] : currentChunks) {
+                chunkManager.regenerateChunk(coord.x, coord.y);
+            }
             needsRegeneration = false;
         }
 
         wrapView();
+        updateVisibleChunks(); // Update chunks based on the new view
         renderer.renderFrame();
     }
 }
@@ -95,6 +106,81 @@ void Game::wrapView() {
         center.y = worldSizeY - halfViewHeight;
 
     view.setCenter(center);
+}
+
+void Game::updateVisibleChunks() {
+    sf::Vector2f center = view.getCenter();
+    sf::Vector2f size = view.getSize();
+
+    // Determine the range of chunks to load based on renderDistance
+    int centerChunkX = static_cast<int>(center.x) / (CHUNK_SIZE * TILE_SIZE);
+    int centerChunkY = static_cast<int>(center.y) / (CHUNK_SIZE * TILE_SIZE);
+
+    int loadRadius = static_cast<int>(std::ceil(renderDistance));
+
+    std::unordered_set<ChunkCoord, std::hash<ChunkCoord>> newActiveChunks;
+
+    for (int y = centerChunkY - loadRadius; y <= centerChunkY + loadRadius; ++y) {
+        for (int x = centerChunkX - loadRadius; x <= centerChunkX + loadRadius; ++x) {
+            // Clamp chunk coordinates to world boundaries
+            if (x < 0 || x >= chunkManager.WORLD_CHUNKS_X || y < 0 || y >= chunkManager.WORLD_CHUNKS_Y)
+                continue;
+
+            ChunkCoord coord{ x, y };
+            newActiveChunks.insert(coord);
+
+            // Load chunk if not already loaded
+            {
+                std::lock_guard<std::mutex> lock(activeChunksMutex);
+                if (activeChunks.find(coord) == activeChunks.end() && !chunkManager.isChunkLoaded(x, y)) {
+                    // Initiate asynchronous loading
+                    loadingChunks.emplace_back(chunkManager.loadChunkAsync(x, y));
+                }
+            }
+        }
+    }
+
+    // Unload chunks that are no longer active
+    {
+        std::lock_guard<std::mutex> lock(activeChunksMutex);
+        for (auto it = activeChunks.begin(); it != activeChunks.end();) {
+            if (newActiveChunks.find(*it) == newActiveChunks.end()) {
+                chunkManager.unloadChunk(it->x, it->y);
+                it = activeChunks.erase(it);
+            }
+            else {
+                ++it;
+            }
+        }
+
+        // Add new active chunks
+        for (const auto& coord : newActiveChunks) {
+            activeChunks.insert(coord);
+        }
+    }
+
+    // Process completed chunk loading
+    for (auto it = loadingChunks.begin(); it != loadingChunks.end();) {
+        if (it->wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
+            try {
+                Chunk loadedChunk = it->get();
+                // The chunk is already stored in ChunkManager's loadedChunks map
+            }
+            catch (const std::exception& e) {
+                std::cerr << "Error loading chunk: " << e.what() << "\n";
+            }
+            it = loadingChunks.erase(it);
+        }
+        else {
+            ++it;
+        }
+    }
+}
+
+ChunkCoord Game::getChunkCoordFromPosition(const sf::Vector2f& position) const {
+    int chunkX = static_cast<int>(position.x) / (CHUNK_SIZE * TILE_SIZE);
+    int chunkY = static_cast<int>(position.y) / (CHUNK_SIZE * TILE_SIZE);
+    return ChunkCoord{ chunkX, chunkY };
 }
 
 // Modified drawDebugGUI function
