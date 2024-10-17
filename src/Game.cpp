@@ -11,7 +11,7 @@
 Game::Game(int chunkSize, int tileSize, int WORLD_CHUNKS_X, int WORLD_CHUNKS_Y, const std::string& heightMapPath)
     : CHUNK_SIZE(chunkSize), TILE_SIZE(tileSize),
     chunkManager(WORLD_CHUNKS_X, WORLD_CHUNKS_Y, CHUNK_SIZE, TILE_SIZE),
-    windowSizeX(1920), windowSizeY(1080),
+    windowSizeX(2560), windowSizeY(1440),
     view(sf::FloatRect(0, 0, windowSizeX, windowSizeY)),
     inputHandler(view, sf::Vector2f(windowSizeX, windowSizeY)),
     renderer(window, view, chunkManager, CHUNK_SIZE, TILE_SIZE, sf::Vector2f(windowSizeX, windowSizeY)),

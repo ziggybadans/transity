@@ -276,7 +276,6 @@ void ChunkManager::initializeNoiseLayers() {
     }
 }
 
-
 float ChunkManager::calculateEdgeDistance(float normalizedX, float normalizedY) const {
     float distanceToEdgeX = (normalizedX < 0.5f) ? normalizedX : (1.0f - normalizedX);
     float distanceToEdgeY = (normalizedY < 0.5f) ? normalizedY : (1.0f - normalizedY);
