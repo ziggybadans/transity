@@ -1,6 +1,5 @@
 // src/InputHandler.cpp
 #include "InputHandler.h"
-#include "Utilities.h"
 
 #include <imgui.h>
 #include <imgui-SFML.h>
@@ -14,9 +13,10 @@ void InputHandler::processEvents(sf::RenderWindow& window, sf::Time deltaTime) {
     sf::Event event;
     while (window.pollEvent(event)) {
         ImGui::SFML::ProcessEvent(event);
-        // Close the window if the close button is pressed
+
+        // Handle window close event
         if (event.type == sf::Event::Closed) {
-            window.close();
+            closeRequested = true;
         }
 
         if (event.type == sf::Event::MouseWheelScrolled) {
@@ -79,4 +79,16 @@ void InputHandler::handleZoom(sf::Event& event, sf::RenderWindow& window)
     sf::Vector2f afterZoom = window.mapPixelToCoords(pixelPos, view);
     // Adjust the view center to zoom towards the mouse position
     view.move(beforeZoom - afterZoom);
+}
+
+void InputHandler::setMinZoom(float newMinZoom) {
+    minZoom = newMinZoom;
+}
+
+void InputHandler::setMaxZoom(float newMaxZoom) {
+    maxZoom = newMaxZoom;
+}
+
+bool InputHandler::shouldClose() const {
+    return closeRequested;
 }
