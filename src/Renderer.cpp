@@ -90,7 +90,7 @@ void Renderer::updateVisibleChunks(const sf::FloatRect& viewBounds) {
 
     // Iterate over all loaded chunks and add to visibleChunks if visible
     for (const auto& [coord, chunkPtr] : loadedChunks) {
-        if (isChunkVisible(coord, viewBounds)) {
+        if (chunkPtr && isChunkVisible(coord, viewBounds)) {
             m_visibleChunks.emplace(coord, chunkPtr);
         }
     }
@@ -122,7 +122,7 @@ void Renderer::updateVertexArrays(int currentLOD) {
             break;
         }
 
-        if (verticesToDraw->getVertexCount() > 0) {
+        if (verticesToDraw && verticesToDraw->getVertexCount() > 0) {
             // Append all vertices to the corresponding VertexArray
             sf::VertexArray& targetVA = (currentLOD == 0) ? m_vaLOD0 :
                 (currentLOD == 1) ? m_vaLOD1 : m_vaLOD2;

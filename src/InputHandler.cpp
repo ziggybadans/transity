@@ -50,7 +50,9 @@ void InputHandler::handleCameraMovement(sf::Time deltaTime) {
         movement.y += adjustedCameraSpeed * deltaSeconds;
     }
 
-    view.move(movement);
+    if (movement != sf::Vector2f(0.0f, 0.0f)) {
+        view.move(movement);
+    }
 }
 
 void InputHandler::handleZoom(sf::Event& event, sf::RenderWindow& window)
@@ -78,7 +80,9 @@ void InputHandler::handleZoom(sf::Event& event, sf::RenderWindow& window)
     // After zooming, get the new world coordinates
     sf::Vector2f afterZoom = window.mapPixelToCoords(pixelPos, view);
     // Adjust the view center to zoom towards the mouse position
-    view.move(beforeZoom - afterZoom);
+    if (beforeZoom != afterZoom) {
+        view.move(beforeZoom - afterZoom);
+    }
 }
 
 void InputHandler::setMinZoom(float newMinZoom) {

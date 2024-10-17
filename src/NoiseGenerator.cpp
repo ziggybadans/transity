@@ -44,7 +44,7 @@ void NoiseGenerator::initializeDefaultLayers() {
     NoiseLayer perlinLayer(FastNoiseLite::NoiseType_Perlin, 0.0075f, 0.6f, 1337);
     addNoiseLayer(perlinLayer);
 
-    NoiseLayer cellularLayer(FastNoiseLite::NoiseType_OpenSimplex2, 0.001f, 1.0f, 42);
+    NoiseLayer cellularLayer(FastNoiseLite::NoiseType_Cellular, 0.001f, 1.0f, 42);
     cellularLayer.cellularDistanceFunction = FastNoiseLite::CellularDistanceFunction_EuclideanSq;
     cellularLayer.cellularReturnType = FastNoiseLite::CellularReturnType_Distance2;
     cellularLayer.cellularJitter = 0.8f;
@@ -59,7 +59,7 @@ float NoiseGenerator::generateHeight(float x, float y) const {
         noiseValue = (noiseValue + 1.0f) / 2.0f;
         height += noiseValue * layer.amplitude;
     }
-    return height / totalAmplitude;
+    return totalAmplitude != 0.0f ? height / totalAmplitude : 0.0f;
 }
 
 // Setter implementations
@@ -73,10 +73,8 @@ void NoiseGenerator::setNoiseLayerType(size_t index, FastNoiseLite::NoiseType ty
 
 void NoiseGenerator::setNoiseLayerFrequency(size_t index, float frequency) {
     if (index < noiseLayers.size()) {
-        totalAmplitude -= noiseLayers[index].amplitude;
         noiseLayers[index].frequency = frequency;
         noiseLayers[index].noise.SetFrequency(frequency);
-        totalAmplitude += noiseLayers[index].amplitude;
     }
 }
 

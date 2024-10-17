@@ -24,11 +24,23 @@ ChunkManager::ChunkManager(int worldChunksX, int worldChunksY, int chunkSize, in
 }
 
 void ChunkManager::setHeightMap(std::shared_ptr<HeightMap> hm) {
-    std::lock_guard<std::mutex> lock(chunksMutex);
-    heightMap = hm;
-    useRealHeightMap = (heightMap != nullptr);
-    // Regenerate all currently loaded chunks with the new heightmap
-    regenerateAllChunks();
+    std::vector<ChunkCoord> coordsToRegenerate;
+
+    {
+        std::lock_guard<std::mutex> lock(chunksMutex);
+        heightMap = hm;
+        useRealHeightMap = (heightMap != nullptr);
+
+        // Collect the coordinates of loaded chunks while holding the lock
+        for (const auto& [coord, chunk] : loadedChunks) {
+            coordsToRegenerate.push_back(coord);
+        }
+    } // Release the lock here
+
+    // Regenerate chunks outside the locked section to prevent deadlock
+    for (const ChunkCoord& coord : coordsToRegenerate) {
+        regenerateChunk(coord.x, coord.y);
+    }
 }
 
 void ChunkManager::enableProceduralGeneration() {
@@ -76,14 +88,12 @@ std::shared_ptr<Chunk> ChunkManager::generateChunk(int chunkX, int chunkY) {
                 float invScaleX = (static_cast<float>(heightMap->getWidth()) - 1.0f) / (static_cast<float>(totalTilesX) - 1.0f);
                 float invScaleY = (static_cast<float>(heightMap->getHeight()) - 1.0f) / (static_cast<float>(totalTilesY) - 1.0f);
                 height = heightMap->getScaledHeight(static_cast<float>(tileX), static_cast<float>(tileY), invScaleX, invScaleY);
-                // Adjust land threshold if needed
-                // (Assuming landThreshold is set appropriately for height map)
             }
             else {
                 float normalizedX = worldX / worldWidth;
                 float normalizedY = worldY / worldHeight;
 
-                float edgeDistance = std::sqrt(normalizedX * normalizedX + normalizedY * normalizedY); // Example edge distance calculation
+                float edgeDistance = std::sqrt(normalizedX * normalizedX + normalizedY * normalizedY);
                 float edgeAttenuationFactor = std::pow(edgeDistance, attenuationFactor);
 
                 height = noiseGenerator.generateHeight(worldX, worldY);
@@ -185,17 +195,26 @@ std::shared_ptr<Chunk> ChunkManager::getChunk(int chunkX, int chunkY) const {
 
 void ChunkManager::regenerateChunk(int chunkX, int chunkY) {
     ChunkCoord coord{ chunkX, chunkY };
-    std::lock_guard<std::mutex> lock(chunksMutex);
-    auto it = loadedChunks.find(coord);
-    if (it != loadedChunks.end()) {
-        it->second = generateChunkInternal(coord.x, coord.y);
+    {
+        std::lock_guard<std::mutex> lock(chunksMutex);
+        if (loadedChunks.find(coord) != loadedChunks.end()) {
+            loadedChunks[coord] = generateChunkInternal(chunkX, chunkY);
+        }
     }
 }
 
 void ChunkManager::regenerateAllChunks() {
-    std::lock_guard<std::mutex> lock(chunksMutex);
-    for (auto& [coord, chunk] : loadedChunks) {
-        chunk = generateChunkInternal(coord.x, coord.y);
+    std::vector<ChunkCoord> coordsToRegenerate;
+
+    {
+        std::lock_guard<std::mutex> lock(chunksMutex);
+        for (const auto& [coord, chunk] : loadedChunks) {
+            coordsToRegenerate.push_back(coord);
+        }
+    } // Release the lock here
+
+    for (const ChunkCoord& coord : coordsToRegenerate) {
+        regenerateChunk(coord.x, coord.y);
     }
 }
 
@@ -282,9 +301,6 @@ sf::Color ChunkManager::aggregateTiles(const std::vector<sf::Color>& tileColors,
     // Iterate through the specified block
     for (int y = startY; y < startY + size && y < CHUNK_SIZE; ++y) {
         for (int x = startX; x < startX + size && x < CHUNK_SIZE; ++x) {
-            // Ensure we don't go out of bounds
-            if (x >= CHUNK_SIZE || y >= CHUNK_SIZE) continue;
-
             sf::Color currentColor = tileColors[y * CHUNK_SIZE + x];
 
             if (currentColor == LAND_COLOR) {
@@ -293,7 +309,6 @@ sf::Color ChunkManager::aggregateTiles(const std::vector<sf::Color>& tileColors,
             else if (currentColor == WATER_COLOR) {
                 waterCount++;
             }
-            // You can add more conditions if there are other tile types
         }
     }
 

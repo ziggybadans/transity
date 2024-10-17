@@ -22,8 +22,7 @@ namespace std {
             // Improved hash combination to reduce collisions
             std::size_t h1 = std::hash<int>()(coord.x);
             std::size_t h2 = std::hash<int>()(coord.y);
-            // Use a better combination method, e.g., boost::hash_combine equivalent
-            return h1 ^ (h2 << 1); // Example combination
+            return h1 ^ (h2 * 0x9e3779b9); // Better hash combination to reduce collisions
         }
     };
 }

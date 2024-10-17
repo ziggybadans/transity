@@ -10,14 +10,14 @@
 // Constructor
 Game::Game(int chunkSize, int tileSize, int worldChunksX, int worldChunksY, const std::string& heightMapPath)
     : CHUNK_SIZE(chunkSize), TILE_SIZE(tileSize),
-      WORLD_CHUNKS_X(worldChunksX), WORLD_CHUNKS_Y(worldChunksY),
-      chunkManager(worldChunksX, worldChunksY, chunkSize, tileSize),
-      threadPool(std::thread::hardware_concurrency()), // Initialize thread pool
-      view(sf::FloatRect(0, 0, 800, 600)), // Default view size; will be updated
-      inputHandler(view, sf::Vector2f(800, 600)), // Default window size; will be updated
-      renderer(window, view, chunkManager, chunkSize, tileSize, sf::Vector2f(800, 600)),
-      windowSizeX(1280), windowSizeY(720), // Default window size; can be made configurable
-      renderDistance(2)
+    WORLD_CHUNKS_X(worldChunksX), WORLD_CHUNKS_Y(worldChunksY),
+    chunkManager(worldChunksX, worldChunksY, chunkSize, tileSize),
+    threadPool(std::thread::hardware_concurrency()), // Initialize thread pool
+    view(sf::FloatRect(0, 0, 800, 600)), // Default view size; will be updated
+    inputHandler(view, sf::Vector2f(800, 600)), // Default window size; will be updated
+    renderer(window, view, chunkManager, chunkSize, tileSize, sf::Vector2f(800, 600)),
+    windowSizeX(1280), windowSizeY(720), // Default window size; can be made configurable
+    renderDistance(2)
 {
     initializeWindow();
 
@@ -105,10 +105,6 @@ void Game::run() {
 
         // Render the frame
         renderer.renderFrame();
-
-        // Handle chunk loading completion
-        // Process completed chunk loading via thread pool
-        // (Assuming ThreadPool handles futures internally)
     }
 }
 
@@ -133,7 +129,6 @@ void Game::wrapView() {
     window.setView(view);
 }
 
-// Update visible chunks based on the current view
 void Game::updateVisibleChunks() {
     sf::Vector2f center = view.getCenter();
     sf::Vector2f size = view.getSize();
@@ -144,48 +139,56 @@ void Game::updateVisibleChunks() {
 
     int loadRadius = renderDistance;
 
+    // New active chunks to load
     std::unordered_set<ChunkCoord> newActiveChunks;
 
+    // 1. Collect the new set of chunks to load
     for (int y = centerChunkY - loadRadius; y <= centerChunkY + loadRadius; ++y) {
         for (int x = centerChunkX - loadRadius; x <= centerChunkX + loadRadius; ++x) {
             // Clamp chunk coordinates to world boundaries
             if (x < 0 || x >= chunkManager.getWorldChunksX() || y < 0 || y >= chunkManager.getWorldChunksY())
                 continue;
 
-            ChunkCoord coord{ x, y };
-            newActiveChunks.insert(coord);
-
-            // Load chunk if not already loaded
-            {
-                std::lock_guard<std::mutex> lock(activeChunksMutex);
-                if (activeChunks.find(coord) == activeChunks.end() && !chunkManager.isChunkLoaded(x, y)) {
-                    // Enqueue chunk loading in the thread pool
-                    threadPool.enqueue([this, x, y]() -> void {
-                        auto chunk = chunkManager.generateChunk(x, y);
-                        chunkManager.addLoadedChunk(x, y, chunk);
-                    });
-                }
-            }
+            newActiveChunks.insert(ChunkCoord{ x, y });
         }
     }
 
-    // Unload chunks that are no longer active
+    // 2. Determine chunks to unload and update activeChunks, without locking for too long
+    std::vector<ChunkCoord> chunksToUnload;
+    std::vector<ChunkCoord> chunksToLoad;
+
     {
         std::lock_guard<std::mutex> lock(activeChunksMutex);
-        for (auto it = activeChunks.begin(); it != activeChunks.end();) {
-            if (newActiveChunks.find(*it) == newActiveChunks.end()) {
-                chunkManager.unloadChunk(it->x, it->y);
-                it = activeChunks.erase(it);
-            }
-            else {
-                ++it;
+
+        // Unload chunks that are no longer in view
+        for (const auto& chunk : activeChunks) {
+            if (newActiveChunks.find(chunk) == newActiveChunks.end()) {
+                chunksToUnload.push_back(chunk);
             }
         }
 
-        // Add new active chunks
+        // Load new chunks that are not already active or loaded
         for (const auto& coord : newActiveChunks) {
-            activeChunks.insert(coord);
+            if (activeChunks.find(coord) == activeChunks.end() && !chunkManager.isChunkLoaded(coord.x, coord.y)) {
+                chunksToLoad.push_back(coord);
+            }
         }
+
+        // Update the activeChunks set with new active chunks
+        activeChunks = std::move(newActiveChunks);
+    }
+
+    // 3. Unload old chunks (done outside the critical section)
+    for (const auto& coord : chunksToUnload) {
+        chunkManager.unloadChunk(coord.x, coord.y);
+    }
+
+    // 4. Load new chunks asynchronously (done outside the critical section)
+    for (const auto& coord : chunksToLoad) {
+        threadPool.enqueue([this, coord]() {
+            auto chunk = chunkManager.generateChunk(coord.x, coord.y);
+            chunkManager.addLoadedChunk(coord.x, coord.y, chunk);
+            });
     }
 }
 
