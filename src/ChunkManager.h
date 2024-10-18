@@ -99,5 +99,5 @@ private:
     // Define land, water, and boundary colors
     const sf::Color LAND_COLOR = sf::Color(231, 232, 234);      // Example land color
     const sf::Color WATER_COLOR = sf::Color(174, 223, 246);     // Example water color
-    const sf::Color BOUNDARY_COLOR = sf::Color(200, 200, 200);  // Example boundary color
+    const sf::Color BOUNDARY_COLOR = sf::Color(231, 232, 234);  // Example boundary color
 };

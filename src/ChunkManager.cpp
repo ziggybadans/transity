@@ -6,7 +6,7 @@
 #include <algorithm>
 
 // Default procedural generation parameters
-constexpr float DEFAULT_LAND_THRESHOLD = 0.5f;
+constexpr float DEFAULT_LAND_THRESHOLD = 0.0f;
 constexpr float DEFAULT_BORDER_WIDTH = 4.35f;
 constexpr float DEFAULT_ATTENUATION_FACTOR = 0.243f;
 

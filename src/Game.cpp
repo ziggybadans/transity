@@ -16,7 +16,7 @@ Game::Game(int chunkSize, int tileSize, int worldChunksX, int worldChunksY, cons
     view(sf::FloatRect(0, 0, 800, 600)), // Default view size; will be updated
     inputHandler(view, sf::Vector2f(800, 600)), // Default window size; will be updated
     renderer(window, view, chunkManager, chunkSize, tileSize, sf::Vector2f(800, 600)),
-    windowSizeX(1280), windowSizeY(720), // Default window size; can be made configurable
+    windowSizeX(2560), windowSizeY(1440), // Default window size; can be made configurable
     renderDistance(2)
 {
     initializeWindow();

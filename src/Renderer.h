@@ -37,8 +37,8 @@ private:
     sf::Vector2f m_defaultViewSize;
 
     // LOD thresholds
-    static constexpr float LOD1_THRESHOLD = 1.0f;
-    static constexpr float LOD2_THRESHOLD = 2.0f;
+    static constexpr float LOD1_THRESHOLD = 5.0f;
+    static constexpr float LOD2_THRESHOLD = 10.0f;
 
     // Cached LOD level and last zoom factor
     int m_cachedLOD = -1;
