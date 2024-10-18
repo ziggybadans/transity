@@ -6,11 +6,11 @@
 #include <imgui-SFML.h>
 #include <stdexcept>
 
-Renderer::Renderer(sf::RenderWindow& win, sf::View& viewRef, const ChunkManager& cm,
+Renderer::Renderer(sf::RenderWindow& win, sf::View& viewRef, ChunkManager& cm,
     int chunkSize, int tileSize, const sf::Vector2f& defaultSize)
     : m_window(win), m_view(viewRef), m_chunkManager(cm), m_chunkSize(chunkSize),
     m_tileSize(tileSize), m_defaultViewSize(defaultSize),
-    m_vaLOD0(sf::Quads), m_vaLOD1(sf::Quads), m_vaLOD2(sf::Quads)
+    m_vaLODs() // Default initialization
 {
     // Validate inputs
     if (m_chunkSize <= 0) {
@@ -20,10 +20,10 @@ Renderer::Renderer(sf::RenderWindow& win, sf::View& viewRef, const ChunkManager&
         throw std::invalid_argument("tileSize must be positive.");
     }
 
-    // Initialize VertexArrays
-    m_vaLOD0.clear();
-    m_vaLOD1.clear();
-    m_vaLOD2.clear();
+    // Initialize each VertexArray with the appropriate PrimitiveType
+    for (auto& va : m_vaLODs) {
+        va.setPrimitiveType(sf::Quads); // Assuming all LODs use Quads
+    }
 }
 
 void Renderer::renderFrame() {
@@ -35,6 +35,9 @@ void Renderer::renderFrame() {
 
     // Get current view bounds for frustum culling
     sf::FloatRect viewBounds(m_view.getCenter() - m_view.getSize() / 2.0f, m_view.getSize());
+
+    // Load all chunks that are visible within the current view bounds
+    loadVisibleChunks(viewBounds);
 
     // Update visible chunks based on the current view
     updateVisibleChunks(viewBounds);
@@ -60,14 +63,16 @@ int Renderer::determineLODLevel() {
 
     if (std::abs(currentScaleX - m_lastZoom) > 1e-5f) { // Use epsilon for float comparison
         m_lastZoom = currentScaleX;
-        if (currentScaleX < LOD1_THRESHOLD) {
-            m_cachedLOD = 0;
+        // Iterate through thresholds to determine LOD
+        m_cachedLOD = 0; // Default to highest detail
+        for (size_t i = 0; i < NUM_LODS - 1; ++i) {
+            if (currentScaleX >= LOD_THRESHOLDS[i] && currentScaleX < LOD_THRESHOLDS[i + 1]) {
+                m_cachedLOD = static_cast<int>(i + 1);
+                break;
+            }
         }
-        else if (currentScaleX < LOD2_THRESHOLD) {
-            m_cachedLOD = 1;
-        }
-        else {
-            m_cachedLOD = 2;
+        if (currentScaleX >= LOD_THRESHOLDS[NUM_LODS - 1]) {
+            m_cachedLOD = static_cast<int>(NUM_LODS - 1);
         }
     }
 
@@ -98,9 +103,9 @@ void Renderer::updateVisibleChunks(const sf::FloatRect& viewBounds) {
 
 void Renderer::updateVertexArrays(int currentLOD) {
     // Clear existing VertexArrays
-    m_vaLOD0.clear();
-    m_vaLOD1.clear();
-    m_vaLOD2.clear();
+    for (auto& va : m_vaLODs) {
+        va.clear();
+    }
 
     // Iterate over all visible chunks
     for (const auto& [coord, chunkPtr] : m_visibleChunks) {
@@ -117,6 +122,12 @@ void Renderer::updateVertexArrays(int currentLOD) {
         case 2:
             verticesToDraw = &chunkPtr->verticesLOD2;
             break;
+        case 3:
+            verticesToDraw = &chunkPtr->verticesLOD3;
+            break;
+        case 4:
+            verticesToDraw = &chunkPtr->verticesLOD4;
+            break;
         default:
             verticesToDraw = &chunkPtr->verticesLOD0;
             break;
@@ -124,12 +135,12 @@ void Renderer::updateVertexArrays(int currentLOD) {
 
         if (verticesToDraw && verticesToDraw->getVertexCount() > 0) {
             // Append all vertices to the corresponding VertexArray
-            sf::VertexArray& targetVA = (currentLOD == 0) ? m_vaLOD0 :
-                (currentLOD == 1) ? m_vaLOD1 : m_vaLOD2;
-
-            // Iterate using an index-based loop
-            for (std::size_t i = 0; i < verticesToDraw->getVertexCount(); ++i) {
-                targetVA.append((*verticesToDraw)[i]);
+            if (currentLOD >= 0 && static_cast<size_t>(currentLOD) < m_vaLODs.size()) {
+                sf::VertexArray& targetVA = m_vaLODs[currentLOD];
+                // Iterate through all vertices in verticesToDraw and append them
+                for (unsigned int i = 0; i < verticesToDraw->getVertexCount(); ++i) {
+                    targetVA.append((*verticesToDraw)[i]); // Use operator[] to access vertices
+                }
             }
         }
     }
@@ -137,26 +148,53 @@ void Renderer::updateVertexArrays(int currentLOD) {
 
 void Renderer::drawChunks(int currentLOD) {
     // Draw VertexArrays based on the current LOD
-    switch (currentLOD) {
-    case 0:
-        if (m_vaLOD0.getVertexCount() > 0) {
-            m_window.draw(m_vaLOD0);
+    if (currentLOD >= 0 && static_cast<size_t>(currentLOD) < m_vaLODs.size()) {
+        if (m_vaLODs[currentLOD].getVertexCount() > 0) {
+            m_window.draw(m_vaLODs[currentLOD]);
         }
-        break;
-    case 1:
-        if (m_vaLOD1.getVertexCount() > 0) {
-            m_window.draw(m_vaLOD1);
+    }
+}
+
+void Renderer::loadVisibleChunks(const sf::FloatRect& viewBounds) {
+    float chunkPixelSize = static_cast<float>(m_chunkSize * m_tileSize);
+
+    // Calculate the range of chunks that intersect with the view bounds
+    int firstChunkX = static_cast<int>(std::floor(viewBounds.left / chunkPixelSize));
+    int lastChunkX = static_cast<int>(std::floor((viewBounds.left + viewBounds.width) / chunkPixelSize));
+    int firstChunkY = static_cast<int>(std::floor(viewBounds.top / chunkPixelSize));
+    int lastChunkY = static_cast<int>(std::floor((viewBounds.top + viewBounds.height) / chunkPixelSize));
+
+    // Clamp chunk indices to valid range based on your world size
+    // Assuming ChunkManager knows the world dimensions
+    int maxChunkX = m_chunkManager.getWorldChunksX() - 1;
+    int maxChunkY = m_chunkManager.getWorldChunksY() - 1;
+
+    firstChunkX = std::max(firstChunkX, 0);
+    firstChunkY = std::max(firstChunkY, 0);
+    lastChunkX = std::min(lastChunkX, maxChunkX);
+    lastChunkY = std::min(lastChunkY, maxChunkY);
+
+    // Iterate through the range and load chunks if not already loaded
+    for (int y = firstChunkY; y <= lastChunkY; ++y) {
+        for (int x = firstChunkX; x <= lastChunkX; ++x) {
+            ChunkCoord coord{ x, y };
+            if (!m_chunkManager.isChunkLoaded(x, y)) {
+                // Generate and load the chunk
+                std::shared_ptr<Chunk> newChunk = m_chunkManager.generateChunk(x, y);
+                m_chunkManager.addLoadedChunk(x, y, newChunk);
+            }
         }
-        break;
-    case 2:
-        if (m_vaLOD2.getVertexCount() > 0) {
-            m_window.draw(m_vaLOD2);
+    }
+
+    // Optionally, unload chunks that are no longer visible to save memory
+    // This step is optional and depends on your game's requirements
+    auto loadedChunks = m_chunkManager.getLoadedChunks();
+    for (const auto& [coord, chunkPtr] : loadedChunks) {
+        float chunkLeft = coord.x * chunkPixelSize;
+        float chunkTop = coord.y * chunkPixelSize;
+        sf::FloatRect chunkRect(chunkLeft, chunkTop, chunkPixelSize, chunkPixelSize);
+        if (!viewBounds.intersects(chunkRect)) {
+            m_chunkManager.unloadChunk(coord.x, coord.y);
         }
-        break;
-    default:
-        if (m_vaLOD0.getVertexCount() > 0) {
-            m_window.draw(m_vaLOD0);
-        }
-        break;
     }
 }

@@ -34,6 +34,8 @@ public:
     sf::VertexArray verticesLOD0; // High Detail
     sf::VertexArray verticesLOD1; // Medium Detail
     sf::VertexArray verticesLOD2; // Low Detail
+    sf::VertexArray verticesLOD3; // Lower Detail
+    sf::VertexArray verticesLOD4; // Lowest Detail
     sf::VertexArray contourLines;  // Contour Lines (currently unused)
 
     // Constructor

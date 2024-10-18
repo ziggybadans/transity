@@ -9,6 +9,8 @@
 constexpr float DEFAULT_LAND_THRESHOLD = 0.0f;
 constexpr float DEFAULT_BORDER_WIDTH = 4.35f;
 constexpr float DEFAULT_ATTENUATION_FACTOR = 0.243f;
+constexpr int AGGREGATION_FACTORS[] = { 1, 2, 4, 8, 16 }; // LOD0 to LOD4
+constexpr int NUM_LODS = sizeof(AGGREGATION_FACTORS) / sizeof(int);
 
 ChunkManager::ChunkManager(int worldChunksX, int worldChunksY, int chunkSize, int tileSize)
     : WORLD_CHUNKS_X(worldChunksX), WORLD_CHUNKS_Y(worldChunksY),
@@ -73,6 +75,7 @@ std::shared_ptr<Chunk> ChunkManager::generateChunk(int chunkX, int chunkY) {
     std::vector<float> tileHeights(CHUNK_SIZE * CHUNK_SIZE, 0.0f);
     std::vector<sf::Color> tileColors(CHUNK_SIZE * CHUNK_SIZE, sf::Color::Black);
 
+    // Generate tile data for LOD0
     for (int y = 0; y < CHUNK_SIZE; ++y) {
         for (int x = 0; x < CHUNK_SIZE; ++x) {
             // Calculate tile's world position
@@ -119,43 +122,59 @@ std::shared_ptr<Chunk> ChunkManager::generateChunk(int chunkX, int chunkY) {
         }
     }
 
-    // LOD1 (2x2 tiles)
-    for (int y = 0; y < CHUNK_SIZE; y += 2) {
-        for (int x = 0; x < CHUNK_SIZE; x += 2) {
-            sf::Color aggregatedColor = aggregateTiles(tileColors, x, y, 2);
-
-            float aggWorldX = static_cast<float>((chunkX * CHUNK_SIZE + x) * TILE_SIZE);
-            float aggWorldY = static_cast<float>((chunkY * CHUNK_SIZE + y) * TILE_SIZE);
-
-            sf::Vertex aggTopLeft(sf::Vector2f(aggWorldX, aggWorldY), aggregatedColor);
-            sf::Vertex aggTopRight(sf::Vector2f(aggWorldX + 2 * tileSizeF, aggWorldY), aggregatedColor);
-            sf::Vertex aggBottomRight(sf::Vector2f(aggWorldX + 2 * tileSizeF, aggWorldY + 2 * tileSizeF), aggregatedColor);
-            sf::Vertex aggBottomLeft(sf::Vector2f(aggWorldX, aggWorldY + 2 * tileSizeF), aggregatedColor);
-
-            chunk->verticesLOD1.append(aggTopLeft);
-            chunk->verticesLOD1.append(aggTopRight);
-            chunk->verticesLOD1.append(aggBottomRight);
-            chunk->verticesLOD1.append(aggBottomLeft);
+    // Generate vertex arrays for each LOD
+    for (size_t lod = 1; lod < NUM_LODS; ++lod) {
+        int factor = AGGREGATION_FACTORS[lod];
+        // Ensure that the factor divides the chunk size
+        if (CHUNK_SIZE % factor != 0) {
+            std::cerr << "Aggregation factor " << factor << " does not divide chunk size " << CHUNK_SIZE << ". Skipping LOD" << lod << ".\n";
+            continue;
         }
-    }
 
-    // LOD2 (4x4 tiles)
-    for (int y = 0; y < CHUNK_SIZE; y += 4) {
-        for (int x = 0; x < CHUNK_SIZE; x += 4) {
-            sf::Color aggregatedColor = aggregateTiles(tileColors, x, y, 4);
+        for (int y = 0; y < CHUNK_SIZE; y += factor) {
+            for (int x = 0; x < CHUNK_SIZE; x += factor) {
+                sf::Color aggregatedColor = aggregateTiles(tileColors, x, y, factor);
 
-            float aggWorldX = static_cast<float>((chunkX * CHUNK_SIZE + x) * TILE_SIZE);
-            float aggWorldY = static_cast<float>((chunkY * CHUNK_SIZE + y) * TILE_SIZE);
+                float aggWorldX = static_cast<float>((chunkX * CHUNK_SIZE + x) * TILE_SIZE);
+                float aggWorldY = static_cast<float>((chunkY * CHUNK_SIZE + y) * TILE_SIZE);
+                float aggSizeF = static_cast<float>(factor * TILE_SIZE);
 
-            sf::Vertex aggTopLeft(sf::Vector2f(aggWorldX, aggWorldY), aggregatedColor);
-            sf::Vertex aggTopRight(sf::Vector2f(aggWorldX + 4 * tileSizeF, aggWorldY), aggregatedColor);
-            sf::Vertex aggBottomRight(sf::Vector2f(aggWorldX + 4 * tileSizeF, aggWorldY + 4 * tileSizeF), aggregatedColor);
-            sf::Vertex aggBottomLeft(sf::Vector2f(aggWorldX, aggWorldY + 4 * tileSizeF), aggregatedColor);
+                sf::Vertex aggTopLeft(sf::Vector2f(aggWorldX, aggWorldY), aggregatedColor);
+                sf::Vertex aggTopRight(sf::Vector2f(aggWorldX + aggSizeF, aggWorldY), aggregatedColor);
+                sf::Vertex aggBottomRight(sf::Vector2f(aggWorldX + aggSizeF, aggWorldY + aggSizeF), aggregatedColor);
+                sf::Vertex aggBottomLeft(sf::Vector2f(aggWorldX, aggWorldY + aggSizeF), aggregatedColor);
 
-            chunk->verticesLOD2.append(aggTopLeft);
-            chunk->verticesLOD2.append(aggTopRight);
-            chunk->verticesLOD2.append(aggBottomRight);
-            chunk->verticesLOD2.append(aggBottomLeft);
+                // Append to the appropriate LOD vertex array
+                switch (lod) {
+                case 1:
+                    chunk->verticesLOD1.append(aggTopLeft);
+                    chunk->verticesLOD1.append(aggTopRight);
+                    chunk->verticesLOD1.append(aggBottomRight);
+                    chunk->verticesLOD1.append(aggBottomLeft);
+                    break;
+                case 2:
+                    chunk->verticesLOD2.append(aggTopLeft);
+                    chunk->verticesLOD2.append(aggTopRight);
+                    chunk->verticesLOD2.append(aggBottomRight);
+                    chunk->verticesLOD2.append(aggBottomLeft);
+                    break;
+                case 3:
+                    chunk->verticesLOD3.append(aggTopLeft);
+                    chunk->verticesLOD3.append(aggTopRight);
+                    chunk->verticesLOD3.append(aggBottomRight);
+                    chunk->verticesLOD3.append(aggBottomLeft);
+                    break;
+                case 4:
+                    chunk->verticesLOD4.append(aggTopLeft);
+                    chunk->verticesLOD4.append(aggTopRight);
+                    chunk->verticesLOD4.append(aggBottomRight);
+                    chunk->verticesLOD4.append(aggBottomLeft);
+                    break;
+                default:
+                    // Handle additional LODs if necessary
+                    break;
+                }
+            }
         }
     }
 
