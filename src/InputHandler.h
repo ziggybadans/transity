@@ -19,7 +19,7 @@ public:
 
     // Current zoom limits
     float minZoom = 0.5f;
-    float maxZoom = 15.0f;
+    float maxZoom = 2.0f;
 
 private:
     sf::View& view;
