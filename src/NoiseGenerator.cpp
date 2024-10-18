@@ -52,11 +52,13 @@ void NoiseGenerator::initializeDefaultLayers() {
     addNoiseLayer(cellularLayer);
 }
 
+// In NoiseGenerator.cpp, optimize generateHeight
 float NoiseGenerator::generateHeight(float x, float y) const {
     float height = 0.0f;
+    // Precompute x and y if possible
     for (const auto& layer : noiseLayers) {
         float noiseValue = layer.noise.GetNoise(x, y, 0.0f);
-        noiseValue = (noiseValue + 1.0f) / 2.0f;
+        noiseValue = (noiseValue + 1.0f) * 0.5f; // Normalize to [0,1]
         height += noiseValue * layer.amplitude;
     }
     return totalAmplitude != 0.0f ? height / totalAmplitude : 0.0f;

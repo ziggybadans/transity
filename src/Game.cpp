@@ -129,65 +129,57 @@ void Game::wrapView() {
     window.setView(view);
 }
 
+// In Game.cpp, modify updateVisibleChunks to batch chunk loading
 void Game::updateVisibleChunks() {
     sf::Vector2f center = view.getCenter();
     sf::Vector2f size = view.getSize();
 
-    // Determine the range of chunks to load based on renderDistance
     int centerChunkX = static_cast<int>(center.x) / (CHUNK_SIZE * TILE_SIZE);
     int centerChunkY = static_cast<int>(center.y) / (CHUNK_SIZE * TILE_SIZE);
 
     int loadRadius = renderDistance;
 
-    // New active chunks to load
     std::unordered_set<ChunkCoord> newActiveChunks;
-
-    // 1. Collect the new set of chunks to load
     for (int y = centerChunkY - loadRadius; y <= centerChunkY + loadRadius; ++y) {
         for (int x = centerChunkX - loadRadius; x <= centerChunkX + loadRadius; ++x) {
-            // Clamp chunk coordinates to world boundaries
             if (x < 0 || x >= chunkManager.getWorldChunksX() || y < 0 || y >= chunkManager.getWorldChunksY())
                 continue;
-
-            newActiveChunks.insert(ChunkCoord{ x, y });
+            newActiveChunks.emplace(ChunkCoord{ x, y });
         }
     }
 
-    // 2. Determine chunks to unload and update activeChunks, without locking for too long
     std::vector<ChunkCoord> chunksToUnload;
     std::vector<ChunkCoord> chunksToLoad;
 
     {
         std::lock_guard<std::mutex> lock(activeChunksMutex);
-
-        // Unload chunks that are no longer in view
         for (const auto& chunk : activeChunks) {
             if (newActiveChunks.find(chunk) == newActiveChunks.end()) {
                 chunksToUnload.push_back(chunk);
             }
         }
-
-        // Load new chunks that are not already active or loaded
         for (const auto& coord : newActiveChunks) {
             if (activeChunks.find(coord) == activeChunks.end() && !chunkManager.isChunkLoaded(coord.x, coord.y)) {
                 chunksToLoad.push_back(coord);
             }
         }
-
-        // Update the activeChunks set with new active chunks
         activeChunks = std::move(newActiveChunks);
     }
 
-    // 3. Unload old chunks (done outside the critical section)
     for (const auto& coord : chunksToUnload) {
         chunkManager.unloadChunk(coord.x, coord.y);
     }
 
-    // 4. Load new chunks asynchronously (done outside the critical section)
-    for (const auto& coord : chunksToLoad) {
-        threadPool.enqueue([this, coord]() {
-            auto chunk = chunkManager.generateChunk(coord.x, coord.y);
-            chunkManager.addLoadedChunk(coord.x, coord.y, chunk);
+    // Batch loading chunks
+    const size_t BATCH_SIZE = 10; // Example batch size
+    for (size_t i = 0; i < chunksToLoad.size(); i += BATCH_SIZE) {
+        size_t end = std::min(i + BATCH_SIZE, chunksToLoad.size());
+        std::vector<ChunkCoord> batch(chunksToLoad.begin() + i, chunksToLoad.begin() + end);
+        threadPool.enqueue([this, batch]() {
+            for (const auto& coord : batch) {
+                auto chunk = chunkManager.generateChunk(coord.x, coord.y);
+                chunkManager.addLoadedChunk(coord.x, coord.y, chunk);
+            }
             });
     }
 }

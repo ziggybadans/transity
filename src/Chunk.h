@@ -50,4 +50,6 @@ public:
 
     // Clears chunk data
     void clear();
+
+    std::unique_ptr<Chunk> clone() const;
 };
