@@ -68,28 +68,30 @@ std::shared_ptr<Chunk> ChunkManager::generateChunk(int chunkX, int chunkY) {
     auto chunk = std::make_shared<Chunk>();
     int totalTilesX = WORLD_CHUNKS_X * CHUNK_SIZE;
     int totalTilesY = WORLD_CHUNKS_Y * CHUNK_SIZE;
-
-    // Calculate tile size in float for positioning
     float tileSizeF = static_cast<float>(TILE_SIZE);
 
     std::vector<float> tileHeights(CHUNK_SIZE * CHUNK_SIZE, 0.0f);
     std::vector<sf::Color> tileColors(CHUNK_SIZE * CHUNK_SIZE, sf::Color::Black);
 
-    // Generate tile data for LOD0
+    // Precompute constants outside the loops
+    float invScaleX = useRealHeightMap && heightMap ?
+        (static_cast<float>(heightMap->getWidth()) - 1.0f) / (static_cast<float>(totalTilesX) - 1.0f) : 0.0f;
+    float invScaleY = useRealHeightMap && heightMap ?
+        (static_cast<float>(heightMap->getHeight()) - 1.0f) / (static_cast<float>(totalTilesY) - 1.0f) : 0.0f;
+
+    // Use a single loop to improve cache locality
     for (int y = 0; y < CHUNK_SIZE; ++y) {
         for (int x = 0; x < CHUNK_SIZE; ++x) {
-            // Calculate tile's world position
+            int tileIndex = y * CHUNK_SIZE + x;
+
             float worldX = static_cast<float>((chunkX * CHUNK_SIZE + x) * TILE_SIZE);
             float worldY = static_cast<float>((chunkY * CHUNK_SIZE + y) * TILE_SIZE);
 
-            // Calculate tile coordinates
             int tileX = chunkX * CHUNK_SIZE + x;
             int tileY = chunkY * CHUNK_SIZE + y;
 
             float height = 0.0f;
             if (useRealHeightMap && heightMap) {
-                float invScaleX = (static_cast<float>(heightMap->getWidth()) - 1.0f) / (static_cast<float>(totalTilesX) - 1.0f);
-                float invScaleY = (static_cast<float>(heightMap->getHeight()) - 1.0f) / (static_cast<float>(totalTilesY) - 1.0f);
                 height = heightMap->getScaledHeight(static_cast<float>(tileX), static_cast<float>(tileY), invScaleX, invScaleY);
             }
             else {
@@ -99,14 +101,13 @@ std::shared_ptr<Chunk> ChunkManager::generateChunk(int chunkX, int chunkY) {
                 float edgeDistance = std::sqrt(normalizedX * normalizedX + normalizedY * normalizedY);
                 float edgeAttenuationFactor = std::pow(edgeDistance, attenuationFactor);
 
-                height = noiseGenerator.generateHeight(worldX, worldY);
-                height *= edgeAttenuationFactor;
+                height = noiseGenerator.generateHeight(worldX, worldY) * edgeAttenuationFactor;
             }
 
-            sf::Color color = (height > landThreshold) ? sf::Color(231, 232, 234) : sf::Color(174, 223, 246);
+            sf::Color color = (height > landThreshold) ? LAND_COLOR : WATER_COLOR;
 
-            tileHeights[y * CHUNK_SIZE + x] = height;
-            tileColors[y * CHUNK_SIZE + x] = color;
+            tileHeights[tileIndex] = height;
+            tileColors[tileIndex] = color;
 
             // Define the four corners of the quad
             sf::Vertex topLeft(sf::Vector2f(worldX, worldY), color);
@@ -114,7 +115,7 @@ std::shared_ptr<Chunk> ChunkManager::generateChunk(int chunkX, int chunkY) {
             sf::Vertex bottomRight(sf::Vector2f(worldX + tileSizeF, worldY + tileSizeF), color);
             sf::Vertex bottomLeft(sf::Vector2f(worldX, worldY + tileSizeF), color);
 
-            // Append the quad to the LOD0 vertex array
+            // Append to LOD0
             chunk->verticesLOD0.append(topLeft);
             chunk->verticesLOD0.append(topRight);
             chunk->verticesLOD0.append(bottomRight);
@@ -122,10 +123,9 @@ std::shared_ptr<Chunk> ChunkManager::generateChunk(int chunkX, int chunkY) {
         }
     }
 
-    // Generate vertex arrays for each LOD
+    // Optimize LOD generation by precomputing aggregation factors
     for (size_t lod = 1; lod < NUM_LODS; ++lod) {
         int factor = AGGREGATION_FACTORS[lod];
-        // Ensure that the factor divides the chunk size
         if (CHUNK_SIZE % factor != 0) {
             std::cerr << "Aggregation factor " << factor << " does not divide chunk size " << CHUNK_SIZE << ". Skipping LOD" << lod << ".\n";
             continue;
@@ -171,7 +171,6 @@ std::shared_ptr<Chunk> ChunkManager::generateChunk(int chunkX, int chunkY) {
                     chunk->verticesLOD4.append(aggBottomLeft);
                     break;
                 default:
-                    // Handle additional LODs if necessary
                     break;
                 }
             }

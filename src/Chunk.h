@@ -38,6 +38,13 @@ public:
     sf::VertexArray verticesLOD4; // Lowest Detail
     sf::VertexArray contourLines;  // Contour Lines (currently unused)
 
+    // Add flags to track if LODs need updating
+    bool needsUpdateLOD0 = true;
+    bool needsUpdateLOD1 = true;
+    bool needsUpdateLOD2 = true;
+    bool needsUpdateLOD3 = true;
+    bool needsUpdateLOD4 = true;
+
     // Constructor
     Chunk();
 

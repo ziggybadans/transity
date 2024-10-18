@@ -102,45 +102,36 @@ void Renderer::updateVisibleChunks(const sf::FloatRect& viewBounds) {
 }
 
 void Renderer::updateVertexArrays(int currentLOD) {
-    // Clear existing VertexArrays
     for (auto& va : m_vaLODs) {
         va.clear();
     }
 
-    // Iterate over all visible chunks
     for (const auto& [coord, chunkPtr] : m_visibleChunks) {
-        if (!chunkPtr) continue; // Safety check
+        if (!chunkPtr) continue;
 
         const sf::VertexArray* verticesToDraw = nullptr;
         switch (currentLOD) {
-        case 0:
-            verticesToDraw = &chunkPtr->verticesLOD0;
-            break;
-        case 1:
-            verticesToDraw = &chunkPtr->verticesLOD1;
-            break;
-        case 2:
-            verticesToDraw = &chunkPtr->verticesLOD2;
-            break;
-        case 3:
-            verticesToDraw = &chunkPtr->verticesLOD3;
-            break;
-        case 4:
-            verticesToDraw = &chunkPtr->verticesLOD4;
-            break;
-        default:
-            verticesToDraw = &chunkPtr->verticesLOD0;
-            break;
+        case 0: verticesToDraw = &chunkPtr->verticesLOD0; break;
+        case 1: verticesToDraw = &chunkPtr->verticesLOD1; break;
+        case 2: verticesToDraw = &chunkPtr->verticesLOD2; break;
+        case 3: verticesToDraw = &chunkPtr->verticesLOD3; break;
+        case 4: verticesToDraw = &chunkPtr->verticesLOD4; break;
+        default: verticesToDraw = &chunkPtr->verticesLOD0; break;
         }
 
         if (verticesToDraw && verticesToDraw->getVertexCount() > 0) {
-            // Append all vertices to the corresponding VertexArray
-            if (currentLOD >= 0 && static_cast<size_t>(currentLOD) < m_vaLODs.size()) {
-                sf::VertexArray& targetVA = m_vaLODs[currentLOD];
-                // Iterate through all vertices in verticesToDraw and append them
-                for (unsigned int i = 0; i < verticesToDraw->getVertexCount(); ++i) {
-                    targetVA.append((*verticesToDraw)[i]); // Use operator[] to access vertices
-                }
+            // Append each vertex individually
+            for (size_t i = 0; i < verticesToDraw->getVertexCount(); ++i) {
+                m_vaLODs[currentLOD].append((*verticesToDraw)[i]);
+            }
+
+            // Optionally, reset the update flag
+            switch (currentLOD) {
+            case 0: chunkPtr->needsUpdateLOD0 = false; break;
+            case 1: chunkPtr->needsUpdateLOD1 = false; break;
+            case 2: chunkPtr->needsUpdateLOD2 = false; break;
+            case 3: chunkPtr->needsUpdateLOD3 = false; break;
+            case 4: chunkPtr->needsUpdateLOD4 = false; break;
             }
         }
     }
