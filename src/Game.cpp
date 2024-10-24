@@ -87,7 +87,7 @@ bool Game::InitManagers() {
     windowMgr->SetTitle(windowTitle);
 
     sf::ContextSettings settings;
-    settings.antialiasingLevel = 8;
+    settings.antialiasingLevel = 8; // Ensure this is set to a high enough value
     settings.depthBits = 24;
     settings.stencilBits = 8;
     settings.majorVersion = 3;

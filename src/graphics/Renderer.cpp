@@ -1,4 +1,5 @@
 #include "Renderer.h"
+#include "../Constants.h"
 #include "../graphics/Camera.h"
 #include <iostream>
 #include <algorithm>
@@ -51,33 +52,29 @@ void Renderer::Render(sf::RenderWindow& window, const Camera& camera) {
         std::vector<City> citiesToRender = cityManager->GetCitiesToRender(zoomLevel);
 
         // Calculate adjusted radius based on zoom level
-        // Prevent division by zero and clamp the radius
-        float adjustedRadius = baseCityRadius * zoomLevel;
-        adjustedRadius = std::clamp(adjustedRadius, 1.0f, 50.0f); // Adjust min and max as needed
+        float adjustedRadius = Constants::BASE_CITY_RADIUS * (1.0f + (zoomLevel - 1.0f) * Constants::ZOOM_RADIUS_FACTOR);
+        adjustedRadius = std::clamp(adjustedRadius, Constants::MIN_CITY_RADIUS, Constants::MAX_CITY_RADIUS);
 
-        // Temporary sf::Text object to reuse for all cities
+        // Configure text based on zoom level
+        unsigned int adjustedTextSize = static_cast<unsigned int>(Constants::BASE_TEXT_SIZE * (1.0f + (zoomLevel - 1.0f) * Constants::ZOOM_TEXT_FACTOR));
+        adjustedTextSize = std::clamp(adjustedTextSize, Constants::MIN_TEXT_SIZE, Constants::MAX_TEXT_SIZE);
+
+        // Setup sf::Text once to avoid repeated setup inside the loop
         sf::Text cityText;
         cityText.setFont(*cityFont);
-
-        // Adjust character size inversely based on zoom level
-        unsigned int baseTextSize = 12;
-        float textScale = 2.0f * zoomLevel;
-        unsigned int adjustedTextSize = static_cast<unsigned int>(baseTextSize * textScale);
-        adjustedTextSize = std::clamp(adjustedTextSize, 12u, 100u); // Adjust as needed
-
         cityText.setCharacterSize(adjustedTextSize);
         cityText.setFillColor(sf::Color::White);
         cityText.setStyle(sf::Text::Regular);
         cityText.setOutlineColor(sf::Color::Black);
-        cityText.setOutlineThickness(std::clamp(1.0f * (zoomLevel), 1.0f, 10.0f));
+        cityText.setOutlineThickness(1.0f); // Consistent outline thickness
 
         for (const auto& city : citiesToRender) {
             // Draw city circle with adjusted radius
             sf::CircleShape shape = *cityShape; // Copy the shape
             shape.setRadius(adjustedRadius);
-            shape.setOrigin(adjustedRadius, adjustedRadius); // Re-center based on new radius
+            shape.setOrigin(adjustedRadius, adjustedRadius); // Center the circle
             shape.setPosition(city.position);
-            shape.setOutlineThickness(std::clamp(2.0f * (zoomLevel), 1.0f, 5.0f));
+            shape.setOutlineThickness(1.0f); // Consistent outline thickness
             window.draw(shape);
 
             // Draw city name below the circle

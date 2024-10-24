@@ -16,4 +16,14 @@ namespace Constants {
     constexpr const char* HIGH_RES_MAP_PATH = "assets/world_high_detail.png";
     constexpr const char* LOW_RES_MAP_PATH = "assets/world_low_detail.png";
     constexpr float WORLD_MAP_ZOOM_SWITCH = 1.0f; // Zoom level to switch textures
+
+    constexpr float BASE_CITY_RADIUS = 5.0f;
+    constexpr float ZOOM_RADIUS_FACTOR = 2.0f;
+    constexpr float MIN_CITY_RADIUS = 2.0f;
+    constexpr float MAX_CITY_RADIUS = 20.0f;
+
+    constexpr unsigned int BASE_TEXT_SIZE = 12;
+    constexpr float ZOOM_TEXT_FACTOR = 1.5f;
+    constexpr unsigned int MIN_TEXT_SIZE = 10;
+    constexpr unsigned int MAX_TEXT_SIZE = 36;
 }
