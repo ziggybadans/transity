@@ -11,6 +11,14 @@ Renderer::~Renderer() {
 
 bool Renderer::Init(sf::RenderWindow& /*window*/, ThreadPool& /*threadPool*/) {
     // Initialize rendering resources if needed
+
+    // Load the font
+    cityFont = std::make_shared<sf::Font>();
+    if (!cityFont->loadFromFile("assets/PTSans-Regular.ttf")) { // Ensure the path is correct
+        std::cerr << "Renderer: Failed to load font." << std::endl;
+        return false;
+    }
+
     isInitialized = true;
     return true;
 }
@@ -40,10 +48,32 @@ void Renderer::Render(sf::RenderWindow& window, const Camera& camera) {
         float zoomLevel = camera.GetZoomLevel();
         std::vector<City> citiesToRender = cityManager->GetCitiesToRender(zoomLevel);
 
+        // Temporary sf::Text object to reuse for all cities
+        sf::Text cityText;
+        cityText.setFont(*cityFont);
+        // Adjust character size based on zoom level
+        // Example: Character size increases as zoom level increases
+        unsigned int baseSize = 12;
+        unsigned int adjustedSize = static_cast<unsigned int>(baseSize * zoomLevel);
+        adjustedSize = std::max(adjustedSize, 8u); // Minimum size
+        cityText.setCharacterSize(adjustedSize);
+        cityText.setFillColor(sf::Color::White);
+        cityText.setStyle(sf::Text::Regular);
+
         for (const auto& city : citiesToRender) {
+            // Draw city circle
             sf::CircleShape shape = *cityShape; // Copy the shape
             shape.setPosition(city.position);
             window.draw(shape);
+
+            // Draw city name below the circle
+            cityText.setString(city.name);
+            // Center the text horizontally relative to the city circle
+            sf::FloatRect textBounds = cityText.getLocalBounds();
+            cityText.setOrigin(textBounds.left + textBounds.width / 2.0f, 0.0f);
+            cityText.setPosition(city.position.x, city.position.y + cityShape->getRadius() + 2.0f); // 2.0f is the offset below the circle
+
+            window.draw(cityText);
         }
     }
 }
@@ -54,5 +84,6 @@ void Renderer::Shutdown() {
     worldMap.reset();
     cityManager = nullptr;
     cityShape.reset();
+    cityFont.reset();
     // Reset other renderable components
 }

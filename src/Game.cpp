@@ -187,6 +187,12 @@ bool Game::LoadResources() {
     renderer->SetCityManager(cityManager.get());
     renderer->SetCityCircleShape(cityCircleShape);
 
+    // Load and set the font in Renderer
+    if (!renderer->Init(windowManager->GetWindow(), *threadPool)) {
+        std::cerr << "Failed to initialize Renderer." << std::endl;
+        return false;
+    }
+
     isRunning = true;
     return true;
 }

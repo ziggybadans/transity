@@ -39,6 +39,9 @@ private:
     CityManager* cityManager;
     std::shared_ptr<sf::CircleShape> cityShape;
 
+    // Font for city names
+    std::shared_ptr<sf::Font> cityFont;
+
     // Mutex for thread-safe rendering if needed
     mutable std::mutex renderMutex;
 };

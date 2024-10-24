@@ -83,16 +83,14 @@ sf::Vector2f CityManager::GeoToMapCoordinates(double latitude, double longitude)
 }
 
 int CityManager::DeterminePopulationThreshold(float zoomLevel) const {
-    // Example mapping: adjust based on desired zoom behavior
-    // At higher zoom (zoomLevel > 1.0f), threshold = 1000
-    // At zoomLevel = 0.5f, threshold = 5000
-    // At zoomLevel = 0.1f, threshold = 100000
-    // Threshold = 1000 / zoomLevel
+    // Prevent division by zero or negative zoom levels
+    if (zoomLevel <= 0.0f) zoomLevel = 0.01f;
 
-    if (zoomLevel <= 0.0f) zoomLevel = 0.01f; // Prevent division by zero
-    int threshold = static_cast<int>(1000.0f / zoomLevel);
+    // Adjust the base threshold according to the zoom level
+    // As zoomLevel increases (zooming out), threshold increases
+    int threshold = static_cast<int>(100000.0f * zoomLevel);
 
-    // Clamp to a maximum threshold
+    // Clamp the threshold to a reasonable maximum
     threshold = std::min(threshold, 1000000);
 
     return threshold;
