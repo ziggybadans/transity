@@ -11,6 +11,8 @@
 #include "managers/EventManager.h"
 #include "managers/InputManager.h"
 #include "world/WorldMap.h"
+#include "world/City.h"
+#include "world/CityManager.h"
 #include "graphics/Renderer.h"
 #include "graphics/Camera.h"
 #include "utility/ThreadPool.h"
@@ -58,6 +60,11 @@ private:
     std::string windowTitle;
 
     sf::Clock deltaClock;
+
+    // City management
+    std::unique_ptr<CityManager> cityManager;
+    std::shared_ptr<sf::CircleShape> cityCircleShape; // Shape template for cities
+    mutable std::mutex cityMutex; // Mutex for any city-related operations if needed
 
     // Initialization helpers
     bool InitManagers();

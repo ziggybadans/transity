@@ -2,9 +2,11 @@
 
 #include <SFML/Graphics.hpp>
 #include <memory>
-#include "../world/WorldMap.h"
+#include <mutex>
 #include "Camera.h"
 #include "../utility/ThreadPool.h"
+#include "../world/WorldMap.h"
+#include "../world/CityManager.h"
 
 class Renderer {
 public:
@@ -17,6 +19,12 @@ public:
     // Set the WorldMap to render
     void SetWorldMap(std::shared_ptr<WorldMap> map);
 
+    // Set the CityManager
+    void SetCityManager(CityManager* manager);
+
+    // Set the City Circle Shape
+    void SetCityCircleShape(std::shared_ptr<sf::CircleShape> shape);
+
     // Render all game elements
     void Render(sf::RenderWindow& window, const Camera& camera);
 
@@ -27,5 +35,10 @@ private:
     bool isInitialized;
     std::shared_ptr<WorldMap> worldMap;
 
-    // Add other renderable components here (e.g., sprites, entities)
+    // City rendering
+    CityManager* cityManager;
+    std::shared_ptr<sf::CircleShape> cityShape;
+
+    // Mutex for thread-safe rendering if needed
+    mutable std::mutex renderMutex;
 };

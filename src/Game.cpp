@@ -125,7 +125,7 @@ bool Game::LoadResources() {
         else {
             std::cerr << "Failed to initialize WorldMap." << std::endl;
         }
-    });
+        });
     threadPool->enqueueTask(loadWorldMapTask);
 
     // Wait for WorldMap to load
@@ -146,6 +146,48 @@ bool Game::LoadResources() {
         return false;
     }
 
+    // Enqueue CityManager loading task
+    std::condition_variable cvCities;
+    bool citiesLoaded = false;
+    std::mutex cvCitiesMutex;
+
+    Task loadCitiesTask([this, &cvCities, &citiesLoaded]() {
+        std::string geonamesPath = "assets/cities1000.txt"; // Example path
+        auto tempCityManager = std::make_unique<CityManager>(geonamesPath, *worldMap);
+        if (tempCityManager->Init()) {
+            {
+                std::lock_guard<std::mutex> lock(worldMapMutex);
+                cityManager = std::move(tempCityManager);
+                citiesLoaded = true;
+            }
+            cvCities.notify_one();
+        }
+        else {
+            std::cerr << "Failed to initialize CityManager." << std::endl;
+        }
+        });
+    threadPool->enqueueTask(loadCitiesTask);
+
+    // Wait for CityManager to load
+    std::unique_lock<std::mutex> lockCities(cvCitiesMutex);
+    cvCities.wait(lockCities, [&citiesLoaded]() { return citiesLoaded; });
+
+    // Initialize the circle shape for cities
+    if (cityManager) {
+        cityCircleShape = std::make_shared<sf::CircleShape>(5.0f); // Radius 5, adjust as needed
+        cityCircleShape->setFillColor(sf::Color::Red);
+        cityCircleShape->setOrigin(5.0f, 5.0f); // Center the circle
+    }
+    else {
+        std::cerr << "CityManager is not loaded." << std::endl;
+        return false;
+    }
+
+    // Set CityManager and city shape in Renderer
+    renderer->SetCityManager(cityManager.get());
+    renderer->SetCityCircleShape(cityCircleShape);
+
+    isRunning = true;
     return true;
 }
 

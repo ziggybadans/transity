@@ -3,7 +3,7 @@
 #include <iostream>
 
 Renderer::Renderer()
-    : isInitialized(false) {}
+    : isInitialized(false), cityManager(nullptr) {}
 
 Renderer::~Renderer() {
     Shutdown();
@@ -19,6 +19,14 @@ void Renderer::SetWorldMap(std::shared_ptr<WorldMap> map) {
     worldMap = map;
 }
 
+void Renderer::SetCityManager(CityManager* manager) {
+    cityManager = manager;
+}
+
+void Renderer::SetCityCircleShape(std::shared_ptr<sf::CircleShape> shape) {
+    cityShape = shape;
+}
+
 void Renderer::Render(sf::RenderWindow& window, const Camera& camera) {
     if (!isInitialized) return;
 
@@ -27,16 +35,24 @@ void Renderer::Render(sf::RenderWindow& window, const Camera& camera) {
         worldMap->Render(window, camera);
     }
 
-    // Render other game elements here
-    // Example:
-    // for (const auto& entity : entities) {
-    //     window.draw(entity->getSprite());
-    // }
+    // Render cities
+    if (cityManager && cityShape) {
+        float zoomLevel = camera.GetZoomLevel();
+        std::vector<City> citiesToRender = cityManager->GetCitiesToRender(zoomLevel);
+
+        for (const auto& city : citiesToRender) {
+            sf::CircleShape shape = *cityShape; // Copy the shape
+            shape.setPosition(city.position);
+            window.draw(shape);
+        }
+    }
 }
 
 void Renderer::Shutdown() {
     // Clean up rendering resources if needed
     isInitialized = false;
     worldMap.reset();
+    cityManager = nullptr;
+    cityShape.reset();
     // Reset other renderable components
 }
