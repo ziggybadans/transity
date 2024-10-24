@@ -1,0 +1,14 @@
+C:\Users\Ziggy\Downloads\imgui-1.89.9\imgui.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Release\imgui.obj
+C:\Users\Ziggy\Downloads\imgui-1.89.9\imgui_draw.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Release\imgui_draw.obj
+C:\Users\Ziggy\Downloads\imgui-1.89.9\imgui_tables.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Release\imgui_tables.obj
+C:\Users\Ziggy\Downloads\imgui-1.89.9\imgui_widgets.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Release\imgui_widgets.obj
+C:\Users\Ziggy\Downloads\imgui-sfml-2.6\imgui-SFML.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Release\imgui-SFML.obj
+C:\Users\Ziggy\Documents\Transity\Transity\src\Game.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Release\Game.obj
+C:\Users\Ziggy\Documents\Transity\Transity\src\graphics\Camera.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Release\Camera.obj
+C:\Users\Ziggy\Documents\Transity\Transity\src\graphics\Renderer.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Release\Renderer.obj
+C:\Users\Ziggy\Documents\Transity\Transity\src\managers\InputManager.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Release\InputManager.obj
+C:\Users\Ziggy\Documents\Transity\Transity\src\managers\UIManager.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Release\UIManager.obj
+C:\Users\Ziggy\Documents\Transity\Transity\src\managers\WindowManager.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Release\WindowManager.obj
+C:\Users\Ziggy\Documents\Transity\Transity\src\Transity.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Release\Transity.obj
+C:\Users\Ziggy\Documents\Transity\Transity\src\utility\ThreadPool.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Release\ThreadPool.obj
+C:\Users\Ziggy\Documents\Transity\Transity\src\world\WorldMap.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Release\WorldMap.obj
