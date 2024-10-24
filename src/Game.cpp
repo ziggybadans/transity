@@ -175,7 +175,9 @@ bool Game::LoadResources() {
     // Initialize the circle shape for cities
     if (cityManager) {
         cityCircleShape = std::make_shared<sf::CircleShape>(5.0f); // Radius 5, adjust as needed
-        cityCircleShape->setFillColor(sf::Color::Red);
+        cityCircleShape->setFillColor(sf::Color::White);
+        cityCircleShape->setOutlineThickness(2.0f);
+        cityCircleShape->setOutlineColor(sf::Color::Black);
         cityCircleShape->setOrigin(5.0f, 5.0f); // Center the circle
     }
     else {

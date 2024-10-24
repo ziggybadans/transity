@@ -88,10 +88,10 @@ int CityManager::DeterminePopulationThreshold(float zoomLevel) const {
 
     // Adjust the base threshold according to the zoom level
     // As zoomLevel increases (zooming out), threshold increases
-    int threshold = static_cast<int>(100000.0f * zoomLevel);
+    int threshold = static_cast<int>(500000.0f * zoomLevel);
 
     // Clamp the threshold to a reasonable maximum
-    threshold = std::min(threshold, 1000000);
+    threshold = std::min(threshold, 10000000);
 
     return threshold;
 }

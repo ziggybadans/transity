@@ -42,6 +42,9 @@ private:
     // Font for city names
     std::shared_ptr<sf::Font> cityFont;
 
+    // Base radius for city circles at default zoom level
+    float baseCityRadius;
+
     // Mutex for thread-safe rendering if needed
     mutable std::mutex renderMutex;
 };
