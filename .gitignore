@@ -16,3 +16,4 @@
 *.vsidx
 *.ipch
 /.vs/Transity/v17/*
+/assets/
