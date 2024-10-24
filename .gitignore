@@ -17,7 +17,3 @@
 *.ipch
 /.vs/Transity/v17/*
 /assets/
-/assets/heightmaps/world_ehigh.jpg
-/assets/heightmaps/world_heightmap.png
-/assets/heightmaps/world_heightmap_old.png
-/assets/textures/texture_atlas.png
