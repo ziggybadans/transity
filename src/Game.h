@@ -1,75 +1,70 @@
-// src/Game.h
 #pragma once
 
 #include <SFML/Graphics.hpp>
-#include <unordered_set>
-#include <future>
+#include <imgui.h>
+#include <imgui-SFML.h>
+#include <atomic>
 #include <memory>
 #include <mutex>
-#include <vector>
-#include <string>
 
-#include "ChunkManager.h"
-#include "InputHandler.h"
-#include "Renderer.h"
-#include "HeightMap.h"
-#include "ThreadPool.h"
+#include "managers/InitializationManager.h"
+#include "managers/EventManager.h"
+#include "managers/InputManager.h"
+#include "world/WorldMap.h"
+#include "graphics/Renderer.h"
+#include "graphics/Camera.h"
+#include "utility/ThreadPool.h"
+#include "utility/Task.h"
 
-class Game {
+// Forward declarations
+class WindowManager;
+class UIManager;
+
+class Game : public IInitializable {
 public:
-    Game(int chunkSize, int tileSize, int worldChunksX, int worldChunksY, const std::string& heightMapPath = "");
+    Game();
     ~Game();
 
+    // Initialize the game
+    bool Init() override;
+
     // Run the main game loop
-    void run();
+    void Run();
+
+    // Shutdown the game and clean up resources
+    void Shutdown();
 
 private:
-    // Window and view
-    sf::RenderWindow window;
-    sf::View view;
+    // Managers
+    InitializationManager initManager;
+    std::shared_ptr<EventManager> eventManager;
+    std::shared_ptr<WindowManager> windowManager;
+    std::shared_ptr<UIManager> uiManager;
 
-    // Game settings
-    const int CHUNK_SIZE;
-    const int TILE_SIZE;
-    const int WORLD_CHUNKS_X;
-    const int WORLD_CHUNKS_Y;
-    int windowSizeX;
-    int windowSizeY;
+    // Modules
+    std::unique_ptr<ThreadPool> threadPool;
+    std::unique_ptr<Renderer> renderer;
+    std::shared_ptr<Camera> camera;
+    std::unique_ptr<InputManager> inputManager;
 
-    // Managers and handlers
-    ChunkManager chunkManager;
-    InputHandler inputHandler;
-    Renderer renderer;
-    std::shared_ptr<HeightMap> heightMap;
+    std::shared_ptr<WorldMap> worldMap;
+    mutable std::mutex worldMapMutex;
 
-    // Thread pool for chunk loading
-    ThreadPool threadPool;
+    // Game state
+    std::atomic<bool> isRunning;
 
-    // Helper function to wrap the view's center
-    void wrapView();
-    void drawDebugGUI();
+    // Video settings
+    sf::VideoMode videoMode;
+    std::string windowTitle;
 
-    // Dynamic chunk management
-    std::unordered_set<ChunkCoord> activeChunks;
-    std::vector<std::future<std::shared_ptr<Chunk>>> loadingChunks;
-    std::mutex activeChunksMutex;
+    sf::Clock deltaClock;
 
-    // View parameters
-    int renderDistance; // Number of chunks to load around the view
+    // Initialization helpers
+    bool InitManagers();
+    bool LoadResources();
 
-    // Chunk loading parameters
-    void updateVisibleChunks();
-    ChunkCoord getChunkCoordFromPosition(const sf::Vector2f& position) const;
-
-    // Regeneration parameters
-    bool needsRegeneration = false;
-    sf::Clock regenClock;
-    sf::Time regenDelay = sf::seconds(0.5f); // 0.5-second delay
-
-    // Configuration options
-    void loadHeightMap(const std::string& heightMapPath);
-    void initializeWindow();
-
-    // GUI state
-    bool useRealHeightMap = false;
+    // Main loop functions
+    void ProcessEvents();
+    void Update(float dt);
+    void Render();
 };
