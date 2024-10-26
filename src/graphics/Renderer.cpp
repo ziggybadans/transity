@@ -45,6 +45,7 @@ void Renderer::Render(sf::RenderWindow& window, const Camera& camera) {
         worldMap->Render(window, camera);
     }
 
+    /*
     // Render cities
     if (cityManager && cityShape) {
         float zoomLevel = camera.GetZoomLevel();
@@ -91,6 +92,7 @@ void Renderer::Render(sf::RenderWindow& window, const Camera& camera) {
             window.draw(cityText);
         }
     }
+    */
 }
 
 void Renderer::Shutdown() {

@@ -146,6 +146,7 @@ bool Game::LoadResources() {
         return false;
     }
 
+    /*
     // Enqueue CityManager loading task
     std::condition_variable cvCities;
     bool citiesLoaded = false;
@@ -194,6 +195,7 @@ bool Game::LoadResources() {
         std::cerr << "Failed to initialize Renderer." << std::endl;
         return false;
     }
+    */
 
     isRunning = true;
     return true;
