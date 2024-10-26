@@ -25,8 +25,11 @@ void WindowManager::SetContextSettings(const sf::ContextSettings& settings) {
 }
 
 bool WindowManager::Init() {
-    window = std::make_unique<sf::RenderWindow>(videoMode, windowTitle, sf::Style::Default, contextSettings);
-    window->setFramerateLimit(60);
+    // Check if fullscreen is enabled and set appropriate style
+    sf::Uint32 style = fullscreen ? sf::Style::Fullscreen : sf::Style::Default;
+
+    window = std::make_unique<sf::RenderWindow>(videoMode, windowTitle, style, contextSettings);
+    window->setFramerateLimit(240);
 
     return window->isOpen();
 }
@@ -59,4 +62,8 @@ sf::RenderWindow& WindowManager::GetWindow() {
         return *window;
     }
     throw std::runtime_error("RenderWindow is not initialized.");
+}
+
+void WindowManager::SetFullscreen(bool enable) {
+    fullscreen = enable;
 }

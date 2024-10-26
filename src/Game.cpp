@@ -42,8 +42,6 @@ bool Game::Init() {
     inputManager = std::make_unique<InputManager>(eventManager, camera, windowManager->GetWindow());
     inputManager->SetZoomSpeed(Constants::CAMERA_ZOOM_SPEED);
     inputManager->SetPanSpeed(Constants::CAMERA_PAN_SPEED);
-    inputManager->SetMinZoom(Constants::CAMERA_MIN_ZOOM);
-    inputManager->SetMaxZoom(Constants::CAMERA_MAX_ZOOM);
 
     // Subscribe to Events
     eventManager->Subscribe(EventType::Closed, [this](const sf::Event& event) {
@@ -86,6 +84,9 @@ bool Game::InitManagers() {
     windowMgr->SetVideoMode(sf::VideoMode(videoMode));
     windowMgr->SetTitle(windowTitle);
 
+    // Enable fullscreen mode if desired
+    windowMgr->SetFullscreen(true); // Set to false if you want windowed mode
+
     sf::ContextSettings settings;
     settings.antialiasingLevel = 8;
     settings.depthBits = 24;
@@ -109,11 +110,8 @@ bool Game::LoadResources() {
 
     // Enqueue WorldMap loading task
     Task loadWorldMapTask([this, &cv, &loaded]() {
-        std::string highResPath = "assets/world_high_detail.png";
-        std::string lowResPath = "assets/world_low_detail.png";
-        float zoomSwitch = 1.0f; // Example threshold, adjust as needed
-
-        auto tempWorldMap = std::make_shared<WorldMap>(highResPath, lowResPath, zoomSwitch);
+        std::string geoJsonPath = "assets/ne_10m_land.json"; // Path to your GeoJSON file
+        auto tempWorldMap = std::make_shared<WorldMap>(geoJsonPath);
         if (tempWorldMap->Init()) {
             {
                 std::lock_guard<std::mutex> lock(worldMapMutex);
@@ -125,7 +123,7 @@ bool Game::LoadResources() {
         else {
             std::cerr << "Failed to initialize WorldMap." << std::endl;
         }
-    });
+        });
     threadPool->enqueueTask(loadWorldMapTask);
 
     // Wait for WorldMap to load
@@ -146,6 +144,7 @@ bool Game::LoadResources() {
         return false;
     }
 
+    isRunning = true;
     return true;
 }
 
@@ -179,13 +178,11 @@ void Game::Update(float dt) {
     if (inputManager) {
         inputManager->HandleInput(dt);
     }
-
-    // Update other game states here
 }
 
 void Game::Render() {
     // Clear the window
-    windowManager->Clear(sf::Color::Black);
+    windowManager->Clear(sf::Color(174, 223, 246));
 
     // Apply camera view
     if (camera) {

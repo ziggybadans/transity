@@ -2,9 +2,10 @@
 
 #include <SFML/Graphics.hpp>
 #include <memory>
-#include "../world/WorldMap.h"
+#include <mutex>
 #include "Camera.h"
 #include "../utility/ThreadPool.h"
+#include "../world/WorldMap.h"
 
 class Renderer {
 public:
@@ -27,5 +28,12 @@ private:
     bool isInitialized;
     std::shared_ptr<WorldMap> worldMap;
 
-    // Add other renderable components here (e.g., sprites, entities)
+    // Mutex for thread-safe rendering if needed
+    mutable std::mutex renderMutex;
+
+    sf::Font font;
+
+    // New members for hover functionality
+    std::string hoveredCityName;
+    sf::Text hoveredCityText;
 };
