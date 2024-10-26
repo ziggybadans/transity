@@ -77,9 +77,6 @@
     <ClInclude Include="..\..\..\Downloads\imgui-1.89.9\imgui.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\mapbox\earcut.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\nlohmann\json.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -129,6 +126,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\world\WorldMap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\mapbox\earcut.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -109,11 +109,8 @@ bool Game::LoadResources() {
 
     // Enqueue WorldMap loading task
     Task loadWorldMapTask([this, &cv, &loaded]() {
-        std::string highResPath = "assets/world_high_detail.png";
-        std::string lowResPath = "assets/world_low_detail.png";
-        float zoomSwitch = 1.0f; // Example threshold, adjust as needed
-
-        auto tempWorldMap = std::make_shared<WorldMap>(highResPath, lowResPath, zoomSwitch);
+        std::string geoJsonPath = "assets/ne_10m_land.json"; // Path to your GeoJSON file
+        auto tempWorldMap = std::make_shared<WorldMap>(geoJsonPath);
         if (tempWorldMap->Init()) {
             {
                 std::lock_guard<std::mutex> lock(worldMapMutex);
@@ -147,6 +144,7 @@ bool Game::LoadResources() {
     }
 
     /*
+    // Uncomment and adapt the following code if you decide to re-enable city rendering
     // Enqueue CityManager loading task
     std::condition_variable cvCities;
     bool citiesLoaded = false;
@@ -166,7 +164,7 @@ bool Game::LoadResources() {
         else {
             std::cerr << "Failed to initialize CityManager." << std::endl;
         }
-        });
+    });
     threadPool->enqueueTask(loadCitiesTask);
 
     // Wait for CityManager to load
@@ -189,12 +187,6 @@ bool Game::LoadResources() {
     // Set CityManager and city shape in Renderer
     renderer->SetCityManager(cityManager.get());
     renderer->SetCityCircleShape(cityCircleShape);
-
-    // Load and set the font in Renderer
-    if (!renderer->Init(windowManager->GetWindow(), *threadPool)) {
-        std::cerr << "Failed to initialize Renderer." << std::endl;
-        return false;
-    }
     */
 
     isRunning = true;
