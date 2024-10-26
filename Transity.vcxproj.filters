@@ -54,9 +54,6 @@
     <ClCompile Include="src\utility\ThreadPool.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\world\CityManager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\world\WorldMap.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -117,12 +114,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\utility\ThreadPool.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\world\City.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\world\CityManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\world\WorldMap.h">

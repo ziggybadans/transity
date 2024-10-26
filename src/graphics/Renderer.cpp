@@ -4,7 +4,7 @@
 #include <algorithm>
 
 Renderer::Renderer()
-    : isInitialized(false), cityManager(nullptr), baseCityRadius(5.0f) {} // Initialize base radius
+    : isInitialized(false) {} // Initialize base radius
 // You can adjust the default base radius as needed
 
 Renderer::~Renderer() {
@@ -12,29 +12,18 @@ Renderer::~Renderer() {
 }
 
 bool Renderer::Init(sf::RenderWindow& /*window*/, ThreadPool& /*threadPool*/) {
-    // Initialize rendering resources if needed
+    isInitialized = true;
 
-    // Load the font
-    cityFont = std::make_shared<sf::Font>();
-    if (!cityFont->loadFromFile("assets/PTSans-Regular.ttf")) { // Ensure the path is correct
-        std::cerr << "Renderer: Failed to load font." << std::endl;
+    if (!font.loadFromFile("assets/PTSans-Regular.ttf")) {
+        std::cerr << "Failed to load font." << std::endl;
         return false;
     }
 
-    isInitialized = true;
     return true;
 }
 
 void Renderer::SetWorldMap(std::shared_ptr<WorldMap> map) {
     worldMap = map;
-}
-
-void Renderer::SetCityManager(CityManager* manager) {
-    cityManager = manager;
-}
-
-void Renderer::SetCityCircleShape(std::shared_ptr<sf::CircleShape> shape) {
-    cityShape = shape;
 }
 
 void Renderer::Render(sf::RenderWindow& window, const Camera& camera) {
@@ -45,62 +34,59 @@ void Renderer::Render(sf::RenderWindow& window, const Camera& camera) {
         worldMap->Render(window, camera);
     }
 
-    /*
-    // Render cities
-    if (cityManager && cityShape) {
-        float zoomLevel = camera.GetZoomLevel();
-        std::vector<City> citiesToRender = cityManager->GetCitiesToRender(zoomLevel);
+    // Render Cities
+    if (worldMap) {
+        const auto& cities = worldMap->GetCities();
 
-        // Calculate adjusted radius based on zoom level
-        // Prevent division by zero and clamp the radius
-        float adjustedRadius = baseCityRadius * zoomLevel;
-        adjustedRadius = std::clamp(adjustedRadius, 1.0f, 50.0f); // Adjust min and max as needed
+        float currentZoom = camera.GetZoomLevel();
 
-        // Temporary sf::Text object to reuse for all cities
-        sf::Text cityText;
-        cityText.setFont(*cityFont);
-
-        // Adjust character size inversely based on zoom level
-        unsigned int baseTextSize = 12;
-        float textScale = 2.0f * zoomLevel;
-        unsigned int adjustedTextSize = static_cast<unsigned int>(baseTextSize * textScale);
-        adjustedTextSize = std::clamp(adjustedTextSize, 12u, 100u); // Adjust as needed
-
-        cityText.setCharacterSize(adjustedTextSize);
-        cityText.setFillColor(sf::Color::White);
-        cityText.setStyle(sf::Text::Regular);
-        cityText.setOutlineColor(sf::Color::Black);
-        cityText.setOutlineThickness(std::clamp(1.0f * (zoomLevel), 1.0f, 10.0f));
-
-        for (const auto& city : citiesToRender) {
-            // Draw city circle with adjusted radius
-            sf::CircleShape shape = *cityShape; // Copy the shape
-            shape.setRadius(adjustedRadius);
-            shape.setOrigin(adjustedRadius, adjustedRadius); // Re-center based on new radius
-            shape.setPosition(city.position);
-            shape.setOutlineThickness(std::clamp(2.0f * (zoomLevel), 1.0f, 5.0f));
-            window.draw(shape);
-
-            // Draw city name below the circle
-            cityText.setString(city.name);
-
-            // Center the text horizontally relative to the city circle
-            sf::FloatRect textBounds = cityText.getLocalBounds();
-            cityText.setOrigin(textBounds.left + textBounds.width / 2.0f, 0.0f);
-            cityText.setPosition(city.position.x, city.position.y + adjustedRadius + 2.0f); // 2.0f is the vertical offset
-
-            window.draw(cityText);
+        // Determine zoom level based on currentZoom
+        int cityZoomLevel = 0;
+        if (currentZoom >= 2.0f) {
+            cityZoomLevel = 1;
         }
+        else if (currentZoom >= 1.0f) {
+            cityZoomLevel = 2;
+        }
+        else if (currentZoom >= 0.5f) {
+            cityZoomLevel = 3;
+        }
+        else {
+            cityZoomLevel = 4;
+        }
+
+        // Define base sizes
+        float baseCircleRadius = 8.0f;
+
+        // Scaling factors
+        float scaledCircleRadius = baseCircleRadius * currentZoom * 2;
+
+        // Set up circle shape
+        sf::CircleShape circle;
+        circle.setFillColor(sf::Color::White);
+        circle.setOutlineColor(sf::Color::Black);
+
+        sf::View originalView = window.getView();
+        window.setView(camera.GetView());
+
+        for (const auto& city : cities) {
+            if (city.zoomLevel <= cityZoomLevel) {
+                // Update circle
+                circle.setRadius(scaledCircleRadius);
+                circle.setOrigin(scaledCircleRadius, scaledCircleRadius);
+                circle.setOutlineThickness(8.0f * currentZoom);
+                circle.setPosition(city.position);
+
+                window.draw(circle);
+            }
+        }
+
+        window.setView(originalView);
     }
-    */
 }
 
 void Renderer::Shutdown() {
     // Clean up rendering resources if needed
     isInitialized = false;
     worldMap.reset();
-    cityManager = nullptr;
-    cityShape.reset();
-    cityFont.reset();
-    // Reset other renderable components
 }

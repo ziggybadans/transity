@@ -42,8 +42,6 @@ bool Game::Init() {
     inputManager = std::make_unique<InputManager>(eventManager, camera, windowManager->GetWindow());
     inputManager->SetZoomSpeed(Constants::CAMERA_ZOOM_SPEED);
     inputManager->SetPanSpeed(Constants::CAMERA_PAN_SPEED);
-    inputManager->SetMinZoom(Constants::CAMERA_MIN_ZOOM);
-    inputManager->SetMaxZoom(Constants::CAMERA_MAX_ZOOM);
 
     // Subscribe to Events
     eventManager->Subscribe(EventType::Closed, [this](const sf::Event& event) {
@@ -143,52 +141,6 @@ bool Game::LoadResources() {
         return false;
     }
 
-    /*
-    // Uncomment and adapt the following code if you decide to re-enable city rendering
-    // Enqueue CityManager loading task
-    std::condition_variable cvCities;
-    bool citiesLoaded = false;
-    std::mutex cvCitiesMutex;
-
-    Task loadCitiesTask([this, &cvCities, &citiesLoaded]() {
-        std::string geonamesPath = "assets/cities1000.txt"; // Example path
-        auto tempCityManager = std::make_unique<CityManager>(geonamesPath, *worldMap);
-        if (tempCityManager->Init()) {
-            {
-                std::lock_guard<std::mutex> lock(worldMapMutex);
-                cityManager = std::move(tempCityManager);
-                citiesLoaded = true;
-            }
-            cvCities.notify_one();
-        }
-        else {
-            std::cerr << "Failed to initialize CityManager." << std::endl;
-        }
-    });
-    threadPool->enqueueTask(loadCitiesTask);
-
-    // Wait for CityManager to load
-    std::unique_lock<std::mutex> lockCities(cvCitiesMutex);
-    cvCities.wait(lockCities, [&citiesLoaded]() { return citiesLoaded; });
-
-    // Initialize the circle shape for cities
-    if (cityManager) {
-        cityCircleShape = std::make_shared<sf::CircleShape>(5.0f); // Radius 5, adjust as needed
-        cityCircleShape->setFillColor(sf::Color::White);
-        cityCircleShape->setOutlineThickness(2.0f);
-        cityCircleShape->setOutlineColor(sf::Color::Black);
-        cityCircleShape->setOrigin(5.0f, 5.0f); // Center the circle
-    }
-    else {
-        std::cerr << "CityManager is not loaded." << std::endl;
-        return false;
-    }
-
-    // Set CityManager and city shape in Renderer
-    renderer->SetCityManager(cityManager.get());
-    renderer->SetCityCircleShape(cityCircleShape);
-    */
-
     isRunning = true;
     return true;
 }
@@ -223,13 +175,11 @@ void Game::Update(float dt) {
     if (inputManager) {
         inputManager->HandleInput(dt);
     }
-
-    // Update other game states here
 }
 
 void Game::Render() {
     // Clear the window
-    windowManager->Clear(sf::Color::Black);
+    windowManager->Clear(sf::Color::White);
 
     // Apply camera view
     if (camera) {

@@ -26,7 +26,7 @@ namespace mapbox {
 }
 
 WorldMap::WorldMap(const std::string& geoJsonPath)
-    : geoJsonFilePath(geoJsonPath), zoomLevelToSwitch(1.0f) // Adjust zoomLevelToSwitch as needed
+    : geoJsonFilePath(geoJsonPath) // Adjust zoomLevelToSwitch as needed
 {}
 
 WorldMap::~WorldMap() {}
@@ -34,6 +34,12 @@ WorldMap::~WorldMap() {}
 bool WorldMap::Init() {
     if (!loadGeoJSON()) {
         std::cerr << "Failed to load GeoJSON data." << std::endl;
+        return false;
+    }
+
+    // Load cities
+    if (!loadCities("assets/cities.json")) {
+        std::cerr << "Failed to load city data." << std::endl;
         return false;
     }
 
@@ -225,4 +231,55 @@ void WorldMap::Render(sf::RenderWindow& window, const Camera& camera) const {
 
     // Restore the original view
     window.setView(originalView);
+}
+
+const std::vector<City>& WorldMap::GetCities() const {
+    return cities;
+}
+
+bool WorldMap::loadCities(const std::string& cityJsonFilePath) {
+    std::ifstream inFile(cityJsonFilePath);
+    if (!inFile.is_open()) {
+        std::cerr << "Could not open cities JSON file: " << cityJsonFilePath << std::endl;
+        return false;
+    }
+
+    json cityData;
+    try {
+        inFile >> cityData;
+    }
+    catch (const json::parse_error& e) {
+        std::cerr << "JSON Parsing error: " << e.what() << std::endl;
+        inFile.close();
+        return false;
+    }
+    inFile.close();
+
+    if (!cityData.contains("cities") || !cityData["cities"].is_array()) {
+        std::cerr << "Invalid city JSON structure: Missing 'cities' array." << std::endl;
+        return false;
+    }
+
+    const auto& citiesArray = cityData["cities"];
+    for (const auto& cityJson : citiesArray) {
+        if (!cityJson.contains("name") || !cityJson.contains("latitude") ||
+            !cityJson.contains("longitude") || !cityJson.contains("zoom_level")) {
+            std::cerr << "Invalid city data: Missing fields." << std::endl;
+            continue;
+        }
+
+        City city;
+        city.name = cityJson["name"];
+        float latitude = cityJson["latitude"];
+        float longitude = cityJson["longitude"];
+        city.zoomLevel = cityJson["zoom_level"];
+
+        city.position = project(sf::Vector2f(longitude, latitude));
+
+        cities.push_back(city);
+    }
+
+    std::cout << "Loaded " << cities.size() << " cities from JSON." << std::endl;
+
+    return true;
 }

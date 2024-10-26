@@ -14,6 +14,12 @@ namespace mapbox {
     struct Earcut;
 }
 
+struct City {
+    std::string name;
+    sf::Vector2f position; // Projected position
+    int zoomLevel;
+};
+
 class WorldMap : public IInitializable {
 public:
     // Constructor accepts the path to the GeoJSON file
@@ -30,6 +36,12 @@ public:
     float GetWorldWidth() const { return WORLD_WIDTH; }
     float GetWorldHeight() const { return WORLD_HEIGHT; }
 
+    // Load city data
+    bool loadCities(const std::string& cityJsonFilePath);
+
+    // Get cities
+    const std::vector<City>& GetCities() const;
+
 private:
     std::string geoJsonFilePath;
 
@@ -40,12 +52,11 @@ private:
     const float WORLD_WIDTH = 3600.0f;
     const float WORLD_HEIGHT = 1800.0f;
 
-    // Zoom threshold to switch textures (if needed in future)
-    float zoomLevelToSwitch;
-
     // Helper to load GeoJSON
     bool loadGeoJSON();
 
     // Helper to project geographic coordinates to world coordinates
     sf::Vector2f project(const sf::Vector2f& lonLat) const;
+
+    std::vector<City> cities;
 };
