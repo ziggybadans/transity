@@ -84,6 +84,9 @@ bool Game::InitManagers() {
     windowMgr->SetVideoMode(sf::VideoMode(videoMode));
     windowMgr->SetTitle(windowTitle);
 
+    // Enable fullscreen mode if desired
+    windowMgr->SetFullscreen(true); // Set to false if you want windowed mode
+
     sf::ContextSettings settings;
     settings.antialiasingLevel = 8;
     settings.depthBits = 24;

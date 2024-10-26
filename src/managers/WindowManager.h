@@ -38,6 +38,8 @@ public:
     // Get a reference to the SFML window
     sf::RenderWindow& GetWindow();
 
+    void SetFullscreen(bool enable);
+
 private:
     std::unique_ptr<sf::RenderWindow> window;
 
@@ -45,4 +47,6 @@ private:
     sf::VideoMode videoMode;
     std::string windowTitle;
     sf::ContextSettings contextSettings;
+
+    bool fullscreen;
 };

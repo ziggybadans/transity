@@ -18,9 +18,6 @@ public:
     // Set the WorldMap to render
     void SetWorldMap(std::shared_ptr<WorldMap> map);
 
-    // Set the City Circle Shape
-    void SetCityCircleShape(std::shared_ptr<sf::CircleShape> shape);
-
     // Render all game elements
     void Render(sf::RenderWindow& window, const Camera& camera);
 
@@ -35,4 +32,8 @@ private:
     mutable std::mutex renderMutex;
 
     sf::Font font;
+
+    // New members for hover functionality
+    std::string hoveredCityName;
+    sf::Text hoveredCityText;
 };
