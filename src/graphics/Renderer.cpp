@@ -40,26 +40,22 @@ void Renderer::Render(sf::RenderWindow& window, const Camera& camera) {
 
         float currentZoom = camera.GetZoomLevel();
 
-        // Determine zoom level based on currentZoom
         int cityZoomLevel = 0;
-        if (currentZoom >= 2.0f) {
+        if (currentZoom <= 1.0f && currentZoom > 0.5f) {
             cityZoomLevel = 1;
         }
-        else if (currentZoom >= 1.0f) {
+        else if (currentZoom <= 0.5f && currentZoom > 0.1f) {
             cityZoomLevel = 2;
         }
-        else if (currentZoom >= 0.5f) {
+        else if (currentZoom <= 0.1f && currentZoom > 0.005f) {
             cityZoomLevel = 3;
         }
-        else {
+        else if (currentZoom <= 0.005f) {
             cityZoomLevel = 4;
         }
 
         // Define base sizes
         float baseCircleRadius = 8.0f;
-
-        // Scaling factors
-        float scaledCircleRadius = baseCircleRadius * currentZoom * 2;
 
         // Set up circle shape
         sf::CircleShape circle;
@@ -71,10 +67,33 @@ void Renderer::Render(sf::RenderWindow& window, const Camera& camera) {
 
         for (const auto& city : cities) {
             if (city.zoomLevel <= cityZoomLevel) {
+                // Adjust circle size based on city's zoomLevel
+                float citySizeFactor = 1.0f;
+                switch (city.zoomLevel) {
+                case 1:
+                    citySizeFactor = 1.0f; // Largest cities
+                    break;
+                case 2:
+                    citySizeFactor = 0.75f; // Medium cities
+                    break;
+                case 3:
+                    citySizeFactor = 0.5f; // Smaller cities
+                    break;
+                case 4:
+                    citySizeFactor = 0.25f; // Smallest cities
+                    break;
+                default:
+                    citySizeFactor = 0.1f;
+                    break;
+                }
+
+                // Scaling factors
+                float scaledCircleRadius = std::min((baseCircleRadius * currentZoom * citySizeFactor + (8 * currentZoom)), 6.0f);
+
                 // Update circle
                 circle.setRadius(scaledCircleRadius);
                 circle.setOrigin(scaledCircleRadius, scaledCircleRadius);
-                circle.setOutlineThickness(8.0f * currentZoom);
+                circle.setOutlineThickness(std::min(4.0f * currentZoom, 4.0f));
                 circle.setPosition(city.position);
 
                 window.draw(circle);

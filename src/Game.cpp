@@ -179,7 +179,7 @@ void Game::Update(float dt) {
 
 void Game::Render() {
     // Clear the window
-    windowManager->Clear(sf::Color::White);
+    windowManager->Clear(sf::Color(174, 223, 246));
 
     // Apply camera view
     if (camera) {

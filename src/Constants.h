@@ -8,7 +8,7 @@ namespace Constants {
 
     // Camera Settings
     constexpr float CAMERA_ZOOM_SPEED = 1.1f;     // 10% zoom per scroll
-    constexpr float CAMERA_PAN_SPEED = 1000.0f;   // 1000 units per second
+    constexpr float CAMERA_PAN_SPEED = 2000.0f;   // 1000 units per second
     constexpr float CAMERA_MIN_ZOOM = 0.001f;      // Minimum zoom level
     constexpr float CAMERA_MAX_ZOOM = 1.0f;       // Maximum zoom level
 }

@@ -190,7 +190,7 @@ bool WorldMap::loadGeoJSON() {
                     for (size_t i = 0; i < indices.size(); ++i) {
                         if (indices[i] < flattenedPoints.size()) {
                             va[i].position = flattenedPoints[indices[i]];
-                            va[i].color = sf::Color(34, 139, 34); // ForestGreen color for land
+                            va[i].color = sf::Color(231, 232, 234); // ForestGreen color for land
                         }
                         else {
                             std::cerr << "Index out of bounds during triangulation." << std::endl;

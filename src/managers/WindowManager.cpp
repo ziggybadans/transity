@@ -26,7 +26,7 @@ void WindowManager::SetContextSettings(const sf::ContextSettings& settings) {
 
 bool WindowManager::Init() {
     window = std::make_unique<sf::RenderWindow>(videoMode, windowTitle, sf::Style::Default, contextSettings);
-    window->setFramerateLimit(60);
+    window->setFramerateLimit(240);
 
     return window->isOpen();
 }

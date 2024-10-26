@@ -48,16 +48,16 @@ void InputManager::HandleInput(float deltaTime) {
     // Handle continuous key presses for panning
     continuousMovement = sf::Vector2f(0.0f, 0.0f);
 
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) {
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) {
         continuousMovement.x -= panSpeed * deltaTime;
     }
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) {
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) {
         continuousMovement.x += panSpeed * deltaTime;
     }
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up)) {
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::W)) {
         continuousMovement.y -= panSpeed * deltaTime;
     }
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down)) {
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) {
         continuousMovement.y += panSpeed * deltaTime;
     }
 
