@@ -42,8 +42,6 @@ bool Game::Init() {
     inputManager = std::make_unique<InputManager>(eventManager, camera, windowManager->GetWindow());
     inputManager->SetZoomSpeed(Constants::CAMERA_ZOOM_SPEED);
     inputManager->SetPanSpeed(Constants::CAMERA_PAN_SPEED);
-    inputManager->SetMinZoom(Constants::CAMERA_MIN_ZOOM);
-    inputManager->SetMaxZoom(Constants::CAMERA_MAX_ZOOM);
 
     // Subscribe to Events
     eventManager->Subscribe(EventType::Closed, [this](const sf::Event& event) {
@@ -86,6 +84,9 @@ bool Game::InitManagers() {
     windowMgr->SetVideoMode(sf::VideoMode(videoMode));
     windowMgr->SetTitle(windowTitle);
 
+    // Enable fullscreen mode if desired
+    windowMgr->SetFullscreen(true); // Set to false if you want windowed mode
+
     sf::ContextSettings settings;
     settings.antialiasingLevel = 8; // Ensure this is set to a high enough value
     settings.depthBits = 24;
@@ -109,11 +110,8 @@ bool Game::LoadResources() {
 
     // Enqueue WorldMap loading task
     Task loadWorldMapTask([this, &cv, &loaded]() {
-        std::string highResPath = "assets/world_high_detail.png";
-        std::string lowResPath = "assets/world_low_detail.png";
-        float zoomSwitch = 1.0f; // Example threshold, adjust as needed
-
-        auto tempWorldMap = std::make_shared<WorldMap>(highResPath, lowResPath, zoomSwitch);
+        std::string geoJsonPath = "assets/ne_10m_land.json"; // Path to your GeoJSON file
+        auto tempWorldMap = std::make_shared<WorldMap>(geoJsonPath);
         if (tempWorldMap->Init()) {
             {
                 std::lock_guard<std::mutex> lock(worldMapMutex);
@@ -143,55 +141,6 @@ bool Game::LoadResources() {
     }
     else {
         std::cerr << "WorldMap is not loaded." << std::endl;
-        return false;
-    }
-
-    // Enqueue CityManager loading task
-    std::condition_variable cvCities;
-    bool citiesLoaded = false;
-    std::mutex cvCitiesMutex;
-
-    Task loadCitiesTask([this, &cvCities, &citiesLoaded]() {
-        std::string geonamesPath = "assets/cities1000.txt"; // Example path
-        auto tempCityManager = std::make_unique<CityManager>(geonamesPath, *worldMap);
-        if (tempCityManager->Init()) {
-            {
-                std::lock_guard<std::mutex> lock(worldMapMutex);
-                cityManager = std::move(tempCityManager);
-                citiesLoaded = true;
-            }
-            cvCities.notify_one();
-        }
-        else {
-            std::cerr << "Failed to initialize CityManager." << std::endl;
-        }
-        });
-    threadPool->enqueueTask(loadCitiesTask);
-
-    // Wait for CityManager to load
-    std::unique_lock<std::mutex> lockCities(cvCitiesMutex);
-    cvCities.wait(lockCities, [&citiesLoaded]() { return citiesLoaded; });
-
-    // Initialize the circle shape for cities
-    if (cityManager) {
-        cityCircleShape = std::make_shared<sf::CircleShape>(5.0f); // Radius 5, adjust as needed
-        cityCircleShape->setFillColor(sf::Color::White);
-        cityCircleShape->setOutlineThickness(2.0f);
-        cityCircleShape->setOutlineColor(sf::Color::Black);
-        cityCircleShape->setOrigin(5.0f, 5.0f); // Center the circle
-    }
-    else {
-        std::cerr << "CityManager is not loaded." << std::endl;
-        return false;
-    }
-
-    // Set CityManager and city shape in Renderer
-    renderer->SetCityManager(cityManager.get());
-    renderer->SetCityCircleShape(cityCircleShape);
-
-    // Load and set the font in Renderer
-    if (!renderer->Init(windowManager->GetWindow(), *threadPool)) {
-        std::cerr << "Failed to initialize Renderer." << std::endl;
         return false;
     }
 
@@ -229,13 +178,11 @@ void Game::Update(float dt) {
     if (inputManager) {
         inputManager->HandleInput(dt);
     }
-
-    // Update other game states here
 }
 
 void Game::Render() {
     // Clear the window
-    windowManager->Clear(sf::Color::Black);
+    windowManager->Clear(sf::Color(174, 223, 246));
 
     // Apply camera view
     if (camera) {

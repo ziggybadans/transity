@@ -4,44 +4,59 @@
 #include <memory>
 #include <mutex>
 #include <string>
+#include <vector>
 #include "../managers/InitializationManager.h"
 #include "../graphics/Camera.h"
 
+// Forward declaration for Earcut
+namespace mapbox {
+    template <typename T>
+    struct Earcut;
+}
+
+struct City {
+    std::string name;
+    sf::Vector2f position; // Projected position
+    int zoomLevel;
+};
+
 class WorldMap : public IInitializable {
 public:
-    WorldMap(const std::string& highResPath, const std::string& lowResPath, float zoomSwitchLevel);
+    // Constructor accepts the path to the GeoJSON file
+    WorldMap(const std::string& geoJsonPath);
     ~WorldMap();
 
-    // Initialize by loading textures
+    // Initialize by loading GeoJSON and creating shapes
     bool Init() override;
 
-    // Render the appropriate map based on camera zoom
+    // Render the map
     void Render(sf::RenderWindow& window, const class Camera& camera) const;
 
     // Getters for world dimensions
     float GetWorldWidth() const { return WORLD_WIDTH; }
     float GetWorldHeight() const { return WORLD_HEIGHT; }
 
+    // Load city data
+    bool loadCities(const std::string& cityJsonFilePath);
+
+    // Get cities
+    const std::vector<City>& GetCities() const;
+
 private:
-    std::string highResImagePath;
-    std::string lowResImagePath;
+    std::string geoJsonFilePath;
 
-    sf::Texture highResTexture;
-    sf::Texture lowResTexture;
+    // Store the shapes as VertexArrays
+    std::vector<sf::VertexArray> landShapes;
 
-    sf::Sprite highResSprite;
-    sf::Sprite lowResSprite;
+    // World dimensions (adjust as needed)
+    const float WORLD_WIDTH = 3600.0f;
+    const float WORLD_HEIGHT = 1800.0f;
 
-    bool loadHighRes();
-    bool loadLowRes();
+    // Helper to load GeoJSON
+    bool loadGeoJSON();
 
-    // World dimensions
-    float WORLD_WIDTH;
-    float WORLD_HEIGHT;
+    // Helper to project geographic coordinates to world coordinates
+    sf::Vector2f project(const sf::Vector2f& lonLat) const;
 
-    // Zoom threshold to switch textures
-    float zoomLevelToSwitch;
-
-    // Helper to set world dimensions based on texture size
-    void SetWorldDimensions();
+    std::vector<City> cities;
 };

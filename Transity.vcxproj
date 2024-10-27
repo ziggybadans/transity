@@ -110,7 +110,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Tools\SFML-2.6.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Ziggy\Documents\Transity\Transity\include;C:\Tools\SFML-2.6.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -128,7 +128,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Tools\SFML-2.6.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Ziggy\Documents\Transity\Transity\include;C:\Tools\SFML-2.6.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -154,7 +154,6 @@
     <ClCompile Include="src\managers\WindowManager.cpp" />
     <ClCompile Include="src\Transity.cpp" />
     <ClCompile Include="src\utility\ThreadPool.cpp" />
-    <ClCompile Include="src\world\CityManager.cpp" />
     <ClCompile Include="src\world\WorldMap.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -181,8 +180,6 @@
     <ClInclude Include="src\utility\Quadtree.h" />
     <ClInclude Include="src\utility\Task.h" />
     <ClInclude Include="src\utility\ThreadPool.h" />
-    <ClInclude Include="src\world\City.h" />
-    <ClInclude Include="src\world\CityManager.h" />
     <ClInclude Include="src\world\WorldMap.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

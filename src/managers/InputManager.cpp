@@ -3,6 +3,7 @@
 #include <SFML/Window/Mouse.hpp>
 #include <SFML/Graphics/View.hpp>
 #include <stdexcept>
+#include <iostream> // For debug statements if needed
 
 InputManager::InputManager(std::shared_ptr<EventManager> eventMgr,
     std::shared_ptr<Camera> cam,
@@ -12,8 +13,6 @@ InputManager::InputManager(std::shared_ptr<EventManager> eventMgr,
     window(win),
     zoomSpeed(1.1f),
     panSpeed(500.0f),
-    minZoomLevel(0.5f),
-    maxZoomLevel(3.0f),
     isPanning(false),
     lastMousePosition(0, 0),
     continuousMovement(0.0f, 0.0f)
@@ -45,34 +44,20 @@ void InputManager::SetPanSpeed(float speed) {
     panSpeed = speed;
 }
 
-void InputManager::SetMinZoom(float minZoom) {
-    if (minZoom <= 0.0f) {
-        throw std::invalid_argument("Minimum zoom level must be positive.");
-    }
-    minZoomLevel = minZoom;
-}
-
-void InputManager::SetMaxZoom(float maxZoom) {
-    if (maxZoom <= 0.0f) {
-        throw std::invalid_argument("Maximum zoom level must be positive.");
-    }
-    maxZoomLevel = maxZoom;
-}
-
 void InputManager::HandleInput(float deltaTime) {
     // Handle continuous key presses for panning
     continuousMovement = sf::Vector2f(0.0f, 0.0f);
 
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) {
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) {
         continuousMovement.x -= panSpeed * deltaTime;
     }
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) {
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) {
         continuousMovement.x += panSpeed * deltaTime;
     }
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up)) {
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::W)) {
         continuousMovement.y -= panSpeed * deltaTime;
     }
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down)) {
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) {
         continuousMovement.y += panSpeed * deltaTime;
     }
 

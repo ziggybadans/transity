@@ -1,4 +1,5 @@
 #include "Camera.h"
+#include <iostream>
 
 Camera::Camera(const sf::Vector2u& windowSize)
     : currentPosition(0.0f, 0.0f),
@@ -69,6 +70,8 @@ void Camera::Zoom(float factor) {
     currentZoom = std::clamp(currentZoom * factor, minZoomLevel, maxZoomLevel);
     view.setSize(baseViewSize.x * currentZoom, baseViewSize.y * currentZoom);
     ClampPosition();
+
+    std::cout << "Zoom level is " << currentZoom << std::endl;
 }
 
 void Camera::OnResize(const sf::Vector2u& newSize) {

@@ -18,13 +18,9 @@ public:
     // Configuration setters
     void SetZoomSpeed(float speed);
     void SetPanSpeed(float speed);
-    void SetMinZoom(float minZoom);
-    void SetMaxZoom(float maxZoom);
 
     // Call this every frame with the current delta time
     void HandleInput(float deltaTime);
-
-    float GetMaxZoom() const { return maxZoomLevel; }
 
 private:
     std::shared_ptr<EventManager> eventManager;
@@ -34,8 +30,6 @@ private:
     // Configuration parameters
     float zoomSpeed;
     float panSpeed;
-    float minZoomLevel;
-    float maxZoomLevel;
 
     // Event handlers
     void OnMouseWheelScrolled(const sf::Event& event);
