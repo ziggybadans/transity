@@ -339,3 +339,65 @@ void WorldMap::Render(sf::RenderWindow& window, const Camera& camera) const {
 const std::vector<PlaceArea>& WorldMap::GetPlaceAreas() const {
     return placeAreas;
 }
+
+bool WorldMap::AddStation(const sf::Vector2f& position) {
+    stations.emplace_back(position);
+    return true;
+}
+
+Station* WorldMap::GetStationAtPosition(const sf::Vector2f& position) {
+    for (auto& station : stations) {
+        sf::Vector2f stationPos = station.GetPosition();
+        float radius = 10.0f; // Same as station radius
+        if (std::hypot(position.x - stationPos.x, position.y - stationPos.y) <= radius) {
+            return &station;
+        }
+    }
+    return nullptr;
+}
+
+void WorldMap::AddLine(const Line& line) {
+    lines.push_back(line);
+}
+
+const std::vector<Station>& WorldMap::GetStations() const {
+    return stations;
+}
+
+const std::vector<Line>& WorldMap::GetLines() const {
+    return lines;
+}
+
+// Line building methods
+void WorldMap::StartBuildingLine(const sf::Vector2f& startPosition) {
+    currentLine = std::make_unique<Line>();
+    currentLine->AddNode(startPosition);
+    isBuildingLine = true;
+}
+
+void WorldMap::AddNodeToCurrentLine(const sf::Vector2f& position, bool curved) {
+    if (currentLine) {
+        currentLine->AddNode(position, curved);
+    }
+}
+
+void WorldMap::FinishCurrentLine() {
+    if (currentLine) {
+        currentLine->SetActive(false);
+        lines.push_back(*currentLine);
+        currentLine.reset();
+        isBuildingLine = false;
+    }
+}
+
+const Line* WorldMap::GetCurrentLine() const {
+    return isBuildingLine ? currentLine.get() : nullptr;
+}
+
+bool WorldMap::IsBuildingLine() const {
+    return isBuildingLine;
+}
+
+void WorldMap::SetCurrentMousePosition(const sf::Vector2f& position) {
+    currentMousePosition = position;
+}

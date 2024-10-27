@@ -1,3 +1,4 @@
+// Renderer.h
 #pragma once
 
 #include <SFML/Graphics.hpp>
@@ -39,6 +40,8 @@ private:
     // Private helper functions
     void renderWorldMap(sf::RenderWindow& window, const Camera& camera);
     void renderPlaceAreas(sf::RenderWindow& window, const Camera& camera);
+    void renderStations(sf::RenderWindow& window, const Camera& camera);
+    void renderLines(sf::RenderWindow& window, const Camera& camera);
     void renderHoveredAreaName(sf::RenderWindow& window);
 
     // Constants

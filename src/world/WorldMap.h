@@ -6,6 +6,8 @@
 #include "../managers/InitializationManager.h"
 #include "../graphics/Camera.h"
 #include <nlohmann/json.hpp>
+#include "../core/Station.h"
+#include "../core/Line.h"
 
 // Forward declaration for Earcut
 namespace mapbox {
@@ -51,6 +53,24 @@ public:
     // Get place areas
     const std::vector<PlaceArea>& GetPlaceAreas() const;
 
+    // New methods to manage stations and lines
+    bool AddStation(const sf::Vector2f& position);
+    Station* GetStationAtPosition(const sf::Vector2f& position);
+    void AddLine(const Line& line);
+
+    const std::vector<Station>& GetStations() const;
+    const std::vector<Line>& GetLines() const;
+
+    // Methods for current line being built
+    void StartBuildingLine(const sf::Vector2f& startPosition);
+    void AddNodeToCurrentLine(const sf::Vector2f& position, bool curved);
+    void FinishCurrentLine();
+    const Line* GetCurrentLine() const;
+    bool IsBuildingLine() const;
+
+    void SetCurrentMousePosition(const sf::Vector2f& position);
+    sf::Vector2f currentMousePosition; // Add this line
+
 private:
     // Paths to data files
     std::string geoJsonFilePath;
@@ -85,4 +105,12 @@ private:
     static const sf::Color CITY_COLOR;
     static const sf::Color TOWN_COLOR;
     static const sf::Color SUBURB_COLOR;
+
+    // New members for stations and lines
+    std::vector<Station> stations;
+    std::vector<Line> lines;
+
+    // For line building
+    std::unique_ptr<Line> currentLine;
+    bool isBuildingLine = false;
 };

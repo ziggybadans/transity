@@ -7,15 +7,18 @@
 
 InputManager::InputManager(std::shared_ptr<EventManager> eventMgr,
     std::shared_ptr<Camera> cam,
-    sf::RenderWindow& win)
+    sf::RenderWindow& win,
+    std::shared_ptr<WorldMap> worldMap)
     : eventManager(eventMgr),
     camera(cam),
     window(win),
+    worldMap(worldMap),
     zoomSpeed(1.1f),
     panSpeed(500.0f),
     isPanning(false),
     lastMousePosition(0, 0),
-    continuousMovement(0.0f, 0.0f)
+    continuousMovement(0.0f, 0.0f),
+    startingStation(nullptr)
 {
     // Subscribe to relevant events
     eventManager->Subscribe(EventType::MouseWheelScrolled,
@@ -26,6 +29,9 @@ InputManager::InputManager(std::shared_ptr<EventManager> eventMgr,
 
     eventManager->Subscribe(EventType::KeyPressed,
         [this](const sf::Event& event) { this->OnKeyPressed(event); });
+
+    eventManager->Subscribe(EventType::MouseButtonPressed,
+        [this](const sf::Event& event) { this->OnMouseButtonPressed(event); });
 }
 
 InputManager::~InputManager() {}
@@ -98,13 +104,66 @@ void InputManager::OnMouseWheelScrolled(const sf::Event& event) {
     camera->SetPosition(newCameraPos);
 }
 
+void InputManager::OnMouseButtonPressed(const sf::Event& event) {
+    if (event.mouseButton.button == sf::Mouse::Right) {
+        // Right-click: attempt to build a station in the area
+        sf::Vector2i mousePos(event.mouseButton.x, event.mouseButton.y);
+        sf::Vector2f worldPos = window.mapPixelToCoords(mousePos, camera->GetView());
+
+        // For simplicity, we'll assume that any click is within an area
+        worldMap->AddStation(worldPos);
+    }
+    else if (event.mouseButton.button == sf::Mouse::Left) {
+        // Left-click: either start building a line or add a node
+        sf::Vector2i mousePos(event.mouseButton.x, event.mouseButton.y);
+        sf::Vector2f worldPos = window.mapPixelToCoords(mousePos, camera->GetView());
+
+        if (!worldMap->IsBuildingLine()) {
+            // Check if clicked on a station
+            Station* station = worldMap->GetStationAtPosition(worldPos);
+            if (station) {
+                // Start building a line
+                worldMap->StartBuildingLine(station->GetPosition());
+                startingStation = station;
+            }
+        }
+        else {
+            // Check if clicked on another station
+            Station* station = worldMap->GetStationAtPosition(worldPos);
+            if (station && station != startingStation) {
+                // Add station position to line and finish
+                worldMap->AddNodeToCurrentLine(station->GetPosition(), false);
+                worldMap->FinishCurrentLine();
+                startingStation = nullptr;
+            }
+            else {
+                // Add node to line
+                bool isShiftPressed = sf::Keyboard::isKeyPressed(sf::Keyboard::LShift) ||
+                    sf::Keyboard::isKeyPressed(sf::Keyboard::RShift);
+                worldMap->AddNodeToCurrentLine(worldPos, isShiftPressed);
+            }
+        }
+    }
+}
+
 void InputManager::OnKeyPressed(const sf::Event& event) {
-    // This method can be used for discrete key presses if needed
+    if (event.key.code == sf::Keyboard::Enter && worldMap->IsBuildingLine()) {
+        // Finish building the line
+        worldMap->FinishCurrentLine();
+        startingStation = nullptr;
+    }
 }
 
 void InputManager::OnMouseMoved(const sf::Event& event) {
     if (event.type != sf::Event::MouseMoved)
         return;
+
+    sf::Vector2i currentPos(event.mouseMove.x, event.mouseMove.y);
+    sf::Vector2f worldPos = window.mapPixelToCoords(currentPos, camera->GetView());
+
+    if (worldMap->IsBuildingLine()) {
+        worldMap->SetCurrentMousePosition(worldPos);
+    }
 
     if (sf::Mouse::isButtonPressed(sf::Mouse::Middle)) { // Use middle mouse for panning
         if (!isPanning) {

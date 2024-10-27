@@ -38,8 +38,22 @@ bool Game::Init() {
     camera->setMinZoomLevel(Constants::CAMERA_MIN_ZOOM);
     camera->setMaxZoomLevel(Constants::CAMERA_MAX_ZOOM);
 
-    // Initialize InputManager
-    inputManager = std::make_unique<InputManager>(eventManager, camera, windowManager->GetWindow());
+    // Initialize ThreadPool and Renderer first if needed
+    threadPool = std::make_unique<ThreadPool>(std::thread::hardware_concurrency());
+    renderer = std::make_unique<Renderer>();
+    if (!renderer->Init(windowManager->GetWindow())) {
+        std::cerr << "Failed to initialize Renderer." << std::endl;
+        return false;
+    }
+
+    // Load initial resources asynchronously
+    if (!LoadResources()) {
+        std::cerr << "Failed to load initial resources." << std::endl;
+        return false;
+    }
+
+    // Now that WorldMap is loaded, initialize InputManager
+    inputManager = std::make_unique<InputManager>(eventManager, camera, windowManager->GetWindow(), worldMap);
     inputManager->SetZoomSpeed(Constants::CAMERA_ZOOM_SPEED);
     inputManager->SetPanSpeed(Constants::CAMERA_PAN_SPEED);
 
@@ -58,19 +72,17 @@ bool Game::Init() {
         }
         });
 
-    // Initialize ThreadPool
-    threadPool = std::make_unique<ThreadPool>(std::thread::hardware_concurrency());
+    // Initialize Renderer with WorldMap
+    if (worldMap) {
+        camera->SetZoom(Constants::CAMERA_MAX_ZOOM);
+        camera->SetWorldBounds(worldMap->GetWorldWidth(), worldMap->GetWorldHeight());
+        camera->SetPosition(sf::Vector2f(worldMap->GetWorldWidth() / 2.0f, worldMap->GetWorldHeight() / 2.0f));
 
-    // Initialize Renderer
-    renderer = std::make_unique<Renderer>();
-    if (!renderer->Init(windowManager->GetWindow())) {
-        std::cerr << "Failed to initialize Renderer." << std::endl;
-        return false;
+        // Set WorldMap in Renderer
+        renderer->SetWorldMap(worldMap);
     }
-
-    // Load initial resources asynchronously
-    if (!LoadResources()) {
-        std::cerr << "Failed to load initial resources." << std::endl;
+    else {
+        std::cerr << "WorldMap is not loaded." << std::endl;
         return false;
     }
 
@@ -143,10 +155,8 @@ bool Game::LoadResources() {
         return false;
     }
 
-    isRunning = true;
     return true;
 }
-
 
 void Game::Run() {
     while (isRunning && windowManager->IsOpen()) {

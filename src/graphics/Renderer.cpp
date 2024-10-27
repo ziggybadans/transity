@@ -1,4 +1,7 @@
+// Renderer.cpp
 #include "Renderer.h"
+#include "../core/Station.h" // Include Station class
+#include "../core/Line.h"     // Include Line class
 #include <iostream>
 #include <algorithm>
 
@@ -33,14 +36,25 @@ void Renderer::Render(sf::RenderWindow& window, const Camera& camera) {
 
     std::lock_guard<std::mutex> lock(renderMutex);
 
+    // Clear the window
+    window.clear(sf::Color(174, 223, 246));
+
+    // Apply camera view
+    if (worldMap) {
+        window.setView(camera.GetView());
+    }
+
+    // Render game elements via Renderer
     renderWorldMap(window, camera);
     renderPlaceAreas(window, camera);
-    renderHoveredAreaName(window);
-}
+    renderStations(window, camera);
+    renderLines(window, camera);
 
-void Renderer::Shutdown() {
-    isInitialized = false;
-    worldMap.reset();
+    // Render UI elements if applicable
+    renderHoveredAreaName(window);
+
+    // Display the rendered frame
+    window.display();
 }
 
 void Renderer::renderWorldMap(sf::RenderWindow& window, const Camera& camera) {
@@ -143,6 +157,49 @@ void Renderer::renderPlaceAreas(sf::RenderWindow& window, const Camera& camera) 
     }
 }
 
+void Renderer::renderStations(sf::RenderWindow& window, const Camera& camera) {
+    if (!worldMap) return;
+
+    const auto& stations = worldMap->GetStations();
+    float currentZoom = camera.GetZoomLevel();
+
+    for (const auto& station : stations) {
+        station.Render(window, currentZoom);
+    }
+}
+
+void Renderer::renderLines(sf::RenderWindow& window, const Camera& camera) {
+    if (!worldMap) return;
+
+    const auto& lines = worldMap->GetLines();
+    float currentZoom = camera.GetZoomLevel();
+
+    // Render existing lines
+    for (const auto& line : lines) {
+        line.Render(window, currentZoom);
+    }
+
+    // Render the current line being built
+    const Line* currentLine = worldMap->GetCurrentLine();
+    if (currentLine) {
+        currentLine->Render(window, currentZoom); // Existing rendering of the line
+
+        // Draw the preview line from the last node to the current mouse position
+        if (!currentLine->GetNodes().empty()) {
+            sf::Vector2f lastNode = currentLine->GetNodes().back();
+            sf::Vector2f previewEnd = worldMap->currentMousePosition;
+
+            sf::Vertex previewLine[] =
+            {
+                sf::Vertex(lastNode, sf::Color::Red), // Preview color
+                sf::Vertex(previewEnd, sf::Color::Red)
+            };
+
+            window.draw(previewLine, 2, sf::Lines);
+        }
+    }
+}
+
 void Renderer::renderHoveredAreaName(sf::RenderWindow& window) {
     if (hoveredAreaName.empty()) return;
 
@@ -154,7 +211,7 @@ void Renderer::renderHoveredAreaName(sf::RenderWindow& window) {
     // Calculate text position: center-bottom with some padding
     sf::FloatRect textBounds = hoveredAreaText.getLocalBounds();
     float x = (windowSize.x - textBounds.width) / 2.0f;
-    float y = windowSize.y - textBounds.height - 40.0f; // 10 pixels from bottom
+    float y = windowSize.y - textBounds.height - 40.0f; // 40 pixels from bottom
 
     hoveredAreaText.setPosition(x, y);
 
@@ -166,4 +223,9 @@ void Renderer::renderHoveredAreaName(sf::RenderWindow& window) {
 
     // Restore original view
     window.setView(originalView);
+}
+
+void Renderer::Shutdown() {
+    isInitialized = false;
+    worldMap.reset();
 }

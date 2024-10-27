@@ -146,6 +146,8 @@
     <ClCompile Include="..\..\..\Downloads\imgui-1.89.9\imgui_tables.cpp" />
     <ClCompile Include="..\..\..\Downloads\imgui-1.89.9\imgui_widgets.cpp" />
     <ClCompile Include="..\..\..\Downloads\imgui-sfml-2.6\imgui-SFML.cpp" />
+    <ClCompile Include="src\core\Line.cpp" />
+    <ClCompile Include="src\core\Station.cpp" />
     <ClCompile Include="src\Game.cpp" />
     <ClCompile Include="src\graphics\Camera.cpp" />
     <ClCompile Include="src\graphics\Renderer.cpp" />
@@ -167,6 +169,8 @@
     <ClInclude Include="include\mapbox\earcut.hpp" />
     <ClInclude Include="include\nlohmann\json.hpp" />
     <ClInclude Include="src\Constants.h" />
+    <ClInclude Include="src\core\Line.h" />
+    <ClInclude Include="src\core\Station.h" />
     <ClInclude Include="src\Game.h" />
     <ClInclude Include="src\graphics\Camera.h" />
     <ClInclude Include="src\graphics\Renderer.h" />

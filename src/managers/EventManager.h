@@ -11,6 +11,7 @@ enum class EventType {
     KeyPressed,
     MouseMoved,
     MouseWheelScrolled,
+    MouseButtonPressed,
     // Add other event types as needed
     None // Represents no specific event
 };
@@ -48,7 +49,8 @@ private:
             return EventType::MouseMoved;
         case sf::Event::MouseWheelScrolled:
             return EventType::MouseWheelScrolled;
-            // Add mappings for other event types as needed
+        case sf::Event::MouseButtonPressed:
+            return EventType::MouseButtonPressed;
         default:
             return EventType::None; // No action for unhandled events
         }
