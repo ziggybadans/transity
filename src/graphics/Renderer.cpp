@@ -54,13 +54,17 @@ void Renderer::renderPlaceAreas(sf::RenderWindow& window, const Camera& camera) 
 
     const auto& placeAreas = worldMap->GetPlaceAreas();
 
-    // Apply camera view
-    sf::View originalView = window.getView();
-    window.setView(camera.GetView());
+    // Get the camera's view bounds
+    sf::Vector2f viewCenter = camera.GetView().getCenter();
+    sf::Vector2f viewSize = camera.GetView().getSize();
+    sf::FloatRect cameraRect(viewCenter.x - viewSize.x / 2.0f,
+        viewCenter.y - viewSize.y / 2.0f,
+        viewSize.x,
+        viewSize.y);
 
-    // Get mouse position in world coordinates
+    // Get mouse position in world coordinates for hover functionality
     sf::Vector2i mousePixelPos = sf::Mouse::getPosition(window);
-    sf::Vector2f mouseWorldPos = window.mapPixelToCoords(mousePixelPos);
+    sf::Vector2f mouseWorldPos = window.mapPixelToCoords(mousePixelPos, camera.GetView());
 
     // Reset hoveredAreaName
     hoveredAreaName.clear();
@@ -68,7 +72,9 @@ void Renderer::renderPlaceAreas(sf::RenderWindow& window, const Camera& camera) 
     // Calculate zoom factor
     float currentZoom = camera.GetZoomLevel();
 
+    // Iterate through each place area
     for (const auto& area : placeAreas) {
+        // Skip rendering based on zoom level
         float zoomThreshold = 0.0f;
         switch (area.category) {
         case PlaceCategory::City:
@@ -87,10 +93,15 @@ void Renderer::renderPlaceAreas(sf::RenderWindow& window, const Camera& camera) 
             continue; // Skip rendering this area
         }
 
+        // Check if the area's bounding box intersects with the camera's view
+        sf::FloatRect areaBounds = area.filledShape.getBounds();
+        if (!cameraRect.intersects(areaBounds)) {
+            continue; // Skip rendering if not in view
+        }
+
         // Check if mouse is over the area
-        sf::FloatRect bounds = area.filledShape.getBounds();
-        if (bounds.contains(mouseWorldPos)) {
-            // Use point-in-polygon test
+        if (areaBounds.contains(mouseWorldPos)) {
+            // Perform point-in-polygon test
             bool containsPoint = false;
             for (size_t i = 0; i < area.filledShape.getVertexCount(); i += 3) {
                 // Create triangle
@@ -126,13 +137,11 @@ void Renderer::renderPlaceAreas(sf::RenderWindow& window, const Camera& camera) 
                 continue;
             }
         }
+
         // Draw the regular filled shape and outline
         window.draw(area.filledShape);
         window.draw(area.outline);
     }
-
-    // Restore the original view
-    window.setView(originalView);
 }
 
 void Renderer::renderHoveredAreaName(sf::RenderWindow& window) {

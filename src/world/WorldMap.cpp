@@ -312,9 +312,23 @@ void WorldMap::Render(sf::RenderWindow& window, const Camera& camera) const {
     sf::View originalView = window.getView();
     window.setView(camera.GetView());
 
-    // Draw all land shapes
+    // Get the camera's view bounds
+    sf::FloatRect viewBounds = camera.GetView().getViewport();
+
+    // Alternatively, calculate the view rectangle in world coordinates
+    sf::Vector2f viewCenter = camera.GetView().getCenter();
+    sf::Vector2f viewSize = camera.GetView().getSize();
+    sf::FloatRect cameraRect(viewCenter.x - viewSize.x / 2.0f,
+        viewCenter.y - viewSize.y / 2.0f,
+        viewSize.x,
+        viewSize.y);
+
+    // Draw only shapes that intersect with the camera's view
     for (const auto& shape : landShapes) {
-        window.draw(shape);
+        sf::FloatRect shapeBounds = shape.getBounds();
+        if (cameraRect.intersects(shapeBounds)) {
+            window.draw(shape);
+        }
     }
 
     // Restore the original view
