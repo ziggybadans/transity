@@ -18,7 +18,7 @@ bool Renderer::Init(sf::RenderWindow& /*window*/) {
 
     // Initialize hoveredAreaText
     hoveredAreaText.setFont(font);
-    hoveredAreaText.setCharacterSize(28); // Adjust as needed
+    hoveredAreaText.setCharacterSize(40); // Adjust as needed
     hoveredAreaText.setFillColor(sf::Color::Black);
 
     return true;
@@ -71,17 +71,14 @@ void Renderer::renderPlaceAreas(sf::RenderWindow& window, const Camera& camera) 
     for (const auto& area : placeAreas) {
         float zoomThreshold = 0.0f;
         switch (area.category) {
-        case PlaceCategory::CapitalCity:
-            zoomThreshold = 1.0f; // Always render capitals
-            break;
         case PlaceCategory::City:
-            zoomThreshold = 0.1f;
+            zoomThreshold = 1.0f;
             break;
         case PlaceCategory::Town:
-            zoomThreshold = 0.01f;
+            zoomThreshold = 0.1f;
             break;
         case PlaceCategory::Suburb:
-            zoomThreshold = 0.005f;
+            zoomThreshold = 0.01f;
             break;
         default:
             break;
@@ -149,7 +146,7 @@ void Renderer::renderHoveredAreaName(sf::RenderWindow& window) {
     // Calculate text position: center-bottom with some padding
     sf::FloatRect textBounds = hoveredAreaText.getLocalBounds();
     float x = (windowSize.x - textBounds.width) / 2.0f;
-    float y = windowSize.y - textBounds.height - 10.0f; // 10 pixels from bottom
+    float y = windowSize.y - textBounds.height - 40.0f; // 10 pixels from bottom
 
     hoveredAreaText.setPosition(x, y);
 

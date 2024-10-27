@@ -25,10 +25,10 @@ namespace mapbox {
 }
 
 // Define static constants
-const sf::Color WorldMap::LAND_COLOR = sf::Color(34, 139, 34); // ForestGreen
-const sf::Color WorldMap::CITY_COLOR = sf::Color::Red;
-const sf::Color WorldMap::TOWN_COLOR = sf::Color::Blue;
-const sf::Color WorldMap::SUBURB_COLOR = sf::Color::Green;
+const sf::Color WorldMap::LAND_COLOR = sf::Color(231, 232, 234);
+const sf::Color WorldMap::CITY_COLOR = sf::Color(236, 214, 214);
+const sf::Color WorldMap::TOWN_COLOR = sf::Color(214, 214, 236);
+const sf::Color WorldMap::SUBURB_COLOR = sf::Color(214, 236, 214);
 
 WorldMap::WorldMap(const std::string& geoJsonPath,
     const std::string& citiesGeoJsonPath,
