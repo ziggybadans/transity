@@ -63,7 +63,7 @@ bool Game::Init() {
 
     // Initialize Renderer
     renderer = std::make_unique<Renderer>();
-    if (!renderer->Init(windowManager->GetWindow(), *threadPool)) {
+    if (!renderer->Init(windowManager->GetWindow())) {
         std::cerr << "Failed to initialize Renderer." << std::endl;
         return false;
     }
@@ -110,8 +110,8 @@ bool Game::LoadResources() {
 
     // Enqueue WorldMap loading task
     Task loadWorldMapTask([this, &cv, &loaded]() {
-        std::string geoJsonPath = "assets/ne_10m_land.json"; // Path to your GeoJSON file
-        std::string osmPlacesPath = "assets/cities.geojson"; // Path to OSM Places JSON file
+        std::string geoJsonPath = "assets/land_shapes.json"; // Path to your GeoJSON file
+        std::string osmPlacesPath = "assets/features/cities.geojson"; // Path to OSM Places JSON file
         auto tempWorldMap = std::make_shared<WorldMap>(geoJsonPath, osmPlacesPath);
         if (tempWorldMap->Init()) {
             {

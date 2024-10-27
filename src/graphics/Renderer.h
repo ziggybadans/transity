@@ -4,7 +4,6 @@
 #include <memory>
 #include <mutex>
 #include "Camera.h"
-#include "../utility/ThreadPool.h"
 #include "../world/WorldMap.h"
 
 class Renderer {
@@ -13,10 +12,10 @@ public:
     ~Renderer();
 
     // Initialize the renderer
-    bool Init(sf::RenderWindow& window, ThreadPool& threadPool);
+    bool Init(sf::RenderWindow& window);
 
     // Set the WorldMap to render
-    void SetWorldMap(std::shared_ptr<WorldMap> map);
+    void SetWorldMap(const std::shared_ptr<WorldMap>& map);
 
     // Render all game elements
     void Render(sf::RenderWindow& window, const Camera& camera);
@@ -25,7 +24,7 @@ public:
     void Shutdown();
 
 private:
-    bool isInitialized;
+    bool isInitialized = false;
     std::shared_ptr<WorldMap> worldMap;
 
     // Mutex for thread-safe rendering if needed
@@ -33,7 +32,19 @@ private:
 
     sf::Font font;
 
-    // New members for hover functionality
+    // Hover functionality
     std::string hoveredCityName;
     sf::Text hoveredCityText;
+
+    // Private helper functions
+    void renderWorldMap(sf::RenderWindow& window, const Camera& camera);
+    void renderCities(sf::RenderWindow& window, const Camera& camera);
+    void renderHoveredCityName(sf::RenderWindow& window);
+
+    // City rendering helper
+    void updateHoveredCity(const sf::Vector2f& mouseWorldPos, const City& city, float scaledCircleRadius, sf::CircleShape& circle);
+
+    // Constants
+    static constexpr float BASE_CIRCLE_RADIUS = 8.0f;
+    static constexpr float MAX_CIRCLE_RADIUS = 6.0f;
 };
