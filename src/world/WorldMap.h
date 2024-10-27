@@ -26,6 +26,7 @@ struct PlaceArea {
     PlaceCategory category;
     sf::VertexArray filledShape;  // The filled shape of the area
     sf::VertexArray outline;      // The outline of the area
+    sf::FloatRect bounds;         // Precomputed bounding rectangle
 };
 
 class WorldMap : public IInitializable {

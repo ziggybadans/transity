@@ -94,13 +94,12 @@ void Renderer::renderPlaceAreas(sf::RenderWindow& window, const Camera& camera) 
         }
 
         // Check if the area's bounding box intersects with the camera's view
-        sf::FloatRect areaBounds = area.filledShape.getBounds();
-        if (!cameraRect.intersects(areaBounds)) {
+        if (!cameraRect.intersects(area.bounds)) {
             continue; // Skip rendering if not in view
         }
 
         // Check if mouse is over the area
-        if (areaBounds.contains(mouseWorldPos)) {
+        if (area.bounds.contains(mouseWorldPos)) {
             // Perform point-in-polygon test
             bool containsPoint = false;
             for (size_t i = 0; i < area.filledShape.getVertexCount(); i += 3) {

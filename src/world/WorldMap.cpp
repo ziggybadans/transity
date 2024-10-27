@@ -289,6 +289,7 @@ bool WorldMap::createVertexArrayFromPolygon(
         area.category = category;
         area.filledShape = filledVA;
         area.outline = outlineVA;
+        area.bounds = filledVA.getBounds(); // Compute bounds here
         placeAreas.push_back(area);
     }
     else {
