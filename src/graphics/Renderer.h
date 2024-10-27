@@ -4,7 +4,6 @@
 #include <memory>
 #include <mutex>
 #include "Camera.h"
-#include "../utility/ThreadPool.h"
 #include "../world/WorldMap.h"
 
 class Renderer {
@@ -13,10 +12,10 @@ public:
     ~Renderer();
 
     // Initialize the renderer
-    bool Init(sf::RenderWindow& window, ThreadPool& threadPool);
+    bool Init(sf::RenderWindow& window);
 
     // Set the WorldMap to render
-    void SetWorldMap(std::shared_ptr<WorldMap> map);
+    void SetWorldMap(const std::shared_ptr<WorldMap>& map);
 
     // Render all game elements
     void Render(sf::RenderWindow& window, const Camera& camera);
@@ -25,7 +24,7 @@ public:
     void Shutdown();
 
 private:
-    bool isInitialized;
+    bool isInitialized = false;
     std::shared_ptr<WorldMap> worldMap;
 
     // Mutex for thread-safe rendering if needed
@@ -33,7 +32,15 @@ private:
 
     sf::Font font;
 
-    // New members for hover functionality
-    std::string hoveredCityName;
-    sf::Text hoveredCityText;
+    // Hover functionality
+    std::string hoveredAreaName;
+    sf::Text hoveredAreaText;
+
+    // Private helper functions
+    void renderWorldMap(sf::RenderWindow& window, const Camera& camera);
+    void renderPlaceAreas(sf::RenderWindow& window, const Camera& camera);
+    void renderHoveredAreaName(sf::RenderWindow& window);
+
+    // Constants
+    static constexpr float HOVER_OUTLINE_THICKNESS = 2.0f;
 };

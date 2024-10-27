@@ -1,7 +1,6 @@
 #include "WorldMap.h"
 #include <iostream>
 #include <fstream>
-#include <cmath>
 #include <nlohmann/json.hpp>
 #include <mapbox/earcut.hpp>
 
@@ -25,9 +24,20 @@ namespace mapbox {
     }
 }
 
-WorldMap::WorldMap(const std::string& geoJsonPath)
-    : geoJsonFilePath(geoJsonPath) // Adjust zoomLevelToSwitch as needed
-{}
+// Define static constants
+const sf::Color WorldMap::LAND_COLOR = sf::Color(231, 232, 234);
+const sf::Color WorldMap::CITY_COLOR = sf::Color(236, 214, 214);
+const sf::Color WorldMap::TOWN_COLOR = sf::Color(214, 214, 236);
+const sf::Color WorldMap::SUBURB_COLOR = sf::Color(214, 236, 214);
+
+WorldMap::WorldMap(const std::string& geoJsonPath,
+    const std::string& citiesGeoJsonPath,
+    const std::string& townsGeoJsonPath,
+    const std::string& suburbsGeoJsonPath)
+    : geoJsonFilePath(geoJsonPath),
+    citiesGeoJsonFilePath(citiesGeoJsonPath),
+    townsGeoJsonFilePath(townsGeoJsonPath),
+    suburbsGeoJsonFilePath(suburbsGeoJsonPath) {}
 
 WorldMap::~WorldMap() {}
 
@@ -37,177 +47,255 @@ bool WorldMap::Init() {
         return false;
     }
 
-    // Load cities
-    if (!loadCities("assets/cities.json")) {
-        std::cerr << "Failed to load city data." << std::endl;
+    return true;
+}
+
+bool WorldMap::loadGeoJSON() {
+    // Load land shapes
+    std::ifstream landFile(geoJsonFilePath);
+    if (!landFile.is_open()) {
+        std::cerr << "Could not open GeoJSON file: " << geoJsonFilePath << std::endl;
         return false;
+    }
+
+    json landData;
+    try {
+        landFile >> landData;
+    }
+    catch (const json::parse_error& e) {
+        std::cerr << "JSON Parsing error: " << e.what() << std::endl;
+        return false;
+    }
+
+    if (!landData.contains("geometries") || !landData["geometries"].is_array()) {
+        std::cerr << "Invalid GeoJSON structure: Missing 'geometries' array." << std::endl;
+        return false;
+    }
+
+    const auto& geometries = landData["geometries"];
+    for (const auto& geometry : geometries) {
+        if (!processGeometry(geometry, LAND_COLOR, landShapes)) {
+            std::cerr << "Failed to process geometry." << std::endl;
+        }
+    }
+
+    // Load cities
+    std::ifstream citiesFile(citiesGeoJsonFilePath);
+    if (!citiesFile.is_open()) {
+        std::cerr << "Could not open cities GeoJSON file: " << citiesGeoJsonFilePath << std::endl;
+        return false;
+    }
+
+    json citiesData;
+    try {
+        citiesFile >> citiesData;
+    }
+    catch (const json::parse_error& e) {
+        std::cerr << "JSON Parsing error in cities GeoJSON: " << e.what() << std::endl;
+        return false;
+    }
+
+    if (!citiesData.contains("features") || !citiesData["features"].is_array()) {
+        std::cerr << "Invalid cities GeoJSON structure: Missing 'features' array." << std::endl;
+        return false;
+    }
+
+    const auto& cityFeatures = citiesData["features"];
+    for (const auto& feature : cityFeatures) {
+        if (!feature.contains("geometry") || !feature["geometry"].is_object()) {
+            continue;
+        }
+        std::string name = feature["properties"].value("name", "Unnamed City");
+        processGeometry(feature["geometry"], CITY_COLOR, landShapes, name, PlaceCategory::City);
+    }
+
+    // Load towns
+    std::ifstream townsFile(townsGeoJsonFilePath);
+    if (!townsFile.is_open()) {
+        std::cerr << "Could not open towns GeoJSON file: " << townsGeoJsonFilePath << std::endl;
+        return false;
+    }
+
+    json townsData;
+    try {
+        townsFile >> townsData;
+    }
+    catch (const json::parse_error& e) {
+        std::cerr << "JSON Parsing error in towns GeoJSON: " << e.what() << std::endl;
+        return false;
+    }
+
+    if (!townsData.contains("features") || !townsData["features"].is_array()) {
+        std::cerr << "Invalid towns GeoJSON structure: Missing 'features' array." << std::endl;
+        return false;
+    }
+
+    const auto& townFeatures = townsData["features"];
+    for (const auto& feature : townFeatures) {
+        if (!feature.contains("geometry") || !feature["geometry"].is_object()) {
+            continue;
+        }
+        std::string name = feature["properties"].value("name", "Unnamed Town");
+        processGeometry(feature["geometry"], TOWN_COLOR, landShapes, name, PlaceCategory::Town);
+    }
+
+    // Load suburbs
+    std::ifstream suburbsFile(suburbsGeoJsonFilePath);
+    if (!suburbsFile.is_open()) {
+        std::cerr << "Could not open suburbs GeoJSON file: " << suburbsGeoJsonFilePath << std::endl;
+        return false;
+    }
+
+    json suburbsData;
+    try {
+        suburbsFile >> suburbsData;
+    }
+    catch (const json::parse_error& e) {
+        std::cerr << "JSON Parsing error in suburbs GeoJSON: " << e.what() << std::endl;
+        return false;
+    }
+
+    if (!suburbsData.contains("features") || !suburbsData["features"].is_array()) {
+        std::cerr << "Invalid suburbs GeoJSON structure: Missing 'features' array." << std::endl;
+        return false;
+    }
+
+    const auto& suburbFeatures = suburbsData["features"];
+    for (const auto& feature : suburbFeatures) {
+        if (!feature.contains("geometry") || !feature["geometry"].is_object()) {
+            continue;
+        }
+        std::string name = feature["properties"].value("name", "Unnamed Suburb");
+        processGeometry(feature["geometry"], SUBURB_COLOR, landShapes, name, PlaceCategory::Suburb);
     }
 
     return true;
 }
 
-bool WorldMap::loadGeoJSON() {
-    std::ifstream inFile(geoJsonFilePath);
-    if (!inFile.is_open()) {
-        std::cerr << "Could not open GeoJSON file: " << geoJsonFilePath << std::endl;
+bool WorldMap::processGeometry(const json& geometry, const sf::Color& color, std::vector<sf::VertexArray>& targetShapes, const std::string& name, PlaceCategory category) {
+    if (!geometry.contains("type") || !geometry.contains("coordinates")) {
+        std::cerr << "Invalid geometry object: Missing 'type' or 'coordinates'." << std::endl;
         return false;
     }
 
-    json geoData;
-    try {
-        inFile >> geoData;
+    std::string geometryType = geometry["type"];
+    const auto& coordinates = geometry["coordinates"];
+
+    if (geometryType == "Polygon") {
+        return processPolygon(coordinates, color, targetShapes, name, category);
     }
-    catch (const json::parse_error& e) {
-        std::cerr << "JSON Parsing error: " << e.what() << std::endl;
-        inFile.close();
+    else if (geometryType == "MultiPolygon") {
+        return processMultiPolygon(coordinates, color, targetShapes, name, category);
+    }
+    else {
+        std::cerr << "Unsupported geometry type: " << geometryType << std::endl;
         return false;
     }
-    inFile.close();
+}
 
-    // Check if "geometries" exists and is an array
-    if (!geoData.contains("geometries") || !geoData["geometries"].is_array()) {
-        std::cerr << "Invalid GeoJSON structure: Missing 'geometries' array." << std::endl;
+bool WorldMap::processPolygon(const json& coordinates, const sf::Color& color, std::vector<sf::VertexArray>& targetShapes, const std::string& name, PlaceCategory category) {
+    if (!coordinates.is_array()) {
+        std::cerr << "Invalid Polygon coordinates." << std::endl;
         return false;
     }
 
-    const auto& geometries = geoData["geometries"];
-
-    for (const auto& geometry : geometries) {
-        if (!geometry.contains("type") || !geometry.contains("coordinates")) {
-            std::cerr << "Invalid geometry object: Missing 'type' or 'coordinates'." << std::endl;
-            continue; // Skip invalid geometry
+    std::vector<std::vector<sf::Vector2f>> polygon;
+    for (const auto& ring : coordinates) {
+        if (!ring.is_array()) {
+            std::cerr << "Invalid ring in Polygon." << std::endl;
+            continue;
         }
 
-        std::string geometryType = geometry["type"];
-        if (geometryType == "Polygon") {
-            const auto& coordinates = geometry["coordinates"];
-            if (!coordinates.is_array()) {
-                std::cerr << "Invalid Polygon coordinates." << std::endl;
+        std::vector<sf::Vector2f> ringPoints;
+        for (const auto& point : ring) {
+            if (!point.is_array() || point.size() < 2) {
+                std::cerr << "Invalid point in Polygon ring." << std::endl;
                 continue;
             }
 
-            // Convert Polygon to a vector of rings, each ring is a vector of sf::Vector2f
-            std::vector<std::vector<sf::Vector2f>> polygon;
-            for (const auto& ring : coordinates) {
-                if (!ring.is_array()) {
-                    std::cerr << "Invalid ring in Polygon." << std::endl;
-                    continue;
-                }
-
-                std::vector<sf::Vector2f> ringPoints;
-                for (const auto& point : ring) {
-                    if (!point.is_array() || point.size() < 2) {
-                        std::cerr << "Invalid point in Polygon ring." << std::endl;
-                        continue;
-                    }
-
-                    float lon = point[0];
-                    float lat = point[1];
-                    sf::Vector2f projectedPoint = project(sf::Vector2f(lon, lat));
-                    ringPoints.push_back(projectedPoint);
-                }
-
-                if (!ringPoints.empty()) {
-                    polygon.push_back(ringPoints);
-                }
-            }
-
-            if (!polygon.empty()) {
-                // Triangulate the polygon using Earcut
-                std::vector<uint32_t> indices = mapbox::earcut<uint32_t>(polygon);
-
-                // Flatten the polygon points
-                std::vector<sf::Vector2f> flattenedPoints;
-                for (const auto& ring : polygon) {
-                    flattenedPoints.insert(flattenedPoints.end(), ring.begin(), ring.end());
-                }
-
-                // Create a VertexArray
-                sf::VertexArray va(sf::Triangles, indices.size());
-                for (size_t i = 0; i < indices.size(); ++i) {
-                    if (indices[i] < flattenedPoints.size()) {
-                        va[i].position = flattenedPoints[indices[i]];
-                        va[i].color = sf::Color(34, 139, 34); // ForestGreen color for land
-                    }
-                    else {
-                        std::cerr << "Index out of bounds during triangulation." << std::endl;
-                    }
-                }
-                landShapes.push_back(va);
-            }
-
+            float lon = point[0];
+            float lat = point[1];
+            ringPoints.push_back(project({ lon, lat }));
         }
-        else if (geometryType == "MultiPolygon") {
-            const auto& multiPolygons = geometry["coordinates"];
-            if (!multiPolygons.is_array()) {
-                std::cerr << "Invalid MultiPolygon coordinates." << std::endl;
-                continue;
-            }
 
-            for (const auto& polygons : multiPolygons) {
-                if (!polygons.is_array()) {
-                    std::cerr << "Invalid Polygon in MultiPolygon." << std::endl;
-                    continue;
-                }
+        if (!ringPoints.empty()) {
+            polygon.push_back(ringPoints);
+        }
+    }
 
-                std::vector<std::vector<sf::Vector2f>> polygon;
-                for (const auto& ring : polygons) {
-                    if (!ring.is_array()) {
-                        std::cerr << "Invalid ring in MultiPolygon." << std::endl;
-                        continue;
-                    }
+    return !polygon.empty() && createVertexArrayFromPolygon(polygon, color, targetShapes, name, category);
+}
 
-                    std::vector<sf::Vector2f> ringPoints;
-                    for (const auto& point : ring) {
-                        if (!point.is_array() || point.size() < 2) {
-                            std::cerr << "Invalid point in MultiPolygon ring." << std::endl;
-                            continue;
-                        }
+bool WorldMap::processMultiPolygon(const json& coordinates, const sf::Color& color, std::vector<sf::VertexArray>& targetShapes, const std::string& name, PlaceCategory category) {
+    if (!coordinates.is_array()) {
+        std::cerr << "Invalid MultiPolygon coordinates." << std::endl;
+        return false;
+    }
 
-                        float lon = point[0];
-                        float lat = point[1];
-                        sf::Vector2f projectedPoint = project(sf::Vector2f(lon, lat));
-                        ringPoints.push_back(projectedPoint);
-                    }
+    for (const auto& polygons : coordinates) {
+        if (!processPolygon(polygons, color, targetShapes, name, category)) {
+            std::cerr << "Failed to process Polygon in MultiPolygon." << std::endl;
+        }
+    }
 
-                    if (!ringPoints.empty()) {
-                        polygon.push_back(ringPoints);
-                    }
-                }
+    return true;
+}
 
-                if (!polygon.empty()) {
-                    // Triangulate the polygon using Earcut
-                    std::vector<uint32_t> indices = mapbox::earcut<uint32_t>(polygon);
+bool WorldMap::createVertexArrayFromPolygon(
+    const std::vector<std::vector<sf::Vector2f>>& polygon,
+    const sf::Color& color,
+    std::vector<sf::VertexArray>& targetShapes,
+    const std::string& name,
+    PlaceCategory category
+) {
+    // Triangulate the polygon using Earcut
+    std::vector<uint32_t> indices = mapbox::earcut<uint32_t>(polygon);
 
-                    // Flatten the polygon points
-                    std::vector<sf::Vector2f> flattenedPoints;
-                    for (const auto& ring : polygon) {
-                        flattenedPoints.insert(flattenedPoints.end(), ring.begin(), ring.end());
-                    }
+    // Flatten the polygon points
+    std::vector<sf::Vector2f> flattenedPoints;
+    for (const auto& ring : polygon) {
+        flattenedPoints.insert(flattenedPoints.end(), ring.begin(), ring.end());
+    }
 
-                    // Create a VertexArray
-                    sf::VertexArray va(sf::Triangles, indices.size());
-                    for (size_t i = 0; i < indices.size(); ++i) {
-                        if (indices[i] < flattenedPoints.size()) {
-                            va[i].position = flattenedPoints[indices[i]];
-                            va[i].color = sf::Color(231, 232, 234); // ForestGreen color for land
-                        }
-                        else {
-                            std::cerr << "Index out of bounds during triangulation." << std::endl;
-                        }
-                    }
-                    landShapes.push_back(va);
-                }
-            }
+    // Create a filled VertexArray
+    sf::VertexArray filledVA(sf::Triangles, indices.size());
+    for (size_t i = 0; i < indices.size(); ++i) {
+        if (indices[i] < flattenedPoints.size()) {
+            filledVA[i].position = flattenedPoints[indices[i]];
+            filledVA[i].color = color;
         }
         else {
-            std::cerr << "Unsupported geometry type: " << geometryType << std::endl;
-            // You can add handling for other geometry types if necessary
+            std::cerr << "Index out of bounds during triangulation." << std::endl;
+            return false;
         }
     }
 
-    // Optional: Log the number of shapes loaded
-    std::cout << "Loaded " << landShapes.size() << " land shapes from GeoJSON." << std::endl;
+    // Create an outline VertexArray using LineStrip
+    sf::VertexArray outlineVA(sf::LineStrip);
+    for (const auto& ring : polygon) {
+        for (const auto& point : ring) {
+            outlineVA.append(sf::Vertex(point, sf::Color::Black)); // Outline color (e.g., Black)
+        }
+        // Close the loop by connecting the last point to the first
+        if (!ring.empty()) {
+            outlineVA.append(sf::Vertex(ring.front(), sf::Color::Black));
+        }
+    }
+
+    if (category != PlaceCategory::Unknown && !name.empty()) {
+        // Store in placeAreas
+        PlaceArea area;
+        area.name = name;
+        area.category = category;
+        area.filledShape = filledVA;
+        area.outline = outlineVA;
+        placeAreas.push_back(area);
+    }
+    else {
+        // Store in targetShapes (e.g., landShapes)
+        targetShapes.push_back(filledVA);
+        targetShapes.push_back(outlineVA);
+    }
 
     return true;
 }
@@ -216,7 +304,7 @@ sf::Vector2f WorldMap::project(const sf::Vector2f& lonLat) const {
     // Simple equirectangular projection
     float x = (lonLat.x + 180.0f) / 360.0f * WORLD_WIDTH;
     float y = (90.0f - lonLat.y) / 180.0f * WORLD_HEIGHT;
-    return sf::Vector2f(x, y);
+    return { x, y };
 }
 
 void WorldMap::Render(sf::RenderWindow& window, const Camera& camera) const {
@@ -233,53 +321,6 @@ void WorldMap::Render(sf::RenderWindow& window, const Camera& camera) const {
     window.setView(originalView);
 }
 
-const std::vector<City>& WorldMap::GetCities() const {
-    return cities;
-}
-
-bool WorldMap::loadCities(const std::string& cityJsonFilePath) {
-    std::ifstream inFile(cityJsonFilePath);
-    if (!inFile.is_open()) {
-        std::cerr << "Could not open cities JSON file: " << cityJsonFilePath << std::endl;
-        return false;
-    }
-
-    json cityData;
-    try {
-        inFile >> cityData;
-    }
-    catch (const json::parse_error& e) {
-        std::cerr << "JSON Parsing error: " << e.what() << std::endl;
-        inFile.close();
-        return false;
-    }
-    inFile.close();
-
-    if (!cityData.contains("cities") || !cityData["cities"].is_array()) {
-        std::cerr << "Invalid city JSON structure: Missing 'cities' array." << std::endl;
-        return false;
-    }
-
-    const auto& citiesArray = cityData["cities"];
-    for (const auto& cityJson : citiesArray) {
-        if (!cityJson.contains("name") || !cityJson.contains("latitude") ||
-            !cityJson.contains("longitude") || !cityJson.contains("zoom_level")) {
-            std::cerr << "Invalid city data: Missing fields." << std::endl;
-            continue;
-        }
-
-        City city;
-        city.name = cityJson["name"];
-        float latitude = cityJson["latitude"];
-        float longitude = cityJson["longitude"];
-        city.zoomLevel = cityJson["zoom_level"];
-
-        city.position = project(sf::Vector2f(longitude, latitude));
-
-        cities.push_back(city);
-    }
-
-    std::cout << "Loaded " << cities.size() << " cities from JSON." << std::endl;
-
-    return true;
+const std::vector<PlaceArea>& WorldMap::GetPlaceAreas() const {
+    return placeAreas;
 }

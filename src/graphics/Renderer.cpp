@@ -1,17 +1,14 @@
 #include "Renderer.h"
-#include "../graphics/Camera.h"
 #include <iostream>
 #include <algorithm>
 
-Renderer::Renderer()
-    : isInitialized(false) {} // Initialize base radius
-// You can adjust the default base radius as needed
+Renderer::Renderer() {}
 
 Renderer::~Renderer() {
     Shutdown();
 }
 
-bool Renderer::Init(sf::RenderWindow& /*window*/, ThreadPool& /*threadPool*/) {
+bool Renderer::Init(sf::RenderWindow& /*window*/) {
     isInitialized = true;
 
     if (!font.loadFromFile("assets/PTSans-Regular.ttf")) {
@@ -19,147 +16,146 @@ bool Renderer::Init(sf::RenderWindow& /*window*/, ThreadPool& /*threadPool*/) {
         return false;
     }
 
-    // Initialize hoveredCityText
-    hoveredCityText.setFont(font);
-    hoveredCityText.setCharacterSize(28); // Adjust as needed
-    hoveredCityText.setFillColor(sf::Color::Black);
-    // Position will be set dynamically based on window size
+    // Initialize hoveredAreaText
+    hoveredAreaText.setFont(font);
+    hoveredAreaText.setCharacterSize(40); // Adjust as needed
+    hoveredAreaText.setFillColor(sf::Color::Black);
 
     return true;
 }
 
-void Renderer::SetWorldMap(std::shared_ptr<WorldMap> map) {
+void Renderer::SetWorldMap(const std::shared_ptr<WorldMap>& map) {
     worldMap = map;
 }
 
 void Renderer::Render(sf::RenderWindow& window, const Camera& camera) {
     if (!isInitialized) return;
 
-    // Render WorldMap
-    if (worldMap) {
-        worldMap->Render(window, camera);
-    }
+    std::lock_guard<std::mutex> lock(renderMutex);
 
-    // Render Cities
-    if (worldMap) {
-        const auto& cities = worldMap->GetCities();
-
-        float currentZoom = camera.GetZoomLevel();
-
-        int cityZoomLevel = 0;
-        if (currentZoom <= 1.0f && currentZoom > 0.5f) {
-            cityZoomLevel = 1;
-        }
-        else if (currentZoom <= 0.5f && currentZoom > 0.1f) {
-            cityZoomLevel = 2;
-        }
-        else if (currentZoom <= 0.1f && currentZoom > 0.005f) {
-            cityZoomLevel = 3;
-        }
-        else if (currentZoom <= 0.005f) {
-            cityZoomLevel = 4;
-        }
-
-        // Define base sizes
-        float baseCircleRadius = 8.0f;
-
-        // Set up circle shape
-        sf::CircleShape circle;
-        circle.setFillColor(sf::Color::White);
-        circle.setOutlineColor(sf::Color::Black);
-
-        sf::View originalView = window.getView();
-        window.setView(camera.GetView());
-
-        // Get mouse position in window coordinates
-        sf::Vector2i mousePixelPos = sf::Mouse::getPosition(window);
-        // Convert to world coordinates
-        sf::Vector2f mouseWorldPos = window.mapPixelToCoords(mousePixelPos, camera.GetView());
-
-        // Reset hoveredCityName
-        hoveredCityName = "";
-
-        // Iterate through cities to render and detect hover
-        for (const auto& city : cities) {
-            if (city.zoomLevel <= cityZoomLevel) {
-                // Adjust circle size based on city's zoomLevel
-                float citySizeFactor = 1.0f;
-                switch (city.zoomLevel) {
-                case 1:
-                    citySizeFactor = 1.0f; // Largest cities
-                    break;
-                case 2:
-                    citySizeFactor = 0.75f; // Medium cities
-                    break;
-                case 3:
-                    citySizeFactor = 0.5f; // Smaller cities
-                    break;
-                case 4:
-                    citySizeFactor = 0.25f; // Smallest cities
-                    break;
-                default:
-                    citySizeFactor = 0.1f;
-                    break;
-                }
-
-                // Scaling factors
-                float scaledCircleRadius = std::min((baseCircleRadius * currentZoom * citySizeFactor + (8 * currentZoom)), 6.0f);
-
-                // Update circle properties
-                circle.setRadius(scaledCircleRadius);
-                circle.setOrigin(scaledCircleRadius, scaledCircleRadius);
-                circle.setOutlineThickness(std::min(4.0f * currentZoom, 4.0f));
-                circle.setPosition(city.position);
-
-                // Check if mouse is over this city
-                float dx = mouseWorldPos.x - city.position.x;
-                float dy = mouseWorldPos.y - city.position.y;
-                float distanceSquared = dx * dx + dy * dy;
-
-                if (distanceSquared <= scaledCircleRadius * scaledCircleRadius) {
-                    hoveredCityName = city.name;
-                    // Optional: Highlight the hovered city
-                    circle.setFillColor(sf::Color::Yellow); // Highlight color
-                }
-
-                window.draw(circle);
-
-                // Reset circle color for next iteration
-                circle.setFillColor(sf::Color::White);
-            }
-        }
-
-        // Restore the original view
-        window.setView(originalView);
-    }
-
-    // Draw the hovered city name at the bottom center
-    if (!hoveredCityName.empty()) {
-        hoveredCityText.setString(hoveredCityName);
-
-        // Get window size
-        sf::Vector2u windowSize = window.getSize();
-
-        // Calculate text position: center-bottom with some padding
-        sf::FloatRect textBounds = hoveredCityText.getLocalBounds();
-        float x = (windowSize.x - textBounds.width) / 2.0f;
-        float y = windowSize.y - textBounds.height - 10.0f; // 10 pixels from bottom
-
-        hoveredCityText.setPosition(x, y);
-
-        // Set view to default for UI rendering
-        sf::View originalView = window.getView();
-        window.setView(window.getDefaultView());
-
-        window.draw(hoveredCityText);
-
-        // Restore original view
-        window.setView(originalView);
-    }
+    renderWorldMap(window, camera);
+    renderPlaceAreas(window, camera);
+    renderHoveredAreaName(window);
 }
 
 void Renderer::Shutdown() {
-    // Clean up rendering resources if needed
     isInitialized = false;
     worldMap.reset();
+}
+
+void Renderer::renderWorldMap(sf::RenderWindow& window, const Camera& camera) {
+    if (worldMap) {
+        worldMap->Render(window, camera);
+    }
+}
+
+void Renderer::renderPlaceAreas(sf::RenderWindow& window, const Camera& camera) {
+    if (!worldMap) return;
+
+    const auto& placeAreas = worldMap->GetPlaceAreas();
+
+    // Apply camera view
+    sf::View originalView = window.getView();
+    window.setView(camera.GetView());
+
+    // Get mouse position in world coordinates
+    sf::Vector2i mousePixelPos = sf::Mouse::getPosition(window);
+    sf::Vector2f mouseWorldPos = window.mapPixelToCoords(mousePixelPos);
+
+    // Reset hoveredAreaName
+    hoveredAreaName.clear();
+
+    // Calculate zoom factor
+    float currentZoom = camera.GetZoomLevel();
+
+    for (const auto& area : placeAreas) {
+        float zoomThreshold = 0.0f;
+        switch (area.category) {
+        case PlaceCategory::City:
+            zoomThreshold = 1.0f;
+            break;
+        case PlaceCategory::Town:
+            zoomThreshold = 0.1f;
+            break;
+        case PlaceCategory::Suburb:
+            zoomThreshold = 0.01f;
+            break;
+        default:
+            break;
+        }
+        if (currentZoom > zoomThreshold) {
+            continue; // Skip rendering this area
+        }
+
+        // Check if mouse is over the area
+        sf::FloatRect bounds = area.filledShape.getBounds();
+        if (bounds.contains(mouseWorldPos)) {
+            // Use point-in-polygon test
+            bool containsPoint = false;
+            for (size_t i = 0; i < area.filledShape.getVertexCount(); i += 3) {
+                // Create triangle
+                sf::Vector2f p1 = area.filledShape[i].position;
+                sf::Vector2f p2 = area.filledShape[i + 1].position;
+                sf::Vector2f p3 = area.filledShape[i + 2].position;
+
+                // Barycentric technique
+                float denominator = ((p2.y - p3.y) * (p1.x - p3.x) + (p3.x - p2.x) * (p1.y - p3.y));
+                if (denominator == 0.0f) continue; // Prevent division by zero
+
+                float a = ((p2.y - p3.y) * (mouseWorldPos.x - p3.x) + (p3.x - p2.x) * (mouseWorldPos.y - p3.y)) / denominator;
+                float b = ((p3.y - p1.y) * (mouseWorldPos.x - p3.x) + (p1.x - p3.x) * (mouseWorldPos.y - p3.y)) / denominator;
+                float c = 1.0f - a - b;
+
+                if (a >= 0 && b >= 0 && c >= 0) {
+                    containsPoint = true;
+                    break;
+                }
+            }
+            if (containsPoint) {
+                hoveredAreaName = area.name;
+
+                // Create a temporary filled shape with yellow color
+                sf::VertexArray highlightedFill = area.filledShape;
+                for (size_t i = 0; i < highlightedFill.getVertexCount(); ++i) {
+                    highlightedFill[i].color = sf::Color::Yellow; // Highlight fill color
+                }
+                window.draw(highlightedFill);
+
+                // Draw the outline as normal
+                window.draw(area.outline);
+                continue;
+            }
+        }
+        // Draw the regular filled shape and outline
+        window.draw(area.filledShape);
+        window.draw(area.outline);
+    }
+
+    // Restore the original view
+    window.setView(originalView);
+}
+
+void Renderer::renderHoveredAreaName(sf::RenderWindow& window) {
+    if (hoveredAreaName.empty()) return;
+
+    hoveredAreaText.setString(hoveredAreaName);
+
+    // Get window size
+    sf::Vector2u windowSize = window.getSize();
+
+    // Calculate text position: center-bottom with some padding
+    sf::FloatRect textBounds = hoveredAreaText.getLocalBounds();
+    float x = (windowSize.x - textBounds.width) / 2.0f;
+    float y = windowSize.y - textBounds.height - 40.0f; // 10 pixels from bottom
+
+    hoveredAreaText.setPosition(x, y);
+
+    // Set view to default for UI rendering
+    sf::View originalView = window.getView();
+    window.setView(window.getDefaultView());
+
+    window.draw(hoveredAreaText);
+
+    // Restore original view
+    window.setView(originalView);
 }
