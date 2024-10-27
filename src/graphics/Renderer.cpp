@@ -47,8 +47,8 @@ void Renderer::Render(sf::RenderWindow& window, const Camera& camera) {
     // Render game elements via Renderer
     renderWorldMap(window, camera);
     renderPlaceAreas(window, camera);
-    renderStations(window, camera);
-    renderLines(window, camera);
+    renderLines(window, camera);     // Render lines first
+    renderStations(window, camera);  // Then render stations on top
 
     // Render UI elements if applicable
     renderHoveredAreaName(window);

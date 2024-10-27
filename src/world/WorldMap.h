@@ -55,7 +55,7 @@ public:
 
     // New methods to manage stations and lines
     bool AddStation(const sf::Vector2f& position);
-    Station* GetStationAtPosition(const sf::Vector2f& position);
+    Station* GetStationAtPosition(const sf::Vector2f& position, float zoomLevel);
     void AddLine(const Line& line);
 
     const std::vector<Station>& GetStations() const;

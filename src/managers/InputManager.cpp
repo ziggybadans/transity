@@ -118,9 +118,11 @@ void InputManager::OnMouseButtonPressed(const sf::Event& event) {
         sf::Vector2i mousePos(event.mouseButton.x, event.mouseButton.y);
         sf::Vector2f worldPos = window.mapPixelToCoords(mousePos, camera->GetView());
 
+        float currentZoom = camera->GetZoomLevel();
+
         if (!worldMap->IsBuildingLine()) {
-            // Check if clicked on a station
-            Station* station = worldMap->GetStationAtPosition(worldPos);
+            // Check if clicked on a station with zoom-adjusted snapping
+            Station* station = worldMap->GetStationAtPosition(worldPos, currentZoom);
             if (station) {
                 // Start building a line
                 worldMap->StartBuildingLine(station->GetPosition());
@@ -128,8 +130,8 @@ void InputManager::OnMouseButtonPressed(const sf::Event& event) {
             }
         }
         else {
-            // Check if clicked on another station
-            Station* station = worldMap->GetStationAtPosition(worldPos);
+            // Check if clicked on another station with zoom-adjusted snapping
+            Station* station = worldMap->GetStationAtPosition(worldPos, currentZoom);
             if (station && station != startingStation) {
                 // Add station position to line and finish
                 worldMap->AddNodeToCurrentLine(station->GetPosition(), false);
