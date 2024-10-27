@@ -348,8 +348,8 @@ bool WorldMap::AddStation(const sf::Vector2f& position) {
 Station* WorldMap::GetStationAtPosition(const sf::Vector2f& position, float zoomLevel) {
     for (auto& station : stations) {
         sf::Vector2f stationPos = station.GetPosition();
-        float baseRadius = 10.0f; // Base radius at zoom level 1.0f
-        float scaledRadius = baseRadius / zoomLevel; // Adjust based on zoom
+        float baseRadius = 10.0f;
+        float scaledRadius = baseRadius * zoomLevel;
 
         if (std::hypot(position.x - stationPos.x, position.y - stationPos.y) <= scaledRadius) {
             return &station;

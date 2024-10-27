@@ -163,8 +163,18 @@ void Renderer::renderStations(sf::RenderWindow& window, const Camera& camera) {
     const auto& stations = worldMap->GetStations();
     float currentZoom = camera.GetZoomLevel();
 
+    // Get mouse position in world coordinates
+    sf::Vector2i mousePixelPos = sf::Mouse::getPosition(window);
+    sf::Vector2f mouseWorldPos = window.mapPixelToCoords(mousePixelPos, camera.GetView());
+
     for (const auto& station : stations) {
-        station.Render(window, currentZoom);
+        bool isHovered = false;
+        float baseRadius = 10.0f;
+        float scaledRadius = baseRadius * currentZoom;
+        if (std::hypot(mouseWorldPos.x - station.GetPosition().x, mouseWorldPos.y - station.GetPosition().y) <= scaledRadius) {
+            isHovered = true;
+        }
+        station.Render(window, currentZoom, isHovered); // Update Render to accept hover state
     }
 }
 

@@ -7,7 +7,7 @@ class Station {
 public:
     Station(const sf::Vector2f& position, float baseRadius = 10.0f, float baseOutlineThickness = 2.0f);
 
-    void Render(sf::RenderWindow& window, float zoomLevel) const;
+    void Render(sf::RenderWindow& window, float zoomLevel, bool isHovered = false) const;
 
     sf::Vector2f GetPosition() const;
 

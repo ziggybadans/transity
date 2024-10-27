@@ -14,7 +14,7 @@ Station::Station(const sf::Vector2f& position, float baseRadius, float baseOutli
     shape.setPosition(position);
 }
 
-void Station::Render(sf::RenderWindow& window, float zoomLevel) const {
+void Station::Render(sf::RenderWindow& window, float zoomLevel, bool isHovered) const {
     // Scale radius and outline thickness based on zoom level
     float scaledRadius = baseRadius * zoomLevel;
     float scaledOutlineThickness = baseOutlineThickness * zoomLevel;
@@ -23,6 +23,7 @@ void Station::Render(sf::RenderWindow& window, float zoomLevel) const {
     shape.setRadius(scaledRadius);
     shape.setOutlineThickness(scaledOutlineThickness);
     shape.setOrigin(scaledRadius, scaledRadius); // Re-center origin based on new radius
+    shape.setFillColor(isHovered ? sf::Color::Blue : sf::Color::White); // Change color on hover
 
     window.draw(shape);
 }
