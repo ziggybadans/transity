@@ -33,18 +33,14 @@ private:
     sf::Font font;
 
     // Hover functionality
-    std::string hoveredCityName;
-    sf::Text hoveredCityText;
+    std::string hoveredAreaName;
+    sf::Text hoveredAreaText;
 
     // Private helper functions
     void renderWorldMap(sf::RenderWindow& window, const Camera& camera);
-    void renderCities(sf::RenderWindow& window, const Camera& camera);
-    void renderHoveredCityName(sf::RenderWindow& window);
-
-    // City rendering helper
-    void updateHoveredCity(const sf::Vector2f& mouseWorldPos, const City& city, float scaledCircleRadius, sf::CircleShape& circle);
+    void renderPlaceAreas(sf::RenderWindow& window, const Camera& camera);
+    void renderHoveredAreaName(sf::RenderWindow& window);
 
     // Constants
-    static constexpr float BASE_CIRCLE_RADIUS = 8.0f;
-    static constexpr float MAX_CIRCLE_RADIUS = 6.0f;
+    static constexpr float HOVER_OUTLINE_THICKNESS = 2.0f;
 };

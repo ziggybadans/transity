@@ -21,16 +21,20 @@ enum class PlaceCategory {
     Unknown
 };
 
-struct City {
+struct PlaceArea {
     std::string name;
-    sf::Vector2f position; // Projected position
     PlaceCategory category;
+    sf::VertexArray filledShape;  // The filled shape of the area
+    sf::VertexArray outline;      // The outline of the area
 };
 
 class WorldMap : public IInitializable {
 public:
-    // Constructor accepts the path to the GeoJSON file and OSM places file
-    WorldMap(const std::string& geoJsonPath, const std::string& osmPlacesPath);
+    // Constructor accepts the path to the GeoJSON files
+    WorldMap(const std::string& geoJsonPath,
+        const std::string& citiesGeoJsonPath,
+        const std::string& townsGeoJsonPath,
+        const std::string& suburbsGeoJsonPath);
     ~WorldMap();
 
     // Initialize by loading GeoJSON and creating shapes
@@ -39,20 +43,25 @@ public:
     // Render the map
     void Render(sf::RenderWindow& window, const Camera& camera) const;
 
-    // Getters for world dimensions
+    // Get world dimensions
     float GetWorldWidth() const { return WORLD_WIDTH; }
     float GetWorldHeight() const { return WORLD_HEIGHT; }
 
-    // Get cities
-    const std::vector<City>& GetCities() const;
+    // Get place areas
+    const std::vector<PlaceArea>& GetPlaceAreas() const;
 
 private:
     // Paths to data files
     std::string geoJsonFilePath;
-    std::string osmPlacesFilePath;
+    std::string citiesGeoJsonFilePath;
+    std::string townsGeoJsonFilePath;
+    std::string suburbsGeoJsonFilePath;
 
     // Store the shapes as VertexArrays
     std::vector<sf::VertexArray> landShapes;
+
+    // Store place areas
+    std::vector<PlaceArea> placeAreas;
 
     // World dimensions (adjust as needed)
     static constexpr float WORLD_WIDTH = 3600.0f;
@@ -60,21 +69,19 @@ private:
 
     // Helper functions for loading GeoJSON data
     bool loadGeoJSON();
-    bool processGeometry(const nlohmann::json& geometry);
-    bool processPolygon(const nlohmann::json& coordinates, const sf::Color& color);
-    bool processMultiPolygon(const nlohmann::json& coordinates, const sf::Color& color);
-    bool createVertexArrayFromPolygon(const std::vector<std::vector<sf::Vector2f>>& polygon, const sf::Color& color);
-
-    // Helper functions for loading cities
-    bool loadCities();
-    bool processFeature(const nlohmann::json& feature);
+    bool processGeometry(const nlohmann::json& geometry, const sf::Color& color, std::vector<sf::VertexArray>& targetShapes, const std::string& name = "", PlaceCategory category = PlaceCategory::Unknown);
+    bool processPolygon(const nlohmann::json& coordinates, const sf::Color& color, std::vector<sf::VertexArray>& targetShapes, const std::string& name = "", PlaceCategory category = PlaceCategory::Unknown);
+    bool processMultiPolygon(const nlohmann::json& coordinates, const sf::Color& color, std::vector<sf::VertexArray>& targetShapes, const std::string& name = "", PlaceCategory category = PlaceCategory::Unknown);
+    bool createVertexArrayFromPolygon(const std::vector<std::vector<sf::Vector2f>>& polygon, const sf::Color& color, std::vector<sf::VertexArray>& targetShapes, const std::string& name = "", PlaceCategory category = PlaceCategory::Unknown);
 
     // Helper to project geographic coordinates to world coordinates
     sf::Vector2f project(const sf::Vector2f& lonLat) const;
 
     // Constants
     static const sf::Color LAND_COLOR;
-    static const sf::Color MULTI_POLYGON_COLOR;
 
-    std::vector<City> cities;
+    // Colors for different place categories
+    static const sf::Color CITY_COLOR;
+    static const sf::Color TOWN_COLOR;
+    static const sf::Color SUBURB_COLOR;
 };

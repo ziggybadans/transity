@@ -16,10 +16,10 @@ bool Renderer::Init(sf::RenderWindow& /*window*/) {
         return false;
     }
 
-    // Initialize hoveredCityText
-    hoveredCityText.setFont(font);
-    hoveredCityText.setCharacterSize(28); // Adjust as needed
-    hoveredCityText.setFillColor(sf::Color::Black);
+    // Initialize hoveredAreaText
+    hoveredAreaText.setFont(font);
+    hoveredAreaText.setCharacterSize(28); // Adjust as needed
+    hoveredAreaText.setFillColor(sf::Color::Black);
 
     return true;
 }
@@ -34,8 +34,8 @@ void Renderer::Render(sf::RenderWindow& window, const Camera& camera) {
     std::lock_guard<std::mutex> lock(renderMutex);
 
     renderWorldMap(window, camera);
-    renderCities(window, camera);
-    renderHoveredCityName(window);
+    renderPlaceAreas(window, camera);
+    renderHoveredAreaName(window);
 }
 
 void Renderer::Shutdown() {
@@ -49,16 +49,10 @@ void Renderer::renderWorldMap(sf::RenderWindow& window, const Camera& camera) {
     }
 }
 
-void Renderer::renderCities(sf::RenderWindow& window, const Camera& camera) {
+void Renderer::renderPlaceAreas(sf::RenderWindow& window, const Camera& camera) {
     if (!worldMap) return;
 
-    const auto& cities = worldMap->GetCities();
-    float currentZoom = camera.GetZoomLevel();
-
-    // Set up circle shape
-    sf::CircleShape circle;
-    circle.setFillColor(sf::Color::White);
-    circle.setOutlineColor(sf::Color::Black);
+    const auto& placeAreas = worldMap->GetPlaceAreas();
 
     // Apply camera view
     sf::View originalView = window.getView();
@@ -68,95 +62,78 @@ void Renderer::renderCities(sf::RenderWindow& window, const Camera& camera) {
     sf::Vector2i mousePixelPos = sf::Mouse::getPosition(window);
     sf::Vector2f mouseWorldPos = window.mapPixelToCoords(mousePixelPos);
 
-    // Reset hoveredCityName
-    hoveredCityName.clear();
+    // Reset hoveredAreaName
+    hoveredAreaName.clear();
 
-    for (const auto& city : cities) {
-        bool shouldRender = false;
-        float citySizeFactor = 1.0f;
+    for (const auto& area : placeAreas) {
+        // Check if mouse is over the area
+        sf::FloatRect bounds = area.filledShape.getBounds();
+        if (bounds.contains(mouseWorldPos)) {
+            // Use point-in-polygon test
+            bool containsPoint = false;
+            for (size_t i = 0; i < area.filledShape.getVertexCount(); i += 3) {
+                // Create triangle
+                sf::Vector2f p1 = area.filledShape[i].position;
+                sf::Vector2f p2 = area.filledShape[i + 1].position;
+                sf::Vector2f p3 = area.filledShape[i + 2].position;
 
-        switch (city.category) {
-        case PlaceCategory::CapitalCity:
-            shouldRender = true;
-            citySizeFactor = 1.0f;
-            break;
-        case PlaceCategory::City:
-            if (currentZoom <= 0.1f) {
-                shouldRender = true;
-                citySizeFactor = 0.75f;
+                // Barycentric technique
+                float denominator = ((p2.y - p3.y) * (p1.x - p3.x) + (p3.x - p2.x) * (p1.y - p3.y));
+                if (denominator == 0.0f) continue; // Prevent division by zero
+
+                float a = ((p2.y - p3.y) * (mouseWorldPos.x - p3.x) + (p3.x - p2.x) * (mouseWorldPos.y - p3.y)) / denominator;
+                float b = ((p3.y - p1.y) * (mouseWorldPos.x - p3.x) + (p1.x - p3.x) * (mouseWorldPos.y - p3.y)) / denominator;
+                float c = 1.0f - a - b;
+
+                if (a >= 0 && b >= 0 && c >= 0) {
+                    containsPoint = true;
+                    break;
+                }
             }
-            break;
-        case PlaceCategory::Town:
-            if (currentZoom <= 0.01f) {
-                shouldRender = true;
-                citySizeFactor = 0.5f;
+            if (containsPoint) {
+                hoveredAreaName = area.name;
+
+                // Create a temporary filled shape with yellow color
+                sf::VertexArray highlightedFill = area.filledShape;
+                for (size_t i = 0; i < highlightedFill.getVertexCount(); ++i) {
+                    highlightedFill[i].color = sf::Color::Yellow; // Highlight fill color
+                }
+                window.draw(highlightedFill);
+
+                // Draw the outline as normal
+                window.draw(area.outline);
+                continue;
             }
-            break;
-        case PlaceCategory::Suburb:
-            if (currentZoom <= 0.001f) {
-                shouldRender = true;
-                citySizeFactor = 0.25f;
-            }
-            break;
-        default:
-            break;
         }
-
-        if (!shouldRender) continue;
-
-        // Calculate scaled circle radius
-        float scaledCircleRadius = std::min(BASE_CIRCLE_RADIUS * currentZoom * citySizeFactor + (8 * currentZoom), MAX_CIRCLE_RADIUS);
-
-        // Update circle properties
-        circle.setRadius(scaledCircleRadius);
-        circle.setOrigin(scaledCircleRadius, scaledCircleRadius);
-        circle.setOutlineThickness(std::min(4.0f * currentZoom, 4.0f));
-        circle.setPosition(city.position);
-
-        // Update hovered city if necessary
-        updateHoveredCity(mouseWorldPos, city, scaledCircleRadius, circle);
-
-        window.draw(circle);
-
-        // Reset circle color for next iteration
-        circle.setFillColor(sf::Color::White);
+        // Draw the regular filled shape and outline
+        window.draw(area.filledShape);
+        window.draw(area.outline);
     }
 
     // Restore the original view
     window.setView(originalView);
 }
 
-void Renderer::updateHoveredCity(const sf::Vector2f& mouseWorldPos, const City& city, float scaledCircleRadius, sf::CircleShape& circle) {
-    float dx = mouseWorldPos.x - city.position.x;
-    float dy = mouseWorldPos.y - city.position.y;
-    float distanceSquared = dx * dx + dy * dy;
+void Renderer::renderHoveredAreaName(sf::RenderWindow& window) {
+    if (hoveredAreaName.empty()) return;
 
-    if (distanceSquared <= scaledCircleRadius * scaledCircleRadius) {
-        hoveredCityName = city.name;
-        circle.setFillColor(sf::Color::Yellow); // Highlight color
-    }
-}
-
-void Renderer::renderHoveredCityName(sf::RenderWindow& window) {
-    if (hoveredCityName.empty()) return;
-
-    hoveredCityText.setString(hoveredCityName);
+    hoveredAreaText.setString(hoveredAreaName);
 
     // Get window size
     sf::Vector2u windowSize = window.getSize();
 
     // Calculate text position: center-bottom with some padding
-    sf::FloatRect textBounds = hoveredCityText.getLocalBounds();
+    sf::FloatRect textBounds = hoveredAreaText.getLocalBounds();
     float x = (windowSize.x - textBounds.width) / 2.0f;
     float y = windowSize.y - textBounds.height - 10.0f; // 10 pixels from bottom
 
-    hoveredCityText.setPosition(x, y);
+    hoveredAreaText.setPosition(x, y);
 
     // Set view to default for UI rendering
     sf::View originalView = window.getView();
     window.setView(window.getDefaultView());
 
-    window.draw(hoveredCityText);
+    window.draw(hoveredAreaText);
 
     // Restore original view
     window.setView(originalView);
