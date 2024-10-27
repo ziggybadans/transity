@@ -317,16 +317,6 @@ void WorldMap::Render(sf::RenderWindow& window, const Camera& camera) const {
         window.draw(shape);
     }
 
-    // Draw all place area filled shapes
-    for (const auto& area : placeAreas) {
-        window.draw(area.filledShape);
-    }
-
-    // Draw all place area outlines
-    for (const auto& area : placeAreas) {
-        window.draw(area.outline);
-    }
-
     // Restore the original view
     window.setView(originalView);
 }

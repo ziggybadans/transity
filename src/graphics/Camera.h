@@ -36,6 +36,9 @@ public:
     void setMinZoomLevel(float value);
     void setMaxZoomLevel(float value);
 
+    float getMinZoomLevel() const { return minZoomLevel; }
+    float getMaxZoomLevel() const { return maxZoomLevel; }
+
     const sf::View& GetView() const;
 
 private:

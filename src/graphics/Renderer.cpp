@@ -65,7 +65,31 @@ void Renderer::renderPlaceAreas(sf::RenderWindow& window, const Camera& camera) 
     // Reset hoveredAreaName
     hoveredAreaName.clear();
 
+    // Calculate zoom factor
+    float currentZoom = camera.GetZoomLevel();
+
     for (const auto& area : placeAreas) {
+        float zoomThreshold = 0.0f;
+        switch (area.category) {
+        case PlaceCategory::CapitalCity:
+            zoomThreshold = 1.0f; // Always render capitals
+            break;
+        case PlaceCategory::City:
+            zoomThreshold = 0.1f;
+            break;
+        case PlaceCategory::Town:
+            zoomThreshold = 0.01f;
+            break;
+        case PlaceCategory::Suburb:
+            zoomThreshold = 0.005f;
+            break;
+        default:
+            break;
+        }
+        if (currentZoom > zoomThreshold) {
+            continue; // Skip rendering this area
+        }
+
         // Check if mouse is over the area
         sf::FloatRect bounds = area.filledShape.getBounds();
         if (bounds.contains(mouseWorldPos)) {
