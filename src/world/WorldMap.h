@@ -14,16 +14,24 @@ namespace mapbox {
     struct Earcut;
 }
 
+enum class PlaceCategory {
+    CapitalCity,
+    City,
+    Town,
+    Suburb,
+    Unknown
+};
+
 struct City {
     std::string name;
     sf::Vector2f position; // Projected position
-    int zoomLevel;
+    PlaceCategory category;
 };
 
 class WorldMap : public IInitializable {
 public:
-    // Constructor accepts the path to the GeoJSON file
-    WorldMap(const std::string& geoJsonPath);
+    // Constructor accepts the path to the GeoJSON file and OSM places file
+    WorldMap(const std::string& geoJsonPath, const std::string& osmPlacesPath);
     ~WorldMap();
 
     // Initialize by loading GeoJSON and creating shapes
@@ -36,14 +44,15 @@ public:
     float GetWorldWidth() const { return WORLD_WIDTH; }
     float GetWorldHeight() const { return WORLD_HEIGHT; }
 
-    // Load city data
-    bool loadCities(const std::string& cityJsonFilePath);
+    // Load city data from OSM places JSON
+    bool loadCities(const std::string& osmPlacesFilePath);
 
     // Get cities
     const std::vector<City>& GetCities() const;
 
 private:
     std::string geoJsonFilePath;
+    std::string osmPlacesFilePath;
 
     // Store the shapes as VertexArrays
     std::vector<sf::VertexArray> landShapes;

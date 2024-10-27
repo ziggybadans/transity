@@ -46,19 +46,9 @@ void Renderer::Render(sf::RenderWindow& window, const Camera& camera) {
 
         float currentZoom = camera.GetZoomLevel();
 
-        int cityZoomLevel = 0;
-        if (currentZoom <= 1.0f && currentZoom > 0.5f) {
-            cityZoomLevel = 1;
-        }
-        else if (currentZoom <= 0.5f && currentZoom > 0.1f) {
-            cityZoomLevel = 2;
-        }
-        else if (currentZoom <= 0.1f && currentZoom > 0.005f) {
-            cityZoomLevel = 3;
-        }
-        else if (currentZoom <= 0.005f) {
-            cityZoomLevel = 4;
-        }
+        // Define visibility based on category and zoom level
+        // Example: Show CapitalCity at all zoom levels, City at higher zooms, etc.
+        // Adjust the logic as per your game's zoom level system
 
         // Define base sizes
         float baseCircleRadius = 8.0f;
@@ -81,52 +71,65 @@ void Renderer::Render(sf::RenderWindow& window, const Camera& camera) {
 
         // Iterate through cities to render and detect hover
         for (const auto& city : cities) {
-            if (city.zoomLevel <= cityZoomLevel) {
-                // Adjust circle size based on city's zoomLevel
-                float citySizeFactor = 1.0f;
-                switch (city.zoomLevel) {
-                case 1:
-                    citySizeFactor = 1.0f; // Largest cities
-                    break;
-                case 2:
-                    citySizeFactor = 0.75f; // Medium cities
-                    break;
-                case 3:
-                    citySizeFactor = 0.5f; // Smaller cities
-                    break;
-                case 4:
-                    citySizeFactor = 0.25f; // Smallest cities
-                    break;
-                default:
-                    citySizeFactor = 0.1f;
-                    break;
+            bool shouldRender = false;
+            float citySizeFactor = 1.0f; // Default size factor
+
+            switch (city.category) {
+            case PlaceCategory::CapitalCity:
+                shouldRender = true;
+                citySizeFactor = 1.0f; // Larger size for capitals
+                break;
+            case PlaceCategory::City:
+                if (currentZoom <= 0.1f) { // Adjust zoom thresholds as needed
+                    shouldRender = true;
+                    citySizeFactor = 0.75f;
                 }
-
-                // Scaling factors
-                float scaledCircleRadius = std::min((baseCircleRadius * currentZoom * citySizeFactor + (8 * currentZoom)), 6.0f);
-
-                // Update circle properties
-                circle.setRadius(scaledCircleRadius);
-                circle.setOrigin(scaledCircleRadius, scaledCircleRadius);
-                circle.setOutlineThickness(std::min(4.0f * currentZoom, 4.0f));
-                circle.setPosition(city.position);
-
-                // Check if mouse is over this city
-                float dx = mouseWorldPos.x - city.position.x;
-                float dy = mouseWorldPos.y - city.position.y;
-                float distanceSquared = dx * dx + dy * dy;
-
-                if (distanceSquared <= scaledCircleRadius * scaledCircleRadius) {
-                    hoveredCityName = city.name;
-                    // Optional: Highlight the hovered city
-                    circle.setFillColor(sf::Color::Yellow); // Highlight color
+                break;
+            case PlaceCategory::Town:
+                if (currentZoom <= 0.01f) {
+                    shouldRender = true;
+                    citySizeFactor = 0.5f;
                 }
-
-                window.draw(circle);
-
-                // Reset circle color for next iteration
-                circle.setFillColor(sf::Color::White);
+                break;
+            case PlaceCategory::Suburb:
+                if (currentZoom <= 0.001f) {
+                    shouldRender = true;
+                    citySizeFactor = 0.25f;
+                }
+                break;
+            default:
+                shouldRender = false;
+                break;
             }
+
+            if (!shouldRender) {
+                continue;
+            }
+
+            // Calculate scaled circle radius
+            float scaledCircleRadius = std::min((baseCircleRadius * currentZoom * citySizeFactor + (8 * currentZoom)), 6.0f);
+
+            // Update circle properties
+            circle.setRadius(scaledCircleRadius);
+            circle.setOrigin(scaledCircleRadius, scaledCircleRadius);
+            circle.setOutlineThickness(std::min(4.0f * currentZoom, 4.0f));
+            circle.setPosition(city.position);
+
+            // Check if mouse is over this city
+            float dx = mouseWorldPos.x - city.position.x;
+            float dy = mouseWorldPos.y - city.position.y;
+            float distanceSquared = dx * dx + dy * dy;
+
+            if (distanceSquared <= scaledCircleRadius * scaledCircleRadius) {
+                hoveredCityName = city.name;
+                // Optional: Highlight the hovered city
+                circle.setFillColor(sf::Color::Yellow); // Highlight color
+            }
+
+            window.draw(circle);
+
+            // Reset circle color for next iteration
+            circle.setFillColor(sf::Color::White);
         }
 
         // Restore the original view

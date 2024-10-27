@@ -111,7 +111,8 @@ bool Game::LoadResources() {
     // Enqueue WorldMap loading task
     Task loadWorldMapTask([this, &cv, &loaded]() {
         std::string geoJsonPath = "assets/ne_10m_land.json"; // Path to your GeoJSON file
-        auto tempWorldMap = std::make_shared<WorldMap>(geoJsonPath);
+        std::string osmPlacesPath = "assets/cities.geojson"; // Path to OSM Places JSON file
+        auto tempWorldMap = std::make_shared<WorldMap>(geoJsonPath, osmPlacesPath);
         if (tempWorldMap->Init()) {
             {
                 std::lock_guard<std::mutex> lock(worldMapMutex);

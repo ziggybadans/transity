@@ -25,8 +25,9 @@ namespace mapbox {
     }
 }
 
-WorldMap::WorldMap(const std::string& geoJsonPath)
-    : geoJsonFilePath(geoJsonPath) // Adjust zoomLevelToSwitch as needed
+WorldMap::WorldMap(const std::string& geoJsonPath, const std::string& osmPlacesPath)
+    : geoJsonFilePath(geoJsonPath),
+    osmPlacesFilePath(osmPlacesPath)
 {}
 
 WorldMap::~WorldMap() {}
@@ -37,9 +38,9 @@ bool WorldMap::Init() {
         return false;
     }
 
-    // Load cities
-    if (!loadCities("assets/cities.json")) {
-        std::cerr << "Failed to load city data." << std::endl;
+    // Load cities from OSM places JSON
+    if (!loadCities(osmPlacesFilePath)) {
+        std::cerr << "Failed to load city data from OSM places." << std::endl;
         return false;
     }
 
@@ -237,49 +238,96 @@ const std::vector<City>& WorldMap::GetCities() const {
     return cities;
 }
 
-bool WorldMap::loadCities(const std::string& cityJsonFilePath) {
-    std::ifstream inFile(cityJsonFilePath);
+bool WorldMap::loadCities(const std::string& osmPlacesFilePath) {
+    std::ifstream inFile(osmPlacesFilePath);
     if (!inFile.is_open()) {
-        std::cerr << "Could not open cities JSON file: " << cityJsonFilePath << std::endl;
+        std::cerr << "Could not open OSM Places JSON file: " << osmPlacesFilePath << std::endl;
         return false;
     }
 
-    json cityData;
+    json osmData;
     try {
-        inFile >> cityData;
+        inFile >> osmData;
     }
     catch (const json::parse_error& e) {
-        std::cerr << "JSON Parsing error: " << e.what() << std::endl;
+        std::cerr << "JSON Parsing error in OSM Places: " << e.what() << std::endl;
         inFile.close();
         return false;
     }
     inFile.close();
 
-    if (!cityData.contains("cities") || !cityData["cities"].is_array()) {
-        std::cerr << "Invalid city JSON structure: Missing 'cities' array." << std::endl;
+    // Check if "features" exists and is an array
+    if (!osmData.contains("features") || !osmData["features"].is_array()) {
+        std::cerr << "Invalid OSM Places JSON structure: Missing 'features' array." << std::endl;
         return false;
     }
 
-    const auto& citiesArray = cityData["cities"];
-    for (const auto& cityJson : citiesArray) {
-        if (!cityJson.contains("name") || !cityJson.contains("latitude") ||
-            !cityJson.contains("longitude") || !cityJson.contains("zoom_level")) {
-            std::cerr << "Invalid city data: Missing fields." << std::endl;
+    const auto& features = osmData["features"];
+
+    for (const auto& feature : features) {
+        // Ensure required properties exist
+        if (!feature.contains("properties") || !feature["properties"].is_object()) {
+            continue;
+        }
+        const auto& properties = feature["properties"];
+
+        // Extract name
+        if (!properties.contains("name")) {
+            continue; // Skip if no name
+        }
+        std::string name = properties["name"];
+
+        // Determine category
+        PlaceCategory category = PlaceCategory::Unknown;
+        if (properties.contains("capital")) {
+            category = PlaceCategory::CapitalCity;
+        }
+        else if (properties.contains("place")) {
+            std::string place = properties["place"];
+            if (place == "city") {
+                category = PlaceCategory::City;
+            }
+            else if (place == "town") {
+                category = PlaceCategory::Town;
+            }
+            else if (place == "suburb") {
+                category = PlaceCategory::Suburb;
+            }
+        }
+
+        // Skip if category is unknown
+        if (category == PlaceCategory::Unknown) {
             continue;
         }
 
+        // Extract coordinates from geometry
+        if (!feature.contains("geometry") || !feature["geometry"].is_object()) {
+            continue; // Skip if no geometry
+        }
+        const auto& geometry = feature["geometry"];
+        if (!geometry.contains("type") || geometry["type"] != "Point") {
+            continue; // Only process Point geometries
+        }
+        if (!geometry.contains("coordinates") || !geometry["coordinates"].is_array() || geometry["coordinates"].size() < 2) {
+            continue; // Invalid coordinates
+        }
+        float lon = geometry["coordinates"][0];
+        float lat = geometry["coordinates"][1];
+
+        // Project to world coordinates
+        sf::Vector2f projectedPos = project(sf::Vector2f(lon, lat));
+
+        // Create City object
         City city;
-        city.name = cityJson["name"];
-        float latitude = cityJson["latitude"];
-        float longitude = cityJson["longitude"];
-        city.zoomLevel = cityJson["zoom_level"];
+        city.name = name;
+        city.position = projectedPos;
+        city.category = category;
 
-        city.position = project(sf::Vector2f(longitude, latitude));
-
+        // Add to cities vector
         cities.push_back(city);
     }
 
-    std::cout << "Loaded " << cities.size() << " cities from JSON." << std::endl;
+    std::cout << "Loaded " << cities.size() << " cities from OSM Places." << std::endl;
 
     return true;
 }
