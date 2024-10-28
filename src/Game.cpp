@@ -72,6 +72,14 @@ bool Game::Init() {
         }
         });
 
+    // Initialize UIManager
+    uiManager = std::make_shared<UIManager>(worldMap);
+    uiManager->SetWindow(windowManager->GetWindow());
+    if (!uiManager->Init()) {
+        std::cerr << "Failed to initialize UIManager." << std::endl;
+        return false;
+    }
+
     // Initialize Renderer with WorldMap
     if (worldMap) {
         camera->SetZoom(Constants::CAMERA_MAX_ZOOM);
@@ -177,6 +185,7 @@ void Game::ProcessEvents() {
     sf::Event event;
     while (windowManager->PollEvent(event)) {
         eventManager->Dispatch(event);
+        uiManager->ProcessEvent(event); // Pass events to UIManager
     }
 }
 
@@ -187,6 +196,10 @@ void Game::Update(float dt) {
 
     if (inputManager) {
         inputManager->HandleInput(dt);
+    }
+
+    if (uiManager) {
+        uiManager->Update(dt);
     }
 }
 
@@ -204,7 +217,10 @@ void Game::Render() {
         renderer->Render(windowManager->GetWindow(), *camera);
     }
 
-    // Render UI elements if applicable
+    // Set view to default for UI rendering
+    windowManager->GetWindow().setView(windowManager->GetWindow().getDefaultView());
+
+    // Render UI elements
     if (uiManager) {
         uiManager->Render();
     }

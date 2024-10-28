@@ -1,9 +1,8 @@
-// Line.cpp
 #include "Line.h"
 #include <cmath>
 
 Line::Line()
-    : active(true)
+    : active(true), color(sf::Color::Blue), thickness(2.0f)
 {}
 
 void Line::AddNode(const sf::Vector2f& position) {
@@ -41,16 +40,52 @@ void Line::GenerateSplinePoints() {
     }
 }
 
-void Line::Render(sf::RenderWindow& window, float zoomLevel) const {
+void Line::Render(sf::RenderWindow& window, float zoomLevel, bool isSelected) const {
     if (splinePoints.empty()) {
         // Not enough points to render
         return;
     }
 
-    sf::VertexArray lineStrip(sf::LineStrip, splinePoints.size());
-    for (size_t i = 0; i < splinePoints.size(); ++i) {
-        lineStrip[i].position = splinePoints[i];
-        lineStrip[i].color = sf::Color::Blue; // Customize color as needed
+    // Create a vertex array to draw the line with thickness
+    sf::VertexArray lineStrip(sf::TrianglesStrip);
+
+    // Adjust thickness based on zoom level
+    float scaledThickness = thickness * zoomLevel;
+
+    sf::Color renderColor = color;
+    if (isSelected) {
+        renderColor = sf::Color::Red; // Indicate selection with red color
+    }
+
+    // Generate quads along the line to represent thickness
+    for (size_t i = 0; i < splinePoints.size() - 1; ++i) {
+        sf::Vector2f point1 = splinePoints[i];
+        sf::Vector2f point2 = splinePoints[i + 1];
+
+        // Calculate direction vector
+        sf::Vector2f direction = point2 - point1;
+        float length = std::hypot(direction.x, direction.y);
+        if (length == 0.0f) continue; // Avoid division by zero
+
+        // Normalize direction
+        direction /= length;
+
+        // Calculate normal vector
+        sf::Vector2f normal(-direction.y, direction.x);
+
+        // Calculate vertices for the quad
+        sf::Vector2f offset = normal * (scaledThickness / 2.0f);
+
+        sf::Vertex v1(point1 + offset, renderColor);
+        sf::Vertex v2(point1 - offset, renderColor);
+        sf::Vertex v3(point2 + offset, renderColor);
+        sf::Vertex v4(point2 - offset, renderColor);
+
+        // Add vertices to the array
+        lineStrip.append(v1);
+        lineStrip.append(v2);
+        lineStrip.append(v3);
+        lineStrip.append(v4);
     }
 
     window.draw(lineStrip);
@@ -62,4 +97,20 @@ void Line::SetActive(bool active) {
 
 bool Line::IsActive() const {
     return active;
+}
+
+void Line::SetColor(const sf::Color& color) {
+    this->color = color;
+}
+
+sf::Color Line::GetColor() const {
+    return color;
+}
+
+void Line::SetThickness(float thickness) {
+    this->thickness = thickness;
+}
+
+float Line::GetThickness() const {
+    return thickness;
 }

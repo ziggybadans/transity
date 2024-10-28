@@ -75,6 +75,13 @@ public:
     void SetNextSegmentCurved(bool curved);
     bool GetIsNextSegmentCurved() const;
 
+    // Methods to manage selected line
+    void SetSelectedLine(Line* line);
+    Line* GetSelectedLine() const;
+
+    // Method to get line at a position
+    Line* GetLineAtPosition(const sf::Vector2f& position, float zoomLevel);
+
 private:
     // Paths to data files
     std::string geoJsonFilePath;
@@ -120,4 +127,7 @@ private:
 
     // New members for curve handling
     bool isNextSegmentCurved = false;
+
+    // For line selection
+    Line* selectedLine = nullptr;
 };

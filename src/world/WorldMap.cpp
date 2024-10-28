@@ -412,3 +412,39 @@ void WorldMap::AddNodeToCurrentLine(const sf::Vector2f& position) {
         currentLine->AddNode(position);
     }
 }
+
+void WorldMap::SetSelectedLine(Line* line) {
+    selectedLine = line;
+}
+
+Line* WorldMap::GetSelectedLine() const {
+    return selectedLine;
+}
+
+Line* WorldMap::GetLineAtPosition(const sf::Vector2f& position, float zoomLevel) {
+    // Iterate through lines and check if position is near any line segment
+    float tolerance = 5.0f * zoomLevel; // Adjust tolerance based on zoom level
+
+    for (auto& line : lines) {
+        const auto& splinePoints = line.GetSplinePoints();
+        for (size_t i = 0; i < splinePoints.size() - 1; ++i) {
+            sf::Vector2f p1 = splinePoints[i];
+            sf::Vector2f p2 = splinePoints[i + 1];
+
+            // Calculate the closest point on the segment to the position
+            sf::Vector2f delta = p2 - p1;
+            float segmentLengthSquared = delta.x * delta.x + delta.y * delta.y;
+            float t = ((position - p1).x * delta.x + (position - p1).y * delta.y) / segmentLengthSquared;
+            t = std::max(0.0f, std::min(1.0f, t));
+            sf::Vector2f projection = p1 + t * delta;
+
+            float distanceSquared = (position - projection).x * (position - projection).x +
+                (position - projection).y * (position - projection).y;
+
+            if (distanceSquared <= tolerance * tolerance) {
+                return &line;
+            }
+        }
+    }
+    return nullptr;
+}

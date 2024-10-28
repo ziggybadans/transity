@@ -179,9 +179,12 @@ void Renderer::renderLines(sf::RenderWindow& window, const Camera& camera) {
     const auto& lines = worldMap->GetLines();
     float currentZoom = camera.GetZoomLevel();
 
+    Line* selectedLine = worldMap->GetSelectedLine();
+
     // Render existing lines
     for (const auto& line : lines) {
-        line.Render(window, currentZoom);
+        bool isSelected = (&line == selectedLine);
+        line.Render(window, currentZoom, isSelected);
     }
 
     // Render the current line being built

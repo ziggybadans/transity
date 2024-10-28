@@ -18,7 +18,8 @@ InputManager::InputManager(std::shared_ptr<EventManager> eventMgr,
     isPanning(false),
     lastMousePosition(0, 0),
     continuousMovement(0.0f, 0.0f),
-    startingStation(nullptr)
+    startingStation(nullptr),
+    selectedLine(nullptr) // Initialize selectedLine
 {
     // Subscribe to relevant events
     eventManager->Subscribe(EventType::MouseWheelScrolled,
@@ -112,19 +113,36 @@ void InputManager::OnMouseButtonPressed(const sf::Event& event) {
         worldMap->AddStation(worldPos);
     }
     else if (event.mouseButton.button == sf::Mouse::Left) {
-        // Start building or add nodes to line
         sf::Vector2i mousePos(event.mouseButton.x, event.mouseButton.y);
         sf::Vector2f worldPos = window.mapPixelToCoords(mousePos, camera->GetView());
         float currentZoom = camera->GetZoomLevel();
 
-        Station* station = worldMap->GetStationAtPosition(worldPos, currentZoom);
-        if (!worldMap->IsBuildingLine() && station) {
-            // Start a new line with the station
-            worldMap->StartBuildingLine(station->GetPosition());
-            startingStation = station;
+        if (!worldMap->IsBuildingLine()) {
+            // Check if user clicked on a line to select it
+            Line* line = worldMap->GetLineAtPosition(worldPos, currentZoom);
+            if (line) {
+                worldMap->SetSelectedLine(line);
+                selectedLine = line;
+            }
+            else {
+                // Check if user clicked on a station to start building a line
+                Station* station = worldMap->GetStationAtPosition(worldPos, currentZoom);
+                if (station && station != startingStation) {
+                    worldMap->StartBuildingLine(station->GetPosition());
+                    startingStation = station;
+                }
+                else {
+                    // Clicked outside any line or station, so deselect the current line
+                    if (selectedLine) {
+                        worldMap->SetSelectedLine(nullptr);
+                        selectedLine = nullptr;
+                    }
+                }
+            }
         }
-        else if (worldMap->IsBuildingLine()) {
+        else {
             // Add station or a node to current line
+            Station* station = worldMap->GetStationAtPosition(worldPos, currentZoom);
             if (station && station != startingStation) {
                 worldMap->AddNodeToCurrentLine(station->GetPosition());
             }

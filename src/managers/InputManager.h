@@ -49,4 +49,6 @@ private:
 
     // Line building state
     Station* startingStation;
+
+    Line* selectedLine = nullptr; // For keeping track of the selected line
 };
