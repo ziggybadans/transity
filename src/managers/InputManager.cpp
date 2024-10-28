@@ -106,37 +106,27 @@ void InputManager::OnMouseWheelScrolled(const sf::Event& event) {
 
 void InputManager::OnMouseButtonPressed(const sf::Event& event) {
     if (event.mouseButton.button == sf::Mouse::Right) {
-        // Right-click: attempt to build a station in the area
+        // Build a station in the area
         sf::Vector2i mousePos(event.mouseButton.x, event.mouseButton.y);
         sf::Vector2f worldPos = window.mapPixelToCoords(mousePos, camera->GetView());
-
-        // For simplicity, we'll assume that any click is within an area
         worldMap->AddStation(worldPos);
     }
     else if (event.mouseButton.button == sf::Mouse::Left) {
-        // Left-click: either start building a line or add a node
+        // Start building or add nodes to line
         sf::Vector2i mousePos(event.mouseButton.x, event.mouseButton.y);
         sf::Vector2f worldPos = window.mapPixelToCoords(mousePos, camera->GetView());
-
         float currentZoom = camera->GetZoomLevel();
 
-        if (!worldMap->IsBuildingLine()) {
-            // Check if clicked on a station with zoom-adjusted snapping
-            Station* station = worldMap->GetStationAtPosition(worldPos, currentZoom);
-            if (station) {
-                // Start building a line
-                worldMap->StartBuildingLine(station->GetPosition());
-                startingStation = station;
-            }
+        Station* station = worldMap->GetStationAtPosition(worldPos, currentZoom);
+        if (!worldMap->IsBuildingLine() && station) {
+            // Start a new line with the station
+            worldMap->StartBuildingLine(station->GetPosition());
+            startingStation = station;
         }
-        else {
-            // Check if clicked on another station with zoom-adjusted snapping
-            Station* station = worldMap->GetStationAtPosition(worldPos, currentZoom);
+        else if (worldMap->IsBuildingLine()) {
+            // Add station or a node to current line
             if (station && station != startingStation) {
-                // Add station position to line and finish
                 worldMap->AddNodeToCurrentLine(station->GetPosition());
-                worldMap->FinishCurrentLine();
-                startingStation = nullptr;
             }
             else {
                 worldMap->AddNodeToCurrentLine(worldPos);
@@ -147,7 +137,6 @@ void InputManager::OnMouseButtonPressed(const sf::Event& event) {
 
 void InputManager::OnKeyPressed(const sf::Event& event) {
     if (event.key.code == sf::Keyboard::Enter && worldMap->IsBuildingLine()) {
-        // Finish building the line
         worldMap->FinishCurrentLine();
         startingStation = nullptr;
     }
