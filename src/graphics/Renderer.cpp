@@ -165,6 +165,7 @@ void Renderer::renderStations(sf::RenderWindow& window, const Camera& camera) {
         bool isHovered = false;
         float baseRadius = 10.0f;
         float scaledRadius = baseRadius * currentZoom;
+
         if (std::hypot(mouseWorldPos.x - station.GetPosition().x, mouseWorldPos.y - station.GetPosition().y) <= scaledRadius) {
             isHovered = true;
         }
@@ -186,20 +187,48 @@ void Renderer::renderLines(sf::RenderWindow& window, const Camera& camera) {
     // Render the current line being built
     const Line* currentLine = worldMap->GetCurrentLine();
     if (currentLine) {
-        currentLine->Render(window, currentZoom); // Existing rendering of the line
+        currentLine->Render(window, currentZoom);
 
         // Draw the preview line from the last node to the current mouse position
-        if (!currentLine->GetNodes().empty()) {
-            sf::Vector2f lastNode = currentLine->GetNodes().back();
+        const auto& nodes = currentLine->GetNodes();
+        if (!nodes.empty()) {
+            sf::Vector2f lastNode = nodes.back();
             sf::Vector2f previewEnd = worldMap->currentMousePosition;
 
-            sf::Vertex previewLine[] =
-            {
-                sf::Vertex(lastNode, sf::Color::Red), // Preview color
-                sf::Vertex(previewEnd, sf::Color::Red)
-            };
+            // Generate a temporary spline with the preview point
+            std::vector<sf::Vector2f> tempNodes = nodes;
+            tempNodes.push_back(previewEnd);
 
-            window.draw(previewLine, 2, sf::Lines);
+            // Generate spline points
+            std::vector<sf::Vector2f> tempSplinePoints;
+            const int numPointsPerSegment = 20;
+
+            for (size_t i = 0; i < tempNodes.size() - 1; ++i) {
+                sf::Vector2f p0 = (i == 0) ? tempNodes[i] : tempNodes[i - 1];
+                sf::Vector2f p1 = tempNodes[i];
+                sf::Vector2f p2 = tempNodes[i + 1];
+                sf::Vector2f p3 = (i + 2 < tempNodes.size()) ? tempNodes[i + 2] : tempNodes[i + 1];
+
+                for (int j = 0; j <= numPointsPerSegment; ++j) {
+                    float t = static_cast<float>(j) / numPointsPerSegment;
+                    sf::Vector2f point = 0.5f * (
+                        (2.0f * p1) +
+                        (-p0 + p2) * t +
+                        (2.0f * p0 - 5.0f * p1 + 4.0f * p2 - p3) * t * t +
+                        (-p0 + 3.0f * p1 - 3.0f * p2 + p3) * t * t * t
+                        );
+                    tempSplinePoints.push_back(point);
+                }
+            }
+
+            // Render the preview spline
+            sf::VertexArray previewLine(sf::LineStrip, tempSplinePoints.size());
+            for (size_t i = 0; i < tempSplinePoints.size(); ++i) {
+                previewLine[i].position = tempSplinePoints[i];
+                previewLine[i].color = sf::Color::Red; // Preview color
+            }
+
+            window.draw(previewLine);
         }
     }
 }

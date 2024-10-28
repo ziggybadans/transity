@@ -33,7 +33,7 @@ struct PlaceArea {
 
 class WorldMap : public IInitializable {
 public:
-    // Constructor accepts the path to the GeoJSON files
+    // Constructor and Destructor
     WorldMap(const std::string& geoJsonPath,
         const std::string& citiesGeoJsonPath,
         const std::string& townsGeoJsonPath,
@@ -53,7 +53,7 @@ public:
     // Get place areas
     const std::vector<PlaceArea>& GetPlaceAreas() const;
 
-    // New methods to manage stations and lines
+    // Methods to manage stations and lines
     bool AddStation(const sf::Vector2f& position);
     Station* GetStationAtPosition(const sf::Vector2f& position, float zoomLevel);
     void AddLine(const Line& line);
@@ -63,13 +63,17 @@ public:
 
     // Methods for current line being built
     void StartBuildingLine(const sf::Vector2f& startPosition);
-    void AddNodeToCurrentLine(const sf::Vector2f& position);
+    void AddNodeToCurrentLine(const sf::Vector2f& position); // Updated
     void FinishCurrentLine();
     const Line* GetCurrentLine() const;
     bool IsBuildingLine() const;
 
     void SetCurrentMousePosition(const sf::Vector2f& position);
-    sf::Vector2f currentMousePosition; // Add this line
+    sf::Vector2f currentMousePosition; // Existing member
+
+    // New methods to handle curve state
+    void SetNextSegmentCurved(bool curved);
+    bool GetIsNextSegmentCurved() const;
 
 private:
     // Paths to data files
@@ -113,4 +117,7 @@ private:
     // For line building
     std::unique_ptr<Line> currentLine;
     bool isBuildingLine = false;
+
+    // New members for curve handling
+    bool isNextSegmentCurved = false;
 };

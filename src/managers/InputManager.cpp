@@ -3,7 +3,7 @@
 #include <SFML/Window/Mouse.hpp>
 #include <SFML/Graphics/View.hpp>
 #include <stdexcept>
-#include <iostream> // For debug statements if needed
+#include <iostream>
 
 InputManager::InputManager(std::shared_ptr<EventManager> eventMgr,
     std::shared_ptr<Camera> cam,
@@ -162,6 +162,14 @@ void InputManager::OnMouseMoved(const sf::Event& event) {
 
     if (worldMap->IsBuildingLine()) {
         worldMap->SetCurrentMousePosition(worldPos);
+    }
+
+    // Detect if Shift key is held during mouse movement for preview
+    bool isShiftHeld = sf::Keyboard::isKeyPressed(sf::Keyboard::LShift) ||
+        sf::Keyboard::isKeyPressed(sf::Keyboard::RShift);
+
+    if (worldMap->IsBuildingLine()) {
+        worldMap->SetNextSegmentCurved(isShiftHeld);
     }
 
     if (sf::Mouse::isButtonPressed(sf::Mouse::Middle)) { // Use middle mouse for panning

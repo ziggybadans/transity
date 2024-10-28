@@ -377,12 +377,6 @@ void WorldMap::StartBuildingLine(const sf::Vector2f& startPosition) {
     isBuildingLine = true;
 }
 
-void WorldMap::AddNodeToCurrentLine(const sf::Vector2f& position) {
-    if (currentLine) {
-        currentLine->AddNode(position);
-    }
-}
-
 void WorldMap::FinishCurrentLine() {
     if (currentLine) {
         currentLine->SetActive(false);
@@ -402,4 +396,19 @@ bool WorldMap::IsBuildingLine() const {
 
 void WorldMap::SetCurrentMousePosition(const sf::Vector2f& position) {
     currentMousePosition = position;
+}
+
+// New methods for curve handling
+void WorldMap::SetNextSegmentCurved(bool curved) {
+    isNextSegmentCurved = curved;
+}
+
+bool WorldMap::GetIsNextSegmentCurved() const {
+    return isNextSegmentCurved;
+}
+
+void WorldMap::AddNodeToCurrentLine(const sf::Vector2f& position) {
+    if (currentLine && isBuildingLine) {
+        currentLine->AddNode(position);
+    }
 }
