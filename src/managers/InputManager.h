@@ -4,6 +4,7 @@
 #include <SFML/Graphics.hpp>
 #include <memory>
 #include <string>
+#include <imgui.h> // Include ImGui header
 
 #include "EventManager.h"
 #include "../graphics/Camera.h"
@@ -50,5 +51,6 @@ private:
     // Line building state
     Station* startingStation;
 
-    Line* selectedLine = nullptr; // For keeping track of the selected line
+    // Line selection state
+    Line* selectedLine;
 };

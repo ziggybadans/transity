@@ -107,12 +107,23 @@ void InputManager::OnMouseWheelScrolled(const sf::Event& event) {
 
 void InputManager::OnMouseButtonPressed(const sf::Event& event) {
     if (event.mouseButton.button == sf::Mouse::Right) {
-        // Build a station in the area
+        // Right-click should build a station if not interacting with ImGui
+        if (ImGui::GetIO().WantCaptureMouse) {
+            // ImGui is handling the mouse, do not process for game
+            return;
+        }
+
         sf::Vector2i mousePos(event.mouseButton.x, event.mouseButton.y);
         sf::Vector2f worldPos = window.mapPixelToCoords(mousePos, camera->GetView());
         worldMap->AddStation(worldPos);
     }
     else if (event.mouseButton.button == sf::Mouse::Left) {
+        // Left-click for selecting/deselecting lines or starting to build lines
+        if (ImGui::GetIO().WantCaptureMouse) {
+            // ImGui is handling the mouse, do not process for game
+            return;
+        }
+
         sf::Vector2i mousePos(event.mouseButton.x, event.mouseButton.y);
         sf::Vector2f worldPos = window.mapPixelToCoords(mousePos, camera->GetView());
         float currentZoom = camera->GetZoomLevel();
