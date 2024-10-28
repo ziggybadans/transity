@@ -63,7 +63,7 @@ public:
 
     // Methods for current line being built
     void StartBuildingLine(const sf::Vector2f& startPosition);
-    void AddNodeToCurrentLine(const sf::Vector2f& position, bool curved);
+    void AddNodeToCurrentLine(const sf::Vector2f& position);
     void FinishCurrentLine();
     const Line* GetCurrentLine() const;
     bool IsBuildingLine() const;

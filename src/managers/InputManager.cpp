@@ -134,15 +134,12 @@ void InputManager::OnMouseButtonPressed(const sf::Event& event) {
             Station* station = worldMap->GetStationAtPosition(worldPos, currentZoom);
             if (station && station != startingStation) {
                 // Add station position to line and finish
-                worldMap->AddNodeToCurrentLine(station->GetPosition(), false);
+                worldMap->AddNodeToCurrentLine(station->GetPosition());
                 worldMap->FinishCurrentLine();
                 startingStation = nullptr;
             }
             else {
-                // Add node to line
-                bool isShiftPressed = sf::Keyboard::isKeyPressed(sf::Keyboard::LShift) ||
-                    sf::Keyboard::isKeyPressed(sf::Keyboard::RShift);
-                worldMap->AddNodeToCurrentLine(worldPos, isShiftPressed);
+                worldMap->AddNodeToCurrentLine(worldPos);
             }
         }
     }

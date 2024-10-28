@@ -40,7 +40,6 @@ private:
     void OnMouseMoved(const sf::Event& event);
     void OnMouseButtonPressed(const sf::Event& event);
 
-
     // Panning state
     bool isPanning;
     sf::Vector2i lastMousePosition;

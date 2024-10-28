@@ -8,7 +8,7 @@ class Line {
 public:
     Line();
 
-    void AddNode(const sf::Vector2f& position, bool curved = false);
+    void AddNode(const sf::Vector2f& position);
 
     void Render(sf::RenderWindow& window, float zoomLevel) const;
 
@@ -20,7 +20,6 @@ public:
 
 private:
     std::vector<sf::Vector2f> nodes;
-    std::vector<bool> curves; // Whether each segment is curved
     sf::VertexArray lineVertices;
     bool active;
 

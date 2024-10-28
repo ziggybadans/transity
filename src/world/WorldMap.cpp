@@ -377,9 +377,9 @@ void WorldMap::StartBuildingLine(const sf::Vector2f& startPosition) {
     isBuildingLine = true;
 }
 
-void WorldMap::AddNodeToCurrentLine(const sf::Vector2f& position, bool curved) {
+void WorldMap::AddNodeToCurrentLine(const sf::Vector2f& position) {
     if (currentLine) {
-        currentLine->AddNode(position, curved);
+        currentLine->AddNode(position);
     }
 }
 

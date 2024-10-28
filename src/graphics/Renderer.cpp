@@ -36,9 +36,6 @@ void Renderer::Render(sf::RenderWindow& window, const Camera& camera) {
 
     std::lock_guard<std::mutex> lock(renderMutex);
 
-    // Clear the window
-    window.clear(sf::Color(174, 223, 246));
-
     // Apply camera view
     if (worldMap) {
         window.setView(camera.GetView());
@@ -52,9 +49,6 @@ void Renderer::Render(sf::RenderWindow& window, const Camera& camera) {
 
     // Render UI elements if applicable
     renderHoveredAreaName(window);
-
-    // Display the rendered frame
-    window.display();
 }
 
 void Renderer::renderWorldMap(sf::RenderWindow& window, const Camera& camera) {
