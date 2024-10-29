@@ -148,6 +148,7 @@
     <ClCompile Include="..\..\..\Downloads\imgui-sfml-2.6\imgui-SFML.cpp" />
     <ClCompile Include="src\core\Line.cpp" />
     <ClCompile Include="src\core\Station.cpp" />
+    <ClCompile Include="src\core\Train.cpp" />
     <ClCompile Include="src\Game.cpp" />
     <ClCompile Include="src\graphics\Camera.cpp" />
     <ClCompile Include="src\graphics\Renderer.cpp" />
@@ -171,6 +172,7 @@
     <ClInclude Include="src\Constants.h" />
     <ClInclude Include="src\core\Line.h" />
     <ClInclude Include="src\core\Station.h" />
+    <ClInclude Include="src\core\Train.h" />
     <ClInclude Include="src\Game.h" />
     <ClInclude Include="src\graphics\Camera.h" />
     <ClInclude Include="src\graphics\Renderer.h" />

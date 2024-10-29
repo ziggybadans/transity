@@ -71,6 +71,11 @@ void UIManager::Render() {
                 selectedLine->SetThickness(thickness);
             }
 
+            // Button to add a train
+            if (ImGui::Button("Add Train")) {
+                selectedLine->AddTrain();
+            }
+
             ImGui::End();
         }
 

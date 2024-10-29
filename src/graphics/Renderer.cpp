@@ -234,6 +234,14 @@ void Renderer::renderLines(sf::RenderWindow& window, const Camera& camera) {
             window.draw(previewLine);
         }
     }
+
+    // Render trains
+    for (const auto& line : lines) {
+        const auto& trains = line.GetTrains();
+        for (const auto& train : trains) {
+            train.Render(window, currentZoom);
+        }
+    }
 }
 
 void Renderer::renderHoveredAreaName(sf::RenderWindow& window) {

@@ -2,7 +2,7 @@
 #include <cmath>
 
 Line::Line()
-    : active(true), color(sf::Color::Blue), thickness(2.0f)
+    : active(true), color(sf::Color::Blue), thickness(2.0f), totalLength(0.0f)
 {}
 
 void Line::AddNode(const sf::Vector2f& position) {
@@ -12,6 +12,7 @@ void Line::AddNode(const sf::Vector2f& position) {
 
 void Line::GenerateSplinePoints() {
     splinePoints.clear();
+    totalLength = 0.0f;
 
     if (nodes.size() < 2) {
         // Not enough points to generate a spline
@@ -35,6 +36,12 @@ void Line::GenerateSplinePoints() {
                 (2.0f * p0 - 5.0f * p1 + 4.0f * p2 - p3) * t * t +
                 (-p0 + 3.0f * p1 - 3.0f * p2 + p3) * t * t * t
                 );
+
+            if (!splinePoints.empty()) {
+                sf::Vector2f prevPoint = splinePoints.back();
+                totalLength += std::hypot(point.x - prevPoint.x, point.y - prevPoint.y);
+            }
+
             splinePoints.push_back(point);
         }
     }
@@ -113,4 +120,79 @@ void Line::SetThickness(float thickness) {
 
 float Line::GetThickness() const {
     return thickness;
+}
+
+void Line::AddTrain() {
+    trains.emplace_back(this);
+}
+
+const std::vector<Train>& Line::GetTrains() const {
+    return trains;
+}
+
+std::vector<Train>& Line::GetTrains() {
+    return trains;
+}
+
+float Line::GetLength() const {
+    return totalLength;
+}
+
+sf::Vector2f Line::GetPositionAlongLine(float progress) const {
+    if (splinePoints.empty()) {
+        return sf::Vector2f();
+    }
+
+    float targetDistance = totalLength * progress;
+    float accumulatedDistance = 0.0f;
+
+    for (size_t i = 0; i < splinePoints.size() - 1; ++i) {
+        sf::Vector2f p1 = splinePoints[i];
+        sf::Vector2f p2 = splinePoints[i + 1];
+        float segmentLength = std::hypot(p2.x - p1.x, p2.y - p1.y);
+
+        if (accumulatedDistance + segmentLength >= targetDistance) {
+            float remaining = targetDistance - accumulatedDistance;
+            float t = remaining / segmentLength;
+            return p1 + t * (p2 - p1);
+        }
+        accumulatedDistance += segmentLength;
+    }
+    return splinePoints.back();
+}
+
+float Line::GetClosestStationProgress(float progress) const {
+    if (nodes.empty()) {
+        return progress;
+    }
+
+    float targetDistance = totalLength * progress;
+
+    float minDistance = std::numeric_limits<float>::max();
+    float closestProgress = progress;
+
+    for (const auto& nodePosition : nodes) {
+        // Find distance along the line to this node
+        float nodeDistance = 0.0f;
+        float accumulatedDistance = 0.0f;
+        for (size_t j = 0; j < splinePoints.size() - 1; ++j) {
+            sf::Vector2f p1 = splinePoints[j];
+            sf::Vector2f p2 = splinePoints[j + 1];
+            float segmentLength = std::hypot(p2.x - p1.x, p2.y - p1.y);
+            accumulatedDistance += segmentLength;
+
+            if (std::hypot(p2.x - nodePosition.x, p2.y - nodePosition.y) <= 1e-3f) {
+                nodeDistance = accumulatedDistance;
+                break;
+            }
+        }
+
+        float distanceDiff = std::abs(targetDistance - nodeDistance);
+        if (distanceDiff < minDistance) {
+            minDistance = distanceDiff;
+            closestProgress = nodeDistance / totalLength;
+        }
+    }
+
+    return closestProgress;
 }

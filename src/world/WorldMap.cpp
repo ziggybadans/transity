@@ -448,3 +448,7 @@ Line* WorldMap::GetLineAtPosition(const sf::Vector2f& position, float zoomLevel)
     }
     return nullptr;
 }
+
+std::vector<Line>& WorldMap::GetLines() {
+    return lines;
+}

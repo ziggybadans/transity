@@ -79,6 +79,9 @@ public:
     void SetSelectedLine(Line* line);
     Line* GetSelectedLine() const;
 
+    // Updated method to return non-const reference
+    std::vector<Line>& GetLines();
+
     // Method to get line at a position
     Line* GetLineAtPosition(const sf::Vector2f& position, float zoomLevel);
 

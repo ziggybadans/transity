@@ -201,6 +201,17 @@ void Game::Update(float dt) {
     if (uiManager) {
         uiManager->Update(dt);
     }
+
+    // Update trains
+    if (worldMap) {
+        auto& lines = worldMap->GetLines();
+        for (auto& line : lines) {
+            auto& trains = line.GetTrains();
+            for (auto& train : trains) {
+                train.Update(dt);
+            }
+        }
+    }
 }
 
 void Game::Render() {
