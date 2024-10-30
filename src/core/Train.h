@@ -29,6 +29,9 @@ private:
     // Timer for logging every second
     float logTimer; // Accumulates elapsed time for logging
 
+    std::vector<float> stationProgressValues; // Progress values of stations
+    int currentStationIndex;                  // Index of the next station
+
     // Helper function to get the position of the train along the line.
     sf::Vector2f getPositionAlongLine() const;
 };

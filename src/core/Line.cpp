@@ -63,6 +63,56 @@ void Line::GenerateSplinePoints() {
             splinePoints.push_back(point);
         }
     }
+
+    // After generating spline points, calculate station progress values
+    CalculateStationProgressValues();
+}
+
+void Line::CalculateStationProgressValues() {
+    stationProgressValues.clear();
+
+    if (nodes.empty() || splinePoints.empty()) {
+        return;
+    }
+
+    // Precompute cumulative distances along splinePoints
+    float accumulatedDistance = 0.0f;
+    std::vector<float> cumulativeDistances;
+    cumulativeDistances.reserve(splinePoints.size());
+    cumulativeDistances.push_back(0.0f);
+
+    for (size_t i = 1; i < splinePoints.size(); ++i) {
+        sf::Vector2f p1 = splinePoints[i - 1];
+        sf::Vector2f p2 = splinePoints[i];
+        float segmentLength = std::hypot(p2.x - p1.x, p2.y - p1.y);
+        accumulatedDistance += segmentLength;
+        cumulativeDistances.push_back(accumulatedDistance);
+    }
+
+    // Now, for each node, find the closest point in splinePoints
+    for (const auto& node : nodes) {
+        float minDistanceSq = std::numeric_limits<float>::max();
+        size_t closestIndex = 0;
+        for (size_t i = 0; i < splinePoints.size(); ++i) {
+            sf::Vector2f diff = splinePoints[i] - node;
+            float distanceSq = diff.x * diff.x + diff.y * diff.y;
+            if (distanceSq < minDistanceSq) {
+                minDistanceSq = distanceSq;
+                closestIndex = i;
+            }
+        }
+        // Now, cumulative distance up to closestIndex
+        float distanceAlongLine = cumulativeDistances[closestIndex];
+        float progress = distanceAlongLine / totalLength;
+        stationProgressValues.push_back(progress);
+    }
+
+    // Ensure the progress values are sorted
+    std::sort(stationProgressValues.begin(), stationProgressValues.end());
+}
+
+const std::vector<float>& Line::GetStationProgressValues() const {
+    return stationProgressValues;
 }
 
 /**

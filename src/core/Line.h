@@ -48,6 +48,9 @@ public:
     // Get the progress closest to a station along the line, given the current progress.
     float GetClosestStationProgress(float progress) const;
 
+    // Get the progress values of the stations along the line
+    const std::vector<float>& GetStationProgressValues() const;
+
 private:
     std::vector<sf::Vector2f> nodes; // Nodes representing the points of the line.
     bool active; // Flag indicating whether the line is active.
@@ -67,4 +70,10 @@ private:
 
     // Total length of the line.
     float totalLength;
+
+    // Store progress values of stations along the line
+    std::vector<float> stationProgressValues;
+
+    // Method to calculate station progress values
+    void CalculateStationProgressValues();
 };

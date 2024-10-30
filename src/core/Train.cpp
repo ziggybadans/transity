@@ -19,11 +19,27 @@ Train::Train(Line* line)
     shape.setRadius(10.0f);
     shape.setFillColor(sf::Color::Black);
     shape.setOrigin(shape.getRadius(), shape.getRadius());
+
+    if (line) {
+        stationProgressValues = line->GetStationProgressValues();
+
+        if (!stationProgressValues.empty()) {
+            progress = stationProgressValues[0]; // Start at first station
+            currentStationIndex = 1; // Next station to go to
+            forward = true;
+        }
+        else {
+            // No stations on the line
+            progress = 0.0f;
+            currentStationIndex = -1;
+            forward = true;
+        }
+    }
 }
 
 /**
 <summary>
-Updates the train's position along the line, changing direction and stopping at the endpoints if necessary.
+Updates the train's position along the line, stopping at each station in sequence.
 </summary>
 <param name="deltaTime">Time elapsed since the last frame.</param>
 */
@@ -38,6 +54,28 @@ void Train::Update(float deltaTime)
         {
             isStopped = false;
             currentWaitTime = 0.0f;
+
+            // Update currentStationIndex
+            if (forward)
+            {
+                currentStationIndex++;
+                if (currentStationIndex >= stationProgressValues.size())
+                {
+                    // Reverse direction
+                    forward = false;
+                    currentStationIndex = stationProgressValues.size() - 2; // Second last station
+                }
+            }
+            else
+            {
+                currentStationIndex--;
+                if (currentStationIndex < 0)
+                {
+                    // Reverse direction
+                    forward = true;
+                    currentStationIndex = 1; // Second station
+                }
+            }
         }
         else
         {
@@ -45,34 +83,40 @@ void Train::Update(float deltaTime)
         }
     }
 
+    if (currentStationIndex < 0 || currentStationIndex >= stationProgressValues.size())
+    {
+        return; // No valid station to go to
+    }
+
+    float targetProgress = stationProgressValues[currentStationIndex];
+
+    // Move towards targetProgress
     float lineLength = line->GetLength();
     float distanceToTravel = speed * deltaTime;
     float progressChange = distanceToTravel / lineLength;
 
-    logTimer += deltaTime;
-    if (logTimer >= 1.0f) {
-        std::cout << "Progress towards current station: " << line->GetClosestStationProgress(progress) << std::endl;
-        logTimer -= 1.0f;
-    }
-
     if (forward)
     {
-        progress += progressChange;
-        if (progress >= 1.0f)
+        if (progress + progressChange >= targetProgress)
         {
-            progress = 1.0f;
-            forward = false;
+            progress = targetProgress;
             isStopped = true;
+        }
+        else
+        {
+            progress += progressChange;
         }
     }
     else
     {
-        progress -= progressChange;
-        if (progress <= 0.0f)
+        if (progress - progressChange <= targetProgress)
         {
-            progress = 0.0f;
-            forward = true;
+            progress = targetProgress;
             isStopped = true;
+        }
+        else
+        {
+            progress -= progressChange;
         }
     }
 }
