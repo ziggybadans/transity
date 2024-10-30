@@ -1,70 +1,71 @@
 #pragma once
 
-#include <SFML/Graphics.hpp>
-#include <imgui.h>
-#include <imgui-SFML.h>
-#include <atomic>
-#include <memory>
-#include <mutex>
+#include <SFML/Graphics.hpp>  // Include SFML graphics for rendering
+#include <imgui.h>  // Include ImGui for GUI elements
+#include <imgui-SFML.h>  // Include ImGui-SFML binding
+#include <atomic>  // Include for atomic operations
+#include <memory>  // Include for smart pointers
+#include <mutex>  // Include for managing concurrent access to shared data
 
-#include "managers/InitializationManager.h"
-#include "managers/EventManager.h"
-#include "managers/InputManager.h"
-#include "world/WorldMap.h"
-#include "graphics/Renderer.h"
-#include "graphics/Camera.h"
-#include "utility/ThreadPool.h"
-#include "utility/Task.h"
+#include "managers/InitializationManager.h"  // Include initialization manager
+#include "managers/EventManager.h"  // Include event manager
+#include "managers/InputManager.h"  // Include input manager
+#include "world/WorldMap.h"  // Include world map representation
+#include "graphics/Renderer.h"  // Include rendering system
+#include "graphics/Camera.h"  // Include camera class
+#include "utility/ThreadPool.h"  // Include thread pool for managing concurrent tasks
+#include "utility/Task.h"  // Include task utility for multi-threading
 
 // Forward declarations
-class WindowManager;
-class UIManager;
+class WindowManager;  // Forward declaration of WindowManager
+class UIManager;  // Forward declaration of UIManager
 
+// Game class, inheriting from IInitializable to support initialization pattern
 class Game : public IInitializable {
 public:
-    Game();
-    ~Game();
+    Game();  // Constructor to initialize the game object
+    ~Game();  // Destructor to clean up resources
 
     // Initialize the game
-    bool Init() override;
+    bool Init() override;  // Override Init from IInitializable to handle game-specific initialization
 
     // Run the main game loop
-    void Run();
+    void Run();  // Function to run the main game loop
 
     // Shutdown the game and clean up resources
-    void Shutdown();
+    void Shutdown();  // Clean up resources and shut down the game properly
 
 private:
     // Managers
-    InitializationManager initManager;
-    std::shared_ptr<EventManager> eventManager;
-    std::shared_ptr<WindowManager> windowManager;
-    std::shared_ptr<UIManager> uiManager;
+    InitializationManager initManager;  // Handles initialization of different game components
+    std::shared_ptr<EventManager> eventManager;  // Manages events such as input and window events
+    std::shared_ptr<WindowManager> windowManager;  // Manages window creation and events
+    std::shared_ptr<UIManager> uiManager;  // Manages UI elements, likely for the debug GUI
 
     // Modules
-    std::unique_ptr<ThreadPool> threadPool;
-    std::unique_ptr<Renderer> renderer;
-    std::shared_ptr<Camera> camera;
-    std::unique_ptr<InputManager> inputManager;
+    std::unique_ptr<ThreadPool> threadPool;  // Thread pool for running tasks concurrently
+    std::unique_ptr<Renderer> renderer;  // Handles rendering of game elements
+    std::shared_ptr<Camera> camera;  // Controls the view of the game, e.g., panning and zooming
+    std::unique_ptr<InputManager> inputManager;  // Manages player input (keyboard, mouse, etc.)
 
-    std::shared_ptr<WorldMap> worldMap;
-    mutable std::mutex worldMapMutex;
+    std::shared_ptr<WorldMap> worldMap;  // Represents the game world; contains map data
+    mutable std::mutex worldMapMutex;  // Mutex to guard access to worldMap, allowing thread-safe modifications
 
     // Game state
-    std::atomic<bool> isRunning;
+    std::atomic<bool> isRunning;  // Atomic flag to determine if the game is running, ensures thread-safe access
 
     // Video settings
-    sf::VideoMode videoMode;
-    std::string windowTitle;
+    sf::VideoMode videoMode;  // Stores video settings, such as screen resolution
+    std::string windowTitle;  // Title of the game window
 
-    sf::Clock deltaClock;
+    sf::Clock deltaClock;  // Clock used to track delta time between frames
 
     // Initialization helpers
-    bool InitManagers();
-    bool LoadResources();
+    bool InitManagers();  // Helper function to initialize various managers
+    bool LoadResources();  // Helper function to load game resources (textures, sounds, etc.)
 
     // Main loop functions
-    void ProcessEvents();
-    void Update(float dt);
-    void Render();
+    void ProcessEvents();  // Process input events (keyboard, mouse, etc.)
+    void Update(float dt);  // Update game logic, dt is the time elapsed since last frame
+    void Render();  // Render the game, drawing everything to the screen
 };

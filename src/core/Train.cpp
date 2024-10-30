@@ -3,6 +3,12 @@
 #include "Line.h"
 #include <iostream>
 
+/**
+<summary>
+Train class represents a train that moves along a specified line in the game world. It handles the train's movement,
+direction changes, and wait times at the end points of the line.
+</summary>
+*/
 Train::Train(Line* line)
     : line(line), speed(100.0f), progress(0.0f), forward(true),
     waitTime(2.0f), currentWaitTime(0.0f), isStopped(false)
@@ -13,6 +19,12 @@ Train::Train(Line* line)
     shape.setOrigin(shape.getRadius(), shape.getRadius());
 }
 
+/**
+<summary>
+Updates the train's position along the line, changing direction and stopping at the endpoints if necessary.
+</summary>
+<param name="deltaTime">Time elapsed since the last frame.</param>
+*/
 void Train::Update(float deltaTime)
 {
     if (!line) return;
@@ -58,6 +70,13 @@ void Train::Update(float deltaTime)
     }
 }
 
+/**
+<summary>
+Renders the train on the screen at its current position along the line.
+</summary>
+<param name="window">Reference to the SFML RenderWindow where the train will be drawn.</param>
+<param name="zoomLevel">Current zoom level of the camera, used to adjust the size of the train for better visibility.</param>
+*/
 void Train::Render(sf::RenderWindow& window, float zoomLevel) const
 {
     if (!line) return;
@@ -74,6 +93,12 @@ void Train::Render(sf::RenderWindow& window, float zoomLevel) const
     window.draw(shape);
 }
 
+/**
+<summary>
+Calculates the current position of the train along the line based on its progress.
+</summary>
+<returns>The current position of the train as a vector.</returns>
+*/
 sf::Vector2f Train::getPositionAlongLine() const
 {
     if (!line) return sf::Vector2f();

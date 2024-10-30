@@ -5,6 +5,14 @@
 #include <stdexcept>
 #include <iostream>
 
+/**
+<summary>
+InputManager is responsible for handling all user input for the application, including keyboard and mouse events.
+It interacts with the EventManager to subscribe to relevant input events and manages the camera, the world map,
+and game elements like stations and lines.
+This class abstracts the complexity of processing input and applying the resulting actions to the game.
+</summary>
+*/
 InputManager::InputManager(std::shared_ptr<EventManager> eventMgr,
     std::shared_ptr<Camera> cam,
     sf::RenderWindow& win,
@@ -35,8 +43,20 @@ InputManager::InputManager(std::shared_ptr<EventManager> eventMgr,
         [this](const sf::Event& event) { this->OnMouseButtonPressed(event); });
 }
 
+/**
+<summary>
+Destructor for InputManager. Cleans up any resources allocated by InputManager.
+</summary>
+*/
 InputManager::~InputManager() {}
 
+/**
+<summary>
+Sets the zoom speed for the camera when the mouse wheel is scrolled.
+</summary>
+<param name="speed">The new zoom speed value. Must be positive.</param>
+<exception cref="std::invalid_argument">Thrown if the zoom speed is not positive.</exception>
+*/
 void InputManager::SetZoomSpeed(float speed) {
     if (speed <= 0.0f) {
         throw std::invalid_argument("Zoom speed must be positive.");
@@ -44,6 +64,13 @@ void InputManager::SetZoomSpeed(float speed) {
     zoomSpeed = speed;
 }
 
+/**
+<summary>
+Sets the pan speed for moving the camera using keyboard inputs.
+</summary>
+<param name="speed">The new pan speed value. Must be non-negative.</param>
+<exception cref="std::invalid_argument">Thrown if the pan speed is negative.</exception>
+*/
 void InputManager::SetPanSpeed(float speed) {
     if (speed < 0.0f) {
         throw std::invalid_argument("Pan speed cannot be negative.");
@@ -51,6 +78,13 @@ void InputManager::SetPanSpeed(float speed) {
     panSpeed = speed;
 }
 
+/**
+<summary>
+Handles continuous input for panning the camera, such as holding down WASD keys.
+This method is called every frame to apply movement to the camera based on user input.
+</summary>
+<param name="deltaTime">Time elapsed since the last frame, used to calculate movement proportionally.</param>
+*/
 void InputManager::HandleInput(float deltaTime) {
     // Handle continuous key presses for panning
     continuousMovement = sf::Vector2f(0.0f, 0.0f);
@@ -78,6 +112,13 @@ void InputManager::HandleInput(float deltaTime) {
     }
 }
 
+/**
+<summary>
+Handles mouse wheel scrolling to zoom in or out of the camera view.
+The zoom is applied in a way that keeps the mouse position stable.
+</summary>
+<param name="event">The SFML event containing mouse wheel scroll data.</param>
+*/
 void InputManager::OnMouseWheelScrolled(const sf::Event& event) {
     if (event.type != sf::Event::MouseWheelScrolled)
         return;
@@ -105,6 +146,13 @@ void InputManager::OnMouseWheelScrolled(const sf::Event& event) {
     camera->SetPosition(newCameraPos);
 }
 
+/**
+<summary>
+Handles mouse button press events to interact with game elements such as stations and lines.
+Right-click is used to add stations, while left-click selects lines or starts building a new line.
+</summary>
+<param name="event">The SFML event containing mouse button press data.</param>
+*/
 void InputManager::OnMouseButtonPressed(const sf::Event& event) {
     if (event.mouseButton.button == sf::Mouse::Right) {
         // Right-click should build a station if not interacting with ImGui
@@ -164,6 +212,12 @@ void InputManager::OnMouseButtonPressed(const sf::Event& event) {
     }
 }
 
+/**
+<summary>
+Handles key press events. For example, pressing Enter will finalize the line currently being built.
+</summary>
+<param name="event">The SFML event containing key press data.</param>
+*/
 void InputManager::OnKeyPressed(const sf::Event& event) {
     if (event.key.code == sf::Keyboard::Enter && worldMap->IsBuildingLine()) {
         worldMap->FinishCurrentLine();
@@ -171,6 +225,13 @@ void InputManager::OnKeyPressed(const sf::Event& event) {
     }
 }
 
+/**
+<summary>
+Handles mouse movement events, used for tasks like updating the position of the currently building line.
+Also handles panning the view when the middle mouse button is pressed.
+</summary>
+<param name="event">The SFML event containing mouse movement data.</param>
+*/
 void InputManager::OnMouseMoved(const sf::Event& event) {
     if (event.type != sf::Event::MouseMoved)
         return;

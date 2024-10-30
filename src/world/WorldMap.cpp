@@ -24,12 +24,15 @@ namespace mapbox {
     }
 }
 
-// Define static constants
+// Define static constants for various map element colors
 const sf::Color WorldMap::LAND_COLOR = sf::Color(231, 232, 234);
 const sf::Color WorldMap::CITY_COLOR = sf::Color(236, 214, 214);
 const sf::Color WorldMap::TOWN_COLOR = sf::Color(214, 214, 236);
 const sf::Color WorldMap::SUBURB_COLOR = sf::Color(214, 236, 214);
 
+// <summary>
+// Constructor for WorldMap class. Initializes the file paths for GeoJSON data.
+// </summary>
 WorldMap::WorldMap(const std::string& geoJsonPath,
     const std::string& citiesGeoJsonPath,
     const std::string& townsGeoJsonPath,
@@ -39,8 +42,13 @@ WorldMap::WorldMap(const std::string& geoJsonPath,
     townsGeoJsonFilePath(townsGeoJsonPath),
     suburbsGeoJsonFilePath(suburbsGeoJsonPath) {}
 
+// Destructor for WorldMap class
 WorldMap::~WorldMap() {}
 
+// <summary>
+// Initializes the WorldMap by loading GeoJSON data.
+// Returns true if loading is successful, otherwise false.
+// </summary>
 bool WorldMap::Init() {
     if (!loadGeoJSON()) {
         std::cerr << "Failed to load GeoJSON data." << std::endl;
@@ -50,6 +58,10 @@ bool WorldMap::Init() {
     return true;
 }
 
+// <summary>
+// Loads GeoJSON data for land, cities, towns, and suburbs.
+// Returns true if all data is loaded successfully, otherwise false.
+// </summary>
 bool WorldMap::loadGeoJSON() {
     // Load land shapes
     std::ifstream landFile(geoJsonFilePath);
@@ -172,6 +184,14 @@ bool WorldMap::loadGeoJSON() {
     return true;
 }
 
+// <summary>
+// Processes a geometry object, determining its type (Polygon or MultiPolygon) and rendering it accordingly.
+// </summary>
+// <param name="geometry">JSON object representing the geometry</param>
+// <param name="color">Color to render the geometry</param>
+// <param name="targetShapes">Vector to store the generated shapes</param>
+// <param name="name">Optional name of the place</param>
+// <param name="category">Category of the place (e.g., City, Town)</param>
 bool WorldMap::processGeometry(const json& geometry, const sf::Color& color, std::vector<sf::VertexArray>& targetShapes, const std::string& name, PlaceCategory category) {
     if (!geometry.contains("type") || !geometry.contains("coordinates")) {
         std::cerr << "Invalid geometry object: Missing 'type' or 'coordinates'." << std::endl;
@@ -193,6 +213,14 @@ bool WorldMap::processGeometry(const json& geometry, const sf::Color& color, std
     }
 }
 
+// <summary>
+// Processes a Polygon geometry, converting coordinates to SFML vertex arrays.
+// </summary>
+// <param name="coordinates">JSON array of Polygon coordinates</param>
+// <param name="color">Color to render the Polygon</param>
+// <param name="targetShapes">Vector to store the generated shapes</param>
+// <param name="name">Optional name of the place</param>
+// <param name="category">Category of the place (e.g., City, Town)</param>
 bool WorldMap::processPolygon(const json& coordinates, const sf::Color& color, std::vector<sf::VertexArray>& targetShapes, const std::string& name, PlaceCategory category) {
     if (!coordinates.is_array()) {
         std::cerr << "Invalid Polygon coordinates." << std::endl;
@@ -226,6 +254,14 @@ bool WorldMap::processPolygon(const json& coordinates, const sf::Color& color, s
     return !polygon.empty() && createVertexArrayFromPolygon(polygon, color, targetShapes, name, category);
 }
 
+// <summary>
+// Processes a MultiPolygon geometry by iteratively processing each Polygon.
+// </summary>
+// <param name="coordinates">JSON array of MultiPolygon coordinates</param>
+// <param name="color">Color to render the MultiPolygon</param>
+// <param name="targetShapes">Vector to store the generated shapes</param>
+// <param name="name">Optional name of the place</param>
+// <param name="category">Category of the place (e.g., City, Town)</param>
 bool WorldMap::processMultiPolygon(const json& coordinates, const sf::Color& color, std::vector<sf::VertexArray>& targetShapes, const std::string& name, PlaceCategory category) {
     if (!coordinates.is_array()) {
         std::cerr << "Invalid MultiPolygon coordinates." << std::endl;
@@ -241,6 +277,14 @@ bool WorldMap::processMultiPolygon(const json& coordinates, const sf::Color& col
     return true;
 }
 
+// <summary>
+// Converts a Polygon into a filled and outlined VertexArray using Mapbox's Earcut algorithm.
+// </summary>
+// <param name="polygon">Vector of vector of SFML vectors representing the Polygon</param>
+// <param name="color">Color to render the Polygon</param>
+// <param name="targetShapes">Vector to store the generated shapes</param>
+// <param name="name">Optional name of the place</param>
+// <param name="category">Category of the place (e.g., City, Town)</param>
 bool WorldMap::createVertexArrayFromPolygon(
     const std::vector<std::vector<sf::Vector2f>>& polygon,
     const sf::Color& color,
@@ -301,22 +345,28 @@ bool WorldMap::createVertexArrayFromPolygon(
     return true;
 }
 
+// <summary>
+// Projects geographic longitude and latitude coordinates to map coordinates using a simple equirectangular projection.
+// </summary>
+// <param name="lonLat">Longitude and Latitude in sf::Vector2f</param>
 sf::Vector2f WorldMap::project(const sf::Vector2f& lonLat) const {
-    // Simple equirectangular projection
     float x = (lonLat.x + 180.0f) / 360.0f * WORLD_WIDTH;
     float y = (90.0f - lonLat.y) / 180.0f * WORLD_HEIGHT;
     return { x, y };
 }
 
+// <summary>
+// Renders the world map onto the given SFML window.
+// Only draws shapes that are visible within the current camera view.
+// </summary>
+// <param name="window">SFML RenderWindow to draw to</param>
+// <param name="camera">Camera view for determining visible area</param>
 void WorldMap::Render(sf::RenderWindow& window, const Camera& camera) const {
     // Apply camera view
     sf::View originalView = window.getView();
     window.setView(camera.GetView());
 
-    // Get the camera's view bounds
-    sf::FloatRect viewBounds = camera.GetView().getViewport();
-
-    // Alternatively, calculate the view rectangle in world coordinates
+    // Calculate the view rectangle in world coordinates
     sf::Vector2f viewCenter = camera.GetView().getCenter();
     sf::Vector2f viewSize = camera.GetView().getSize();
     sf::FloatRect cameraRect(viewCenter.x - viewSize.x / 2.0f,
@@ -336,15 +386,24 @@ void WorldMap::Render(sf::RenderWindow& window, const Camera& camera) const {
     window.setView(originalView);
 }
 
+// <summary>
+// Gets the place areas (e.g., cities, towns) stored in the world map.
+// </summary>
 const std::vector<PlaceArea>& WorldMap::GetPlaceAreas() const {
     return placeAreas;
 }
 
+// <summary>
+// Adds a station at the specified position.
+// </summary>
 bool WorldMap::AddStation(const sf::Vector2f& position) {
     stations.emplace_back(position);
     return true;
 }
 
+// <summary>
+// Finds a station at a given position within a certain radius determined by the zoom level.
+// </summary>
 Station* WorldMap::GetStationAtPosition(const sf::Vector2f& position, float zoomLevel) {
     for (auto& station : stations) {
         sf::Vector2f stationPos = station.GetPosition();
@@ -358,25 +417,39 @@ Station* WorldMap::GetStationAtPosition(const sf::Vector2f& position, float zoom
     return nullptr;
 }
 
+// <summary>
+// Adds a line to the world map.
+// </summary>
 void WorldMap::AddLine(const Line& line) {
     lines.push_back(line);
 }
 
+// <summary>
+// Gets all stations stored in the world map.
+// </summary>
 const std::vector<Station>& WorldMap::GetStations() const {
     return stations;
 }
 
+// <summary>
+// Gets all lines stored in the world map.
+// </summary>
 const std::vector<Line>& WorldMap::GetLines() const {
     return lines;
 }
 
-// Line building methods
+// <summary>
+// Starts building a new line from a specified start position.
+// </summary>
 void WorldMap::StartBuildingLine(const sf::Vector2f& startPosition) {
     currentLine = std::make_unique<Line>();
     currentLine->AddNode(startPosition);
     isBuildingLine = true;
 }
 
+// <summary>
+// Finishes the current line that is being built and adds it to the world map.
+// </summary>
 void WorldMap::FinishCurrentLine() {
     if (currentLine) {
         currentLine->SetActive(false);
@@ -386,43 +459,68 @@ void WorldMap::FinishCurrentLine() {
     }
 }
 
+// <summary>
+// Gets the current line being built.
+// </summary>
 const Line* WorldMap::GetCurrentLine() const {
     return isBuildingLine ? currentLine.get() : nullptr;
 }
 
+// <summary>
+// Checks if a line is currently being built.
+// </summary>
 bool WorldMap::IsBuildingLine() const {
     return isBuildingLine;
 }
 
+// <summary>
+// Sets the current mouse position, used for line building.
+// </summary>
 void WorldMap::SetCurrentMousePosition(const sf::Vector2f& position) {
     currentMousePosition = position;
 }
 
-// New methods for curve handling
+// <summary>
+// Sets whether the next segment of the current line should be curved.
+// </summary>
 void WorldMap::SetNextSegmentCurved(bool curved) {
     isNextSegmentCurved = curved;
 }
 
+// <summary>
+// Gets whether the next segment of the current line should be curved.
+// </summary>
 bool WorldMap::GetIsNextSegmentCurved() const {
     return isNextSegmentCurved;
 }
 
+// <summary>
+// Adds a new node to the current line being built.
+// </summary>
 void WorldMap::AddNodeToCurrentLine(const sf::Vector2f& position) {
     if (currentLine && isBuildingLine) {
         currentLine->AddNode(position);
     }
 }
 
+// <summary>
+// Sets the selected line in the world map.
+// </summary>
 void WorldMap::SetSelectedLine(Line* line) {
     selectedLine = line;
 }
 
+// <summary>
+// Gets the selected line in the world map.
+// </summary>
 Line* WorldMap::GetSelectedLine() const {
     return selectedLine;
 }
 
+// <summary>
+// Finds a line at the given position, considering the zoom level.
+// </summary>
 Line* WorldMap::GetLineAtPosition(const sf::Vector2f& position, float zoomLevel) {
-    // Iterate through lines and check if position is near any line segment
     float tolerance = 5.0f * zoomLevel; // Adjust tolerance based on zoom level
 
     for (auto& line : lines) {
@@ -449,6 +547,9 @@ Line* WorldMap::GetLineAtPosition(const sf::Vector2f& position, float zoomLevel)
     return nullptr;
 }
 
+// <summary>
+// Gets all lines stored in the world map (modifiable).
+// </summary>
 std::vector<Line>& WorldMap::GetLines() {
     return lines;
 }

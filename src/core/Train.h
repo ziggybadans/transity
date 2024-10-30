@@ -6,22 +6,26 @@ class Line;
 
 class Train {
 public:
+    // Constructor that initializes the train on a specific line.
     Train(Line* line);
 
+    // Updates the train's position and state based on the elapsed time.
     void Update(float deltaTime);
+
+    // Renders the train to the provided window, adjusting for zoom level.
     void Render(sf::RenderWindow& window, float zoomLevel) const;
 
 private:
-    Line* line;
-    float speed;          // Units per second
-    float progress;       // Position along the line [0.0, 1.0]
-    bool forward;         // Direction of travel
-    mutable sf::CircleShape shape; // Graphical representation of the train
+    Line* line; // Pointer to the line the train is currently on.
+    float speed; // Speed of the train in units per second.
+    float progress; // Position along the line, ranging from 0.0 to 1.0.
+    bool forward; // Direction of travel, true if moving forward.
+    mutable sf::CircleShape shape; // Graphical representation of the train.
 
-    float waitTime;       // Time to wait at stations
-    float currentWaitTime;
-    bool isStopped;
+    float waitTime; // Total time the train waits at each station.
+    float currentWaitTime; // Current wait time elapsed at a station.
+    bool isStopped; // Indicates if the train is currently stopped at a station.
 
-    // Helper to get position on the line
+    // Helper function to get the position of the train along the line.
     sf::Vector2f getPositionAlongLine() const;
 };

@@ -5,12 +5,31 @@
 #include <iostream>
 #include <algorithm>
 
+/**
+<summary>
+Renderer class handles all rendering-related functionality for the game, drawing various elements such as stations, lines, and place areas.
+This class is responsible for managing and optimizing the rendering process for different game components, ensuring they are displayed
+correctly and efficiently.
+</summary>
+*/
 Renderer::Renderer() {}
 
+/**
+<summary>
+Destructor for Renderer. Ensures any allocated resources are properly cleaned up.
+</summary>
+*/
 Renderer::~Renderer() {
     Shutdown();
 }
 
+/**
+<summary>
+Initializes the Renderer by loading fonts and preparing any necessary rendering elements.
+</summary>
+<param name="window">Reference to the SFML RenderWindow used for rendering.</param>
+<returns>True if initialization was successful, otherwise false.</returns>
+*/
 bool Renderer::Init(sf::RenderWindow& /*window*/) {
     isInitialized = true;
 
@@ -27,10 +46,23 @@ bool Renderer::Init(sf::RenderWindow& /*window*/) {
     return true;
 }
 
+/**
+<summary>
+Sets the world map that the renderer will use to render game elements.
+</summary>
+<param name="map">Shared pointer to the WorldMap object to be rendered.</param>
+*/
 void Renderer::SetWorldMap(const std::shared_ptr<WorldMap>& map) {
     worldMap = map;
 }
 
+/**
+<summary>
+Main render function that draws all game elements, including the world map, place areas, stations, and lines.
+</summary>
+<param name="window">Reference to the SFML RenderWindow where elements will be drawn.</param>
+<param name="camera">Reference to the Camera object used for controlling the view.</param>
+*/
 void Renderer::Render(sf::RenderWindow& window, const Camera& camera) {
     if (!isInitialized) return;
 
@@ -51,12 +83,27 @@ void Renderer::Render(sf::RenderWindow& window, const Camera& camera) {
     renderHoveredAreaName(window);
 }
 
+/**
+<summary>
+Renders the world map if it exists.
+</summary>
+<param name="window">Reference to the SFML RenderWindow.</param>
+<param name="camera">Reference to the Camera object used for controlling the view.</param>
+*/
 void Renderer::renderWorldMap(sf::RenderWindow& window, const Camera& camera) {
     if (worldMap) {
         worldMap->Render(window, camera);
     }
 }
 
+/**
+<summary>
+Renders all place areas, adjusting visibility based on the current zoom level and whether the camera's view contains the area.
+Highlights areas that are being hovered over by the mouse.
+</summary>
+<param name="window">Reference to the SFML RenderWindow.</param>
+<param name="camera">Reference to the Camera object used for controlling the view.</param>
+*/
 void Renderer::renderPlaceAreas(sf::RenderWindow& window, const Camera& camera) {
     if (!worldMap) return;
 
@@ -151,6 +198,13 @@ void Renderer::renderPlaceAreas(sf::RenderWindow& window, const Camera& camera) 
     }
 }
 
+/**
+<summary>
+Renders all stations, highlighting them if they are being hovered over by the mouse.
+</summary>
+<param name="window">Reference to the SFML RenderWindow.</param>
+<param name="camera">Reference to the Camera object used for controlling the view.</param>
+*/
 void Renderer::renderStations(sf::RenderWindow& window, const Camera& camera) {
     if (!worldMap) return;
 
@@ -173,6 +227,13 @@ void Renderer::renderStations(sf::RenderWindow& window, const Camera& camera) {
     }
 }
 
+/**
+<summary>
+Renders all lines, highlighting the selected line and drawing a preview for the line currently being built.
+</summary>
+<param name="window">Reference to the SFML RenderWindow.</param>
+<param name="camera">Reference to the Camera object used for controlling the view.</param>
+*/
 void Renderer::renderLines(sf::RenderWindow& window, const Camera& camera) {
     if (!worldMap) return;
 
@@ -244,6 +305,12 @@ void Renderer::renderLines(sf::RenderWindow& window, const Camera& camera) {
     }
 }
 
+/**
+<summary>
+Renders the name of the hovered area, displaying it at the bottom of the screen.
+</summary>
+<param name="window">Reference to the SFML RenderWindow.</param>
+*/
 void Renderer::renderHoveredAreaName(sf::RenderWindow& window) {
     if (hoveredAreaName.empty()) return;
 
@@ -269,6 +336,11 @@ void Renderer::renderHoveredAreaName(sf::RenderWindow& window) {
     window.setView(originalView);
 }
 
+/**
+<summary>
+Shuts down the renderer and releases any resources held by it.
+</summary>
+*/
 void Renderer::Shutdown() {
     isInitialized = false;
     worldMap.reset();

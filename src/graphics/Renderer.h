@@ -25,25 +25,25 @@ public:
     void Shutdown();
 
 private:
-    bool isInitialized = false;
-    std::shared_ptr<WorldMap> worldMap;
+    bool isInitialized = false; // Flag to indicate if the renderer has been initialized.
+    std::shared_ptr<WorldMap> worldMap; // Shared pointer to the WorldMap to be rendered.
 
-    // Mutex for thread-safe rendering if needed
+    // Mutex for thread-safe rendering if needed.
     mutable std::mutex renderMutex;
 
-    sf::Font font;
+    sf::Font font; // Font used for rendering text.
 
     // Hover functionality
-    std::string hoveredAreaName;
-    sf::Text hoveredAreaText;
+    std::string hoveredAreaName; // Name of the area currently hovered over by the mouse.
+    sf::Text hoveredAreaText; // SFML text object to display the hovered area's name.
 
-    // Private helper functions
-    void renderWorldMap(sf::RenderWindow& window, const Camera& camera);
-    void renderPlaceAreas(sf::RenderWindow& window, const Camera& camera);
-    void renderStations(sf::RenderWindow& window, const Camera& camera);
-    void renderLines(sf::RenderWindow& window, const Camera& camera);
-    void renderHoveredAreaName(sf::RenderWindow& window);
+    // Private helper functions to handle different rendering aspects.
+    void renderWorldMap(sf::RenderWindow& window, const Camera& camera); // Renders the world map.
+    void renderPlaceAreas(sf::RenderWindow& window, const Camera& camera); // Renders different areas in the world.
+    void renderStations(sf::RenderWindow& window, const Camera& camera); // Renders stations on the map.
+    void renderLines(sf::RenderWindow& window, const Camera& camera); // Renders transport lines on the map.
+    void renderHoveredAreaName(sf::RenderWindow& window); // Renders the name of the currently hovered area.
 
     // Constants
-    static constexpr float HOVER_OUTLINE_THICKNESS = 2.0f;
+    static constexpr float HOVER_OUTLINE_THICKNESS = 2.0f; // Thickness of the outline for hovered areas.
 };

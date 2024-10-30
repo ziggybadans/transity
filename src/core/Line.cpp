@@ -1,15 +1,33 @@
 #include "Line.h"
 #include <cmath>
 
+/**
+<summary>
+Line class represents a route composed of nodes along which trains can move. It manages the spline points for smooth
+movement, the rendering of the line, and related attributes like color, thickness, and trains running along the line.
+</summary>
+*/
 Line::Line()
     : active(true), color(sf::Color::Blue), thickness(2.0f), totalLength(0.0f)
 {}
 
+/**
+<summary>
+Adds a new node to the line and regenerates the spline points to include the new node.
+</summary>
+<param name="position">The position of the new node.</param>
+*/
 void Line::AddNode(const sf::Vector2f& position) {
     nodes.push_back(position);
     GenerateSplinePoints();
 }
 
+/**
+<summary>
+Generates the spline points for the line using a Catmull-Rom spline algorithm to create smooth curves between nodes.
+Also calculates the total length of the line for accurate movement calculations.
+</summary>
+*/
 void Line::GenerateSplinePoints() {
     splinePoints.clear();
     totalLength = 0.0f;
@@ -47,6 +65,14 @@ void Line::GenerateSplinePoints() {
     }
 }
 
+/**
+<summary>
+Renders the line on the screen using a vertex array to represent thickness and color.
+</summary>
+<param name="window">Reference to the SFML RenderWindow where the line will be drawn.</param>
+<param name="zoomLevel">Current zoom level of the camera, used to adjust the thickness of the line.</param>
+<param name="isSelected">Boolean indicating whether the line is currently selected (for color change).</param>
+*/
 void Line::Render(sf::RenderWindow& window, float zoomLevel, bool isSelected) const {
     if (splinePoints.empty()) {
         // Not enough points to render
@@ -98,46 +124,112 @@ void Line::Render(sf::RenderWindow& window, float zoomLevel, bool isSelected) co
     window.draw(lineStrip);
 }
 
+/**
+<summary>
+Sets whether the line is active.
+</summary>
+<param name="active">Boolean indicating if the line should be active.</param>
+*/
 void Line::SetActive(bool active) {
     this->active = active;
 }
 
+/**
+<summary>
+Checks if the line is active.
+</summary>
+<returns>True if the line is active, otherwise false.</returns>
+*/
 bool Line::IsActive() const {
     return active;
 }
 
+/**
+<summary>
+Sets the color of the line.
+</summary>
+<param name="color">The new color of the line.</param>
+*/
 void Line::SetColor(const sf::Color& color) {
     this->color = color;
 }
 
+/**
+<summary>
+Gets the current color of the line.
+</summary>
+<returns>The color of the line.</returns>
+*/
 sf::Color Line::GetColor() const {
     return color;
 }
 
+/**
+<summary>
+Sets the thickness of the line.
+</summary>
+<param name="thickness">The new thickness of the line.</param>
+*/
 void Line::SetThickness(float thickness) {
     this->thickness = thickness;
 }
 
+/**
+<summary>
+Gets the current thickness of the line.
+</summary>
+<returns>The thickness of the line.</returns>
+*/
 float Line::GetThickness() const {
     return thickness;
 }
 
+/**
+<summary>
+Adds a train to the line.
+</summary>
+*/
 void Line::AddTrain() {
     trains.emplace_back(this);
 }
 
+/**
+<summary>
+Gets a constant reference to the list of trains on the line.
+</summary>
+<returns>A constant reference to the vector of trains.</returns>
+*/
 const std::vector<Train>& Line::GetTrains() const {
     return trains;
 }
 
+/**
+<summary>
+Gets a reference to the list of trains on the line.
+</summary>
+<returns>A reference to the vector of trains.</returns>
+*/
 std::vector<Train>& Line::GetTrains() {
     return trains;
 }
 
+/**
+<summary>
+Gets the total length of the line.
+</summary>
+<returns>The total length of the line as a float.</returns>
+*/
 float Line::GetLength() const {
     return totalLength;
 }
 
+/**
+<summary>
+Gets the position along the line based on the given progress (from 0.0 to 1.0).
+</summary>
+<param name="progress">A value between 0.0 and 1.0 representing progress along the line.</param>
+<returns>The position along the line as a vector.</returns>
+*/
 sf::Vector2f Line::GetPositionAlongLine(float progress) const {
     if (splinePoints.empty()) {
         return sf::Vector2f();
@@ -161,6 +253,13 @@ sf::Vector2f Line::GetPositionAlongLine(float progress) const {
     return splinePoints.back();
 }
 
+/**
+<summary>
+Finds the closest station along the line based on the given progress and returns the progress value at the closest station.
+</summary>
+<param name="progress">A value between 0.0 and 1.0 representing the current progress along the line.</param>
+<returns>The progress value at the closest station as a float.</returns>
+*/
 float Line::GetClosestStationProgress(float progress) const {
     if (nodes.empty()) {
         return progress;
