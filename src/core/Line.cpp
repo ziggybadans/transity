@@ -193,6 +193,10 @@ void Line::AddTrain() {
     trains.emplace_back(this);
 }
 
+void Line::RemoveTrains() {
+    trains.clear();
+}
+
 /**
 <summary>
 Gets a constant reference to the list of trains on the line.

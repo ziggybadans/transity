@@ -116,6 +116,10 @@ void UIManager::Render() {
                 selectedLine->AddTrain();
             }
 
+            if (ImGui::Button("Remove All Trains")) {
+                selectedLine->RemoveTrains();
+            }
+
             ImGui::End();
         }
 

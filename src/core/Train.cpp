@@ -10,12 +10,14 @@ direction changes, and wait times at the end points of the line.
 </summary>
 */
 Train::Train(Line* line)
-    : line(line), speed(100.0f), progress(0.0f), forward(true),
-    waitTime(2.0f), currentWaitTime(0.0f), isStopped(false)
+    : line(line), 
+    speed(10.0f), waitTime(2.0f), 
+    progress(0.0f), currentWaitTime(0.0f), forward(true), isStopped(false),
+    logTimer(0.0f)
 {
     // Initialize the graphical representation of the train
-    shape.setRadius(5.0f);
-    shape.setFillColor(sf::Color::Green);
+    shape.setRadius(10.0f);
+    shape.setFillColor(sf::Color::Black);
     shape.setOrigin(shape.getRadius(), shape.getRadius());
 }
 
@@ -39,14 +41,19 @@ void Train::Update(float deltaTime)
         }
         else
         {
-            return; // Stay stopped until wait time is over
+            return;
         }
     }
 
-    // Move the train along the line
     float lineLength = line->GetLength();
     float distanceToTravel = speed * deltaTime;
     float progressChange = distanceToTravel / lineLength;
+
+    logTimer += deltaTime;
+    if (logTimer >= 1.0f) {
+        std::cout << "Progress towards current station: " << line->GetClosestStationProgress(progress) << std::endl;
+        logTimer -= 1.0f;
+    }
 
     if (forward)
     {

@@ -26,6 +26,9 @@ private:
     float currentWaitTime; // Current wait time elapsed at a station.
     bool isStopped; // Indicates if the train is currently stopped at a station.
 
+    // Timer for logging every second
+    float logTimer; // Accumulates elapsed time for logging
+
     // Helper function to get the position of the train along the line.
     sf::Vector2f getPositionAlongLine() const;
 };

@@ -37,6 +37,7 @@ public:
     void AddTrain();
     const std::vector<Train>& GetTrains() const;        // Const version
     std::vector<Train>& GetTrains();                    // Non-const version
+    void RemoveTrains();
 
     // Get the total length of the line.
     float GetLength() const;
