@@ -35,6 +35,12 @@ public:
     // Shutdown the game and clean up resources
     void Shutdown();  // Clean up resources and shut down the game properly
 
+    // Getter for timeScale (optional)
+    float GetTimeScale() const { return timeScale.load(); }
+
+    // Setter for timeScale (optional)
+    void SetTimeScale(float scale) { timeScale.store(scale); }
+
 private:
     // Managers
     InitializationManager initManager;  // Handles initialization of different game components
@@ -59,6 +65,7 @@ private:
     std::string windowTitle;  // Title of the game window
 
     sf::Clock deltaClock;  // Clock used to track delta time between frames
+    std::atomic<float> timeScale;  // Atomic variable to control time scaling
 
     // Initialization helpers
     bool InitManagers();  // Helper function to initialize various managers
@@ -66,6 +73,10 @@ private:
 
     // Main loop functions
     void ProcessEvents();  // Process input events (keyboard, mouse, etc.)
-    void Update(float dt);  // Update game logic, dt is the time elapsed since last frame
+
+    // Separate update functions
+    void UpdateNonSimulation(float dt);  // Update input, camera, UI
+    void UpdateSimulation(float scaledDt); // Update simulation (e.g., trains)
+
     void Render();  // Render the game, drawing everything to the screen
 };

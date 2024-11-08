@@ -7,7 +7,7 @@ It interacts with the WorldMap and provides UI components for modifying game ele
 </summary>
 */
 UIManager::UIManager(std::shared_ptr<WorldMap> worldMap)
-    : initialized(false), renderWindow(nullptr), worldMap(worldMap)
+    : initialized(false), renderWindow(nullptr), worldMap(worldMap), timeScalePtr(nullptr)
 {
     // Initialize default color and thickness
     thickness = 2.0f;
@@ -24,6 +24,10 @@ Destructor for UIManager. Ensures that ImGui is properly shut down before the ob
 */
 UIManager::~UIManager() {
     Shutdown();
+}
+
+void UIManager::SetTimeScalePointer(std::atomic<float>* ptr) {
+    timeScalePtr = ptr;
 }
 
 /**
@@ -118,6 +122,38 @@ void UIManager::Render() {
 
             if (ImGui::Button("Remove All Trains")) {
                 selectedLine->RemoveTrains();
+            }
+
+            ImGui::End();
+        }
+
+        if (timeScalePtr) {
+            ImGui::Begin("Time Control");
+
+            // Display current time scale
+            float currentScale = timeScalePtr->load();
+            ImGui::Text("Current Time Scale: %.1fx", currentScale);
+
+            // Slider for time scale
+            if (ImGui::SliderFloat("Adjust Time Scale", &currentScale, 0.0f, 4.0f)) {
+                timeScalePtr->store(currentScale);
+            }
+
+            // Preset speed buttons
+            if (ImGui::Button("Pause")) {
+                timeScalePtr->store(0.0f);
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("1x")) {
+                timeScalePtr->store(1.0f);
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("2x")) {
+                timeScalePtr->store(2.0f);
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("4x")) {
+                timeScalePtr->store(4.0f);
             }
 
             ImGui::End();

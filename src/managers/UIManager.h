@@ -32,10 +32,16 @@ public:
     // Shuts down ImGui and cleans up resources.
     void Shutdown();
 
+    // Setter for timeScale pointer
+    void SetTimeScalePointer(std::atomic<float>* ptr);
+
 private:
     bool initialized; // Flag to indicate if the UIManager has been initialized.
     sf::RenderWindow* renderWindow; // Pointer to the SFML RenderWindow.
     std::shared_ptr<WorldMap> worldMap; // Reference to the world map for accessing game data.
+
+    // Time control pointer
+    std::atomic<float>* timeScalePtr;
 
     // Parameters for UI customization.
     float thickness; // Thickness value for rendering elements.

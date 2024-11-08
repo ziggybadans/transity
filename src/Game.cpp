@@ -18,14 +18,14 @@
 Game::Game()
     : videoMode(Constants::WINDOW_WIDTH, Constants::WINDOW_HEIGHT),
     windowTitle(Constants::WINDOW_TITLE),
-    isRunning(false) {}
+    isRunning(false),
+    timeScale(1.0f)  // Initialize timeScale to normal speed
+{}
 
-// Destructor calls Shutdown to release resources
 Game::~Game() {
     Shutdown();
 }
 
-// Initialize the game
 bool Game::Init() {
     if (!InitManagers()) {  // Initialize managers (WindowManager, etc.)
         std::cerr << "Failed to initialize managers." << std::endl;
@@ -58,7 +58,7 @@ bool Game::Init() {
     // Initialize InputManager after WorldMap is loaded
     inputManager = std::make_unique<InputManager>(eventManager, camera, windowManager->GetWindow(), worldMap);
     inputManager->SetZoomSpeed(Constants::CAMERA_ZOOM_SPEED);  // Set camera zoom speed
-    inputManager->SetPanSpeed(Constants::CAMERA_PAN_SPEED);  // Set camera pan speed
+    inputManager->SetPanSpeed(Constants::CAMERA_PAN_SPEED);    // Set camera pan speed
 
     // Subscribe to Window Close event
     eventManager->Subscribe(EventType::Closed, [this](const sf::Event& event) {
@@ -84,6 +84,9 @@ bool Game::Init() {
         return false;
     }
 
+    // Pass the address of timeScale to UIManager for UI control
+    uiManager->SetTimeScalePointer(&timeScale);
+
     // Initialize Renderer with WorldMap and configure camera
     if (worldMap) {
         camera->SetZoom(Constants::CAMERA_MAX_ZOOM);  // Set initial camera zoom level
@@ -102,7 +105,6 @@ bool Game::Init() {
     return true;
 }
 
-// Initialize all required managers (WindowManager, etc.)
 bool Game::InitManagers() {
     // Initialize WindowManager and configure it with settings
     auto windowMgr = std::make_shared<WindowManager>();
@@ -115,21 +117,20 @@ bool Game::InitManagers() {
     // Configure advanced graphics settings for the window
     sf::ContextSettings settings;
     settings.antialiasingLevel = 8;  // Set antialiasing level for smoother graphics
-    settings.depthBits = 24;  // Set depth buffer bits
-    settings.stencilBits = 8;  // Set stencil buffer bits
-    settings.majorVersion = 3;  // Set OpenGL version (major)
-    settings.minorVersion = 0;  // Set OpenGL version (minor)
+    settings.depthBits = 24;          // Set depth buffer bits
+    settings.stencilBits = 8;         // Set stencil buffer bits
+    settings.majorVersion = 3;        // Set OpenGL version (major)
+    settings.minorVersion = 0;        // Set OpenGL version (minor)
     windowMgr->SetContextSettings(settings);
 
     if (!windowMgr->Init()) return false;  // Initialize window and check for success
-    initManager.Register(windowMgr);  // Register WindowManager with InitializationManager
+    initManager.Register(windowMgr);       // Register WindowManager with InitializationManager
     windowManager = windowMgr;
 
     // Register other initializable modules and initialize all
     return initManager.InitAll();
 }
 
-// Load resources needed for the game asynchronously
 bool Game::LoadResources() {
     std::condition_variable cv;
     bool loaded = false;
@@ -142,7 +143,7 @@ bool Game::LoadResources() {
             {
                 std::lock_guard<std::mutex> lock(worldMapMutex);  // Lock mutex before updating shared resource
                 worldMap = tempWorldMap;  // Assign the loaded WorldMap
-                loaded = true;  // Set loaded flag to true
+                loaded = true;           // Set loaded flag to true
             }
             cv.notify_one();  // Notify waiting thread that WorldMap is loaded
         }
@@ -173,7 +174,6 @@ bool Game::LoadResources() {
     return true;
 }
 
-// Main game loop
 void Game::Run() {
     while (isRunning && windowManager->IsOpen()) {  // Loop until the game is no longer running or window is closed
         ProcessEvents();  // Handle all pending events
@@ -181,11 +181,44 @@ void Game::Run() {
         // Calculate delta time (time since last frame)
         float dt = deltaClock.restart().asSeconds();
 
-        // Update game logic based on delta time
-        Update(dt);
+        // Update non-simulation components with unscaled delta time
+        UpdateNonSimulation(dt);
+
+        // Calculate scaled delta time for simulation
+        float scaledDt = dt * timeScale.load();
+
+        // Update simulation components with scaled delta time
+        UpdateSimulation(scaledDt);
 
         // Render the current frame
         Render();
+    }
+}
+
+void Game::UpdateNonSimulation(float dt) {
+    if (camera) {
+        camera->Update(dt);  // Update camera position and zoom based on input
+    }
+
+    if (inputManager) {
+        inputManager->HandleInput(dt);  // Process player input (keyboard, mouse, etc.)
+    }
+
+    if (uiManager) {
+        uiManager->Update(dt);  // Update UI elements
+    }
+}
+
+void Game::UpdateSimulation(float scaledDt) {
+    // Update game objects such as trains on the map with scaled delta time
+    if (worldMap) {
+        auto& lines = worldMap->GetLines();  // Get all lines in the WorldMap
+        for (auto& line : lines) {
+            auto& trains = line.GetTrains();  // Get all trains for each line
+            for (auto& train : trains) {
+                train.Update(scaledDt);  // Update each train's position and state with scaled dt
+            }
+        }
     }
 }
 
@@ -198,33 +231,6 @@ void Game::ProcessEvents() {
     }
 }
 
-// Update game logic, including camera, input, UI, and game world elements
-void Game::Update(float dt) {
-    if (camera) {
-        camera->Update(dt);  // Update camera position and zoom based on input
-    }
-
-    if (inputManager) {
-        inputManager->HandleInput(dt);  // Process player input (keyboard, mouse, etc.)
-    }
-
-    if (uiManager) {
-        uiManager->Update(dt);  // Update UI elements
-    }
-
-    // Update game objects such as trains on the map
-    if (worldMap) {
-        auto& lines = worldMap->GetLines();  // Get all lines in the WorldMap
-        for (auto& line : lines) {
-            auto& trains = line.GetTrains();  // Get all trains for each line
-            for (auto& train : trains) {
-                train.Update(dt);  // Update each train's position and state
-            }
-        }
-    }
-}
-
-// Render game and UI elements
 void Game::Render() {
     // Clear the window with a background color
     windowManager->Clear(sf::Color(174, 223, 246));  // Clear with sky-blue color
@@ -251,7 +257,6 @@ void Game::Render() {
     windowManager->Display();
 }
 
-// Clean up resources and shutdown the game properly
 void Game::Shutdown() {
     if (isRunning) {
         isRunning = false;  // Set game state to not running
