@@ -203,10 +203,10 @@ void InputManager::OnMouseButtonPressed(const sf::Event& event) {
             // Add station or a node to current line
             Station* station = worldMap->GetStationAtPosition(worldPos, currentZoom);
             if (station && station != startingStation) {
-                worldMap->AddNodeToCurrentLine(station->GetPosition());
+                worldMap->AddNodeToCurrentLine(station->GetPosition(), true);
             }
             else {
-                worldMap->AddNodeToCurrentLine(worldPos);
+                worldMap->AddNodeToCurrentLine(worldPos, false);
             }
         }
     }

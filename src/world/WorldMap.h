@@ -66,11 +66,11 @@ public:
     const std::vector<Line>& GetLines() const;
 
     // Methods to manage the line currently being built by the player
-    void StartBuildingLine(const sf::Vector2f& startPosition);  // Start building a new line from the specified position
-    void AddNodeToCurrentLine(const sf::Vector2f& position);    // Add a new node to the current line being built
-    void FinishCurrentLine();                                   // Finish building the current line
-    const Line* GetCurrentLine() const;                         // Get a pointer to the current line being built
-    bool IsBuildingLine() const;                                // Check if a line is currently being built
+    void StartBuildingLine(const sf::Vector2f& startPosition);                  // Start building a new line from the specified position
+    void AddNodeToCurrentLine(const sf::Vector2f& position, bool isStation);    // Add a new node to the current line being built
+    void FinishCurrentLine();                                                   // Finish building the current line
+    const Line* GetCurrentLine() const;                                         // Get a pointer to the current line being built
+    bool IsBuildingLine() const;                                                // Check if a line is currently being built
 
     // Set the current mouse position on the map
     void SetCurrentMousePosition(const sf::Vector2f& position);

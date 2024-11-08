@@ -17,8 +17,9 @@ Adds a new node to the line and regenerates the spline points to include the new
 </summary>
 <param name="position">The position of the new node.</param>
 */
-void Line::AddNode(const sf::Vector2f& position) {
+void Line::AddNode(const sf::Vector2f& position, bool isStation) {
     nodes.push_back(position);
+    isStationNode.push_back(isStation);
     GenerateSplinePoints();
 }
 
@@ -89,8 +90,13 @@ void Line::CalculateStationProgressValues() {
         cumulativeDistances.push_back(accumulatedDistance);
     }
 
-    // Now, for each node, find the closest point in splinePoints
-    for (const auto& node : nodes) {
+    // Only consider nodes that are stations
+    for (size_t idx = 0; idx < nodes.size(); ++idx) {
+        if (!isStationNode[idx]) {
+            continue;
+        }
+        const auto& node = nodes[idx];
+
         float minDistanceSq = std::numeric_limits<float>::max();
         size_t closestIndex = 0;
         for (size_t i = 0; i < splinePoints.size(); ++i) {
@@ -101,13 +107,11 @@ void Line::CalculateStationProgressValues() {
                 closestIndex = i;
             }
         }
-        // Now, cumulative distance up to closestIndex
         float distanceAlongLine = cumulativeDistances[closestIndex];
         float progress = distanceAlongLine / totalLength;
         stationProgressValues.push_back(progress);
     }
 
-    // Ensure the progress values are sorted
     std::sort(stationProgressValues.begin(), stationProgressValues.end());
 }
 

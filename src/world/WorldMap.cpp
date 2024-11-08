@@ -443,7 +443,7 @@ const std::vector<Line>& WorldMap::GetLines() const {
 // </summary>
 void WorldMap::StartBuildingLine(const sf::Vector2f& startPosition) {
     currentLine = std::make_unique<Line>();
-    currentLine->AddNode(startPosition);
+    currentLine->AddNode(startPosition, true); // Pass 'true' to indicate it's a station
     isBuildingLine = true;
 }
 
@@ -497,9 +497,9 @@ bool WorldMap::GetIsNextSegmentCurved() const {
 // <summary>
 // Adds a new node to the current line being built.
 // </summary>
-void WorldMap::AddNodeToCurrentLine(const sf::Vector2f& position) {
+void WorldMap::AddNodeToCurrentLine(const sf::Vector2f& position, bool isStation) {
     if (currentLine && isBuildingLine) {
-        currentLine->AddNode(position);
+        currentLine->AddNode(position, isStation);
     }
 }
 

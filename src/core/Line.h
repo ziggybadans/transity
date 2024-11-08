@@ -9,8 +9,8 @@ class Line {
 public:
     Line();
 
-    // Add a node to the line.
-    void AddNode(const sf::Vector2f& position);
+    // Modify AddNode to accept an isStation parameter.
+    void AddNode(const sf::Vector2f& position, bool isStation = false);
 
     // Render the line, optionally highlighting it if selected.
     void Render(sf::RenderWindow& window, float zoomLevel, bool isSelected = false) const;
@@ -53,6 +53,7 @@ public:
 
 private:
     std::vector<sf::Vector2f> nodes; // Nodes representing the points of the line.
+    std::vector<bool> isStationNode; // New vector to track whether nodes are stations.
     bool active; // Flag indicating whether the line is active.
 
     // Helper function to generate spline points for smooth curves.
