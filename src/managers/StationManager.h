@@ -13,7 +13,12 @@ public:
     Station* GetStationAtPosition(const sf::Vector2f& position, float zoomLevel);
     const std::vector<Station>& GetStations() const;
 
+    void SetSelectedStation(Station* station);
+    Station* GetSelectedStation() const;
+
 private:
     // Containers to store stations
     std::vector<Station> stations;
+
+    Station* selectedStation; // Pointer to the currently selected station
 };

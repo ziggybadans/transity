@@ -46,4 +46,12 @@ private:
 
     // Constants
     static constexpr float HOVER_OUTLINE_THICKNESS = 2.0f; // Thickness of the outline for hovered areas.
+
+    // Line segments for collision detection
+    std::vector<std::pair<sf::Vector2f, sf::Vector2f>> lineSegments;
+
+    // Private helper functions
+    bool rectangleIntersectsLine(const sf::FloatRect& rect, const sf::Vector2f& p1, const sf::Vector2f& p2);
+    bool lineSegmentsIntersect(const sf::Vector2f& p1, const sf::Vector2f& p2,
+        const sf::Vector2f& q1, const sf::Vector2f& q2);
 };

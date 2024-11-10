@@ -76,8 +76,8 @@ void Renderer::Render(sf::RenderWindow& window, const Camera& camera) {
     // Render game elements via Renderer
     renderWorldMap(window, camera);
     renderPlaceAreas(window, camera);
-    renderLines(window, camera);     // Render lines first
-    renderStations(window, camera);  // Then render stations on top
+    renderLines(window, camera);     // Render lines first and collect line segments
+    renderStations(window, camera);  // Then render stations and names
 
     // Render UI elements if applicable
     renderHoveredAreaName(window);
@@ -209,21 +209,119 @@ void Renderer::renderStations(sf::RenderWindow& window, const Camera& camera) {
     if (!worldMap) return;
 
     const auto& stations = worldMap->GetStations();
-    float currentZoom = camera.GetZoomLevel();
 
-    // Get mouse position in world coordinates
-    sf::Vector2i mousePixelPos = sf::Mouse::getPosition(window);
-    sf::Vector2f mouseWorldPos = window.mapPixelToCoords(mousePixelPos, camera.GetView());
+    // Get the selected station
+    Station* selectedStation = worldMap->GetSelectedStation();
 
+    // For collision detection, convert line segments to screen coordinates
+    std::vector<std::pair<sf::Vector2f, sf::Vector2f>> screenLineSegments;
+    for (const auto& segment : lineSegments) {
+        sf::Vector2i p1i = window.mapCoordsToPixel(segment.first, camera.GetView());
+        sf::Vector2i p2i = window.mapCoordsToPixel(segment.second, camera.GetView());
+        sf::Vector2f p1(static_cast<float>(p1i.x), static_cast<float>(p1i.y));
+        sf::Vector2f p2(static_cast<float>(p2i.x), static_cast<float>(p2i.y));
+        screenLineSegments.emplace_back(p1, p2);
+    }
+
+    // For each station
     for (const auto& station : stations) {
         bool isHovered = false;
-        float baseRadius = 10.0f;
-        float scaledRadius = baseRadius * currentZoom;
+        bool isSelected = (&station == selectedStation);
 
-        if (std::hypot(mouseWorldPos.x - station.GetPosition().x, mouseWorldPos.y - station.GetPosition().y) <= scaledRadius) {
-            isHovered = true;
+        // Render the station icon in world coordinates
+        station.Render(window, camera.GetZoomLevel(), isHovered, isSelected);
+
+        // Get the station's position in world coordinates
+        sf::Vector2f stationPos = station.GetPosition();
+
+        // Convert to screen coordinates
+        sf::Vector2i screenPosi = window.mapCoordsToPixel(stationPos, camera.GetView());
+        sf::Vector2f screenPos(static_cast<float>(screenPosi.x), static_cast<float>(screenPosi.y));
+
+        // Decide where to place the text relative to the station icon
+        enum Position { Below, Above, Right, Left };
+        std::vector<Position> positions = { Below, Above, Right, Left };
+
+        sf::Text stationText;
+        stationText.setFont(font);
+        stationText.setString(station.GetName());
+        stationText.setCharacterSize(15); // Fixed character size
+        stationText.setFillColor(sf::Color::Black);
+        stationText.setOutlineThickness(0);
+
+        // Since we're drawing in screen coordinates, we need to use the default view
+        window.setView(window.getDefaultView());
+
+        float padding = 4.0f;
+
+        sf::FloatRect textRect = stationText.getLocalBounds();
+
+        sf::RectangleShape backgroundRect;
+        backgroundRect.setFillColor(sf::Color::White);
+        backgroundRect.setOutlineColor(sf::Color::Black);
+        backgroundRect.setOutlineThickness(1.0f); // Fixed outline thickness
+
+        bool positionFound = false;
+
+        for (Position pos : positions) {
+            sf::Vector2f textPosition;
+
+            switch (pos) {
+            case Below:
+                textPosition = sf::Vector2f(screenPos.x - textRect.width / 2, screenPos.y + 15);
+                break;
+            case Above:
+                textPosition = sf::Vector2f(screenPos.x - textRect.width / 2, screenPos.y - textRect.height - 15);
+                break;
+            case Right:
+                textPosition = sf::Vector2f(screenPos.x + 5, screenPos.y - textRect.height / 2);
+                break;
+            case Left:
+                textPosition = sf::Vector2f(screenPos.x - textRect.width - 5, screenPos.y - textRect.height / 2);
+                break;
+            }
+
+            stationText.setPosition(textPosition);
+            textRect = stationText.getGlobalBounds();
+
+            backgroundRect.setPosition(textRect.left - padding, textRect.top - padding);
+            backgroundRect.setSize(sf::Vector2f(textRect.width + 2 * padding, textRect.height + 2 * padding));
+
+            // Check for collision with lines in screen coordinates
+            bool collision = false;
+
+            for (const auto& segment : screenLineSegments) {
+                if (rectangleIntersectsLine(textRect, segment.first, segment.second)) {
+                    collision = true;
+                    break;
+                }
+            }
+
+            if (!collision) {
+                // No collision, draw text and background
+                window.draw(backgroundRect);
+                window.draw(stationText);
+
+                positionFound = true;
+                break;
+            }
         }
-        station.Render(window, currentZoom, isHovered); // Update Render to accept hover state
+
+        if (!positionFound) {
+            // Default to below
+            sf::Vector2f textPosition = sf::Vector2f(screenPos.x - textRect.width / 2, screenPos.y + 15);
+            stationText.setPosition(textPosition);
+            textRect = stationText.getGlobalBounds();
+
+            backgroundRect.setPosition(textRect.left, textRect.top);
+            backgroundRect.setSize(sf::Vector2f(textRect.width, textRect.height));
+
+            window.draw(backgroundRect);
+            window.draw(stationText);
+        }
+
+        // Reset view to the camera's view for subsequent drawing
+        window.setView(camera.GetView());
     }
 }
 
@@ -242,11 +340,20 @@ void Renderer::renderLines(sf::RenderWindow& window, const Camera& camera) {
 
     Line* selectedLine = worldMap->GetSelectedLine();
 
-    // Render existing lines
+    lineSegments.clear(); // Clear previous line segments
+
+    // Render existing lines and collect line segments
     for (const auto& linePtr : lines) {
         auto& line = *linePtr; // Dereference the unique_ptr to get the Line object
         bool isSelected = (&line == selectedLine);
         line.Render(window, currentZoom, isSelected);
+
+        // Collect line segments from the line
+        const std::vector<sf::Vector2f>& splinePoints = line.GetSplinePoints(); // Assume this method exists
+
+        for (size_t i = 1; i < splinePoints.size(); ++i) {
+            lineSegments.emplace_back(splinePoints[i - 1], splinePoints[i]);
+        }
     }
 
     // Render the current line being built
@@ -346,4 +453,40 @@ Shuts down the renderer and releases any resources held by it.
 void Renderer::Shutdown() {
     isInitialized = false;
     worldMap.reset();
+}
+
+bool Renderer::rectangleIntersectsLine(const sf::FloatRect& rect, const sf::Vector2f& p1, const sf::Vector2f& p2) {
+    // Get the four corners of the rectangle
+    sf::Vector2f topLeft(rect.left, rect.top);
+    sf::Vector2f topRight(rect.left + rect.width, rect.top);
+    sf::Vector2f bottomLeft(rect.left, rect.top + rect.height);
+    sf::Vector2f bottomRight(rect.left + rect.width, rect.top + rect.height);
+
+    // Check if the line segment intersects any of the rectangle's edges
+    if (lineSegmentsIntersect(p1, p2, topLeft, topRight)) return true;
+    if (lineSegmentsIntersect(p1, p2, topRight, bottomRight)) return true;
+    if (lineSegmentsIntersect(p1, p2, bottomRight, bottomLeft)) return true;
+    if (lineSegmentsIntersect(p1, p2, bottomLeft, topLeft)) return true;
+
+    return false;
+}
+
+bool Renderer::lineSegmentsIntersect(const sf::Vector2f& p1, const sf::Vector2f& p2,
+    const sf::Vector2f& q1, const sf::Vector2f& q2) {
+    auto orientation = [](const sf::Vector2f& a, const sf::Vector2f& b, const sf::Vector2f& c) {
+        float val = (b.y - a.y) * (c.x - b.x) - (b.x - a.x) * (c.y - b.y);
+        if (val == 0.0f) return 0;  // Colinear
+        return (val > 0.0f) ? 1 : 2; // Clock or counterclock wise
+        };
+
+    int o1 = orientation(p1, p2, q1);
+    int o2 = orientation(p1, p2, q2);
+    int o3 = orientation(q1, q2, p1);
+    int o4 = orientation(q1, q2, p2);
+
+    // General case
+    if (o1 != o2 && o3 != o4)
+        return true;
+
+    return false; // Doesn't fall in any of the above cases
 }

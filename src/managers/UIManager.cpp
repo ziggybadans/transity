@@ -1,4 +1,7 @@
 #include "UIManager.h"
+#include <string> // For std::strncpy
+#include <stdio.h>
+#include "../core/Station.h" // Include Station class
 
 /**
 <summary>
@@ -128,6 +131,23 @@ void UIManager::Render() {
 
             if (ImGui::Button("Remove All Trains")) {
                 selectedLine->RemoveTrains();
+            }
+
+            ImGui::End();
+        }
+
+        // Add station properties UI
+        Station* selectedStation = worldMap->GetSelectedStation();
+        if (selectedStation) {
+            ImGui::Begin("Station Properties");
+
+            // Get current name
+            char nameBuffer[128];
+            strncpy_s(nameBuffer, selectedStation->GetName().c_str(), sizeof(nameBuffer));
+            nameBuffer[sizeof(nameBuffer) - 1] = '\0';
+
+            if (ImGui::InputText("Station Name", nameBuffer, sizeof(nameBuffer))) {
+                selectedStation->SetName(nameBuffer);
             }
 
             ImGui::End();

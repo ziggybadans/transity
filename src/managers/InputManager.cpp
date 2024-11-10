@@ -154,59 +154,72 @@ Right-click is used to add stations, while left-click selects lines or starts bu
 <param name="event">The SFML event containing mouse button press data.</param>
 */
 void InputManager::OnMouseButtonPressed(const sf::Event& event) {
-    if (event.mouseButton.button == sf::Mouse::Right) {
-        // Right-click should build a station if not interacting with ImGui
-        if (ImGui::GetIO().WantCaptureMouse) {
-            // ImGui is handling the mouse, do not process for game
-            return;
-        }
+    if (ImGui::GetIO().WantCaptureMouse) {
+        // ImGui is handling the mouse, do not process for game
+        return;
+    }
 
-        sf::Vector2i mousePos(event.mouseButton.x, event.mouseButton.y);
-        sf::Vector2f worldPos = window.mapPixelToCoords(mousePos, camera->GetView());
+    sf::Vector2i mousePos(event.mouseButton.x, event.mouseButton.y);
+    sf::Vector2f worldPos = window.mapPixelToCoords(mousePos, camera->GetView());
+    float currentZoom = camera->GetZoomLevel();
+
+    if (event.mouseButton.button == sf::Mouse::Right) {
+        // Right-click to add a new station
         worldMap->AddStation(worldPos);
     }
     else if (event.mouseButton.button == sf::Mouse::Left) {
-        // Left-click for selecting/deselecting lines or starting to build lines
-        if (ImGui::GetIO().WantCaptureMouse) {
-            // ImGui is handling the mouse, do not process for game
-            return;
-        }
+        bool isShiftHeld = sf::Keyboard::isKeyPressed(sf::Keyboard::LShift) ||
+            sf::Keyboard::isKeyPressed(sf::Keyboard::RShift);
 
-        sf::Vector2i mousePos(event.mouseButton.x, event.mouseButton.y);
-        sf::Vector2f worldPos = window.mapPixelToCoords(mousePos, camera->GetView());
-        float currentZoom = camera->GetZoomLevel();
-
-        if (!worldMap->IsBuildingLine()) {
-            // Check if user clicked on a line to select it
-            Line* line = worldMap->GetLineAtPosition(worldPos, currentZoom);
-            if (line) {
-                worldMap->SetSelectedLine(line);
-                selectedLine = line;
-            }
-            else {
-                // Check if user clicked on a station to start building a line
+        if (isShiftHeld) {
+            // Shift + Left-click to start or continue building a line
+            if (!worldMap->IsBuildingLine()) {
                 Station* station = worldMap->GetStationAtPosition(worldPos, currentZoom);
-                if (station && station != startingStation) {
+                if (station) {
                     worldMap->StartBuildingLine(station->GetPosition());
                     startingStation = station;
                 }
+            }
+            else {
+                // Add station or a node to current line
+                Station* station = worldMap->GetStationAtPosition(worldPos, currentZoom);
+                if (station && station != startingStation) {
+                    worldMap->AddNodeToCurrentLine(station->GetPosition(), true);
+                }
                 else {
-                    // Clicked outside any line or station, so deselect the current line
-                    if (selectedLine) {
-                        worldMap->SetSelectedLine(nullptr);
-                        selectedLine = nullptr;
-                    }
+                    worldMap->AddNodeToCurrentLine(worldPos, false);
                 }
             }
         }
         else {
-            // Add station or a node to current line
+            // Left-click without Shift: select station or line
             Station* station = worldMap->GetStationAtPosition(worldPos, currentZoom);
-            if (station && station != startingStation) {
-                worldMap->AddNodeToCurrentLine(station->GetPosition(), true);
+            if (station) {
+                // Select the station
+                worldMap->SetSelectedStation(station);
+                // Deselect the line
+                if (selectedLine) {
+                    worldMap->SetSelectedLine(nullptr);
+                    selectedLine = nullptr;
+                }
             }
             else {
-                worldMap->AddNodeToCurrentLine(worldPos, false);
+                // Check if user clicked on a line to select it
+                Line* line = worldMap->GetLineAtPosition(worldPos, currentZoom);
+                if (line) {
+                    worldMap->SetSelectedLine(line);
+                    selectedLine = line;
+                    // Deselect the station
+                    worldMap->SetSelectedStation(nullptr);
+                }
+                else {
+                    // Clicked outside any line or station, so deselect both
+                    if (selectedLine) {
+                        worldMap->SetSelectedLine(nullptr);
+                        selectedLine = nullptr;
+                    }
+                    worldMap->SetSelectedStation(nullptr);
+                }
             }
         }
     }

@@ -1,7 +1,7 @@
-// Station.h
 #pragma once
 
 #include <SFML/Graphics.hpp>
+#include <string>
 
 class Station {
 public:
@@ -9,10 +9,14 @@ public:
     Station(const sf::Vector2f& position, float baseRadius = 10.0f, float baseOutlineThickness = 2.0f);
 
     // Renders the station to the provided window, taking zoom level and hover state into account.
-    void Render(sf::RenderWindow& window, float zoomLevel, bool isHovered = false) const;
+    void Render(sf::RenderWindow& window, float zoomLevel, bool isHovered = false, bool isSelected = false) const;
 
     // Returns the position of the station.
     sf::Vector2f GetPosition() const;
+
+    // Get and set station name
+    const std::string& GetName() const;
+    void SetName(const std::string& name);
 
 private:
     sf::Vector2f position; // Position of the station.
@@ -20,4 +24,6 @@ private:
 
     float baseRadius; // Base radius of the station.
     float baseOutlineThickness; // Base thickness of the station outline.
+
+    std::string name; // Name of the station.
 };

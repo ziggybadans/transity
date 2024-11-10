@@ -55,6 +55,9 @@ public:
     void SetSelectedLine(Line* line);
     Line* GetSelectedLine() const;
 
+    void SetSelectedStation(Station* station);
+    Station* GetSelectedStation() const;
+
 private:
     // Paths to data files (GeoJSON files for different types of areas)
     std::string geoJsonFilePath;            // File path for general geographic data
@@ -79,4 +82,6 @@ private:
 
     // Pointer to the currently selected line
     Line* selectedLine = nullptr;
+
+    Station* selectedStation; // Pointer to the currently selected station
 };

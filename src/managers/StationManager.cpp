@@ -1,7 +1,7 @@
 #include "StationManager.h"
 #include <cmath>
 
-StationManager::StationManager() {}
+StationManager::StationManager() : selectedStation(nullptr) {}
 
 StationManager::~StationManager() {}
 
@@ -25,4 +25,12 @@ Station* StationManager::GetStationAtPosition(const sf::Vector2f& position, floa
 
 const std::vector<Station>& StationManager::GetStations() const {
     return stations;
+}
+
+Station* StationManager::GetSelectedStation() const {
+    return selectedStation;
+}
+
+void StationManager::SetSelectedStation(Station* station) {
+    selectedStation = station;
 }

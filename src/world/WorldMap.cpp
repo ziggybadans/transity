@@ -124,3 +124,11 @@ void WorldMap::SetSelectedLine(Line* line) {
 Line* WorldMap::GetSelectedLine() const {
     return selectedLine;
 }
+
+void WorldMap::SetSelectedStation(Station* station) {
+    selectedStation = station;
+}
+
+Station* WorldMap::GetSelectedStation() const {
+    return selectedStation;
+}

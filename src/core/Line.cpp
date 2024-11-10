@@ -8,8 +8,8 @@ movement, the rendering of the line, and related attributes like color, thicknes
 </summary>
 */
 Line::Line()
-    : active(true), color(sf::Color::Blue), thickness(2.0f), totalLength(0.0f),
-    speedInKmPerHour(1000.0f) // Default speed
+    : active(true), color(sf::Color(237, 102, 1)), thickness(5.0f), totalLength(0.0f),
+    speedInKmPerHour(1000.0f)
 {}
 
 /**
