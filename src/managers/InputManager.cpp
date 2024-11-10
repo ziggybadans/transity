@@ -213,13 +213,31 @@ void InputManager::OnMouseButtonPressed(const sf::Event& event) {
             if (selectedLine && selectedLine->IsEditing()) {
                 // In edit mode, check if a node is clicked
                 int nodeIndex = selectedLine->GetNodeIndexAtPosition(worldPos, currentZoom);
-                if (nodeIndex != -1) {
-                    const auto& nodes = selectedLine->GetNodes();
-                    if (!nodes[nodeIndex].IsStation()) {
-                        // Node is selected and is not a station
-                        isDraggingNode = true;
-                        selectedNodeIndex = nodeIndex;
-                        editingLine = selectedLine;
+                if (selectedLine && selectedLine->IsEditing()) {
+                    // In edit mode, check if a node is clicked
+                    int nodeIndex = selectedLine->GetNodeIndexAtPosition(worldPos, currentZoom);
+                    if (nodeIndex != -1) {
+                        const auto& nodes = selectedLine->GetNodes();
+                        if (!nodes[nodeIndex].IsStation()) {
+                            // Node is selected and is not a station
+                            isDraggingNode = true;
+                            selectedNodeIndex = nodeIndex;
+                            editingLine = selectedLine;
+                        }
+                        else {
+                            // Node is a station
+                            // Start dragging the station
+                            Station* station = nodes[nodeIndex].station;
+                            if (station) {
+                                worldMap->SetSelectedStation(station);
+                                isDraggingStation = true;
+                                selectedStation = station;
+                                editingLine = selectedLine;
+                            }
+                        }
+                    }
+                    else {
+                        // Handle other clicks if necessary
                     }
                 }
                 else {
@@ -231,6 +249,8 @@ void InputManager::OnMouseButtonPressed(const sf::Event& event) {
                         // Start dragging the station
                         isDraggingStation = true;
                         selectedStation = station;
+                        // Set editingLine to the line being edited
+                        editingLine = selectedLine;
                     }
                 }
             }
@@ -325,6 +345,11 @@ void InputManager::OnMouseMoved(const sf::Event& event) {
     if (isDraggingStation && selectedStation) {
         // Update the position of the selected station
         selectedStation->SetPosition(worldPos);
+
+        // Regenerate spline points of the line being edited
+        if (editingLine) {
+            editingLine->GenerateSplinePoints();
+        }
     }
 
     if (sf::Mouse::isButtonPressed(sf::Mouse::Middle)) { // Use middle mouse for panning
@@ -367,6 +392,7 @@ void InputManager::OnMouseButtonReleased(const sf::Event& event) {
         if (isDraggingStation) {
             isDraggingStation = false;
             selectedStation = nullptr;
+            editingLine = nullptr; // Reset editingLine here
         }
     }
 }
