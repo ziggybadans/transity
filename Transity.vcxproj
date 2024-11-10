@@ -153,10 +153,15 @@
     <ClCompile Include="src\graphics\Camera.cpp" />
     <ClCompile Include="src\graphics\Renderer.cpp" />
     <ClCompile Include="src\managers\InputManager.cpp" />
+    <ClCompile Include="src\managers\LineManager.cpp" />
+    <ClCompile Include="src\managers\StationManager.cpp" />
     <ClCompile Include="src\managers\UIManager.cpp" />
     <ClCompile Include="src\managers\WindowManager.cpp" />
     <ClCompile Include="src\Transity.cpp" />
     <ClCompile Include="src\utility\ThreadPool.cpp" />
+    <ClCompile Include="src\world\LineBuilder.cpp" />
+    <ClCompile Include="src\world\MapData.cpp" />
+    <ClCompile Include="src\world\MapLoader.cpp" />
     <ClCompile Include="src\world\WorldMap.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -179,6 +184,8 @@
     <ClInclude Include="src\managers\EventManager.h" />
     <ClInclude Include="src\managers\InitializationManager.h" />
     <ClInclude Include="src\managers\InputManager.h" />
+    <ClInclude Include="src\managers\LineManager.h" />
+    <ClInclude Include="src\managers\StationManager.h" />
     <ClInclude Include="src\managers\UIManager.h" />
     <ClInclude Include="src\managers\WindowManager.h" />
     <ClInclude Include="src\utility\Async.h" />
@@ -186,6 +193,9 @@
     <ClInclude Include="src\utility\Quadtree.h" />
     <ClInclude Include="src\utility\Task.h" />
     <ClInclude Include="src\utility\ThreadPool.h" />
+    <ClInclude Include="src\world\LineBuilder.h" />
+    <ClInclude Include="src\world\MapData.h" />
+    <ClInclude Include="src\world\MapLoader.h" />
     <ClInclude Include="src\world\WorldMap.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

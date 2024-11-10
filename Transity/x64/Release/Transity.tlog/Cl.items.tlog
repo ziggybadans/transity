@@ -10,8 +10,13 @@ C:\Users\Ziggy\Documents\Transity\Transity\src\Game.cpp;C:\Users\Ziggy\Documents
 C:\Users\Ziggy\Documents\Transity\Transity\src\graphics\Camera.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Release\Camera.obj
 C:\Users\Ziggy\Documents\Transity\Transity\src\graphics\Renderer.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Release\Renderer.obj
 C:\Users\Ziggy\Documents\Transity\Transity\src\managers\InputManager.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Release\InputManager.obj
+C:\Users\Ziggy\Documents\Transity\Transity\src\managers\LineManager.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Release\LineManager.obj
+C:\Users\Ziggy\Documents\Transity\Transity\src\managers\StationManager.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Release\StationManager.obj
 C:\Users\Ziggy\Documents\Transity\Transity\src\managers\UIManager.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Release\UIManager.obj
 C:\Users\Ziggy\Documents\Transity\Transity\src\managers\WindowManager.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Release\WindowManager.obj
 C:\Users\Ziggy\Documents\Transity\Transity\src\Transity.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Release\Transity.obj
 C:\Users\Ziggy\Documents\Transity\Transity\src\utility\ThreadPool.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Release\ThreadPool.obj
+C:\Users\Ziggy\Documents\Transity\Transity\src\world\LineBuilder.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Release\LineBuilder.obj
+C:\Users\Ziggy\Documents\Transity\Transity\src\world\MapData.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Release\MapData.obj
+C:\Users\Ziggy\Documents\Transity\Transity\src\world\MapLoader.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Release\MapLoader.obj
 C:\Users\Ziggy\Documents\Transity\Transity\src\world\WorldMap.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Release\WorldMap.obj
