@@ -4,6 +4,7 @@
 #include <SFML/Graphics/View.hpp>
 #include <stdexcept>
 #include <iostream>
+#include <imgui.h> // Include ImGui header
 
 /**
 <summary>
@@ -86,6 +87,12 @@ This method is called every frame to apply movement to the camera based on user 
 <param name="deltaTime">Time elapsed since the last frame, used to calculate movement proportionally.</param>
 */
 void InputManager::HandleInput(float deltaTime) {
+    // Check if ImGui wants to capture keyboard input
+    if (ImGui::GetIO().WantCaptureKeyboard) {
+        // ImGui is handling the keyboard input, so we don't process it in the game
+        return;
+    }
+
     // Handle continuous key presses for panning
     continuousMovement = sf::Vector2f(0.0f, 0.0f);
 
@@ -232,6 +239,12 @@ Handles key press events. For example, pressing Enter will finalize the line cur
 <param name="event">The SFML event containing key press data.</param>
 */
 void InputManager::OnKeyPressed(const sf::Event& event) {
+    // Check if ImGui wants to capture keyboard input
+    if (ImGui::GetIO().WantCaptureKeyboard) {
+        // ImGui is handling the keyboard input, so we don't process it in the game
+        return;
+    }
+
     if (event.key.code == sf::Keyboard::Enter && worldMap->IsBuildingLine()) {
         worldMap->FinishCurrentLine();
         startingStation = nullptr;
