@@ -243,7 +243,8 @@ void Renderer::renderLines(sf::RenderWindow& window, const Camera& camera) {
     Line* selectedLine = worldMap->GetSelectedLine();
 
     // Render existing lines
-    for (const auto& line : lines) {
+    for (const auto& linePtr : lines) {
+        auto& line = *linePtr; // Dereference the unique_ptr to get the Line object
         bool isSelected = (&line == selectedLine);
         line.Render(window, currentZoom, isSelected);
     }
@@ -297,7 +298,8 @@ void Renderer::renderLines(sf::RenderWindow& window, const Camera& camera) {
     }
 
     // Render trains
-    for (const auto& line : lines) {
+    for (const auto& linePtr : lines) {
+        auto& line = *linePtr; // Dereference the unique_ptr to get the Line object
         const auto& trains = line.GetTrains();
         for (const auto& train : trains) {
             train.Render(window, currentZoom);

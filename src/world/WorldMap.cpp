@@ -420,8 +420,8 @@ Station* WorldMap::GetStationAtPosition(const sf::Vector2f& position, float zoom
 // <summary>
 // Adds a line to the world map.
 // </summary>
-void WorldMap::AddLine(const Line& line) {
-    lines.push_back(line);
+void WorldMap::AddLine(std::unique_ptr<Line> line) {
+    lines.push_back(std::move(line));
 }
 
 // <summary>
@@ -429,13 +429,6 @@ void WorldMap::AddLine(const Line& line) {
 // </summary>
 const std::vector<Station>& WorldMap::GetStations() const {
     return stations;
-}
-
-// <summary>
-// Gets all lines stored in the world map.
-// </summary>
-const std::vector<Line>& WorldMap::GetLines() const {
-    return lines;
 }
 
 // <summary>
@@ -453,8 +446,7 @@ void WorldMap::StartBuildingLine(const sf::Vector2f& startPosition) {
 void WorldMap::FinishCurrentLine() {
     if (currentLine) {
         currentLine->SetActive(false);
-        lines.push_back(*currentLine);
-        currentLine.reset();
+        lines.push_back(std::move(currentLine));
         isBuildingLine = false;
     }
 }
@@ -523,8 +515,9 @@ Line* WorldMap::GetSelectedLine() const {
 Line* WorldMap::GetLineAtPosition(const sf::Vector2f& position, float zoomLevel) {
     float tolerance = 5.0f * zoomLevel; // Adjust tolerance based on zoom level
 
-    for (auto& line : lines) {
-        const auto& splinePoints = line.GetSplinePoints();
+    for (auto& linePtr : lines) {
+        Line* line = linePtr.get();
+        const auto& splinePoints = line->GetSplinePoints();
         for (size_t i = 0; i < splinePoints.size() - 1; ++i) {
             sf::Vector2f p1 = splinePoints[i];
             sf::Vector2f p2 = splinePoints[i + 1];
@@ -540,7 +533,7 @@ Line* WorldMap::GetLineAtPosition(const sf::Vector2f& position, float zoomLevel)
                 (position - projection).y * (position - projection).y;
 
             if (distanceSquared <= tolerance * tolerance) {
-                return &line;
+                return linePtr.get();
             }
         }
     }
@@ -550,6 +543,10 @@ Line* WorldMap::GetLineAtPosition(const sf::Vector2f& position, float zoomLevel)
 // <summary>
 // Gets all lines stored in the world map (modifiable).
 // </summary>
-std::vector<Line>& WorldMap::GetLines() {
+const std::vector<std::unique_ptr<Line>>& WorldMap::GetLines() const {
+    return lines;
+}
+
+std::vector<std::unique_ptr<Line>>& WorldMap::GetLines() {
     return lines;
 }

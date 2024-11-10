@@ -59,11 +59,11 @@ public:
     // Methods to manage stations and lines
     bool AddStation(const sf::Vector2f& position);  // Add a new station at the specified position
     Station* GetStationAtPosition(const sf::Vector2f& position, float zoomLevel);  // Get a station at a specific position, taking zoom level into account
-    void AddLine(const Line& line);  // Add a new line to the world map
+    void AddLine(std::unique_ptr<Line> line);  // Add a new line to the world map
 
     // Get the list of stations and lines
     const std::vector<Station>& GetStations() const;
-    const std::vector<Line>& GetLines() const;
+    const std::vector<std::unique_ptr<Line>>& GetLines() const;
 
     // Methods to manage the line currently being built by the player
     void StartBuildingLine(const sf::Vector2f& startPosition);                  // Start building a new line from the specified position
@@ -85,7 +85,7 @@ public:
     Line* GetSelectedLine() const;      // Get the currently selected line
 
     // Return a non-const reference to the list of lines (allows modification)
-    std::vector<Line>& GetLines();
+    std::vector<std::unique_ptr<Line>>& GetLines();
 
     // Method to get a line at a specific position, considering zoom level
     Line* GetLineAtPosition(const sf::Vector2f& position, float zoomLevel);
@@ -126,8 +126,8 @@ private:
     static const sf::Color SUBURB_COLOR;   // Color used for suburbs
 
     // Containers to store stations and lines on the map
-    std::vector<Station> stations;         // List of all stations
-    std::vector<Line> lines;               // List of all lines
+    std::vector<Station> stations;                  // List of all stations
+    std::vector<std::unique_ptr<Line>> lines;       // List of all lines
 
     // Variables for managing line-building by the player
     std::unique_ptr<Line> currentLine;     // Pointer to the current line being built

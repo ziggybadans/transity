@@ -9,6 +9,10 @@ class Line {
 public:
     Line();
 
+    // Delete copy constructor and copy assignment operator to prevent copying
+    Line(const Line&) = delete;
+    Line& operator=(const Line&) = delete;
+
     // Modify AddNode to accept an isStation parameter.
     void AddNode(const sf::Vector2f& position, bool isStation = false);
 
