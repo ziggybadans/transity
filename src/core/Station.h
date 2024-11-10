@@ -14,6 +14,9 @@ public:
     // Returns the position of the station.
     sf::Vector2f GetPosition() const;
 
+    // **New Method**: Sets the position of the station.
+    void SetPosition(const sf::Vector2f& newPosition);
+
     // Get and set station name
     const std::string& GetName() const;
     void SetName(const std::string& name);

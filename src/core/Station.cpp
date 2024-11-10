@@ -49,6 +49,9 @@ void Station::Render(sf::RenderWindow& window, float zoomLevel, bool isHovered, 
         shape.setFillColor(sf::Color::White); // Default station color
     }
 
+    // Update shape's position
+    shape.setPosition(position);
+
     window.draw(shape);
 }
 
@@ -60,6 +63,17 @@ Gets the current position of the station in the world.
 */
 sf::Vector2f Station::GetPosition() const {
     return position;
+}
+
+/**
+<summary>
+**New Method**: Sets the position of the station in the world and updates the shape's position.
+</summary>
+<param name="newPosition">The new position of the station as a vector.</param>
+*/
+void Station::SetPosition(const sf::Vector2f& newPosition) {
+    position = newPosition;
+    shape.setPosition(newPosition);
 }
 
 /**

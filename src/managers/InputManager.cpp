@@ -1,4 +1,3 @@
-// InputManager.cpp
 #include "InputManager.h"
 #include <SFML/Window/Mouse.hpp>
 #include <SFML/Graphics/View.hpp>
@@ -42,6 +41,9 @@ InputManager::InputManager(std::shared_ptr<EventManager> eventMgr,
 
     eventManager->Subscribe(EventType::MouseButtonPressed,
         [this](const sf::Event& event) { this->OnMouseButtonPressed(event); });
+
+    eventManager->Subscribe(EventType::MouseButtonReleased,
+        [this](const sf::Event& event) { this->OnMouseButtonReleased(event); });
 }
 
 /**
@@ -170,20 +172,29 @@ void InputManager::OnMouseButtonPressed(const sf::Event& event) {
     sf::Vector2f worldPos = window.mapPixelToCoords(mousePos, camera->GetView());
     float currentZoom = camera->GetZoomLevel();
 
+    bool isShiftHeld = sf::Keyboard::isKeyPressed(sf::Keyboard::LShift) ||
+        sf::Keyboard::isKeyPressed(sf::Keyboard::RShift);
+
     if (event.mouseButton.button == sf::Mouse::Right) {
-        // Right-click to add a new station
-        worldMap->AddStation(worldPos);
+        if (isShiftHeld) {
+            // Shift + Right-click to finish building the line
+            if (worldMap->IsBuildingLine()) {
+                worldMap->FinishCurrentLine();
+                startingStation = nullptr;
+            }
+        }
+        else {
+            // Right-click to add a new station
+            worldMap->AddStation(worldPos);
+        }
     }
     else if (event.mouseButton.button == sf::Mouse::Left) {
-        bool isShiftHeld = sf::Keyboard::isKeyPressed(sf::Keyboard::LShift) ||
-            sf::Keyboard::isKeyPressed(sf::Keyboard::RShift);
-
         if (isShiftHeld) {
             // Shift + Left-click to start or continue building a line
             if (!worldMap->IsBuildingLine()) {
                 Station* station = worldMap->GetStationAtPosition(worldPos, currentZoom);
                 if (station) {
-                    worldMap->StartBuildingLine(station->GetPosition());
+                    worldMap->StartBuildingLine(station);
                     startingStation = station;
                 }
             }
@@ -191,41 +202,67 @@ void InputManager::OnMouseButtonPressed(const sf::Event& event) {
                 // Add station or a node to current line
                 Station* station = worldMap->GetStationAtPosition(worldPos, currentZoom);
                 if (station && station != startingStation) {
-                    worldMap->AddNodeToCurrentLine(station->GetPosition(), true);
+                    worldMap->AddStationToCurrentLine(station);
                 }
                 else {
-                    worldMap->AddNodeToCurrentLine(worldPos, false);
+                    worldMap->AddNodeToCurrentLine(worldPos);
                 }
             }
         }
         else {
-            // Left-click without Shift: select station or line
-            Station* station = worldMap->GetStationAtPosition(worldPos, currentZoom);
-            if (station) {
-                // Select the station
-                worldMap->SetSelectedStation(station);
-                // Deselect the line
-                if (selectedLine) {
-                    worldMap->SetSelectedLine(nullptr);
-                    selectedLine = nullptr;
+            if (selectedLine && selectedLine->IsEditing()) {
+                // In edit mode, check if a node is clicked
+                int nodeIndex = selectedLine->GetNodeIndexAtPosition(worldPos, currentZoom);
+                if (nodeIndex != -1) {
+                    const auto& nodes = selectedLine->GetNodes();
+                    if (!nodes[nodeIndex].IsStation()) {
+                        // Node is selected and is not a station
+                        isDraggingNode = true;
+                        selectedNodeIndex = nodeIndex;
+                        editingLine = selectedLine;
+                    }
+                }
+                else {
+                    // Check if a station is clicked
+                    Station* station = worldMap->GetStationAtPosition(worldPos, currentZoom);
+                    if (station) {
+                        // Select the station
+                        worldMap->SetSelectedStation(station);
+                        // Start dragging the station
+                        isDraggingStation = true;
+                        selectedStation = station;
+                    }
                 }
             }
             else {
-                // Check if user clicked on a line to select it
-                Line* line = worldMap->GetLineAtPosition(worldPos, currentZoom);
-                if (line) {
-                    worldMap->SetSelectedLine(line);
-                    selectedLine = line;
-                    // Deselect the station
-                    worldMap->SetSelectedStation(nullptr);
-                }
-                else {
-                    // Clicked outside any line or station, so deselect both
+                // Left-click without Shift: select station or line
+                Station* station = worldMap->GetStationAtPosition(worldPos, currentZoom);
+                if (station) {
+                    // Select the station
+                    worldMap->SetSelectedStation(station);
+                    // Deselect the line
                     if (selectedLine) {
                         worldMap->SetSelectedLine(nullptr);
                         selectedLine = nullptr;
                     }
-                    worldMap->SetSelectedStation(nullptr);
+                }
+                else {
+                    // Check if user clicked on a line to select it
+                    Line* line = worldMap->GetLineAtPosition(worldPos, currentZoom);
+                    if (line) {
+                        worldMap->SetSelectedLine(line);
+                        selectedLine = line;
+                        // Deselect the station
+                        worldMap->SetSelectedStation(nullptr);
+                    }
+                    else {
+                        // Clicked outside any line or station, so deselect both
+                        if (selectedLine) {
+                            worldMap->SetSelectedLine(nullptr);
+                            selectedLine = nullptr;
+                        }
+                        worldMap->SetSelectedStation(nullptr);
+                    }
                 }
             }
         }
@@ -234,7 +271,7 @@ void InputManager::OnMouseButtonPressed(const sf::Event& event) {
 
 /**
 <summary>
-Handles key press events. For example, pressing Enter will finalize the line currently being built.
+Handles key press events. Pressing 'E' toggles edit mode for the selected line.
 </summary>
 <param name="event">The SFML event containing key press data.</param>
 */
@@ -252,11 +289,6 @@ void InputManager::OnKeyPressed(const sf::Event& event) {
             bool isEditing = selectedLine->IsEditing();
             selectedLine->SetEditing(!isEditing);
         }
-    }
-
-    if (event.key.code == sf::Keyboard::Enter && worldMap->IsBuildingLine()) {
-        worldMap->FinishCurrentLine();
-        startingStation = nullptr;
     }
 }
 
@@ -286,6 +318,15 @@ void InputManager::OnMouseMoved(const sf::Event& event) {
         worldMap->SetNextSegmentCurved(isShiftHeld);
     }
 
+    if (isDraggingNode && editingLine) {
+        // Update the position of the selected node
+        editingLine->SetNodePosition(selectedNodeIndex, worldPos);
+    }
+    if (isDraggingStation && selectedStation) {
+        // Update the position of the selected station
+        selectedStation->SetPosition(worldPos);
+    }
+
     if (sf::Mouse::isButtonPressed(sf::Mouse::Middle)) { // Use middle mouse for panning
         if (!isPanning) {
             isPanning = true;
@@ -307,5 +348,25 @@ void InputManager::OnMouseMoved(const sf::Event& event) {
     }
     else {
         isPanning = false;
+    }
+}
+
+/**
+<summary>
+Handles mouse button release events, used to stop dragging nodes or stations.
+</summary>
+<param name="event">The SFML event containing mouse button release data.</param>
+*/
+void InputManager::OnMouseButtonReleased(const sf::Event& event) {
+    if (event.mouseButton.button == sf::Mouse::Left) {
+        if (isDraggingNode) {
+            isDraggingNode = false;
+            selectedNodeIndex = -1;
+            editingLine = nullptr;
+        }
+        if (isDraggingStation) {
+            isDraggingStation = false;
+            selectedStation = nullptr;
+        }
     }
 }

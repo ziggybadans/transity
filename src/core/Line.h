@@ -4,6 +4,20 @@
 #include <vector>
 #include <limits>
 #include "Train.h"
+#include "Station.h"
+
+struct LineNode {
+    Station* station; // Pointer to station if this node is a station, nullptr otherwise
+    sf::Vector2f position; // Position of the node (used if station == nullptr)
+
+    sf::Vector2f GetPosition() const {
+        return station ? station->GetPosition() : position;
+    }
+
+    bool IsStation() const {
+        return station != nullptr;
+    }
+};
 
 class Line {
 public:
@@ -13,8 +27,9 @@ public:
     Line(const Line&) = delete;
     Line& operator=(const Line&) = delete;
 
-    // Modify AddNode to accept an isStation parameter.
-    void AddNode(const sf::Vector2f& position, bool isStation = false);
+    // Modify AddNode to accept Station pointer or position
+    void AddNode(Station* station);
+    void AddNode(const sf::Vector2f& position);
 
     // Render the line, optionally highlighting it if selected.
     void Render(sf::RenderWindow& window, float zoomLevel, bool isSelected = false) const;
@@ -23,8 +38,8 @@ public:
     void SetActive(bool active);
     bool IsActive() const;
 
-    // Get the list of nodes (positions) that form the line.
-    const std::vector<sf::Vector2f>& GetNodes() const { return nodes; }
+    // Get the list of nodes
+    const std::vector<LineNode>& GetNodes() const { return nodes; }
 
     // Methods to set and get the color of the line.
     void SetColor(const sf::Color& color);
@@ -63,16 +78,19 @@ public:
     void SetEditing(bool editing) { isEditing = editing; }
     bool IsEditing() const { return isEditing; }
 
-    // Provide access to the isStationNode vector.
-    const std::vector<bool>& GetIsStationNode() const { return isStationNode; }
+    // Method to get the index of a node at a given position
+    int GetNodeIndexAtPosition(const sf::Vector2f& position, float zoomLevel) const;
+
+    // Method to set the position of a node (only for non-station nodes)
+    void SetNodePosition(int index, const sf::Vector2f& newPosition);
+
+    // Method to regenerate the spline points (make it public)
+    void GenerateSplinePoints();
 
 private:
-    std::vector<sf::Vector2f> nodes; // Nodes representing the points of the line.
-    std::vector<bool> isStationNode; // New vector to track whether nodes are stations.
-    bool active; // Flag indicating whether the line is active.
+    std::vector<LineNode> nodes; // Nodes representing the points of the line.
 
-    // Helper function to generate spline points for smooth curves.
-    void GenerateSplinePoints();
+    bool active; // Flag indicating whether the line is active.
 
     // Points calculated along the spline for rendering.
     std::vector<sf::Vector2f> splinePoints;

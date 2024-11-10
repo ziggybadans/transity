@@ -1,5 +1,6 @@
 #include "Line.h"
 #include <cmath>
+#include <algorithm>
 
 /**
 <summary>
@@ -14,13 +15,28 @@ Line::Line()
 
 /**
 <summary>
-Adds a new node to the line and regenerates the spline points to include the new node.
+Adds a station node to the line and regenerates the spline points to include the new node.
+</summary>
+<param name="station">Pointer to the station to add as a node.</param>
+*/
+void Line::AddNode(Station* station) {
+    LineNode node;
+    node.station = station;
+    nodes.push_back(node);
+    GenerateSplinePoints();
+}
+
+/**
+<summary>
+Adds a regular node (non-station) to the line and regenerates the spline points to include the new node.
 </summary>
 <param name="position">The position of the new node.</param>
 */
-void Line::AddNode(const sf::Vector2f& position, bool isStation) {
-    nodes.push_back(position);
-    isStationNode.push_back(isStation);
+void Line::AddNode(const sf::Vector2f& position) {
+    LineNode node;
+    node.station = nullptr;
+    node.position = position;
+    nodes.push_back(node);
     GenerateSplinePoints();
 }
 
@@ -43,10 +59,10 @@ void Line::GenerateSplinePoints() {
 
     for (size_t i = 0; i < nodes.size() - 1; ++i) {
         // For Catmull-Rom spline, we need four points for each segment
-        sf::Vector2f p0 = (i == 0) ? nodes[i] : nodes[i - 1];
-        sf::Vector2f p1 = nodes[i];
-        sf::Vector2f p2 = nodes[i + 1];
-        sf::Vector2f p3 = (i + 2 < nodes.size()) ? nodes[i + 2] : nodes[i + 1];
+        sf::Vector2f p0 = (i == 0) ? nodes[i].GetPosition() : nodes[i - 1].GetPosition();
+        sf::Vector2f p1 = nodes[i].GetPosition();
+        sf::Vector2f p2 = nodes[i + 1].GetPosition();
+        sf::Vector2f p3 = (i + 2 < nodes.size()) ? nodes[i + 2].GetPosition() : nodes[i + 1].GetPosition();
 
         for (int j = 0; j <= numPointsPerSegment; ++j) {
             float t = static_cast<float>(j) / numPointsPerSegment;
@@ -92,16 +108,17 @@ void Line::CalculateStationProgressValues() {
     }
 
     // Only consider nodes that are stations
-    for (size_t idx = 0; idx < nodes.size(); ++idx) {
-        if (!isStationNode[idx]) {
+    for (const auto& node : nodes) {
+        if (!node.IsStation()) {
             continue;
         }
-        const auto& node = nodes[idx];
+
+        const sf::Vector2f& stationPosition = node.GetPosition();
 
         float minDistanceSq = std::numeric_limits<float>::max();
         size_t closestIndex = 0;
         for (size_t i = 0; i < splinePoints.size(); ++i) {
-            sf::Vector2f diff = splinePoints[i] - node;
+            sf::Vector2f diff = splinePoints[i] - stationPosition;
             float distanceSq = diff.x * diff.x + diff.y * diff.y;
             if (distanceSq < minDistanceSq) {
                 minDistanceSq = distanceSq;
@@ -329,7 +346,13 @@ float Line::GetClosestStationProgress(float progress) const {
     float minDistance = std::numeric_limits<float>::max();
     float closestProgress = progress;
 
-    for (const auto& nodePosition : nodes) {
+    for (const auto& node : nodes) {
+        if (!node.IsStation()) {
+            continue;
+        }
+
+        const sf::Vector2f& nodePosition = node.GetPosition();
+
         // Find distance along the line to this node
         float nodeDistance = 0.0f;
         float accumulatedDistance = 0.0f;
@@ -361,4 +384,28 @@ void Line::SetSpeed(float speedKmPerHour) {
 
 float Line::GetSpeed() const {
     return speedInKmPerHour;
+}
+
+int Line::GetNodeIndexAtPosition(const sf::Vector2f& position, float zoomLevel) const {
+    float tolerance = 10.0f * zoomLevel; // Adjust tolerance based on zoom level
+    for (size_t i = 0; i < nodes.size(); ++i) {
+        sf::Vector2f nodePos = nodes[i].GetPosition();
+        sf::Vector2f diff = nodePos - position;
+        float distanceSquared = diff.x * diff.x + diff.y * diff.y;
+        if (distanceSquared <= tolerance * tolerance) {
+            return static_cast<int>(i);
+        }
+    }
+    return -1; // No node found at the position
+}
+
+void Line::SetNodePosition(int index, const sf::Vector2f& newPosition) {
+    if (index >= 0 && index < static_cast<int>(nodes.size())) {
+        if (nodes[index].IsStation()) {
+            // Do not allow moving station nodes directly
+            return;
+        }
+        nodes[index].position = newPosition;
+        GenerateSplinePoints(); // Regenerate the spline after moving the node
+    }
 }

@@ -8,8 +8,9 @@ public:
     LineBuilder();
     ~LineBuilder();
 
-    void StartBuildingLine(const sf::Vector2f& startPosition);
-    void AddNodeToCurrentLine(const sf::Vector2f& position, bool isStation);
+    void StartBuildingLine(Station* station);
+    void AddNodeToCurrentLine(const sf::Vector2f& position);
+    void AddStationToCurrentLine(Station* station);
     void FinishCurrentLine();
     const Line* GetCurrentLine() const;
     bool IsBuildingLine() const;

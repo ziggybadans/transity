@@ -79,12 +79,16 @@ Line* WorldMap::GetLineAtPosition(const sf::Vector2f& position, float zoomLevel)
     return lineManager.GetLineAtPosition(position, zoomLevel);
 }
 
-void WorldMap::StartBuildingLine(const sf::Vector2f& startPosition) {
-    lineBuilder.StartBuildingLine(startPosition);
+void WorldMap::StartBuildingLine(Station* station) {
+    lineBuilder.StartBuildingLine(station);
 }
 
-void WorldMap::AddNodeToCurrentLine(const sf::Vector2f& position, bool isStation) {
-    lineBuilder.AddNodeToCurrentLine(position, isStation);
+void WorldMap::AddNodeToCurrentLine(const sf::Vector2f& position) {
+    lineBuilder.AddNodeToCurrentLine(position);
+}
+
+void WorldMap::AddStationToCurrentLine(Station* station) {
+    lineBuilder.AddStationToCurrentLine(station);
 }
 
 void WorldMap::FinishCurrentLine() {

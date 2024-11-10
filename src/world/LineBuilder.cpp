@@ -4,15 +4,21 @@ LineBuilder::LineBuilder() {}
 
 LineBuilder::~LineBuilder() {}
 
-void LineBuilder::StartBuildingLine(const sf::Vector2f& startPosition) {
+void LineBuilder::StartBuildingLine(Station* station) {
     currentLine = std::make_unique<Line>();
-    currentLine->AddNode(startPosition, true); // Pass 'true' to indicate it's a station
+    currentLine->AddNode(station); // Add station node
     isBuildingLine = true;
 }
 
-void LineBuilder::AddNodeToCurrentLine(const sf::Vector2f& position, bool isStation) {
+void LineBuilder::AddNodeToCurrentLine(const sf::Vector2f& position) {
     if (currentLine && isBuildingLine) {
-        currentLine->AddNode(position, isStation);
+        currentLine->AddNode(position);
+    }
+}
+
+void LineBuilder::AddStationToCurrentLine(Station* station) {
+    if (currentLine && isBuildingLine) {
+        currentLine->AddNode(station);
     }
 }
 

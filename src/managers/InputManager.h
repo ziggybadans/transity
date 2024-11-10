@@ -1,4 +1,3 @@
-// InputManager.h
 #pragma once
 
 #include <SFML/Graphics.hpp>
@@ -43,6 +42,7 @@ private:
     void OnKeyPressed(const sf::Event& event); // Handles key press events.
     void OnMouseMoved(const sf::Event& event); // Handles mouse movement.
     void OnMouseButtonPressed(const sf::Event& event); // Handles mouse button presses.
+    void OnMouseButtonReleased(const sf::Event& event);
 
     // State tracking for panning.
     bool isPanning; // Flag to track whether panning is currently active.
@@ -56,4 +56,13 @@ private:
 
     // Line selection state.
     Line* selectedLine; // Pointer to the currently selected line.
+
+    // Node selection and dragging
+    bool isDraggingNode = false;
+    int selectedNodeIndex = -1;
+    Line* editingLine = nullptr; // Pointer to the line currently being edited
+
+    // Station dragging
+    bool isDraggingStation = false;
+    Station* selectedStation = nullptr; // Pointer to the station currently being moved
 };

@@ -349,7 +349,7 @@ void Renderer::renderLines(sf::RenderWindow& window, const Camera& camera) {
         line.Render(window, currentZoom, isSelected);
 
         // Collect line segments from the line
-        const std::vector<sf::Vector2f>& splinePoints = line.GetSplinePoints(); // Assume this method exists
+        const std::vector<sf::Vector2f>& splinePoints = line.GetSplinePoints();
 
         for (size_t i = 1; i < splinePoints.size(); ++i) {
             lineSegments.emplace_back(splinePoints[i - 1], splinePoints[i]);
@@ -357,17 +357,16 @@ void Renderer::renderLines(sf::RenderWindow& window, const Camera& camera) {
 
         if (line.IsEditing()) {
             const auto& nodes = line.GetNodes();
-            const auto& isStationNode = line.GetIsStationNode();
 
             float dotRadius = 5.0f * currentZoom; // Adjust the size based on zoom level
 
             sf::CircleShape dot(dotRadius);
-            dot.setFillColor(sf::Color::Blue); // Color for non-station nodes
             dot.setOrigin(dotRadius, dotRadius); // Center the dot
 
-            for (size_t i = 0; i < nodes.size(); ++i) {
-                if (!isStationNode[i]) {
-                    dot.setPosition(nodes[i]);
+            for (const auto& node : nodes) {
+                if (!node.IsStation()) {
+                    dot.setPosition(node.GetPosition());
+                    dot.setFillColor(sf::Color::Blue); // Color for non-station nodes
                     window.draw(dot);
                 }
             }
@@ -382,22 +381,25 @@ void Renderer::renderLines(sf::RenderWindow& window, const Camera& camera) {
         // Draw the preview line from the last node to the current mouse position
         const auto& nodes = currentLine->GetNodes();
         if (!nodes.empty()) {
-            sf::Vector2f lastNode = nodes.back();
+            sf::Vector2f lastNodePosition = nodes.back().GetPosition();
             sf::Vector2f previewEnd = worldMap->currentMousePosition;
 
             // Generate a temporary spline with the preview point
-            std::vector<sf::Vector2f> tempNodes = nodes;
-            tempNodes.push_back(previewEnd);
+            std::vector<sf::Vector2f> tempNodePositions;
+            for (const auto& node : nodes) {
+                tempNodePositions.push_back(node.GetPosition());
+            }
+            tempNodePositions.push_back(previewEnd);
 
             // Generate spline points
             std::vector<sf::Vector2f> tempSplinePoints;
             const int numPointsPerSegment = 20;
 
-            for (size_t i = 0; i < tempNodes.size() - 1; ++i) {
-                sf::Vector2f p0 = (i == 0) ? tempNodes[i] : tempNodes[i - 1];
-                sf::Vector2f p1 = tempNodes[i];
-                sf::Vector2f p2 = tempNodes[i + 1];
-                sf::Vector2f p3 = (i + 2 < tempNodes.size()) ? tempNodes[i + 2] : tempNodes[i + 1];
+            for (size_t i = 0; i < tempNodePositions.size() - 1; ++i) {
+                sf::Vector2f p0 = (i == 0) ? tempNodePositions[i] : tempNodePositions[i - 1];
+                sf::Vector2f p1 = tempNodePositions[i];
+                sf::Vector2f p2 = tempNodePositions[i + 1];
+                sf::Vector2f p3 = (i + 2 < tempNodePositions.size()) ? tempNodePositions[i + 2] : tempNodePositions[i + 1];
 
                 for (int j = 0; j <= numPointsPerSegment; ++j) {
                     float t = static_cast<float>(j) / numPointsPerSegment;
