@@ -59,6 +59,13 @@ public:
     void SetSpeed(float speedKmPerHour);
     float GetSpeed() const;
 
+    // Add getter and setter for editing state.
+    void SetEditing(bool editing) { isEditing = editing; }
+    bool IsEditing() const { return isEditing; }
+
+    // Provide access to the isStationNode vector.
+    const std::vector<bool>& GetIsStationNode() const { return isStationNode; }
+
 private:
     std::vector<sf::Vector2f> nodes; // Nodes representing the points of the line.
     std::vector<bool> isStationNode; // New vector to track whether nodes are stations.
@@ -87,4 +94,6 @@ private:
     void CalculateStationProgressValues();
 
     float speedInKmPerHour; // Speed of trains on this line in km/h
+
+    bool isEditing = false; // Flag to indicate if the line is in edit mode.
 };

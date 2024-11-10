@@ -245,6 +245,15 @@ void InputManager::OnKeyPressed(const sf::Event& event) {
         return;
     }
 
+    // Handle the 'E' key to toggle edit mode for the selected line.
+    if (event.key.code == sf::Keyboard::E) {
+        Line* selectedLine = worldMap->GetSelectedLine();
+        if (selectedLine) {
+            bool isEditing = selectedLine->IsEditing();
+            selectedLine->SetEditing(!isEditing);
+        }
+    }
+
     if (event.key.code == sf::Keyboard::Enter && worldMap->IsBuildingLine()) {
         worldMap->FinishCurrentLine();
         startingStation = nullptr;

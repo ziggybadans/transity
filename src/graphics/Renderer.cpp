@@ -354,6 +354,24 @@ void Renderer::renderLines(sf::RenderWindow& window, const Camera& camera) {
         for (size_t i = 1; i < splinePoints.size(); ++i) {
             lineSegments.emplace_back(splinePoints[i - 1], splinePoints[i]);
         }
+
+        if (line.IsEditing()) {
+            const auto& nodes = line.GetNodes();
+            const auto& isStationNode = line.GetIsStationNode();
+
+            float dotRadius = 5.0f * currentZoom; // Adjust the size based on zoom level
+
+            sf::CircleShape dot(dotRadius);
+            dot.setFillColor(sf::Color::Blue); // Color for non-station nodes
+            dot.setOrigin(dotRadius, dotRadius); // Center the dot
+
+            for (size_t i = 0; i < nodes.size(); ++i) {
+                if (!isStationNode[i]) {
+                    dot.setPosition(nodes[i]);
+                    window.draw(dot);
+                }
+            }
+        }
     }
 
     // Render the current line being built
