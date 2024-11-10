@@ -46,4 +46,6 @@ private:
     // Parameters for UI customization.
     float thickness; // Thickness value for rendering elements.
     float color[4]; // RGBA values for setting color (values between 0.0f and 1.0f).
+
+    float speedKmPerHour; // Speed for the selected line
 };

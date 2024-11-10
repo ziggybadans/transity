@@ -1,6 +1,8 @@
+// Train.h
 #pragma once
 
 #include <SFML/Graphics.hpp>
+#include "../Constants.h"
 
 class Line;
 
@@ -17,7 +19,6 @@ public:
 
 private:
     Line* line; // Pointer to the line the train is currently on.
-    float speed; // Speed of the train in units per second.
     float progress; // Position along the line, ranging from 0.0 to 1.0.
     bool forward; // Direction of travel, true if moving forward.
     mutable sf::CircleShape shape; // Graphical representation of the train.

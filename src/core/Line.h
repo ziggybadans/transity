@@ -55,6 +55,10 @@ public:
     // Get the progress values of the stations along the line
     const std::vector<float>& GetStationProgressValues() const;
 
+    // Methods to set and get the speed of the line.
+    void SetSpeed(float speedKmPerHour);
+    float GetSpeed() const;
+
 private:
     std::vector<sf::Vector2f> nodes; // Nodes representing the points of the line.
     std::vector<bool> isStationNode; // New vector to track whether nodes are stations.
@@ -81,4 +85,6 @@ private:
 
     // Method to calculate station progress values
     void CalculateStationProgressValues();
+
+    float speedInKmPerHour; // Speed of trains on this line in km/h
 };

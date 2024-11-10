@@ -115,6 +115,12 @@ void UIManager::Render() {
                 selectedLine->SetThickness(thickness);
             }
 
+            // Speed control
+            speedKmPerHour = selectedLine->GetSpeed();
+            if (ImGui::InputFloat("Speed (km/h)", &speedKmPerHour)) {
+                selectedLine->SetSpeed(speedKmPerHour);
+            }
+
             // Button to add a train
             if (ImGui::Button("Add Train")) {
                 selectedLine->AddTrain();

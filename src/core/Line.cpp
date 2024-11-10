@@ -8,7 +8,8 @@ movement, the rendering of the line, and related attributes like color, thicknes
 </summary>
 */
 Line::Line()
-    : active(true), color(sf::Color::Blue), thickness(2.0f), totalLength(0.0f)
+    : active(true), color(sf::Color::Blue), thickness(2.0f), totalLength(0.0f),
+    speedInKmPerHour(1000.0f) // Default speed
 {}
 
 /**
@@ -352,4 +353,12 @@ float Line::GetClosestStationProgress(float progress) const {
     }
 
     return closestProgress;
+}
+
+void Line::SetSpeed(float speedKmPerHour) {
+    speedInKmPerHour = speedKmPerHour;
+}
+
+float Line::GetSpeed() const {
+    return speedInKmPerHour;
 }

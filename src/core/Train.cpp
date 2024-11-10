@@ -10,8 +10,8 @@ direction changes, and wait times at the end points of the line.
 </summary>
 */
 Train::Train(Line* line)
-    : line(line), 
-    speed(10.0f), waitTime(2.0f), 
+    : line(line),
+    waitTime(2.0f),
     progress(0.0f), currentWaitTime(0.0f), forward(true), isStopped(false),
     logTimer(0.0f)
 {
@@ -92,7 +92,11 @@ void Train::Update(float deltaTime)
 
     // Move towards targetProgress
     float lineLength = line->GetLength();
-    float distanceToTravel = speed * deltaTime;
+
+    // Calculate speed in units per second
+    float speedInUnitsPerSecond = line->GetSpeed() / (Constants::kmPerUnit * 3600.0f);
+
+    float distanceToTravel = speedInUnitsPerSecond * deltaTime;
     float progressChange = distanceToTravel / lineLength;
 
     if (forward)
