@@ -134,6 +134,8 @@ void WorldMap::FinishCurrentLine() {
             extendedLine->GenerateSplinePoints(); // Recalculate spline points after extension
             // Additional actions if necessary
         }
+        // Reset LineBuilder's state
+        lineBuilder.FinishCurrentLine();
     }
 }
 

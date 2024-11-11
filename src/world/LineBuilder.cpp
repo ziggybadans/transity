@@ -47,7 +47,7 @@ void LineBuilder::AddStationToCurrentLine(Station* station) {
 
 void LineBuilder::FinishCurrentLine() {
     if (isBuildingLine) {
-        if (lineBeingExtended && lineBeingExtended->IsActive()) {
+        if (lineBeingExtended) {
             // Finished extending the existing line
             lineBeingExtended->SetActive(false);
             isBuildingLine = false;
@@ -58,10 +58,10 @@ void LineBuilder::FinishCurrentLine() {
             // Finished building a new line or branch
             currentLine->SetActive(false);
             isBuildingLine = false;
+            currentLine = nullptr; // Also reset currentLine
         }
     }
 }
-
 
 const Line* LineBuilder::GetCurrentLine() const {
     return isBuildingLine ? currentLine.get() : nullptr;
