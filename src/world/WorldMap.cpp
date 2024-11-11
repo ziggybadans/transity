@@ -9,7 +9,9 @@ WorldMap::WorldMap(const std::string& geoJsonPath,
     citiesGeoJsonFilePath(citiesGeoJsonPath),
     townsGeoJsonFilePath(townsGeoJsonPath),
     suburbsGeoJsonFilePath(suburbsGeoJsonPath),
-    mapLoader(mapData) {}
+    mapLoader(mapData),
+    selectedStation(nullptr) // Explicitly initialize to nullptr
+{}
 
 WorldMap::~WorldMap() {}
 
@@ -126,6 +128,12 @@ void WorldMap::FinishCurrentLine() {
                 lineManager.AddLine(std::move(newLine));
             }
         }
+        else if (lineBuilder.GetLineBeingExtended()) {
+            // Extension was handled directly by LineBuilder
+            Line* extendedLine = lineBuilder.GetLineBeingExtended();
+            extendedLine->GenerateSplinePoints(); // Recalculate spline points after extension
+            // Additional actions if necessary
+        }
     }
 }
 
@@ -168,4 +176,30 @@ Station* WorldMap::GetSelectedStation() const {
 // Start building a branch line
 void WorldMap::StartBuildingBranch(Line* parentLine, const LineNode& startingNode) {
     lineBuilder.StartBuildingBranch(parentLine, startingNode);
+}
+
+void WorldMap::StartExtendingLine(Line* line, int nodeIndex) {
+    if (!line) {
+        std::cerr << "Attempted to extend a null line." << std::endl;
+        return;
+    }
+    if (nodeIndex != 0 && nodeIndex != static_cast<int>(line->GetNodes().size()) - 1) {
+        std::cerr << "Attempted to extend a line from a non-end node." << std::endl;
+        return;
+    }
+
+    // Inform the LineBuilder to extend the line
+    lineBuilder.StartExtendingLine(line, nodeIndex);
+}
+
+bool WorldMap::IsExtendingLine() const {
+    return lineBuilder.IsExtendingLine();
+}
+
+Line* WorldMap::GetLineBeingExtended() const {
+    return lineBuilder.GetLineBeingExtended();
+}
+
+int WorldMap::GetExtendNodeIndex() const {
+    return lineBuilder.GetExtendNodeIndex();
 }

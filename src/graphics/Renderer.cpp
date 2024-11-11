@@ -350,23 +350,53 @@ void Renderer::renderLines(sf::RenderWindow& window, const Camera& camera) {
         renderLineRecursive(&line, window, currentZoom, selectedLine);
     }
 
-    // Render the current line being built
+    // Render the current line being built or extended
     const Line* currentLine = worldMap->GetCurrentLine();
-    if (currentLine) {
-        currentLine->Render(window, currentZoom);
+    const Line* lineBeingExtended = worldMap->GetLineBeingExtended();
+    bool isExtendingLine = worldMap->IsExtendingLine();
+    int extendNodeIndex = worldMap->GetExtendNodeIndex();
+
+    if (currentLine || lineBeingExtended) {
+        // Decide which line to use
+        const Line* lineToUse = currentLine ? currentLine : lineBeingExtended;
+
+        // We don't need to render lineToUse here because it has already been rendered in the existing lines
+        // We need to render the preview from the appropriate node to the current mouse position
 
         // Draw the preview line from the last node to the current mouse position
-        const auto& nodes = currentLine->GetNodes();
+        const auto& nodes = lineToUse->GetNodes();
         if (!nodes.empty()) {
-            sf::Vector2f lastNodePosition = nodes.back().GetPosition();
-            sf::Vector2f previewEnd = worldMap->currentMousePosition;
-
-            // Generate a temporary spline with the preview point
+            sf::Vector2f previewStart;
             std::vector<sf::Vector2f> tempNodePositions;
-            for (const auto& node : nodes) {
-                tempNodePositions.push_back(node.GetPosition());
+            tempNodePositions.reserve(nodes.size() + 1); // Reserve space
+
+            if (isExtendingLine) {
+                // Extending an existing line
+                if (extendNodeIndex == 0) {
+                    // Extending from the start
+                    previewStart = nodes.front().GetPosition();
+                    tempNodePositions.push_back(worldMap->currentMousePosition); // New point at the beginning
+                    for (const auto& node : nodes) {
+                        tempNodePositions.push_back(node.GetPosition());
+                    }
+                }
+                else {
+                    // Extending from the end
+                    previewStart = nodes.back().GetPosition();
+                    for (const auto& node : nodes) {
+                        tempNodePositions.push_back(node.GetPosition());
+                    }
+                    tempNodePositions.push_back(worldMap->currentMousePosition); // New point at the end
+                }
             }
-            tempNodePositions.push_back(previewEnd);
+            else {
+                // Building a new line or branch
+                previewStart = nodes.back().GetPosition();
+                for (const auto& node : nodes) {
+                    tempNodePositions.push_back(node.GetPosition());
+                }
+                tempNodePositions.push_back(worldMap->currentMousePosition);
+            }
 
             // Generate spline points
             std::vector<sf::Vector2f> tempSplinePoints;

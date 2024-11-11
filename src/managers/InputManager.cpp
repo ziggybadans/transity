@@ -197,9 +197,16 @@ void InputManager::OnMouseButtonPressed(const sf::Event& event) {
                 if (line) {
                     int nodeIndex = line->GetNodeIndexAtPosition(worldPos, currentZoom);
                     if (nodeIndex != -1) {
-                        // Start building branch from this node
-                        const LineNode& startingNode = line->GetNodes()[nodeIndex];
-                        worldMap->StartBuildingBranch(line, startingNode);
+                        const std::vector<LineNode>& nodes = line->GetNodes();
+                        if (nodeIndex == 0 || nodeIndex == static_cast<int>(nodes.size()) - 1) {
+                            // Clicked on the start or end node - extend the main line
+                            worldMap->StartExtendingLine(line, nodeIndex);
+                        }
+                        else {
+                            // Clicked on a middle node - create a branch line
+                            const LineNode& startingNode = nodes[nodeIndex];
+                            worldMap->StartBuildingBranch(line, startingNode);
+                        }
                     }
                 }
                 else {
@@ -259,11 +266,11 @@ void InputManager::OnMouseButtonPressed(const sf::Event& event) {
                     if (station) {
                         // Select the station
                         worldMap->SetSelectedStation(station);
-                        // Start dragging the station
-                        isDraggingStation = true;
-                        selectedStation = station;
-                        // Set editingLine to the line being edited
-                        editingLine = selectedLine;
+                        // Deselect the line
+                        if (selectedLine) {
+                            worldMap->SetSelectedLine(nullptr);
+                            selectedLine = nullptr;
+                        }
                     }
                 }
             }

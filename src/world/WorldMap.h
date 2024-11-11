@@ -64,6 +64,13 @@ public:
 
     Line* GetLineAtPositionRecursive(Line* line, const sf::Vector2f& position, float zoomLevel);
 
+    void StartExtendingLine(Line* line, int nodeIndex);
+
+    // Methods to check if we're extending a line and get related information
+    bool IsExtendingLine() const;
+    Line* GetLineBeingExtended() const;
+    int GetExtendNodeIndex() const;
+
 private:
     // Paths to data files (GeoJSON files for different types of areas)
     std::string geoJsonFilePath;            // File path for general geographic data
@@ -89,5 +96,5 @@ private:
     // Pointer to the currently selected line
     Line* selectedLine = nullptr;
 
-    Station* selectedStation; // Pointer to the currently selected station
+    Station* selectedStation = nullptr; // Initialize to nullptr
 };
