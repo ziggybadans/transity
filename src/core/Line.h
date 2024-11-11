@@ -98,6 +98,9 @@ public:
     bool IsAncestorOf(const Line* other) const;
     bool IsDescendantOf(const Line* other) const;
 
+    // Method to get the index of a node at a given position, recursively searches child lines
+    int GetNodeIndexAtPositionRecursive(const sf::Vector2f& position, float zoomLevel, Line*& outLine) const;
+
 private:
     std::vector<LineNode> nodes; // Nodes representing the points of the line.
 

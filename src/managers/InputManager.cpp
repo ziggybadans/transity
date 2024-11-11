@@ -176,14 +176,12 @@ void InputManager::OnMouseButtonPressed(const sf::Event& event) {
         sf::Keyboard::isKeyPressed(sf::Keyboard::RShift);
 
     if (event.mouseButton.button == sf::Mouse::Right) {
-        if (isShiftHeld) {
+        if (isShiftHeld && worldMap->IsBuildingLine()) {
             // Shift + Right-click to finish building the line
-            if (worldMap->IsBuildingLine()) {
-                worldMap->FinishCurrentLine();
-                startingStation = nullptr;
-            }
+            worldMap->FinishCurrentLine();
+            startingStation = nullptr;
         }
-        else {
+        else if (!isShiftHeld) {
             // Right-click to add a new station
             worldMap->AddStation(worldPos);
         }
@@ -192,25 +190,16 @@ void InputManager::OnMouseButtonPressed(const sf::Event& event) {
         if (isShiftHeld) {
             // Shift + Left-click to start or continue building a line
             if (!worldMap->IsBuildingLine()) {
-                // Check if user clicked on a node or station on an existing line
                 Line* line = worldMap->GetLineAtPosition(worldPos, currentZoom);
                 if (line) {
                     int nodeIndex = line->GetNodeIndexAtPosition(worldPos, currentZoom);
                     if (nodeIndex != -1) {
-                        const std::vector<LineNode>& nodes = line->GetNodes();
-                        if (nodeIndex == 0 || nodeIndex == static_cast<int>(nodes.size()) - 1) {
-                            // Clicked on the start or end node - extend the main line
-                            worldMap->StartExtendingLine(line, nodeIndex);
-                        }
-                        else {
-                            // Clicked on a middle node - create a branch line
-                            const LineNode& startingNode = nodes[nodeIndex];
-                            worldMap->StartBuildingBranch(line, startingNode);
-                        }
+                        // Start building branch from this node
+                        const LineNode& startingNode = line->GetNodes()[nodeIndex];
+                        worldMap->StartBuildingBranch(line, startingNode);
                     }
                 }
                 else {
-                    // Start building line from a station
                     Station* station = worldMap->GetStationAtPosition(worldPos, currentZoom);
                     if (station) {
                         worldMap->StartBuildingLine(station);
@@ -232,55 +221,33 @@ void InputManager::OnMouseButtonPressed(const sf::Event& event) {
         else {
             if (selectedLine && selectedLine->IsEditing()) {
                 // In edit mode, check if a node is clicked
-                int nodeIndex = selectedLine->GetNodeIndexAtPosition(worldPos, currentZoom);
-                if (selectedLine && selectedLine->IsEditing()) {
-                    // In edit mode, check if a node is clicked
-                    int nodeIndex = selectedLine->GetNodeIndexAtPosition(worldPos, currentZoom);
-                    if (nodeIndex != -1) {
-                        const auto& nodes = selectedLine->GetNodes();
-                        if (!nodes[nodeIndex].IsStation()) {
-                            // Node is selected and is not a station
-                            isDraggingNode = true;
-                            selectedNodeIndex = nodeIndex;
-                            editingLine = selectedLine;
-                        }
-                        else {
-                            // Node is a station
-                            // Start dragging the station
-                            Station* station = nodes[nodeIndex].station;
-                            if (station) {
-                                worldMap->SetSelectedStation(station);
-                                isDraggingStation = true;
-                                selectedStation = station;
-                                editingLine = selectedLine;
-                            }
-                        }
+                Line* outLine = nullptr;
+                int nodeIndex = selectedLine->GetNodeIndexAtPositionRecursive(worldPos, currentZoom, outLine);
+                if (nodeIndex != -1 && outLine != nullptr) {
+                    const auto& nodes = outLine->GetNodes();
+                    if (!nodes[nodeIndex].IsStation()) {
+                        // Node is selected and is not a station
+                        isDraggingNode = true;
+                        selectedNodeIndex = nodeIndex;
+                        editingLine = outLine;
                     }
-                    else {
-                        // Handle other clicks if necessary
-                    }
-                }
-                else {
-                    // Check if a station is clicked
-                    Station* station = worldMap->GetStationAtPosition(worldPos, currentZoom);
-                    if (station) {
-                        // Select the station
+                    else if (nodes[nodeIndex].station) {
+                        // Node is a station
+                        Station* station = nodes[nodeIndex].station;
                         worldMap->SetSelectedStation(station);
-                        // Deselect the line
-                        if (selectedLine) {
-                            worldMap->SetSelectedLine(nullptr);
-                            selectedLine = nullptr;
-                        }
+                        isDraggingStation = true;
+                        selectedStation = station;
+                        editingLine = outLine;
                     }
                 }
+                // Optionally handle other click scenarios here
             }
             else {
                 // Left-click without Shift: select station or line
                 Station* station = worldMap->GetStationAtPosition(worldPos, currentZoom);
                 if (station) {
-                    // Select the station
+                    // Select the station and deselect any selected line
                     worldMap->SetSelectedStation(station);
-                    // Deselect the line
                     if (selectedLine) {
                         worldMap->SetSelectedLine(nullptr);
                         selectedLine = nullptr;
@@ -292,7 +259,7 @@ void InputManager::OnMouseButtonPressed(const sf::Event& event) {
                     if (line) {
                         worldMap->SetSelectedLine(line);
                         selectedLine = line;
-                        // Deselect the station
+                        // Deselect any selected station
                         worldMap->SetSelectedStation(nullptr);
                     }
                     else {

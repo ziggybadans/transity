@@ -554,7 +554,25 @@ void Renderer::renderLineRecursive(const Line* line, sf::RenderWindow& window, f
     }
 
     if (line->IsEditing()) {
-        // Existing code for rendering editing nodes...
+        // Render nodes for editing
+        const auto& nodes = line->GetNodes();
+        for (const auto& node : nodes) {
+            sf::Vector2f nodePosition = node.GetPosition();
+
+            // Adjust node size based on zoom level
+            float nodeRadius = 5.0f * zoomLevel;
+
+            sf::CircleShape nodeCircle(nodeRadius);
+            nodeCircle.setOrigin(nodeRadius, nodeRadius);
+            nodeCircle.setPosition(nodePosition);
+            nodeCircle.setFillColor(sf::Color::Green);
+
+            if (node.IsStation()) {
+                nodeCircle.setFillColor(sf::Color::Blue);
+            }
+
+            window.draw(nodeCircle);
+        }
     }
 
     // Recursively render child lines

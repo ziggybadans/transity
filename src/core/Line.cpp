@@ -497,3 +497,20 @@ bool Line::IsDescendantOf(const Line* other) const {
     }
     return false;
 }
+
+int Line::GetNodeIndexAtPositionRecursive(const sf::Vector2f& position, float zoomLevel, Line*& outLine) const {
+    // Check this line
+    int index = GetNodeIndexAtPosition(position, zoomLevel);
+    if (index != -1) {
+        outLine = const_cast<Line*>(this);
+        return index;
+    }
+    // Recursively check child lines
+    for (const auto& childLine : childLines) {
+        int childIndex = childLine->GetNodeIndexAtPositionRecursive(position, zoomLevel, outLine);
+        if (childIndex != -1) {
+            return childIndex;
+        }
+    }
+    return -1;
+}
