@@ -1,88 +1,100 @@
 #pragma once
 
-#include <SFML/Graphics.hpp>
-#include <string>
-#include <vector>
+#include "MapData.h"
+#include "MapLoader.h"
+#include "../managers/StationManager.h"
+#include "../managers/LineManager.h"
+#include "LineBuilder.h"
 #include "../managers/InitializationManager.h"
 #include "../graphics/Camera.h"
-#include <nlohmann/json.hpp>
-
-// Forward declaration for Earcut
-namespace mapbox {
-    template <typename T>
-    struct Earcut;
-}
-
-enum class PlaceCategory {
-    CapitalCity,
-    City,
-    Town,
-    Suburb,
-    Unknown
-};
-
-struct PlaceArea {
-    std::string name;
-    PlaceCategory category;
-    sf::VertexArray filledShape;  // The filled shape of the area
-    sf::VertexArray outline;      // The outline of the area
-    sf::FloatRect bounds;         // Precomputed bounding rectangle
-};
 
 class WorldMap : public IInitializable {
 public:
-    // Constructor accepts the path to the GeoJSON files
     WorldMap(const std::string& geoJsonPath,
         const std::string& citiesGeoJsonPath,
         const std::string& townsGeoJsonPath,
         const std::string& suburbsGeoJsonPath);
     ~WorldMap();
 
-    // Initialize by loading GeoJSON and creating shapes
     bool Init() override;
 
-    // Render the map
     void Render(sf::RenderWindow& window, const Camera& camera) const;
 
-    // Get world dimensions
     float GetWorldWidth() const { return WORLD_WIDTH; }
     float GetWorldHeight() const { return WORLD_HEIGHT; }
 
-    // Get place areas
     const std::vector<PlaceArea>& GetPlaceAreas() const;
 
+    // Methods to manage stations
+    bool AddStation(const sf::Vector2f& position);
+    Station* GetStationAtPosition(const sf::Vector2f& position, float zoomLevel);
+    const std::vector<Station>& GetStations() const;
+
+    // Methods to manage lines
+    void AddLine(std::unique_ptr<Line> line);
+    const std::vector<std::unique_ptr<Line>>& GetLines() const;
+    std::vector<std::unique_ptr<Line>>& GetLines();
+    Line* GetLineAtPosition(const sf::Vector2f& position, float zoomLevel);
+
+    // Methods to manage the line currently being built by the player
+    void StartBuildingLine(Station* station);
+    void AddNodeToCurrentLine(const sf::Vector2f& position);
+    void AddStationToCurrentLine(Station* station);
+    void FinishCurrentLine();
+    const Line* GetCurrentLine() const;
+    bool IsBuildingLine() const;
+
+    // Set the current mouse position on the map
+    void SetCurrentMousePosition(const sf::Vector2f& position);
+    sf::Vector2f currentMousePosition;  // Current mouse position on the map
+
+    // Methods to handle curve state for line segments
+    void SetNextSegmentCurved(bool curved);
+    bool GetIsNextSegmentCurved() const;
+
+    // Methods to manage the selected line
+    void SetSelectedLine(Line* line);
+    Line* GetSelectedLine() const;
+
+    void SetSelectedStation(Station* station);
+    Station* GetSelectedStation() const;
+
+    // Methods to manage the line currently being built by the player
+    void StartBuildingBranch(Line* parentLine, const LineNode& startingNode);
+
+    Line* GetLineAtPositionRecursive(Line* line, const sf::Vector2f& position, float zoomLevel);
+
+    void StartExtendingLine(Line* line, int nodeIndex);
+
+    // Methods to check if we're extending a line and get related information
+    bool IsExtendingLine() const;
+    Line* GetLineBeingExtended() const;
+    int GetExtendNodeIndex() const;
+
 private:
-    // Paths to data files
-    std::string geoJsonFilePath;
-    std::string citiesGeoJsonFilePath;
-    std::string townsGeoJsonFilePath;
-    std::string suburbsGeoJsonFilePath;
+    // Paths to data files (GeoJSON files for different types of areas)
+    std::string geoJsonFilePath;            // File path for general geographic data
+    std::string citiesGeoJsonFilePath;      // File path for city data
+    std::string townsGeoJsonFilePath;       // File path for town data
+    std::string suburbsGeoJsonFilePath;     // File path for suburb data
 
-    // Store the shapes as VertexArrays
-    std::vector<sf::VertexArray> landShapes;
+    // Map data and loader
+    MapData mapData;
+    MapLoader mapLoader;
 
-    // Store place areas
-    std::vector<PlaceArea> placeAreas;
-
-    // World dimensions (adjust as needed)
+    // World dimensions (width and height of the map in game units)
     static constexpr float WORLD_WIDTH = 3600.0f;
     static constexpr float WORLD_HEIGHT = 1800.0f;
 
-    // Helper functions for loading GeoJSON data
-    bool loadGeoJSON();
-    bool processGeometry(const nlohmann::json& geometry, const sf::Color& color, std::vector<sf::VertexArray>& targetShapes, const std::string& name = "", PlaceCategory category = PlaceCategory::Unknown);
-    bool processPolygon(const nlohmann::json& coordinates, const sf::Color& color, std::vector<sf::VertexArray>& targetShapes, const std::string& name = "", PlaceCategory category = PlaceCategory::Unknown);
-    bool processMultiPolygon(const nlohmann::json& coordinates, const sf::Color& color, std::vector<sf::VertexArray>& targetShapes, const std::string& name = "", PlaceCategory category = PlaceCategory::Unknown);
-    bool createVertexArrayFromPolygon(const std::vector<std::vector<sf::Vector2f>>& polygon, const sf::Color& color, std::vector<sf::VertexArray>& targetShapes, const std::string& name = "", PlaceCategory category = PlaceCategory::Unknown);
+    // Station and Line managers
+    StationManager stationManager;
+    LineManager lineManager;
 
-    // Helper to project geographic coordinates to world coordinates
-    sf::Vector2f project(const sf::Vector2f& lonLat) const;
+    // Line building
+    LineBuilder lineBuilder;
 
-    // Constants
-    static const sf::Color LAND_COLOR;
+    // Pointer to the currently selected line
+    Line* selectedLine = nullptr;
 
-    // Colors for different place categories
-    static const sf::Color CITY_COLOR;
-    static const sf::Color TOWN_COLOR;
-    static const sf::Color SUBURB_COLOR;
+    Station* selectedStation = nullptr; // Initialize to nullptr
 };

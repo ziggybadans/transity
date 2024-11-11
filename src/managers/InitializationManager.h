@@ -4,16 +4,19 @@
 
 class IInitializable {
 public:
+    // Pure virtual function to initialize the module, must be implemented by derived classes.
     virtual bool Init() = 0;
-    virtual ~IInitializable() = default;
+    virtual ~IInitializable() = default; // Default virtual destructor.
 };
 
 class InitializationManager {
 public:
+    // Registers a module that implements the IInitializable interface.
     void Register(std::shared_ptr<IInitializable> initModule) {
         modules.emplace_back(initModule);
     }
 
+    // Initializes all registered modules. Returns false if any module fails to initialize.
     bool InitAll() {
         for (auto& module : modules) {
             if (!module->Init()) {
@@ -24,5 +27,6 @@ public:
     }
 
 private:
+    // Vector containing all the modules that need to be initialized.
     std::vector<std::shared_ptr<IInitializable>> modules;
 };

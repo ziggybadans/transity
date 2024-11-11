@@ -1,34 +1,5 @@
 #include "WorldMap.h"
 #include <iostream>
-#include <fstream>
-#include <nlohmann/json.hpp>
-#include <mapbox/earcut.hpp>
-
-using json = nlohmann::json;
-
-// Mapbox Earcut namespace specialization for SFML's sf::Vector2f
-namespace mapbox {
-    namespace util {
-        template <>
-        struct nth<0, sf::Vector2f> {
-            static auto get(const sf::Vector2f& t) {
-                return t.x;
-            }
-        };
-        template <>
-        struct nth<1, sf::Vector2f> {
-            static auto get(const sf::Vector2f& t) {
-                return t.y;
-            }
-        };
-    }
-}
-
-// Define static constants
-const sf::Color WorldMap::LAND_COLOR = sf::Color(231, 232, 234);
-const sf::Color WorldMap::CITY_COLOR = sf::Color(236, 214, 214);
-const sf::Color WorldMap::TOWN_COLOR = sf::Color(214, 214, 236);
-const sf::Color WorldMap::SUBURB_COLOR = sf::Color(214, 236, 214);
 
 WorldMap::WorldMap(const std::string& geoJsonPath,
     const std::string& citiesGeoJsonPath,
@@ -37,275 +8,19 @@ WorldMap::WorldMap(const std::string& geoJsonPath,
     : geoJsonFilePath(geoJsonPath),
     citiesGeoJsonFilePath(citiesGeoJsonPath),
     townsGeoJsonFilePath(townsGeoJsonPath),
-    suburbsGeoJsonFilePath(suburbsGeoJsonPath) {}
+    suburbsGeoJsonFilePath(suburbsGeoJsonPath),
+    mapLoader(mapData),
+    selectedStation(nullptr) // Explicitly initialize to nullptr
+{}
 
 WorldMap::~WorldMap() {}
 
 bool WorldMap::Init() {
-    if (!loadGeoJSON()) {
+    if (!mapLoader.LoadGeoJSONFiles(geoJsonFilePath, citiesGeoJsonFilePath, townsGeoJsonFilePath, suburbsGeoJsonFilePath)) {
         std::cerr << "Failed to load GeoJSON data." << std::endl;
         return false;
     }
-
     return true;
-}
-
-bool WorldMap::loadGeoJSON() {
-    // Load land shapes
-    std::ifstream landFile(geoJsonFilePath);
-    if (!landFile.is_open()) {
-        std::cerr << "Could not open GeoJSON file: " << geoJsonFilePath << std::endl;
-        return false;
-    }
-
-    json landData;
-    try {
-        landFile >> landData;
-    }
-    catch (const json::parse_error& e) {
-        std::cerr << "JSON Parsing error: " << e.what() << std::endl;
-        return false;
-    }
-
-    if (!landData.contains("geometries") || !landData["geometries"].is_array()) {
-        std::cerr << "Invalid GeoJSON structure: Missing 'geometries' array." << std::endl;
-        return false;
-    }
-
-    const auto& geometries = landData["geometries"];
-    for (const auto& geometry : geometries) {
-        if (!processGeometry(geometry, LAND_COLOR, landShapes)) {
-            std::cerr << "Failed to process geometry." << std::endl;
-        }
-    }
-
-    // Load cities
-    std::ifstream citiesFile(citiesGeoJsonFilePath);
-    if (!citiesFile.is_open()) {
-        std::cerr << "Could not open cities GeoJSON file: " << citiesGeoJsonFilePath << std::endl;
-        return false;
-    }
-
-    json citiesData;
-    try {
-        citiesFile >> citiesData;
-    }
-    catch (const json::parse_error& e) {
-        std::cerr << "JSON Parsing error in cities GeoJSON: " << e.what() << std::endl;
-        return false;
-    }
-
-    if (!citiesData.contains("features") || !citiesData["features"].is_array()) {
-        std::cerr << "Invalid cities GeoJSON structure: Missing 'features' array." << std::endl;
-        return false;
-    }
-
-    const auto& cityFeatures = citiesData["features"];
-    for (const auto& feature : cityFeatures) {
-        if (!feature.contains("geometry") || !feature["geometry"].is_object()) {
-            continue;
-        }
-        std::string name = feature["properties"].value("name", "Unnamed City");
-        processGeometry(feature["geometry"], CITY_COLOR, landShapes, name, PlaceCategory::City);
-    }
-
-    // Load towns
-    std::ifstream townsFile(townsGeoJsonFilePath);
-    if (!townsFile.is_open()) {
-        std::cerr << "Could not open towns GeoJSON file: " << townsGeoJsonFilePath << std::endl;
-        return false;
-    }
-
-    json townsData;
-    try {
-        townsFile >> townsData;
-    }
-    catch (const json::parse_error& e) {
-        std::cerr << "JSON Parsing error in towns GeoJSON: " << e.what() << std::endl;
-        return false;
-    }
-
-    if (!townsData.contains("features") || !townsData["features"].is_array()) {
-        std::cerr << "Invalid towns GeoJSON structure: Missing 'features' array." << std::endl;
-        return false;
-    }
-
-    const auto& townFeatures = townsData["features"];
-    for (const auto& feature : townFeatures) {
-        if (!feature.contains("geometry") || !feature["geometry"].is_object()) {
-            continue;
-        }
-        std::string name = feature["properties"].value("name", "Unnamed Town");
-        processGeometry(feature["geometry"], TOWN_COLOR, landShapes, name, PlaceCategory::Town);
-    }
-
-    // Load suburbs
-    std::ifstream suburbsFile(suburbsGeoJsonFilePath);
-    if (!suburbsFile.is_open()) {
-        std::cerr << "Could not open suburbs GeoJSON file: " << suburbsGeoJsonFilePath << std::endl;
-        return false;
-    }
-
-    json suburbsData;
-    try {
-        suburbsFile >> suburbsData;
-    }
-    catch (const json::parse_error& e) {
-        std::cerr << "JSON Parsing error in suburbs GeoJSON: " << e.what() << std::endl;
-        return false;
-    }
-
-    if (!suburbsData.contains("features") || !suburbsData["features"].is_array()) {
-        std::cerr << "Invalid suburbs GeoJSON structure: Missing 'features' array." << std::endl;
-        return false;
-    }
-
-    const auto& suburbFeatures = suburbsData["features"];
-    for (const auto& feature : suburbFeatures) {
-        if (!feature.contains("geometry") || !feature["geometry"].is_object()) {
-            continue;
-        }
-        std::string name = feature["properties"].value("name", "Unnamed Suburb");
-        processGeometry(feature["geometry"], SUBURB_COLOR, landShapes, name, PlaceCategory::Suburb);
-    }
-
-    return true;
-}
-
-bool WorldMap::processGeometry(const json& geometry, const sf::Color& color, std::vector<sf::VertexArray>& targetShapes, const std::string& name, PlaceCategory category) {
-    if (!geometry.contains("type") || !geometry.contains("coordinates")) {
-        std::cerr << "Invalid geometry object: Missing 'type' or 'coordinates'." << std::endl;
-        return false;
-    }
-
-    std::string geometryType = geometry["type"];
-    const auto& coordinates = geometry["coordinates"];
-
-    if (geometryType == "Polygon") {
-        return processPolygon(coordinates, color, targetShapes, name, category);
-    }
-    else if (geometryType == "MultiPolygon") {
-        return processMultiPolygon(coordinates, color, targetShapes, name, category);
-    }
-    else {
-        std::cerr << "Unsupported geometry type: " << geometryType << std::endl;
-        return false;
-    }
-}
-
-bool WorldMap::processPolygon(const json& coordinates, const sf::Color& color, std::vector<sf::VertexArray>& targetShapes, const std::string& name, PlaceCategory category) {
-    if (!coordinates.is_array()) {
-        std::cerr << "Invalid Polygon coordinates." << std::endl;
-        return false;
-    }
-
-    std::vector<std::vector<sf::Vector2f>> polygon;
-    for (const auto& ring : coordinates) {
-        if (!ring.is_array()) {
-            std::cerr << "Invalid ring in Polygon." << std::endl;
-            continue;
-        }
-
-        std::vector<sf::Vector2f> ringPoints;
-        for (const auto& point : ring) {
-            if (!point.is_array() || point.size() < 2) {
-                std::cerr << "Invalid point in Polygon ring." << std::endl;
-                continue;
-            }
-
-            float lon = point[0];
-            float lat = point[1];
-            ringPoints.push_back(project({ lon, lat }));
-        }
-
-        if (!ringPoints.empty()) {
-            polygon.push_back(ringPoints);
-        }
-    }
-
-    return !polygon.empty() && createVertexArrayFromPolygon(polygon, color, targetShapes, name, category);
-}
-
-bool WorldMap::processMultiPolygon(const json& coordinates, const sf::Color& color, std::vector<sf::VertexArray>& targetShapes, const std::string& name, PlaceCategory category) {
-    if (!coordinates.is_array()) {
-        std::cerr << "Invalid MultiPolygon coordinates." << std::endl;
-        return false;
-    }
-
-    for (const auto& polygons : coordinates) {
-        if (!processPolygon(polygons, color, targetShapes, name, category)) {
-            std::cerr << "Failed to process Polygon in MultiPolygon." << std::endl;
-        }
-    }
-
-    return true;
-}
-
-bool WorldMap::createVertexArrayFromPolygon(
-    const std::vector<std::vector<sf::Vector2f>>& polygon,
-    const sf::Color& color,
-    std::vector<sf::VertexArray>& targetShapes,
-    const std::string& name,
-    PlaceCategory category
-) {
-    // Triangulate the polygon using Earcut
-    std::vector<uint32_t> indices = mapbox::earcut<uint32_t>(polygon);
-
-    // Flatten the polygon points
-    std::vector<sf::Vector2f> flattenedPoints;
-    for (const auto& ring : polygon) {
-        flattenedPoints.insert(flattenedPoints.end(), ring.begin(), ring.end());
-    }
-
-    // Create a filled VertexArray
-    sf::VertexArray filledVA(sf::Triangles, indices.size());
-    for (size_t i = 0; i < indices.size(); ++i) {
-        if (indices[i] < flattenedPoints.size()) {
-            filledVA[i].position = flattenedPoints[indices[i]];
-            filledVA[i].color = color;
-        }
-        else {
-            std::cerr << "Index out of bounds during triangulation." << std::endl;
-            return false;
-        }
-    }
-
-    // Create an outline VertexArray using LineStrip
-    sf::VertexArray outlineVA(sf::LineStrip);
-    for (const auto& ring : polygon) {
-        for (const auto& point : ring) {
-            outlineVA.append(sf::Vertex(point, sf::Color::Black)); // Outline color (e.g., Black)
-        }
-        // Close the loop by connecting the last point to the first
-        if (!ring.empty()) {
-            outlineVA.append(sf::Vertex(ring.front(), sf::Color::Black));
-        }
-    }
-
-    if (category != PlaceCategory::Unknown && !name.empty()) {
-        // Store in placeAreas
-        PlaceArea area;
-        area.name = name;
-        area.category = category;
-        area.filledShape = filledVA;
-        area.outline = outlineVA;
-        area.bounds = filledVA.getBounds(); // Compute bounds here
-        placeAreas.push_back(area);
-    }
-    else {
-        // Store in targetShapes (e.g., landShapes)
-        targetShapes.push_back(filledVA);
-        targetShapes.push_back(outlineVA);
-    }
-
-    return true;
-}
-
-sf::Vector2f WorldMap::project(const sf::Vector2f& lonLat) const {
-    // Simple equirectangular projection
-    float x = (lonLat.x + 180.0f) / 360.0f * WORLD_WIDTH;
-    float y = (90.0f - lonLat.y) / 180.0f * WORLD_HEIGHT;
-    return { x, y };
 }
 
 void WorldMap::Render(sf::RenderWindow& window, const Camera& camera) const {
@@ -313,10 +28,7 @@ void WorldMap::Render(sf::RenderWindow& window, const Camera& camera) const {
     sf::View originalView = window.getView();
     window.setView(camera.GetView());
 
-    // Get the camera's view bounds
-    sf::FloatRect viewBounds = camera.GetView().getViewport();
-
-    // Alternatively, calculate the view rectangle in world coordinates
+    // Calculate the view rectangle in world coordinates
     sf::Vector2f viewCenter = camera.GetView().getCenter();
     sf::Vector2f viewSize = camera.GetView().getSize();
     sf::FloatRect cameraRect(viewCenter.x - viewSize.x / 2.0f,
@@ -325,6 +37,7 @@ void WorldMap::Render(sf::RenderWindow& window, const Camera& camera) const {
         viewSize.y);
 
     // Draw only shapes that intersect with the camera's view
+    const auto& landShapes = mapData.GetLandShapes();
     for (const auto& shape : landShapes) {
         sf::FloatRect shapeBounds = shape.getBounds();
         if (cameraRect.intersects(shapeBounds)) {
@@ -337,5 +50,158 @@ void WorldMap::Render(sf::RenderWindow& window, const Camera& camera) const {
 }
 
 const std::vector<PlaceArea>& WorldMap::GetPlaceAreas() const {
-    return placeAreas;
+    return mapData.GetPlaceAreas();
+}
+
+bool WorldMap::AddStation(const sf::Vector2f& position) {
+    return stationManager.AddStation(position);
+}
+
+Station* WorldMap::GetStationAtPosition(const sf::Vector2f& position, float zoomLevel) {
+    return stationManager.GetStationAtPosition(position, zoomLevel);
+}
+
+const std::vector<Station>& WorldMap::GetStations() const {
+    return stationManager.GetStations();
+}
+
+void WorldMap::AddLine(std::unique_ptr<Line> line) {
+    lineManager.AddLine(std::move(line));
+}
+
+const std::vector<std::unique_ptr<Line>>& WorldMap::GetLines() const {
+    return lineManager.GetLines();
+}
+
+std::vector<std::unique_ptr<Line>>& WorldMap::GetLines() {
+    return lineManager.GetLines();
+}
+
+Line* WorldMap::GetLineAtPosition(const sf::Vector2f& position, float zoomLevel) {
+    for (const auto& line : lineManager.GetLines()) {
+        Line* foundLine = GetLineAtPositionRecursive(line.get(), position, zoomLevel);
+        if (foundLine) {
+            return foundLine;
+        }
+    }
+    return nullptr;
+}
+
+// Helper method to search lines recursively
+Line* WorldMap::GetLineAtPositionRecursive(Line* line, const sf::Vector2f& position, float zoomLevel) {
+    // Check if position is on this line
+    if (line->IsPointOnLine(position, zoomLevel)) {
+        return line;
+    }
+    // Check child lines
+    for (const auto& childLine : line->GetChildLines()) {
+        Line* foundLine = GetLineAtPositionRecursive(childLine.get(), position, zoomLevel);
+        if (foundLine) {
+            return foundLine;
+        }
+    }
+    return nullptr;
+}
+
+void WorldMap::StartBuildingLine(Station* station) {
+    lineBuilder.StartBuildingLine(station);
+}
+
+void WorldMap::AddNodeToCurrentLine(const sf::Vector2f& position) {
+    lineBuilder.AddNodeToCurrentLine(position);
+}
+
+void WorldMap::AddStationToCurrentLine(Station* station) {
+    lineBuilder.AddStationToCurrentLine(station);
+}
+
+// Finish the current line or branch
+void WorldMap::FinishCurrentLine() {
+    if (lineBuilder.IsBuildingLine()) {
+        std::unique_ptr<Line> newLine = lineBuilder.ExtractCurrentLine();
+        if (newLine) {
+            Line* parentLine = newLine->GetParentLine();
+            if (parentLine) {
+                parentLine->AddChildLine(std::move(newLine));
+            }
+            else {
+                lineManager.AddLine(std::move(newLine));
+            }
+        }
+        else if (lineBuilder.GetLineBeingExtended()) {
+            // Extension was handled directly by LineBuilder
+            Line* extendedLine = lineBuilder.GetLineBeingExtended();
+            extendedLine->GenerateSplinePoints(); // Recalculate spline points after extension
+            // Additional actions if necessary
+        }
+        // Reset LineBuilder's state
+        lineBuilder.FinishCurrentLine();
+    }
+}
+
+const Line* WorldMap::GetCurrentLine() const {
+    return lineBuilder.GetCurrentLine();
+}
+
+bool WorldMap::IsBuildingLine() const {
+    return lineBuilder.IsBuildingLine();
+}
+
+void WorldMap::SetCurrentMousePosition(const sf::Vector2f& position) {
+    currentMousePosition = position;
+}
+
+void WorldMap::SetNextSegmentCurved(bool curved) {
+    lineBuilder.SetNextSegmentCurved(curved);
+}
+
+bool WorldMap::GetIsNextSegmentCurved() const {
+    return lineBuilder.GetIsNextSegmentCurved();
+}
+
+void WorldMap::SetSelectedLine(Line* line) {
+    selectedLine = line;
+}
+
+Line* WorldMap::GetSelectedLine() const {
+    return selectedLine;
+}
+
+void WorldMap::SetSelectedStation(Station* station) {
+    selectedStation = station;
+}
+
+Station* WorldMap::GetSelectedStation() const {
+    return selectedStation;
+}
+
+// Start building a branch line
+void WorldMap::StartBuildingBranch(Line* parentLine, const LineNode& startingNode) {
+    lineBuilder.StartBuildingBranch(parentLine, startingNode);
+}
+
+void WorldMap::StartExtendingLine(Line* line, int nodeIndex) {
+    if (!line) {
+        std::cerr << "Attempted to extend a null line." << std::endl;
+        return;
+    }
+    if (nodeIndex != 0 && nodeIndex != static_cast<int>(line->GetNodes().size()) - 1) {
+        std::cerr << "Attempted to extend a line from a non-end node." << std::endl;
+        return;
+    }
+
+    // Inform the LineBuilder to extend the line
+    lineBuilder.StartExtendingLine(line, nodeIndex);
+}
+
+bool WorldMap::IsExtendingLine() const {
+    return lineBuilder.IsExtendingLine();
+}
+
+Line* WorldMap::GetLineBeingExtended() const {
+    return lineBuilder.GetLineBeingExtended();
+}
+
+int WorldMap::GetExtendNodeIndex() const {
+    return lineBuilder.GetExtendNodeIndex();
 }

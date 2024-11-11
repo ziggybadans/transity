@@ -38,15 +38,16 @@ public:
     // Get a reference to the SFML window
     sf::RenderWindow& GetWindow();
 
+    // Enable or disable fullscreen mode
     void SetFullscreen(bool enable);
 
 private:
-    std::unique_ptr<sf::RenderWindow> window;
+    std::unique_ptr<sf::RenderWindow> window; // Pointer to the SFML window
 
     // Configuration parameters
-    sf::VideoMode videoMode;
-    std::string windowTitle;
-    sf::ContextSettings contextSettings;
+    sf::VideoMode videoMode; // Video mode (resolution, color depth, etc.)
+    std::string windowTitle; // Title of the window
+    sf::ContextSettings contextSettings; // OpenGL context settings
 
-    bool fullscreen;
+    bool fullscreen; // Flag to indicate whether fullscreen is enabled
 };

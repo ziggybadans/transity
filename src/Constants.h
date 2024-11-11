@@ -11,4 +11,6 @@ namespace Constants {
     constexpr float CAMERA_PAN_SPEED = 2000.0f;   // 1000 units per second
     constexpr float CAMERA_MIN_ZOOM = 0.001f;      // Minimum zoom level
     constexpr float CAMERA_MAX_ZOOM = 1.0f;       // Maximum zoom level
+
+    static constexpr float kmPerUnit = 11.1f; // Approximate km per game unit
 }
