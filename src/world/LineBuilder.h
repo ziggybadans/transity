@@ -21,6 +21,9 @@ public:
     // Method to extract the current line and reset builder
     std::unique_ptr<Line> ExtractCurrentLine();
 
+    // Method to start building a branch
+    void StartBuildingBranch(Line* parentLine, const LineNode& startingNode);
+
 private:
     std::unique_ptr<Line> currentLine;
     bool isBuildingLine = false;

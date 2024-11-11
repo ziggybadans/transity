@@ -8,9 +8,9 @@ Line class represents a route composed of nodes along which trains can move. It 
 movement, the rendering of the line, and related attributes like color, thickness, and trains running along the line.
 </summary>
 */
-Line::Line()
+Line::Line(Line* parent)
     : active(true), color(sf::Color(237, 102, 1)), thickness(5.0f), totalLength(0.0f),
-    speedInKmPerHour(1000.0f)
+    speedInKmPerHour(1000.0f), parentLine(parent)
 {}
 
 /**
@@ -194,6 +194,16 @@ void Line::Render(sf::RenderWindow& window, float zoomLevel, bool isSelected) co
     }
 
     window.draw(lineStrip);
+
+    // Render trains on this line
+    for (const auto& train : trains) {
+        train.Render(window, zoomLevel);
+    }
+
+    // Render child lines
+    for (const auto& childLine : childLines) {
+        childLine->Render(window, zoomLevel, isSelected);
+    }
 }
 
 /**
@@ -408,4 +418,82 @@ void Line::SetNodePosition(int index, const sf::Vector2f& newPosition) {
         nodes[index].position = newPosition;
         GenerateSplinePoints(); // Regenerate the spline after moving the node
     }
+}
+
+// Add a child line (branch)
+void Line::AddChildLine(std::unique_ptr<Line> childLine) {
+    childLines.push_back(std::move(childLine));
+}
+
+// Get the list of child lines
+const std::vector<std::unique_ptr<Line>>& Line::GetChildLines() const {
+    return childLines;
+}
+
+// Set the parent line
+void Line::SetParentLine(Line* parent) {
+    parentLine = parent;
+}
+
+// Get the parent line
+Line* Line::GetParentLine() const {
+    return parentLine;
+}
+
+// Check if a point is on the line
+bool Line::IsPointOnLine(const sf::Vector2f& position, float zoomLevel) const {
+    float tolerance = 10.0f * zoomLevel; // Adjust tolerance based on zoom level
+
+    // Check if the position is close to any segment of the line
+    for (size_t i = 0; i < splinePoints.size() - 1; ++i) {
+        sf::Vector2f p1 = splinePoints[i];
+        sf::Vector2f p2 = splinePoints[i + 1];
+        // Compute distance from point to segment
+        float distance = DistancePointToSegment(position, p1, p2);
+        if (distance <= tolerance) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Helper method to calculate distance from point to segment
+float Line::DistancePointToSegment(const sf::Vector2f& point, const sf::Vector2f& segA, const sf::Vector2f& segB) const {
+    sf::Vector2f diff = segB - segA;
+    float l2 = diff.x * diff.x + diff.y * diff.y;
+    if (l2 == 0.0f) {
+        // segA and segB are the same point
+        return std::hypot(point.x - segA.x, point.y - segA.y);
+    }
+    // Consider the line extending the segment, parameterized as segA + t (segB - segA)
+    // Find projection of point onto the line
+    float t = ((point.x - segA.x) * diff.x + (point.y - segA.y) * diff.y) / l2;
+    t = std::max(0.0f, std::min(1.0f, t)); // Clamp t to [0,1]
+    sf::Vector2f projection(segA.x + t * diff.x, segA.y + t * diff.y);
+    // Compute distance from point to projection
+    return std::hypot(point.x - projection.x, point.y - projection.y);
+}
+
+bool Line::IsAncestorOf(const Line* other) const {
+    if (!other) return false;
+    const Line* current = other->parentLine;
+    while (current) {
+        if (current == this) {
+            return true;
+        }
+        current = current->parentLine;
+    }
+    return false;
+}
+
+bool Line::IsDescendantOf(const Line* other) const {
+    if (!other) return false;
+    const Line* current = this->parentLine;
+    while (current) {
+        if (current == other) {
+            return true;
+        }
+        current = current->parentLine;
+    }
+    return false;
 }

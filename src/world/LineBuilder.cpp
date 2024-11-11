@@ -52,3 +52,22 @@ std::unique_ptr<Line> LineBuilder::ExtractCurrentLine() {
     }
     return nullptr;
 }
+
+// Start building a branch line from an existing line node
+void LineBuilder::StartBuildingBranch(Line* parentLine, const LineNode& startingNode) {
+    currentLine = std::make_unique<Line>(parentLine);
+    // Copy visual properties from parent line
+    currentLine->SetColor(parentLine->GetColor());
+    currentLine->SetThickness(parentLine->GetThickness());
+    currentLine->SetSpeed(parentLine->GetSpeed());
+
+    // Start the line from the given starting node
+    if (startingNode.IsStation()) {
+        currentLine->AddNode(startingNode.station);
+    }
+    else {
+        currentLine->AddNode(startingNode.position);
+    }
+
+    isBuildingLine = true;
+}

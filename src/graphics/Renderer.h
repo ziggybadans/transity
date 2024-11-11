@@ -1,4 +1,3 @@
-// Renderer.h
 #pragma once
 
 #include <SFML/Graphics.hpp>
@@ -44,11 +43,14 @@ private:
     void renderLines(sf::RenderWindow& window, const Camera& camera); // Renders transport lines on the map.
     void renderHoveredAreaName(sf::RenderWindow& window); // Renders the name of the currently hovered area.
 
+    // Recursive method to render a line and its child branches
+    void renderLineRecursive(const Line* line, sf::RenderWindow& window, float zoomLevel, const Line* selectedLine);
+
     // Constants
     static constexpr float HOVER_OUTLINE_THICKNESS = 2.0f; // Thickness of the outline for hovered areas.
 
     // Line segments for collision detection
-    std::vector<std::pair<sf::Vector2f, sf::Vector2f>> lineSegments;
+    mutable std::vector<std::pair<sf::Vector2f, sf::Vector2f>> lineSegments;
 
     // Private helper functions
     bool rectangleIntersectsLine(const sf::FloatRect& rect, const sf::Vector2f& p1, const sf::Vector2f& p2);

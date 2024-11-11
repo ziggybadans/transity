@@ -192,10 +192,23 @@ void InputManager::OnMouseButtonPressed(const sf::Event& event) {
         if (isShiftHeld) {
             // Shift + Left-click to start or continue building a line
             if (!worldMap->IsBuildingLine()) {
-                Station* station = worldMap->GetStationAtPosition(worldPos, currentZoom);
-                if (station) {
-                    worldMap->StartBuildingLine(station);
-                    startingStation = station;
+                // Check if user clicked on a node or station on an existing line
+                Line* line = worldMap->GetLineAtPosition(worldPos, currentZoom);
+                if (line) {
+                    int nodeIndex = line->GetNodeIndexAtPosition(worldPos, currentZoom);
+                    if (nodeIndex != -1) {
+                        // Start building branch from this node
+                        const LineNode& startingNode = line->GetNodes()[nodeIndex];
+                        worldMap->StartBuildingBranch(line, startingNode);
+                    }
+                }
+                else {
+                    // Start building line from a station
+                    Station* station = worldMap->GetStationAtPosition(worldPos, currentZoom);
+                    if (station) {
+                        worldMap->StartBuildingLine(station);
+                        startingStation = station;
+                    }
                 }
             }
             else {

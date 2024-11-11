@@ -342,35 +342,12 @@ void Renderer::renderLines(sf::RenderWindow& window, const Camera& camera) {
 
     lineSegments.clear(); // Clear previous line segments
 
-    // Render existing lines and collect line segments
+    // Render existing lines recursively
     for (const auto& linePtr : lines) {
         auto& line = *linePtr; // Dereference the unique_ptr to get the Line object
-        bool isSelected = (&line == selectedLine);
-        line.Render(window, currentZoom, isSelected);
 
-        // Collect line segments from the line
-        const std::vector<sf::Vector2f>& splinePoints = line.GetSplinePoints();
-
-        for (size_t i = 1; i < splinePoints.size(); ++i) {
-            lineSegments.emplace_back(splinePoints[i - 1], splinePoints[i]);
-        }
-
-        if (line.IsEditing()) {
-            const auto& nodes = line.GetNodes();
-
-            float dotRadius = 5.0f * currentZoom; // Adjust the size based on zoom level
-
-            sf::CircleShape dot(dotRadius);
-            dot.setOrigin(dotRadius, dotRadius); // Center the dot
-
-            for (const auto& node : nodes) {
-                if (!node.IsStation()) {
-                    dot.setPosition(node.GetPosition());
-                    dot.setFillColor(sf::Color::Blue); // Color for non-station nodes
-                    window.draw(dot);
-                }
-            }
-        }
+        // Render the line and its branches recursively
+        renderLineRecursive(&line, window, currentZoom, selectedLine);
     }
 
     // Render the current line being built
@@ -427,10 +404,21 @@ void Renderer::renderLines(sf::RenderWindow& window, const Camera& camera) {
     // Render trains
     for (const auto& linePtr : lines) {
         auto& line = *linePtr; // Dereference the unique_ptr to get the Line object
-        const auto& trains = line.GetTrains();
-        for (const auto& train : trains) {
-            train.Render(window, currentZoom);
-        }
+
+        // Render trains recursively
+        std::function<void(const Line*)> renderTrainsRecursive = [&](const Line* currentLine) {
+            const auto& trains = currentLine->GetTrains();
+            for (const auto& train : trains) {
+                train.Render(window, currentZoom);
+            }
+
+            // Recursively render trains on child lines
+            for (const auto& childLine : currentLine->GetChildLines()) {
+                renderTrainsRecursive(childLine.get());
+            }
+            };
+
+        renderTrainsRecursive(&line);
     }
 }
 
@@ -509,4 +497,38 @@ bool Renderer::lineSegmentsIntersect(const sf::Vector2f& p1, const sf::Vector2f&
         return true;
 
     return false; // Doesn't fall in any of the above cases
+}
+
+void Renderer::renderLineRecursive(const Line* line, sf::RenderWindow& window, float zoomLevel, const Line* selectedLine) {
+    if (!line) return;
+
+    // Determine if this line should be highlighted
+    bool isSelected = false;
+
+    if (line == selectedLine) {
+        // This is the selected line
+        isSelected = true;
+    }
+    else if (selectedLine && selectedLine->IsDescendantOf(line)) {
+        // The selected line is a descendant of this line
+        isSelected = true;
+    }
+
+    // Render the line
+    line->Render(window, zoomLevel, isSelected);
+
+    // Collect line segments from the line
+    const std::vector<sf::Vector2f>& splinePoints = line->GetSplinePoints();
+    for (size_t i = 1; i < splinePoints.size(); ++i) {
+        lineSegments.emplace_back(splinePoints[i - 1], splinePoints[i]);
+    }
+
+    if (line->IsEditing()) {
+        // Existing code for rendering editing nodes...
+    }
+
+    // Recursively render child lines
+    for (const auto& childLine : line->GetChildLines()) {
+        renderLineRecursive(childLine.get(), window, zoomLevel, selectedLine);
+    }
 }

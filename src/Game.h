@@ -77,6 +77,7 @@ private:
     // Separate update functions
     void UpdateNonSimulation(float dt);  // Update input, camera, UI
     void UpdateSimulation(float scaledDt); // Update simulation (e.g., trains)
+    void UpdateTrainsRecursive(Line* line, float scaledDt);
 
     void Render();  // Render the game, drawing everything to the screen
 };

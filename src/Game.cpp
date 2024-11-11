@@ -210,18 +210,24 @@ void Game::UpdateNonSimulation(float dt) {
 }
 
 void Game::UpdateSimulation(float scaledDt) {
-    // Update game objects such as trains on the map with scaled delta time
     if (worldMap) {
         auto& lines = worldMap->GetLines();  // Get all lines in the WorldMap
         for (auto& linePtr : lines) {
-            auto& line = *linePtr; // Dereference the unique_ptr to get the Line object
-            auto& trains = line.GetTrains();  // Get all trains for each line
-            for (auto& train : trains) {
-                train.Update(scaledDt);  // Update each train's position and state with scaled dt
-            }
+            UpdateTrainsRecursive(linePtr.get(), scaledDt);
         }
     }
 }
+
+void Game::UpdateTrainsRecursive(Line* line, float scaledDt) {
+    auto& trains = line->GetTrains();
+    for (auto& train : trains) {
+        train.Update(scaledDt);
+    }
+    for (auto& childLinePtr : line->GetChildLines()) {
+        UpdateTrainsRecursive(childLinePtr.get(), scaledDt);
+    }
+}
+
 
 // Handle input and window events
 void Game::ProcessEvents() {

@@ -27,9 +27,6 @@ private:
     float currentWaitTime; // Current wait time elapsed at a station.
     bool isStopped; // Indicates if the train is currently stopped at a station.
 
-    // Timer for logging every second
-    float logTimer; // Accumulates elapsed time for logging
-
     std::vector<float> stationProgressValues; // Progress values of stations
     int currentStationIndex;                  // Index of the next station
 

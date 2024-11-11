@@ -76,7 +76,29 @@ std::vector<std::unique_ptr<Line>>& WorldMap::GetLines() {
 }
 
 Line* WorldMap::GetLineAtPosition(const sf::Vector2f& position, float zoomLevel) {
-    return lineManager.GetLineAtPosition(position, zoomLevel);
+    for (const auto& line : lineManager.GetLines()) {
+        Line* foundLine = GetLineAtPositionRecursive(line.get(), position, zoomLevel);
+        if (foundLine) {
+            return foundLine;
+        }
+    }
+    return nullptr;
+}
+
+// Helper method to search lines recursively
+Line* WorldMap::GetLineAtPositionRecursive(Line* line, const sf::Vector2f& position, float zoomLevel) {
+    // Check if position is on this line
+    if (line->IsPointOnLine(position, zoomLevel)) {
+        return line;
+    }
+    // Check child lines
+    for (const auto& childLine : line->GetChildLines()) {
+        Line* foundLine = GetLineAtPositionRecursive(childLine.get(), position, zoomLevel);
+        if (foundLine) {
+            return foundLine;
+        }
+    }
+    return nullptr;
 }
 
 void WorldMap::StartBuildingLine(Station* station) {
@@ -91,12 +113,18 @@ void WorldMap::AddStationToCurrentLine(Station* station) {
     lineBuilder.AddStationToCurrentLine(station);
 }
 
+// Finish the current line or branch
 void WorldMap::FinishCurrentLine() {
     if (lineBuilder.IsBuildingLine()) {
-        auto line = lineBuilder.ExtractCurrentLine();
-        if (line) {
-            line->SetActive(false);
-            lineManager.AddLine(std::move(line));
+        std::unique_ptr<Line> newLine = lineBuilder.ExtractCurrentLine();
+        if (newLine) {
+            Line* parentLine = newLine->GetParentLine();
+            if (parentLine) {
+                parentLine->AddChildLine(std::move(newLine));
+            }
+            else {
+                lineManager.AddLine(std::move(newLine));
+            }
         }
     }
 }
@@ -135,4 +163,9 @@ void WorldMap::SetSelectedStation(Station* station) {
 
 Station* WorldMap::GetSelectedStation() const {
     return selectedStation;
+}
+
+// Start building a branch line
+void WorldMap::StartBuildingBranch(Line* parentLine, const LineNode& startingNode) {
+    lineBuilder.StartBuildingBranch(parentLine, startingNode);
 }

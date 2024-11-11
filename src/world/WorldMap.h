@@ -59,6 +59,11 @@ public:
     void SetSelectedStation(Station* station);
     Station* GetSelectedStation() const;
 
+    // Methods to manage the line currently being built by the player
+    void StartBuildingBranch(Line* parentLine, const LineNode& startingNode);
+
+    Line* GetLineAtPositionRecursive(Line* line, const sf::Vector2f& position, float zoomLevel);
+
 private:
     // Paths to data files (GeoJSON files for different types of areas)
     std::string geoJsonFilePath;            // File path for general geographic data

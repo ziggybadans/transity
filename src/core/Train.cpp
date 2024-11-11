@@ -6,14 +6,13 @@
 /**
 <summary>
 Train class represents a train that moves along a specified line in the game world. It handles the train's movement,
-direction changes, and wait times at the end points of the line.
+direction changes, and wait times at the stations along its line.
 </summary>
 */
 Train::Train(Line* line)
     : line(line),
     waitTime(2.0f),
-    progress(0.0f), currentWaitTime(0.0f), forward(true), isStopped(false),
-    logTimer(0.0f)
+    progress(0.0f), currentWaitTime(0.0f), forward(true), isStopped(false)
 {
     // Initialize the graphical representation of the train
     shape.setRadius(10.0f);

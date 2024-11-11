@@ -21,7 +21,7 @@ struct LineNode {
 
 class Line {
 public:
-    Line();
+    Line(Line* parent = nullptr);
 
     // Delete copy constructor and copy assignment operator to prevent copying
     Line(const Line&) = delete;
@@ -87,6 +87,17 @@ public:
     // Method to regenerate the spline points (make it public)
     void GenerateSplinePoints();
 
+    // Branch management
+    void AddChildLine(std::unique_ptr<Line> childLine);
+    const std::vector<std::unique_ptr<Line>>& GetChildLines() const;
+    void SetParentLine(Line* parentLine);
+    Line* GetParentLine() const;
+
+    // Method to check if a point is on the line
+    bool IsPointOnLine(const sf::Vector2f& position, float zoomLevel) const;
+    bool IsAncestorOf(const Line* other) const;
+    bool IsDescendantOf(const Line* other) const;
+
 private:
     std::vector<LineNode> nodes; // Nodes representing the points of the line.
 
@@ -114,4 +125,10 @@ private:
     float speedInKmPerHour; // Speed of trains on this line in km/h
 
     bool isEditing = false; // Flag to indicate if the line is in edit mode.
+
+    Line* parentLine; // Pointer to parent line, nullptr if main line
+    std::vector<std::unique_ptr<Line>> childLines; // Branch lines starting from this line
+
+    // Helper method to calculate distance from point to segment
+    float DistancePointToSegment(const sf::Vector2f& point, const sf::Vector2f& segA, const sf::Vector2f& segB) const;
 };
