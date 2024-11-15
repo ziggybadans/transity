@@ -9,7 +9,7 @@ public:
     StationManager();
     ~StationManager();
 
-    bool AddStation(const sf::Vector2f& position);
+    Station* AddStation(const sf::Vector2f& position);
     Station* GetStationAtPosition(const sf::Vector2f& position, float zoomLevel);
     const std::vector<Station>& GetStations() const;
 

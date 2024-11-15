@@ -5,9 +5,9 @@ StationManager::StationManager() : selectedStation(nullptr) {}
 
 StationManager::~StationManager() {}
 
-bool StationManager::AddStation(const sf::Vector2f& position) {
+Station* StationManager::AddStation(const sf::Vector2f& position) {
     stations.emplace_back(position);
-    return true;
+    return &stations.back(); // Return pointer to the newly added station
 }
 
 Station* StationManager::GetStationAtPosition(const sf::Vector2f& position, float zoomLevel) {

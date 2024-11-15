@@ -9,95 +9,101 @@
 
 class WorldMap : public IInitializable {
 public:
+    // Constructors and Destructor
     WorldMap(const std::string& geoJsonPath,
-        const std::string& citiesGeoJsonPath,
-        const std::string& townsGeoJsonPath,
-        const std::string& suburbsGeoJsonPath);
-    ~WorldMap();
+             const std::string& citiesGeoJsonPath,
+             const std::string& townsGeoJsonPath,
+             const std::string& suburbsGeoJsonPath);
+    ~WorldMap() = default;
 
+    // Delete copy constructor and copy assignment operator to prevent copying
+    WorldMap(const WorldMap&) = delete;
+    WorldMap& operator=(const WorldMap&) = delete;
+
+    // Initialization
     bool Init() override;
 
+    // Rendering
     void Render(sf::RenderWindow& window, const Camera& camera) const;
 
+    // Accessors
     float GetWorldWidth() const { return WORLD_WIDTH; }
     float GetWorldHeight() const { return WORLD_HEIGHT; }
 
     const std::vector<PlaceArea>& GetPlaceAreas() const;
 
-    // Methods to manage stations
-    bool AddStation(const sf::Vector2f& position);
+    // Station Management
+    Station* AddStation(const sf::Vector2f& position);
     Station* GetStationAtPosition(const sf::Vector2f& position, float zoomLevel);
     const std::vector<Station>& GetStations() const;
 
-    // Methods to manage lines
-    void AddLine(std::unique_ptr<Line> line);
+    // Line Management
+    Line* AddLine(std::unique_ptr<Line> line);
     const std::vector<std::unique_ptr<Line>>& GetLines() const;
-    std::vector<std::unique_ptr<Line>>& GetLines();
     Line* GetLineAtPosition(const sf::Vector2f& position, float zoomLevel);
 
-    // Methods to manage the line currently being built by the player
+    // Line Building
     void StartBuildingLine(Station* station);
+    void StartBuildingBranch(Line* parentLine, const LineNode& startingNode);
+    void StartExtendingLine(Line* line, int nodeIndex);
     void AddNodeToCurrentLine(const sf::Vector2f& position);
     void AddStationToCurrentLine(Station* station);
     void FinishCurrentLine();
+
     const Line* GetCurrentLine() const;
     bool IsBuildingLine() const;
+    bool IsExtendingLine() const;
+    Line* GetLineBeingExtended() const;
+    int GetExtendNodeIndex() const;
 
-    // Set the current mouse position on the map
-    void SetCurrentMousePosition(const sf::Vector2f& position);
-    sf::Vector2f currentMousePosition;  // Current mouse position on the map
-
-    // Methods to handle curve state for line segments
-    void SetNextSegmentCurved(bool curved);
-    bool GetIsNextSegmentCurved() const;
-
-    // Methods to manage the selected line
+    // Selection Management
     void SetSelectedLine(Line* line);
     Line* GetSelectedLine() const;
 
     void SetSelectedStation(Station* station);
     Station* GetSelectedStation() const;
 
-    // Methods to manage the line currently being built by the player
-    void StartBuildingBranch(Line* parentLine, const LineNode& startingNode);
+    // Mouse Input
+    void SetCurrentMousePosition(const sf::Vector2f& position);
+    sf::Vector2f GetCurrentMousePosition() const;
 
-    Line* GetLineAtPositionRecursive(Line* line, const sf::Vector2f& position, float zoomLevel);
-
-    void StartExtendingLine(Line* line, int nodeIndex);
-
-    // Methods to check if we're extending a line and get related information
-    bool IsExtendingLine() const;
-    Line* GetLineBeingExtended() const;
-    int GetExtendNodeIndex() const;
+    // Segment Curve State
+    void SetNextSegmentCurved(bool curved);
+    bool IsNextSegmentCurved() const;
 
 private:
-    // Paths to data files (GeoJSON files for different types of areas)
-    std::string geoJsonFilePath;            // File path for general geographic data
-    std::string citiesGeoJsonFilePath;      // File path for city data
-    std::string townsGeoJsonFilePath;       // File path for town data
-    std::string suburbsGeoJsonFilePath;     // File path for suburb data
+    // Helper Methods
+    Line* GetLineAtPositionRecursive(Line* line, const sf::Vector2f& position, float zoomLevel);
 
-    // Map data and loader
+    // Paths to data files (GeoJSON files for different types of areas)
+    const std::string geoJsonFilePath;         // File path for general geographic data
+    const std::string citiesGeoJsonFilePath;   // File path for city data
+    const std::string townsGeoJsonFilePath;    // File path for town data
+    const std::string suburbsGeoJsonFilePath;  // File path for suburb data
+
+    // Map Data and Loader
     MapData mapData;
     MapLoader mapLoader;
 
-    // World dimensions (width and height of the map in game units)
+    // World Dimensions
     static constexpr float WORLD_WIDTH = 3600.0f;
     static constexpr float WORLD_HEIGHT = 1800.0f;
 
-    // Station and Line managers
+    // Managers
     StationManager stationManager;
     LineManager lineManager;
 
-    // Line building state (moved from LineBuilder)
+    // Line Building State
     std::unique_ptr<Line> currentLine;
     bool isBuildingLine = false;
     bool isNextSegmentCurved = false;
-    Line* lineBeingExtended = nullptr;
+    Line* lineBeingExtended = nullptr;  // Non-owning pointer
     int extendNodeIndex = -1;
 
-    // Pointer to the currently selected line
-    Line* selectedLine = nullptr;
+    // Selection
+    Line* selectedLine = nullptr;       // Non-owning pointer
+    Station* selectedStation = nullptr; // Non-owning pointer
 
-    Station* selectedStation = nullptr; // Initialize to nullptr
+    // Mouse Position
+    sf::Vector2f currentMousePosition;  // Current mouse position on the map
 };

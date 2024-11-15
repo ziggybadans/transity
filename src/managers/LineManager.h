@@ -9,7 +9,7 @@ public:
     LineManager();
     ~LineManager();
 
-    void AddLine(std::unique_ptr<Line> line);
+    Line* AddLine(std::unique_ptr<Line> line);
     const std::vector<std::unique_ptr<Line>>& GetLines() const;
     std::vector<std::unique_ptr<Line>>& GetLines();
 

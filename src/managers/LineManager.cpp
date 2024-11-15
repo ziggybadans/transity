@@ -5,8 +5,10 @@ LineManager::LineManager() {}
 
 LineManager::~LineManager() {}
 
-void LineManager::AddLine(std::unique_ptr<Line> line) {
+Line* LineManager::AddLine(std::unique_ptr<Line> line) {
+    Line* linePtr = line.get(); // Get raw pointer before moving
     lines.push_back(std::move(line));
+    return linePtr; // Return the raw pointer to the added line
 }
 
 const std::vector<std::unique_ptr<Line>>& LineManager::GetLines() const {

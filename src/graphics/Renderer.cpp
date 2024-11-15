@@ -375,7 +375,7 @@ void Renderer::renderLines(sf::RenderWindow& window, const Camera& camera) {
                 if (extendNodeIndex == 0) {
                     // Extending from the start
                     previewStart = nodes.front().GetPosition();
-                    tempNodePositions.push_back(worldMap->currentMousePosition); // New point at the beginning
+                    tempNodePositions.push_back(worldMap->GetCurrentMousePosition()); // New point at the beginning
                     for (const auto& node : nodes) {
                         tempNodePositions.push_back(node.GetPosition());
                     }
@@ -386,7 +386,7 @@ void Renderer::renderLines(sf::RenderWindow& window, const Camera& camera) {
                     for (const auto& node : nodes) {
                         tempNodePositions.push_back(node.GetPosition());
                     }
-                    tempNodePositions.push_back(worldMap->currentMousePosition); // New point at the end
+                    tempNodePositions.push_back(worldMap->GetCurrentMousePosition()); // New point at the end
                 }
             }
             else {
@@ -395,7 +395,7 @@ void Renderer::renderLines(sf::RenderWindow& window, const Camera& camera) {
                 for (const auto& node : nodes) {
                     tempNodePositions.push_back(node.GetPosition());
                 }
-                tempNodePositions.push_back(worldMap->currentMousePosition);
+                tempNodePositions.push_back(worldMap->GetCurrentMousePosition());
             }
 
             // Generate spline points
