@@ -159,7 +159,6 @@
     <ClCompile Include="src\managers\WindowManager.cpp" />
     <ClCompile Include="src\Transity.cpp" />
     <ClCompile Include="src\utility\ThreadPool.cpp" />
-    <ClCompile Include="src\world\LineBuilder.cpp" />
     <ClCompile Include="src\world\MapData.cpp" />
     <ClCompile Include="src\world\MapLoader.cpp" />
     <ClCompile Include="src\world\WorldMap.cpp" />
@@ -193,7 +192,6 @@
     <ClInclude Include="src\utility\Quadtree.h" />
     <ClInclude Include="src\utility\Task.h" />
     <ClInclude Include="src\utility\ThreadPool.h" />
-    <ClInclude Include="src\world\LineBuilder.h" />
     <ClInclude Include="src\world\MapData.h" />
     <ClInclude Include="src\world\MapLoader.h" />
     <ClInclude Include="src\world\WorldMap.h" />

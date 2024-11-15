@@ -104,59 +104,115 @@ Line* WorldMap::GetLineAtPositionRecursive(Line* line, const sf::Vector2f& posit
 }
 
 void WorldMap::StartBuildingLine(Station* station) {
-    lineBuilder.StartBuildingLine(station);
+    currentLine = std::make_unique<Line>();
+    currentLine->AddNode(station);
+    isBuildingLine = true;
+    lineBeingExtended = nullptr;
+    extendNodeIndex = -1;
 }
 
 void WorldMap::AddNodeToCurrentLine(const sf::Vector2f& position) {
-    lineBuilder.AddNodeToCurrentLine(position);
-}
-
-void WorldMap::AddStationToCurrentLine(Station* station) {
-    lineBuilder.AddStationToCurrentLine(station);
-}
-
-// Finish the current line or branch
-void WorldMap::FinishCurrentLine() {
-    if (lineBuilder.IsBuildingLine()) {
-        std::unique_ptr<Line> newLine = lineBuilder.ExtractCurrentLine();
-        if (newLine) {
-            Line* parentLine = newLine->GetParentLine();
-            if (parentLine) {
-                parentLine->AddChildLine(std::move(newLine));
-            }
-            else {
-                lineManager.AddLine(std::move(newLine));
-            }
+    if (isBuildingLine) {
+        if (lineBeingExtended) {
+            lineBeingExtended->AddNode(position);
         }
-        else if (lineBuilder.GetLineBeingExtended()) {
-            // Extension was handled directly by LineBuilder
-            Line* extendedLine = lineBuilder.GetLineBeingExtended();
-            extendedLine->GenerateSplinePoints(); // Recalculate spline points after extension
-            // Additional actions if necessary
+        else if (currentLine) {
+            currentLine->AddNode(position);
         }
-        // Reset LineBuilder's state
-        lineBuilder.FinishCurrentLine();
     }
 }
 
-const Line* WorldMap::GetCurrentLine() const {
-    return lineBuilder.GetCurrentLine();
+void WorldMap::AddStationToCurrentLine(Station* station) {
+    if (isBuildingLine) {
+        if (lineBeingExtended) {
+            lineBeingExtended->AddNode(station);
+        }
+        else if (currentLine) {
+            currentLine->AddNode(station);
+        }
+    }
+}
+
+void WorldMap::FinishCurrentLine() {
+    if (isBuildingLine) {
+        if (lineBeingExtended) {
+            lineBeingExtended->SetActive(false);
+            isBuildingLine = false;
+            lineBeingExtended = nullptr;
+            extendNodeIndex = -1;
+        }
+        else if (currentLine) {
+            currentLine->SetActive(false);
+            AddLine(std::move(currentLine));
+            isBuildingLine = false;
+        }
+    }
+}
+
+void WorldMap::StartBuildingBranch(Line* parentLine, const LineNode& startingNode) {
+    currentLine = std::make_unique<Line>(parentLine);
+    currentLine->SetColor(parentLine->GetColor());
+    currentLine->SetThickness(parentLine->GetThickness());
+    currentLine->SetSpeed(parentLine->GetSpeed());
+
+    if (startingNode.IsStation()) {
+        currentLine->AddNode(startingNode.station);
+    }
+    else {
+        currentLine->AddNode(startingNode.position);
+    }
+
+    isBuildingLine = true;
+    lineBeingExtended = nullptr;
+    extendNodeIndex = -1;
+}
+
+void WorldMap::StartExtendingLine(Line* line, int nodeIndex) {
+    if (!line) {
+        std::cerr << "WorldMap::StartExtendingLine called with null line." << std::endl;
+        return;
+    }
+    if (nodeIndex != 0 && nodeIndex != static_cast<int>(line->GetNodes().size()) - 1) {
+        std::cerr << "WorldMap::StartExtendingLine called with invalid node index." << std::endl;
+        return;
+    }
+
+    currentLine = nullptr;
+    isBuildingLine = true;
+    lineBeingExtended = line;
+    extendNodeIndex = nodeIndex;
 }
 
 bool WorldMap::IsBuildingLine() const {
-    return lineBuilder.IsBuildingLine();
+    return isBuildingLine;
+}
+
+const Line* WorldMap::GetCurrentLine() const {
+    return currentLine.get();
+}
+
+void WorldMap::SetNextSegmentCurved(bool curved) {
+    isNextSegmentCurved = curved;
+}
+
+bool WorldMap::GetIsNextSegmentCurved() const {
+    return isNextSegmentCurved;
+}
+
+bool WorldMap::IsExtendingLine() const {
+    return lineBeingExtended != nullptr;
+}
+
+Line* WorldMap::GetLineBeingExtended() const {
+    return lineBeingExtended;
+}
+
+int WorldMap::GetExtendNodeIndex() const {
+    return extendNodeIndex;
 }
 
 void WorldMap::SetCurrentMousePosition(const sf::Vector2f& position) {
     currentMousePosition = position;
-}
-
-void WorldMap::SetNextSegmentCurved(bool curved) {
-    lineBuilder.SetNextSegmentCurved(curved);
-}
-
-bool WorldMap::GetIsNextSegmentCurved() const {
-    return lineBuilder.GetIsNextSegmentCurved();
 }
 
 void WorldMap::SetSelectedLine(Line* line) {
@@ -173,35 +229,4 @@ void WorldMap::SetSelectedStation(Station* station) {
 
 Station* WorldMap::GetSelectedStation() const {
     return selectedStation;
-}
-
-// Start building a branch line
-void WorldMap::StartBuildingBranch(Line* parentLine, const LineNode& startingNode) {
-    lineBuilder.StartBuildingBranch(parentLine, startingNode);
-}
-
-void WorldMap::StartExtendingLine(Line* line, int nodeIndex) {
-    if (!line) {
-        std::cerr << "Attempted to extend a null line." << std::endl;
-        return;
-    }
-    if (nodeIndex != 0 && nodeIndex != static_cast<int>(line->GetNodes().size()) - 1) {
-        std::cerr << "Attempted to extend a line from a non-end node." << std::endl;
-        return;
-    }
-
-    // Inform the LineBuilder to extend the line
-    lineBuilder.StartExtendingLine(line, nodeIndex);
-}
-
-bool WorldMap::IsExtendingLine() const {
-    return lineBuilder.IsExtendingLine();
-}
-
-Line* WorldMap::GetLineBeingExtended() const {
-    return lineBuilder.GetLineBeingExtended();
-}
-
-int WorldMap::GetExtendNodeIndex() const {
-    return lineBuilder.GetExtendNodeIndex();
 }

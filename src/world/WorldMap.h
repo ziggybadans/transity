@@ -4,7 +4,6 @@
 #include "MapLoader.h"
 #include "../managers/StationManager.h"
 #include "../managers/LineManager.h"
-#include "LineBuilder.h"
 #include "../managers/InitializationManager.h"
 #include "../graphics/Camera.h"
 
@@ -90,8 +89,12 @@ private:
     StationManager stationManager;
     LineManager lineManager;
 
-    // Line building
-    LineBuilder lineBuilder;
+    // Line building state (moved from LineBuilder)
+    std::unique_ptr<Line> currentLine;
+    bool isBuildingLine = false;
+    bool isNextSegmentCurved = false;
+    Line* lineBeingExtended = nullptr;
+    int extendNodeIndex = -1;
 
     // Pointer to the currently selected line
     Line* selectedLine = nullptr;
