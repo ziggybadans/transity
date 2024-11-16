@@ -14,6 +14,15 @@ public:
     void SetPosition(const sf::Vector2f& position);
     void SetZoom(float zoomLevel);
 
+    // New Move method to adjust the camera's position by an offset.
+    /**
+    <summary>
+    Moves the camera by the specified offset, clamping the new position within the world bounds.
+    </summary>
+    <param name="offset">The offset by which to move the camera.</param>
+    */
+    void Move(const sf::Vector2f& offset);
+
     // Getters for the current position and zoom level.
     sf::Vector2f GetPosition() const;
     float GetZoomLevel() const;

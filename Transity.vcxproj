@@ -151,12 +151,16 @@
     <ClCompile Include="src\core\Train.cpp" />
     <ClCompile Include="src\Game.cpp" />
     <ClCompile Include="src\graphics\Camera.cpp" />
+    <ClCompile Include="src\graphics\LineRenderer.cpp" />
+    <ClCompile Include="src\graphics\PlaceAreaRenderer.cpp" />
     <ClCompile Include="src\graphics\Renderer.cpp" />
+    <ClCompile Include="src\graphics\StationRenderer.cpp" />
     <ClCompile Include="src\managers\InputManager.cpp" />
     <ClCompile Include="src\managers\LineManager.cpp" />
     <ClCompile Include="src\managers\StationManager.cpp" />
     <ClCompile Include="src\managers\UIManager.cpp" />
     <ClCompile Include="src\managers\WindowManager.cpp" />
+    <ClCompile Include="src\managers\WorldMapController.cpp" />
     <ClCompile Include="src\Transity.cpp" />
     <ClCompile Include="src\utility\ThreadPool.cpp" />
     <ClCompile Include="src\world\MapData.cpp" />
@@ -179,7 +183,10 @@
     <ClInclude Include="src\core\Train.h" />
     <ClInclude Include="src\Game.h" />
     <ClInclude Include="src\graphics\Camera.h" />
+    <ClInclude Include="src\graphics\LineRenderer.h" />
+    <ClInclude Include="src\graphics\PlaceAreaRenderer.h" />
     <ClInclude Include="src\graphics\Renderer.h" />
+    <ClInclude Include="src\graphics\StationRenderer.h" />
     <ClInclude Include="src\managers\EventManager.h" />
     <ClInclude Include="src\managers\InitializationManager.h" />
     <ClInclude Include="src\managers\InputManager.h" />
@@ -187,6 +194,7 @@
     <ClInclude Include="src\managers\StationManager.h" />
     <ClInclude Include="src\managers\UIManager.h" />
     <ClInclude Include="src\managers\WindowManager.h" />
+    <ClInclude Include="src\managers\WorldMapController.h" />
     <ClInclude Include="src\utility\Async.h" />
     <ClInclude Include="src\utility\FastNoiseLite.h" />
     <ClInclude Include="src\utility\Quadtree.h" />

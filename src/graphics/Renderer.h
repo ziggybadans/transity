@@ -6,6 +6,11 @@
 #include "Camera.h"
 #include "../world/WorldMap.h"
 
+// Forward declarations for specialized renderers
+class LineRenderer;
+class StationRenderer;
+class PlaceAreaRenderer;
+
 class Renderer {
 public:
     Renderer();
@@ -24,36 +29,16 @@ public:
     void Shutdown();
 
 private:
-    bool isInitialized = false; // Flag to indicate if the renderer has been initialized.
-    std::shared_ptr<WorldMap> worldMap; // Shared pointer to the WorldMap to be rendered.
+    bool isInitialized;
+    std::shared_ptr<WorldMap> worldMap;
+    std::mutex renderMutex;
 
-    // Mutex for thread-safe rendering if needed.
-    mutable std::mutex renderMutex;
-
-    sf::Font font; // Font used for rendering text.
-
-    // Hover functionality
-    std::string hoveredAreaName; // Name of the area currently hovered over by the mouse.
-    sf::Text hoveredAreaText; // SFML text object to display the hovered area's name.
-
-    // Private helper functions to handle different rendering aspects.
-    void renderWorldMap(sf::RenderWindow& window, const Camera& camera); // Renders the world map.
-    void renderPlaceAreas(sf::RenderWindow& window, const Camera& camera); // Renders different areas in the world.
-    void renderStations(sf::RenderWindow& window, const Camera& camera); // Renders stations on the map.
-    void renderLines(sf::RenderWindow& window, const Camera& camera); // Renders transport lines on the map.
-    void renderHoveredAreaName(sf::RenderWindow& window); // Renders the name of the currently hovered area.
-
-    // Recursive method to render a line and its child branches
-    void renderLineRecursive(const Line* line, sf::RenderWindow& window, float zoomLevel, const Line* selectedLine);
-
-    // Constants
-    static constexpr float HOVER_OUTLINE_THICKNESS = 2.0f; // Thickness of the outline for hovered areas.
-
-    // Line segments for collision detection
-    mutable std::vector<std::pair<sf::Vector2f, sf::Vector2f>> lineSegments;
+    // Specialized renderers
+    std::unique_ptr<LineRenderer> lineRenderer;
+    std::unique_ptr<StationRenderer> stationRenderer;
+    std::unique_ptr<PlaceAreaRenderer> placeAreaRenderer;
 
     // Private helper functions
-    bool rectangleIntersectsLine(const sf::FloatRect& rect, const sf::Vector2f& p1, const sf::Vector2f& p2);
-    bool lineSegmentsIntersect(const sf::Vector2f& p1, const sf::Vector2f& p2,
-        const sf::Vector2f& q1, const sf::Vector2f& q2);
+    void renderWorldMap(sf::RenderWindow& window, const Camera& camera);
+    void renderHoveredAreaName(sf::RenderWindow& window);
 };

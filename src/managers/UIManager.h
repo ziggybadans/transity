@@ -4,18 +4,19 @@
 #include <imgui-SFML.h>
 #include <SFML/Graphics.hpp>
 #include <memory>
-
-#include "InitializationManager.h"
+#include <functional>
+#include <atomic>
+#include "EventManager.h"
 #include "../world/WorldMap.h"
 
-class UIManager : public IInitializable {
+class UIManager {
 public:
     // Constructor that initializes the UIManager with a shared pointer to the WorldMap.
     UIManager(std::shared_ptr<WorldMap> worldMap);
     ~UIManager();
 
-    // Initializes ImGui and other UI components.
-    bool Init() override;
+    // Initialize ImGui and other UI components.
+    bool Init();
 
     // Sets the reference to the SFML RenderWindow.
     void SetWindow(sf::RenderWindow& window);
@@ -32,20 +33,26 @@ public:
     // Shuts down ImGui and cleans up resources.
     void Shutdown();
 
+    // Register callbacks for UI actions
+    void RegisterUIAction(const std::string& action, std::function<void()> callback);
+
     // Setter for timeScale pointer
     void SetTimeScalePointer(std::atomic<float>* ptr);
 
 private:
-    bool initialized; // Flag to indicate if the UIManager has been initialized.
-    sf::RenderWindow* renderWindow; // Pointer to the SFML RenderWindow.
-    std::shared_ptr<WorldMap> worldMap; // Reference to the world map for accessing game data.
+    bool initialized;
+    sf::RenderWindow* renderWindow;
+    std::shared_ptr<WorldMap> worldMap;
 
-    // Time control pointer
     std::atomic<float>* timeScalePtr;
 
-    // Parameters for UI customization.
-    float thickness; // Thickness value for rendering elements.
-    float color[4]; // RGBA values for setting color (values between 0.0f and 1.0f).
+    // UI action callbacks
+    std::vector<std::pair<std::string, std::function<void()>>> uiActionCallbacks;
 
-    float speedKmPerHour; // Speed for the selected line
+    // UI callback methods
+    void EmitUIAction(const std::string& action);
+
+    // Helper methods for UI panels
+    void RenderLineProperties();
+    void RenderStationProperties();
 };

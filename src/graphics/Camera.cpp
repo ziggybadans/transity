@@ -76,6 +76,18 @@ void Camera::SetPosition(const sf::Vector2f& position) {
 
 /**
 <summary>
+Moves the camera by the specified offset, clamping the new position within the world bounds.
+</summary>
+<param name="offset">The offset by which to move the camera.</param>
+*/
+void Camera::Move(const sf::Vector2f& offset) {
+    currentPosition += offset;
+    ClampPosition();
+    view.setCenter(currentPosition);
+}
+
+/**
+<summary>
 Sets the zoom level of the camera, clamping it between the minimum and maximum zoom levels.
 </summary>
 <param name="zoomLevel">The new zoom level for the camera.</param>

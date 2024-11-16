@@ -15,10 +15,12 @@
 #include "graphics/Camera.h"  // Include camera class
 #include "utility/ThreadPool.h"  // Include thread pool for managing concurrent tasks
 #include "utility/Task.h"  // Include task utility for multi-threading
+#include "managers/WindowManager.h"  // Include window manager
+#include "managers/UIManager.h"  // Include UI manager
+#include "managers/WorldMapController.h"  // Include WorldMap controller
 
 // Forward declarations
-class WindowManager;  // Forward declaration of WindowManager
-class UIManager;  // Forward declaration of UIManager
+class WorldMapController;  // Forward declaration of WorldMapController
 
 // Game class, inheriting from IInitializable to support initialization pattern
 class Game : public IInitializable {
@@ -52,9 +54,11 @@ private:
     std::unique_ptr<ThreadPool> threadPool;  // Thread pool for running tasks concurrently
     std::unique_ptr<Renderer> renderer;  // Handles rendering of game elements
     std::shared_ptr<Camera> camera;  // Controls the view of the game, e.g., panning and zooming
-    std::unique_ptr<InputManager> inputManager;  // Manages player input (keyboard, mouse, etc.)
+    std::shared_ptr<InputManager> inputManager;  // Manages player input (keyboard, mouse, etc.)
 
     std::shared_ptr<WorldMap> worldMap;  // Represents the game world; contains map data
+    std::shared_ptr<WorldMapController> worldMapController;  // Handles game logic related to WorldMap
+
     mutable std::mutex worldMapMutex;  // Mutex to guard access to worldMap, allowing thread-safe modifications
 
     // Game state

@@ -1,25 +1,16 @@
 #include "Game.h"
-#include "managers/WindowManager.h"
-#include "managers/UIManager.h"
-#include "managers/InputManager.h"
-#include "utility/ThreadPool.h"
-#include "graphics/Renderer.h"
-#include "graphics/Camera.h"
-#include "world/WorldMap.h"
-
+#include "managers/WorldMapController.h"
 #include <iostream>
 #include <future>
 #include <thread>
 #include <condition_variable>
 
-#include "Constants.h"
-
 // Constructor initializes video mode, window title, and sets isRunning to false
 Game::Game()
     : videoMode(Constants::WINDOW_WIDTH, Constants::WINDOW_HEIGHT),
-    windowTitle(Constants::WINDOW_TITLE),
-    isRunning(false),
-    timeScale(1.0f)  // Initialize timeScale to normal speed
+      windowTitle(Constants::WINDOW_TITLE),
+      isRunning(false),
+      timeScale(1.0f)
 {}
 
 Game::~Game() {
@@ -43,11 +34,14 @@ bool Game::Init() {
 
     // Initialize ThreadPool with number of hardware threads available
     threadPool = std::make_unique<ThreadPool>(std::thread::hardware_concurrency());
+
+    // Initialize Renderer
     renderer = std::make_unique<Renderer>();
     if (!renderer->Init(windowManager->GetWindow())) {  // Initialize renderer with the window
         std::cerr << "Failed to initialize Renderer." << std::endl;
         return false;
     }
+    renderer->SetWorldMap(worldMap);
 
     // Load initial resources asynchronously
     if (!LoadResources()) {
@@ -55,51 +49,28 @@ bool Game::Init() {
         return false;
     }
 
-    // Initialize InputManager after WorldMap is loaded
-    inputManager = std::make_unique<InputManager>(eventManager, camera, windowManager->GetWindow(), worldMap);
+    // Initialize InputManager as shared_ptr
+    inputManager = std::make_shared<InputManager>(eventManager, windowManager->GetWindow());
     inputManager->SetZoomSpeed(Constants::CAMERA_ZOOM_SPEED);  // Set camera zoom speed
     inputManager->SetPanSpeed(Constants::CAMERA_PAN_SPEED);    // Set camera pan speed
 
-    // Subscribe to Window Close event
-    eventManager->Subscribe(EventType::Closed, [this](const sf::Event& event) {
-        isRunning = false;
-        windowManager->GetWindow().close();
-        });
+    // Initialize WorldMapController with all required shared_ptr arguments
+    worldMapController = std::make_shared<WorldMapController>(
+        worldMap,          // std::shared_ptr<WorldMap>
+        inputManager,     // std::shared_ptr<InputManager>
+        camera,           // std::shared_ptr<Camera>
+        windowManager     // std::shared_ptr<WindowManager>
+    );
+    worldMapController->Init();
 
-    // Subscribe to Window Resize event and adjust camera view accordingly
-    eventManager->Subscribe(EventType::Resized, [this](const sf::Event& event) {
-        if (event.type == sf::Event::Resized) {
-            sf::Vector2u newSize(event.size.width, event.size.height);
-            camera->OnResize(newSize);  // Notify camera of the new window size
-            sf::FloatRect visibleArea(0, 0, static_cast<float>(newSize.x), static_cast<float>(newSize.y));
-            windowManager->GetWindow().setView(sf::View(visibleArea));
-        }
-        });
-
-    // Initialize UIManager for managing GUI elements
+    // Initialize UIManager
     uiManager = std::make_shared<UIManager>(worldMap);
     uiManager->SetWindow(windowManager->GetWindow());
     if (!uiManager->Init()) {
         std::cerr << "Failed to initialize UIManager." << std::endl;
         return false;
     }
-
-    // Pass the address of timeScale to UIManager for UI control
     uiManager->SetTimeScalePointer(&timeScale);
-
-    // Initialize Renderer with WorldMap and configure camera
-    if (worldMap) {
-        camera->SetZoom(Constants::CAMERA_MAX_ZOOM);  // Set initial camera zoom level
-        camera->SetWorldBounds(worldMap->GetWorldWidth(), worldMap->GetWorldHeight());  // Set camera boundaries to match world size
-        camera->SetPosition(sf::Vector2f(worldMap->GetWorldWidth() / 2.0f, worldMap->GetWorldHeight() / 2.0f));  // Center camera on the world
-
-        // Set WorldMap in Renderer
-        renderer->SetWorldMap(worldMap);
-    }
-    else {
-        std::cerr << "WorldMap is not loaded." << std::endl;
-        return false;
-    }
 
     isRunning = true;  // Set game state to running
     return true;
@@ -111,9 +82,6 @@ bool Game::InitManagers() {
     windowMgr->SetVideoMode(sf::VideoMode(videoMode));  // Set window video mode
     windowMgr->SetTitle(windowTitle);  // Set window title
 
-    // Enable fullscreen mode if desired (currently set to true)
-    windowMgr->SetFullscreen(true);  // Set to false if you want windowed mode
-
     // Configure advanced graphics settings for the window
     sf::ContextSettings settings;
     settings.antialiasingLevel = 8;  // Set antialiasing level for smoother graphics
@@ -124,10 +92,13 @@ bool Game::InitManagers() {
     windowMgr->SetContextSettings(settings);
 
     if (!windowMgr->Init()) return false;  // Initialize window and check for success
-    initManager.Register(windowMgr);       // Register WindowManager with InitializationManager
+    initManager.Register(std::static_pointer_cast<IInitializable>(windowMgr));       // Register WindowManager with InitializationManager
     windowManager = windowMgr;
 
-    // Register other initializable modules and initialize all
+    // Initialize other managers as needed and register them
+    // For example, EventManager, UIManager can be initialized here if not handled separately
+
+    // Finally, initialize all registered managers
     return initManager.InitAll();
 }
 
@@ -138,7 +109,12 @@ bool Game::LoadResources() {
 
     // Create a task to load the WorldMap and enqueue it to ThreadPool
     Task loadWorldMapTask([this, &cv, &loaded]() {
-        auto tempWorldMap = std::make_shared<WorldMap>("assets/land_shapes.json", "assets/features/cities.geojson", "assets/features/towns.geojson", "assets/features/suburbs.geojson");
+        auto tempWorldMap = std::make_shared<WorldMap>(
+            "assets/land_shapes.json",
+            "assets/features/cities.geojson",
+            "assets/features/towns.geojson",
+            "assets/features/suburbs.geojson"
+        );
         if (tempWorldMap->Init()) {
             {
                 std::lock_guard<std::mutex> lock(worldMapMutex);  // Lock mutex before updating shared resource
@@ -150,7 +126,7 @@ bool Game::LoadResources() {
         else {
             std::cerr << "Failed to initialize WorldMap." << std::endl;
         }
-        });
+    });
     threadPool->enqueueTask(loadWorldMapTask);  // Enqueue the task for loading WorldMap
 
     // Wait for WorldMap to load using a condition variable
@@ -162,9 +138,6 @@ bool Game::LoadResources() {
         camera->SetZoom(Constants::CAMERA_MAX_ZOOM);  // Set maximum zoom level
         camera->SetWorldBounds(worldMap->GetWorldWidth(), worldMap->GetWorldHeight());  // Set camera boundaries to match world size
         camera->SetPosition(sf::Vector2f(worldMap->GetWorldWidth() / 2.0f, worldMap->GetWorldHeight() / 2.0f));  // Center camera on the world
-
-        // Set WorldMap in Renderer
-        renderer->SetWorldMap(worldMap);
     }
     else {
         std::cerr << "WorldMap is not loaded." << std::endl;
@@ -175,7 +148,8 @@ bool Game::LoadResources() {
 }
 
 void Game::Run() {
-    while (isRunning && windowManager->IsOpen()) {  // Loop until the game is no longer running or window is closed
+    sf::Clock deltaClock;
+    while (isRunning && windowManager->GetWindow().isOpen()) {  // Loop until the game is no longer running or window is closed
         ProcessEvents();  // Handle all pending events
 
         // Calculate delta time (time since last frame)
@@ -192,6 +166,14 @@ void Game::Run() {
 
         // Render the current frame
         Render();
+    }
+}
+
+void Game::ProcessEvents() {
+    sf::Event event;
+    while (windowManager->GetWindow().pollEvent(event)) {  // Poll events from WindowManager
+        eventManager->Dispatch(event);  // Dispatch events to relevant handlers
+        uiManager->ProcessEvent(event);  // Pass events to UIManager for GUI handling
     }
 }
 
@@ -228,19 +210,9 @@ void Game::UpdateTrainsRecursive(Line* line, float scaledDt) {
     }
 }
 
-
-// Handle input and window events
-void Game::ProcessEvents() {
-    sf::Event event;
-    while (windowManager->PollEvent(event)) {  // Poll events from WindowManager
-        eventManager->Dispatch(event);  // Dispatch events to relevant handlers
-        uiManager->ProcessEvent(event);  // Pass events to UIManager for GUI handling
-    }
-}
-
 void Game::Render() {
     // Clear the window with a background color
-    windowManager->Clear(sf::Color(174, 223, 246));  // Clear with sky-blue color
+    windowManager->GetWindow().clear(sf::Color(174, 223, 246));  // Clear with sky-blue color
 
     // Apply camera view to the window to render the game world
     if (camera) {
@@ -261,7 +233,7 @@ void Game::Render() {
     }
 
     // Display the rendered frame on the screen
-    windowManager->Display();
+    windowManager->GetWindow().display();
 }
 
 void Game::Shutdown() {
