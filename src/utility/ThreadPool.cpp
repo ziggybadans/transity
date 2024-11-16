@@ -5,16 +5,20 @@
 
 // Constructor that initializes the thread pool with a given number of threads.
 ThreadPool::ThreadPool(size_t numThreads) : m_stop(false) {
-    // Create worker threads and add them to the m_workers vector.
-    for (size_t i = 0; i < numThreads; ++i) {
-        // Each thread runs the workerThread function, with 'this' as the context for accessing the class members.
-        m_workers.emplace_back(&ThreadPool::workerThread, this);
+    try {
+        // Create worker threads and add them to the m_workers vector.
+        for (size_t i = 0; i < numThreads; ++i) {
+            // Each thread runs the workerThread function, with 'this' as the context for accessing the class members.
+            m_workers.emplace_back(&ThreadPool::workerThread, this);
+        }
+    } catch (...) {
+        shutdown(); // Clean up any threads that were created
+        throw;      // Re-throw the exception
     }
 }
 
 // Destructor that ensures proper cleanup of threads and resources.
 ThreadPool::~ThreadPool() {
-    // Ensure a proper shutdown of the thread pool before destruction.
     shutdown();
 }
 
@@ -37,11 +41,24 @@ void ThreadPool::shutdown() {
         m_stop.store(true);
     }
     m_condition.notify_all();
+
+    // Join all worker threads
     for (std::thread& worker : m_workers) {
         if (worker.joinable()) {
-            worker.join();
+            try {
+                worker.join();
+            } catch (const std::exception& e) {
+                std::cerr << "Error joining thread: " << e.what() << std::endl;
+            }
         }
     }
+    
+    // Clear the workers vector
+    m_workers.clear();
+    
+    // Clear any remaining tasks
+    std::queue<Task> empty;
+    std::swap(m_tasks, empty);
 }
 
 // Function executed by each worker thread.
