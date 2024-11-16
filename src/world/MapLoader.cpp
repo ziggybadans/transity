@@ -29,7 +29,7 @@ namespace mapbox
 }
 
 MapLoader::MapLoader(MapData &mapData)
-    : mapData(mapData) {}
+    : m_mapData(mapData) {}
 
 MapLoader::~MapLoader() {}
 
@@ -39,29 +39,25 @@ bool MapLoader::LoadGeoJSONFiles(
     const std::string &townsGeoJsonPath,
     const std::string &suburbsGeoJsonPath)
 {
-    // Load land shapes
-    if (!loadGeoJSON(landGeoJsonPath, MapData::LAND_COLOR, PlaceCategory::Unknown))
+    if (!LoadGeoJSON(landGeoJsonPath, MapData::LAND_COLOR))
     {
         std::cerr << "Failed to load land GeoJSON data." << std::endl;
         return false;
     }
 
-    // Load cities
-    if (!loadGeoJSON(citiesGeoJsonPath, MapData::CITY_COLOR, PlaceCategory::City))
+    if (!LoadGeoJSON(citiesGeoJsonPath, MapData::CITY_COLOR, PlaceCategory::City))
     {
         std::cerr << "Failed to load cities GeoJSON data." << std::endl;
         return false;
     }
 
-    // Load towns
-    if (!loadGeoJSON(townsGeoJsonPath, MapData::TOWN_COLOR, PlaceCategory::Town))
+    if (!LoadGeoJSON(townsGeoJsonPath, MapData::TOWN_COLOR, PlaceCategory::Town))
     {
         std::cerr << "Failed to load towns GeoJSON data." << std::endl;
         return false;
     }
 
-    // Load suburbs
-    if (!loadGeoJSON(suburbsGeoJsonPath, MapData::SUBURB_COLOR, PlaceCategory::Suburb))
+    if (!LoadGeoJSON(suburbsGeoJsonPath, MapData::SUBURB_COLOR, PlaceCategory::Suburb))
     {
         std::cerr << "Failed to load suburbs GeoJSON data." << std::endl;
         return false;
@@ -70,7 +66,7 @@ bool MapLoader::LoadGeoJSONFiles(
     return true;
 }
 
-bool MapLoader::loadGeoJSON(const std::string &geoJsonFilePath, const sf::Color &color, PlaceCategory category)
+bool MapLoader::LoadGeoJSON(const std::string &geoJsonFilePath, const sf::Color &color, PlaceCategory category)
 {
     std::ifstream geoJsonFile(geoJsonFilePath);
     if (!geoJsonFile.is_open())
@@ -96,7 +92,7 @@ bool MapLoader::loadGeoJSON(const std::string &geoJsonFilePath, const sf::Color 
         const auto &geometries = geoData["geometries"];
         for (const auto &geometry : geometries)
         {
-            if (!processGeometry(geometry, color))
+            if (!ProcessGeometry(geometry, color))
             {
                 std::cerr << "Failed to process geometry." << std::endl;
             }
@@ -113,7 +109,7 @@ bool MapLoader::loadGeoJSON(const std::string &geoJsonFilePath, const sf::Color 
                 continue;
             }
             std::string name = feature["properties"].value("name", "Unnamed Place");
-            processGeometry(feature["geometry"], color, name, category);
+            ProcessGeometry(feature["geometry"], color, name, category);
         }
     }
     else
@@ -125,7 +121,7 @@ bool MapLoader::loadGeoJSON(const std::string &geoJsonFilePath, const sf::Color 
     return true;
 }
 
-bool MapLoader::processGeometry(const json &geometry, const sf::Color &color, const std::string &name, PlaceCategory category)
+bool MapLoader::ProcessGeometry(const json &geometry, const sf::Color &color, const std::string &name, PlaceCategory category)
 {
     if (!geometry.contains("type") || !geometry.contains("coordinates"))
     {
@@ -138,11 +134,11 @@ bool MapLoader::processGeometry(const json &geometry, const sf::Color &color, co
 
     if (geometryType == "Polygon")
     {
-        return processPolygon(coordinates, color, name, category);
+        return ProcessPolygon(coordinates, color, name, category);
     }
     else if (geometryType == "MultiPolygon")
     {
-        return processMultiPolygon(coordinates, color, name, category);
+        return ProcessMultiPolygon(coordinates, color, name, category);
     }
     else
     {
@@ -151,7 +147,7 @@ bool MapLoader::processGeometry(const json &geometry, const sf::Color &color, co
     }
 }
 
-bool MapLoader::processPolygon(const json &coordinates, const sf::Color &color, const std::string &name, PlaceCategory category)
+bool MapLoader::ProcessPolygon(const json &coordinates, const sf::Color &color, const std::string &name, PlaceCategory category)
 {
     if (!coordinates.is_array())
     {
@@ -179,7 +175,7 @@ bool MapLoader::processPolygon(const json &coordinates, const sf::Color &color, 
 
             float lon = point[0];
             float lat = point[1];
-            ringPoints.push_back(project({lon, lat}));
+            ringPoints.push_back(Project({lon, lat}));
         }
 
         if (!ringPoints.empty())
@@ -188,10 +184,10 @@ bool MapLoader::processPolygon(const json &coordinates, const sf::Color &color, 
         }
     }
 
-    return !polygon.empty() && createVertexArrayFromPolygon(polygon, color, name, category);
+    return !polygon.empty() && CreateVertexArrayFromPolygon(polygon, color, name, category);
 }
 
-bool MapLoader::processMultiPolygon(const json &coordinates, const sf::Color &color, const std::string &name, PlaceCategory category)
+bool MapLoader::ProcessMultiPolygon(const json &coordinates, const sf::Color &color, const std::string &name, PlaceCategory category)
 {
     if (!coordinates.is_array())
     {
@@ -201,7 +197,7 @@ bool MapLoader::processMultiPolygon(const json &coordinates, const sf::Color &co
 
     for (const auto &polygons : coordinates)
     {
-        if (!processPolygon(polygons, color, name, category))
+        if (!ProcessPolygon(polygons, color, name, category))
         {
             std::cerr << "Failed to process Polygon in MultiPolygon." << std::endl;
         }
@@ -210,23 +206,20 @@ bool MapLoader::processMultiPolygon(const json &coordinates, const sf::Color &co
     return true;
 }
 
-bool MapLoader::createVertexArrayFromPolygon(
+bool MapLoader::CreateVertexArrayFromPolygon(
     const std::vector<std::vector<sf::Vector2f>> &polygon,
     const sf::Color &color,
     const std::string &name,
     PlaceCategory category)
 {
-    // Triangulate the polygon using Earcut
     std::vector<uint32_t> indices = mapbox::earcut<uint32_t>(polygon);
 
-    // Flatten the polygon points
     std::vector<sf::Vector2f> flattenedPoints;
     for (const auto &ring : polygon)
     {
         flattenedPoints.insert(flattenedPoints.end(), ring.begin(), ring.end());
     }
 
-    // Create a filled VertexArray
     sf::VertexArray filledVA(sf::Triangles, indices.size());
     for (size_t i = 0; i < indices.size(); ++i)
     {
@@ -242,15 +235,13 @@ bool MapLoader::createVertexArrayFromPolygon(
         }
     }
 
-    // Create an outline VertexArray using LineStrip
     sf::VertexArray outlineVA(sf::LineStrip);
     for (const auto &ring : polygon)
     {
         for (const auto &point : ring)
         {
-            outlineVA.append(sf::Vertex(point, sf::Color::Black)); // Outline color
+            outlineVA.append(sf::Vertex(point, sf::Color::Black));
         }
-        // Close the loop by connecting the last point to the first
         if (!ring.empty())
         {
             outlineVA.append(sf::Vertex(ring.front(), sf::Color::Black));
@@ -259,27 +250,24 @@ bool MapLoader::createVertexArrayFromPolygon(
 
     if (category != PlaceCategory::Unknown && !name.empty())
     {
-        // Store in placeAreas
         PlaceArea area;
         area.name = name;
         area.category = category;
         area.filledShape = filledVA;
         area.outline = outlineVA;
         area.bounds = filledVA.getBounds();
-        mapData.AddPlaceArea(area);
+        m_mapData.AddPlaceArea(area);
     }
     else
     {
-        // Store in landShapes
-        mapData.AddLandShape(filledVA);
-        mapData.AddLandShape(outlineVA);
-        std::cout << "Added landshape with " << filledVA.getVertexCount() << " vertices" << std::endl;
+        m_mapData.AddLandShape(filledVA);
+        m_mapData.AddLandShape(outlineVA);
     }
 
     return true;
 }
 
-sf::Vector2f MapLoader::project(const sf::Vector2f &lonLat) const
+sf::Vector2f MapLoader::Project(const sf::Vector2f &lonLat) const
 {
     float x = (lonLat.x + 180.0f) / 360.0f * WORLD_WIDTH;
     float y = (90.0f - lonLat.y) / 180.0f * WORLD_HEIGHT;

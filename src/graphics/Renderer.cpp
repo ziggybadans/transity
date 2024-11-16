@@ -4,10 +4,9 @@
 #include <iostream>
 
 Renderer::Renderer() 
-    : isInitialized(false),
-      placeAreaRenderer(std::make_unique<PlaceAreaRenderer>())
+    : m_isInitialized(false),
+      m_placeAreaRenderer(std::make_unique<PlaceAreaRenderer>())
 {
-    // Additional initialization code if needed
 }
 
 Renderer::~Renderer() {
@@ -15,52 +14,49 @@ Renderer::~Renderer() {
 }
 
 bool Renderer::Init(sf::RenderWindow& window) {
-    if (isInitialized) return true;
+    if (m_isInitialized) return true;
 
-    // Initialize specialized renderers
-    if (!placeAreaRenderer->Init()) {
+    if (!m_placeAreaRenderer->Init()) {
         std::cerr << "Failed to initialize PlaceAreaRenderer." << std::endl;
         return false;
     }
 
-    isInitialized = true;
+    m_isInitialized = true;
     return true;
 }
 
-void Renderer::SetWorldMap(const std::shared_ptr<WorldMap>& map) {
-    std::lock_guard<std::mutex> lock(renderMutex);
-    worldMap = map;
-
-    // Pass the world map to specialized renderers
-    if (placeAreaRenderer) placeAreaRenderer->SetWorldMap(map);
-}
-
 void Renderer::Render(sf::RenderWindow& window, const Camera& camera) {
-    if (!isInitialized) return;
+    if (!m_isInitialized) return;
 
-    std::lock_guard<std::mutex> lock(renderMutex);
+    std::lock_guard<std::mutex> lock(m_renderMutex);
 
-    // Clear the window with a background color
-    window.clear(sf::Color(174, 223, 246)); // Sky-blue color
+    // Clear window with sky-blue background
+    window.clear(sf::Color(174, 223, 246));
 
-    // Render each component using specialized renderers
-    placeAreaRenderer->Render(window, camera);
-
-    // Optionally render hovered area name
-    renderHoveredAreaName(window);
-
-    // Display the rendered frame
-    // Note: In the main game loop, window.display() is called, so it's not called here to avoid multiple displays
+    m_placeAreaRenderer->Render(window, camera);
+    RenderHoveredAreaName(window);
 }
 
 void Renderer::Shutdown() {
-    if (placeAreaRenderer) {
-        placeAreaRenderer->Shutdown();
+    if (m_placeAreaRenderer) {
+        m_placeAreaRenderer->Shutdown();
     }
-    isInitialized = false;
+    m_isInitialized = false;
 }
 
-void Renderer::renderHoveredAreaName(sf::RenderWindow& window) {
-    // Implementation for rendering hovered area name if needed
-    // Since lines and stations are removed, ensure this only pertains to place areas
+void Renderer::SetWorldMap(const std::shared_ptr<WorldMap>& map) {
+    std::lock_guard<std::mutex> lock(m_renderMutex);
+    m_worldMap = map;
+
+    if (m_placeAreaRenderer) {
+        m_placeAreaRenderer->SetWorldMap(map);
+    }
+}
+
+void Renderer::RenderWorldMap(sf::RenderWindow& window, const Camera& camera) {
+    // Implementation for rendering world map
+}
+
+void Renderer::RenderHoveredAreaName(sf::RenderWindow& window) {
+    // Implementation for rendering hovered area name
 }

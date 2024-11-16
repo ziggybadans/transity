@@ -43,8 +43,8 @@ public:
 
 private:
     // Store the land shapes as VertexArrays (e.g., continents, countries)
-    std::vector<sf::VertexArray> landShapes;
+    std::vector<sf::VertexArray> m_landShapes;
 
     // Store the different place areas (cities, towns, etc.)
-    std::vector<PlaceArea> placeAreas;
+    std::vector<PlaceArea> m_placeAreas;
 };

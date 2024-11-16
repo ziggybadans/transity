@@ -6,7 +6,6 @@
 #include "Camera.h"
 #include "../world/WorldMap.h"
 
-// Forward declarations for specialized renderers
 class PlaceAreaRenderer;
 
 class Renderer {
@@ -14,27 +13,23 @@ public:
     Renderer();
     ~Renderer();
 
-    // Initialize the renderer
+    /* Core Renderer Methods */
     bool Init(sf::RenderWindow& window);
-
-    // Set the WorldMap to render
-    void SetWorldMap(const std::shared_ptr<WorldMap>& map);
-
-    // Render all game elements
     void Render(sf::RenderWindow& window, const Camera& camera);
-
-    // Shutdown and clean up resources
     void Shutdown();
 
+    /* Setters */
+    void SetWorldMap(const std::shared_ptr<WorldMap>& map);
+
 private:
-    bool isInitialized;
-    std::shared_ptr<WorldMap> worldMap;
-    std::mutex renderMutex;
+    void RenderWorldMap(sf::RenderWindow& window, const Camera& camera);
+    void RenderHoveredAreaName(sf::RenderWindow& window);
 
-    // Specialized renderers
-    std::unique_ptr<PlaceAreaRenderer> placeAreaRenderer;
+    /* Renderer State */
+    bool m_isInitialized;
+    std::shared_ptr<WorldMap> m_worldMap;
+    std::mutex m_renderMutex;
 
-    // Private helper functions
-    void renderWorldMap(sf::RenderWindow& window, const Camera& camera);
-    void renderHoveredAreaName(sf::RenderWindow& window);
+    /* Specialized Renderers */
+    std::unique_ptr<PlaceAreaRenderer> m_placeAreaRenderer;
 };

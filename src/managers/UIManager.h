@@ -9,34 +9,25 @@
 
 class UIManager {
 public:
-    // Constructor that initializes the UIManager with a shared pointer to the WorldMap.
     UIManager(std::shared_ptr<WorldMap> worldMap);
     ~UIManager();
 
-    // Initialize ImGui and other UI components.
+    /* Core UI Methods */
     bool Init();
-
-    // Sets the reference to the SFML RenderWindow.
-    void SetWindow(sf::RenderWindow& window);
-
-    // Processes input events from the SFML window (e.g., mouse clicks, keyboard inputs).
     void ProcessEvent(const sf::Event& event);
-
-    // Updates UI elements every frame.
     void Update(float deltaTime);
-
-    // Renders the UI elements.
     void Render();
-
-    // Shutdown and clean up UI resources.
     void Shutdown();
 
-private:
-    bool initialized;
-    sf::RenderWindow* renderWindow;
-    std::shared_ptr<WorldMap> worldMap;
-    float* timeScalePtr;
+    /* Setters */
+    void SetWindow(sf::RenderWindow& window);
 
-    // UI rendering methods
+private:
     void RenderPlaceAreaInfo();
+
+    /* UI State */
+    bool m_initialized;
+    sf::RenderWindow* m_renderWindow;
+    std::shared_ptr<WorldMap> m_worldMap;
+    float* m_timeScalePtr;
 };

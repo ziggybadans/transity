@@ -5,12 +5,11 @@
 #include <condition_variable>
 #include "Constants.h"
 
-// Constructor initializes video mode, window title, and sets isRunning to false
 Game::Game()
-    : videoMode(Constants::WINDOW_WIDTH, Constants::WINDOW_HEIGHT),
-      windowTitle(Constants::WINDOW_TITLE),
-      isRunning(false),
-      timeScale(1.0f)
+    : m_videoMode(Constants::WINDOW_WIDTH, Constants::WINDOW_HEIGHT)
+    , m_windowTitle(Constants::WINDOW_TITLE)
+    , m_isRunning(false)
+    , m_timeScale(1.0f)
 {}
 
 Game::~Game() {
@@ -18,78 +17,68 @@ Game::~Game() {
 }
 
 bool Game::Init() {
-    if (!InitManagers()) {  // Initialize managers (WindowManager, etc.)
+    if (!InitManagers()) {
         std::cerr << "Failed to initialize managers." << std::endl;
         return false;
     }
 
-    // Initialize EventManager for handling system events
-    eventManager = std::make_shared<EventManager>();
+    m_eventManager = std::make_shared<EventManager>();
 
-    // Initialize Camera with the current window size
-    sf::Vector2u windowSize = windowManager->GetWindow().getSize();
-    camera = std::make_shared<Camera>(windowSize);
-    camera->setMinZoomLevel(Constants::CAMERA_MIN_ZOOM);  // Set minimum zoom level
-    camera->setMaxZoomLevel(Constants::CAMERA_MAX_ZOOM);  // Set maximum zoom level
+    sf::Vector2u windowSize = m_windowManager->GetWindow().getSize();
+    m_camera = std::make_shared<Camera>(windowSize);
+    m_camera->SetMinZoomLevel(Constants::CAMERA_MIN_ZOOM);
+    m_camera->SetMaxZoomLevel(Constants::CAMERA_MAX_ZOOM);
 
-    // Initialize ThreadPool with number of hardware threads available
-    threadPool = std::make_unique<ThreadPool>(std::thread::hardware_concurrency());
+    m_threadPool = std::make_unique<ThreadPool>(std::thread::hardware_concurrency());
 
-    // Initialize Renderer
-    renderer = std::make_unique<Renderer>();
-    if (!renderer->Init(windowManager->GetWindow())) {  // Initialize renderer with the window
+    m_renderer = std::make_unique<Renderer>();
+    if (!m_renderer->Init(m_windowManager->GetWindow())) {
         std::cerr << "Failed to initialize Renderer." << std::endl;
         return false;
     }
-    renderer->SetWorldMap(worldMap);
+    m_renderer->SetWorldMap(m_worldMap);
 
-    // Load initial resources asynchronously
     if (!LoadResources()) {
         std::cerr << "Failed to load initial resources." << std::endl;
         return false;
     }
 
-    // Initialize InputManager as shared_ptr
-    inputManager = std::make_shared<InputManager>(eventManager, windowManager->GetWindow());
-    inputManager->SetZoomSpeed(Constants::CAMERA_ZOOM_SPEED);  // Set camera zoom speed
-    inputManager->SetPanSpeed(Constants::CAMERA_PAN_SPEED);    // Set camera pan speed
+    m_inputManager = std::make_shared<InputManager>(m_eventManager, m_windowManager->GetWindow());
+    m_inputManager->SetZoomSpeed(Constants::CAMERA_ZOOM_SPEED);
+    m_inputManager->SetPanSpeed(Constants::CAMERA_PAN_SPEED);
 
-    // Initialize UIManager
-    uiManager = std::make_shared<UIManager>(worldMap);
-    uiManager->SetWindow(windowManager->GetWindow());
-    if (!uiManager->Init()) {
+    m_uiManager = std::make_shared<UIManager>(m_worldMap);
+    m_uiManager->SetWindow(m_windowManager->GetWindow());
+    if (!m_uiManager->Init()) {
         std::cerr << "Failed to initialize UIManager." << std::endl;
         return false;
     }
 
-    isRunning = true;  // Set game state to running
+    m_isRunning = true;
     return true;
 }
 
 bool Game::InitManagers() {
-    // Initialize WindowManager and configure it with settings
     auto windowMgr = std::make_shared<WindowManager>();
-    windowMgr->SetVideoMode(sf::VideoMode(videoMode));  // Set window video mode
-    windowMgr->SetTitle(windowTitle);  // Set window title
+    windowMgr->SetVideoMode(sf::VideoMode(m_videoMode));
+    windowMgr->SetTitle(m_windowTitle);
 
-    // Configure advanced graphics settings for the window
     sf::ContextSettings settings;
-    settings.antialiasingLevel = 8;  // Set antialiasing level for smoother graphics
-    settings.depthBits = 24;          // Set depth buffer bits
-    settings.stencilBits = 8;         // Set stencil buffer bits
-    settings.majorVersion = 3;        // Set OpenGL version (major)
-    settings.minorVersion = 0;        // Set OpenGL version (minor)
+    settings.antialiasingLevel = 8;
+    settings.depthBits = 24;
+    settings.stencilBits = 8;
+    settings.majorVersion = 3;
+    settings.minorVersion = 0;
     windowMgr->SetContextSettings(settings);
 
-    if (!windowMgr->Init()) return false;  // Initialize window and check for success
-    initManager.Register(std::static_pointer_cast<IInitializable>(windowMgr));       // Register WindowManager with InitializationManager
-    windowManager = windowMgr;
+    if (!windowMgr->Init()) {
+        return false;
+    }
+    
+    m_initManager.Register(std::static_pointer_cast<IInitializable>(windowMgr));
+    m_windowManager = windowMgr;
 
-    // Initialize other managers as needed and register them
-    // For example, EventManager, UIManager can be initialized here if not handled separately
-
-    // Finally, initialize all registered managers
-    return initManager.InitAll();
+    return m_initManager.InitAll();
 }
 
 bool Game::LoadResources() {
@@ -97,7 +86,6 @@ bool Game::LoadResources() {
     bool loaded = false;
     std::mutex cvMutex;
 
-    // Create a task to load the WorldMap and enqueue it to ThreadPool
     Task loadWorldMapTask([this, &cv, &loaded]() {
         auto tempWorldMap = std::make_shared<WorldMap>(
             "assets/land_shapes.json",
@@ -105,29 +93,32 @@ bool Game::LoadResources() {
             "assets/features/towns.geojson",
             "assets/features/suburbs.geojson"
         );
+        
         if (tempWorldMap->Init()) {
             {
-                std::lock_guard<std::mutex> lock(worldMapMutex);  // Lock mutex before updating shared resource
-                worldMap = tempWorldMap;  // Assign the loaded WorldMap
-                loaded = true;           // Set loaded flag to true
+                std::lock_guard<std::mutex> lock(m_worldMapMutex);
+                m_worldMap = tempWorldMap;
+                loaded = true;
             }
-            cv.notify_one();  // Notify waiting thread that WorldMap is loaded
+            cv.notify_one();
         }
         else {
             std::cerr << "Failed to initialize WorldMap." << std::endl;
         }
     });
-    threadPool->enqueueTask(loadWorldMapTask);  // Enqueue the task for loading WorldMap
+    
+    m_threadPool->enqueueTask(loadWorldMapTask);
 
-    // Wait for WorldMap to load using a condition variable
     std::unique_lock<std::mutex> lock(cvMutex);
     cv.wait(lock, [&loaded]() { return loaded; });
 
-    // Configure Camera based on WorldMap dimensions
-    if (worldMap) {
-        camera->SetZoom(Constants::CAMERA_MAX_ZOOM);  // Set maximum zoom level
-        camera->SetWorldBounds(worldMap->GetWorldWidth(), worldMap->GetWorldHeight());  // Set camera boundaries to match world size
-        camera->SetPosition(sf::Vector2f(worldMap->GetWorldWidth() / 2.0f, worldMap->GetWorldHeight() / 2.0f));  // Center camera on the world
+    if (m_worldMap) {
+        m_camera->SetZoom(Constants::CAMERA_MAX_ZOOM);
+        m_camera->SetWorldBounds(m_worldMap->GetWorldWidth(), m_worldMap->GetWorldHeight());
+        m_camera->SetPosition(sf::Vector2f(
+            m_worldMap->GetWorldWidth() / 2.0f,
+            m_worldMap->GetWorldHeight() / 2.0f
+        ));
     }
     else {
         std::cerr << "WorldMap is not loaded." << std::endl;
@@ -138,98 +129,81 @@ bool Game::LoadResources() {
 }
 
 void Game::Run() {
-    sf::Clock deltaClock;
-    while (isRunning && windowManager->GetWindow().isOpen()) {  // Loop until the game is no longer running or window is closed
-        ProcessEvents();  // Handle all pending events
+    while (m_isRunning && m_windowManager->GetWindow().isOpen()) {
+        ProcessEvents();
 
-        // Calculate delta time (time since last frame)
-        float dt = deltaClock.restart().asSeconds();
-
-        // Update non-simulation components with unscaled delta time
+        float dt = m_deltaClock.restart().asSeconds();
         UpdateNonSimulation(dt);
 
-        // Calculate scaled delta time for simulation
-        float scaledDt = dt * timeScale.load();
-
-        // Render the current frame
+        float scaledDt = dt * m_timeScale.load();
         Render();
     }
 }
 
 void Game::ProcessEvents() {
     sf::Event event;
-    while (windowManager->GetWindow().pollEvent(event)) {  // Poll events from WindowManager
-        eventManager->Dispatch(event);  // Dispatch events to relevant handlers
-        uiManager->ProcessEvent(event);  // Pass events to UIManager for GUI handling
+    while (m_windowManager->GetWindow().pollEvent(event)) {
+        m_eventManager->Dispatch(event);
+        m_uiManager->ProcessEvent(event);
     }
 }
 
 void Game::UpdateNonSimulation(float dt) {
-    if (camera) {
-        camera->Update(dt);  // Update camera position and zoom based on input
+    if (m_camera) {
+        m_camera->Update(dt);
     }
 
-    if (inputManager) {
-        inputManager->HandleInput(dt);  // Process player input (keyboard, mouse, etc.)
+    if (m_inputManager) {
+        m_inputManager->HandleInput(dt);
     }
 
-    if (uiManager) {
-        uiManager->Update(dt);  // Update UI elements
+    if (m_uiManager) {
+        m_uiManager->Update(dt);
     }
 }
 
 void Game::Render() {
-    // Clear the window with a background color
-    windowManager->GetWindow().clear(sf::Color(174, 223, 246));  // Clear with sky-blue color
+    m_windowManager->GetWindow().clear(sf::Color(174, 223, 246));
 
-    // Apply camera view to the window to render the game world
-    if (camera) {
-        camera->ApplyView(windowManager->GetWindow());
+    if (m_camera) {
+        m_camera->ApplyView(m_windowManager->GetWindow());
     }
 
-    // Render all game elements via the Renderer
-    if (renderer) {
-        renderer->Render(windowManager->GetWindow(), *camera);
+    if (m_renderer) {
+        m_renderer->Render(m_windowManager->GetWindow(), *m_camera);
     }
 
-    // Reset to default view to render UI elements
-    windowManager->GetWindow().setView(windowManager->GetWindow().getDefaultView());
+    m_windowManager->GetWindow().setView(m_windowManager->GetWindow().getDefaultView());
 
-    // Render UI elements like HUD, menus, etc.
-    if (uiManager) {
-        uiManager->Render();
+    if (m_uiManager) {
+        m_uiManager->Render();
     }
 
-    // Display the rendered frame on the screen
-    windowManager->GetWindow().display();
+    m_windowManager->GetWindow().display();
 }
 
 void Game::Shutdown() {
-    if (isRunning) {
-        isRunning = false;  // Set game state to not running
+    if (m_isRunning) {
+        m_isRunning = false;
     }
 
-    // Shutdown Renderer to release graphics resources
-    if (renderer) {
-        renderer->Shutdown();
+    if (m_renderer) {
+        m_renderer->Shutdown();
     }
 
-    // Shutdown ThreadPool to stop all threads
-    if (threadPool) {
-        threadPool->shutdown();
+    if (m_threadPool) {
+        m_threadPool->shutdown();
     }
 
-    // Shutdown UIManager to clean up GUI-related resources
-    if (uiManager) {
-        uiManager->Shutdown();
+    if (m_uiManager) {
+        m_uiManager->Shutdown();
     }
 
-    // Clean up other modules by resetting smart pointers
-    renderer.reset();
-    threadPool.reset();
-    inputManager.reset();
-    camera.reset();
-    worldMap.reset();
-    windowManager.reset();
-    uiManager.reset();
+    m_renderer.reset();
+    m_threadPool.reset();
+    m_inputManager.reset();
+    m_camera.reset();
+    m_worldMap.reset();
+    m_windowManager.reset();
+    m_uiManager.reset();
 }

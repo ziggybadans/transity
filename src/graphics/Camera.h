@@ -6,71 +6,49 @@
 
 class Camera {
 public:
-    // Constructor to initialize the camera with the window size.
     Camera(const sf::Vector2u& windowSize);
     ~Camera();
 
-    // Setters for immediate position and absolute zoom level.
-    void SetPosition(const sf::Vector2f& position);
-    void SetZoom(float zoomLevel);
-
-    // New Move method to adjust the camera's position by an offset.
-    /**
-    <summary>
-    Moves the camera by the specified offset, clamping the new position within the world bounds.
-    </summary>
-    <param name="offset">The offset by which to move the camera.</param>
-    */
-    void Move(const sf::Vector2f& offset);
-
-    // Getters for the current position and zoom level.
-    sf::Vector2f GetPosition() const;
-    float GetZoomLevel() const;
-
-    // Updates the camera's position and constraints every frame.
+    /* Core Camera Methods */
     void Update(float deltaTime);
-
-    // Applies the view to the provided window.
     void ApplyView(sf::RenderWindow& window) const;
-
-    // Zoom function to adjust zoom level by a factor.
-    void Zoom(float factor);
-
-    // Adjusts the camera view when the window is resized.
     void OnResize(const sf::Vector2u& newSize);
 
-    // Sets the boundaries of the world to prevent the camera from going beyond the world limits.
+    /* Movement Methods */
+    void Move(const sf::Vector2f& offset);
+    void Zoom(float factor);
+
+    /* Setters */
+    void SetPosition(const sf::Vector2f& position);
+    void SetZoom(float zoomLevel);
     void SetWorldBounds(float width, float height);
+    void SetMinZoomLevel(float value);
+    void SetMaxZoomLevel(float value);
 
-    // Set minimum and maximum zoom levels to prevent over or under zooming.
-    void setMinZoomLevel(float value);
-    void setMaxZoomLevel(float value);
-
-    // Getters for minimum and maximum zoom levels.
-    float getMinZoomLevel() const { return minZoomLevel; }
-    float getMaxZoomLevel() const { return maxZoomLevel; }
-
-    // Returns a reference to the current view.
+    /* Getters */
+    sf::Vector2f GetPosition() const;
+    float GetZoomLevel() const;
+    float GetMinZoomLevel() const { return m_minZoomLevel; }
+    float GetMaxZoomLevel() const { return m_maxZoomLevel; }
     const sf::View& GetView() const;
 
 private:
-    sf::View view; // The SFML view representing the camera.
-
-    // Current camera states.
-    sf::Vector2f currentPosition; // The current position of the camera.
-    float currentZoom; // The current zoom level of the camera.
-
-    sf::Vector2u windowSize; // The size of the window.
-    sf::Vector2f baseViewSize; // The original size of the view.
-
-    // World boundaries to ensure the camera stays within defined limits.
-    float worldWidth; // Width of the world.
-    float worldHeight; // Height of the world.
-
-    // Minimum and maximum zoom levels to constrain zooming.
-    float minZoomLevel; // Minimum zoom level.
-    float maxZoomLevel; // Maximum zoom level.
-
-    // Helper function to clamp the camera's position within world boundaries.
     void ClampPosition();
+
+    /* View Properties */
+    sf::View m_view;
+    sf::Vector2f m_currentPosition;
+    float m_currentZoom;
+
+    /* Window Properties */
+    sf::Vector2u m_windowSize;
+    sf::Vector2f m_baseViewSize;
+
+    /* World Boundaries */
+    float m_worldWidth;
+    float m_worldHeight;
+
+    /* Zoom Constraints */
+    float m_minZoomLevel;
+    float m_maxZoomLevel;
 };

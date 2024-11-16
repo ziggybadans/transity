@@ -2,71 +2,75 @@
 #include <iostream>
 
 WindowManager::WindowManager()
-    : window(nullptr),
-      videoMode(1280, 720), // Default resolution
-      windowTitle("2D Transport Management Game"), // Default title
-      contextSettings(), // Default context settings
-      fullscreen(false)
+    : m_window(nullptr),
+      m_videoMode(1280, 720),      // Default resolution
+      m_windowTitle("2D Transport Management Game"),
+      m_contextSettings(),         // Default context settings
+      m_fullscreen(false)
 {}
 
 WindowManager::~WindowManager() {
-    if (window && window->isOpen()) {
-        window->close();
+    if (m_window && m_window->isOpen()) {
+        m_window->close();
     }
 }
 
 bool WindowManager::Init() {
-    // Determine window style based on fullscreen flag
-    sf::Uint32 style = fullscreen ? sf::Style::Fullscreen : sf::Style::Default;
+    sf::Uint32 style = m_fullscreen ? sf::Style::Fullscreen : sf::Style::Default;
+    
+    m_window = std::make_unique<sf::RenderWindow>(
+        m_videoMode, 
+        m_windowTitle, 
+        style, 
+        m_contextSettings
+    );
+    m_window->setFramerateLimit(240);
 
-    window = std::make_unique<sf::RenderWindow>(videoMode, windowTitle, style, contextSettings);
-    window->setFramerateLimit(240);
-
-    return window->isOpen();
-}
-
-void WindowManager::SetVideoMode(const sf::VideoMode& vm) {
-    videoMode = vm;
-}
-
-void WindowManager::SetTitle(const std::string& title) {
-    windowTitle = title;
-}
-
-void WindowManager::SetContextSettings(const sf::ContextSettings& settings) {
-    contextSettings = settings;
+    return m_window->isOpen();
 }
 
 bool WindowManager::PollEvent(sf::Event& event) {
-    if (window) {
-        return window->pollEvent(event);
+    if (m_window) {
+        return m_window->pollEvent(event);
     }
     return false;
 }
 
-bool WindowManager::IsOpen() const {
-    return window && window->isOpen();
-}
-
 void WindowManager::Clear(const sf::Color& color) {
-    if (window) {
-        window->clear(color);
+    if (m_window) {
+        m_window->clear(color);
     }
 }
 
 void WindowManager::Display() {
-    if (window) {
-        window->display();
+    if (m_window) {
+        m_window->display();
     }
 }
 
-sf::RenderWindow& WindowManager::GetWindow() {
-    if (window) {
-        return *window;
-    }
-    throw std::runtime_error("RenderWindow is not initialized.");
+void WindowManager::SetVideoMode(const sf::VideoMode& vm) {
+    m_videoMode = vm;
+}
+
+void WindowManager::SetTitle(const std::string& title) {
+    m_windowTitle = title;
+}
+
+void WindowManager::SetContextSettings(const sf::ContextSettings& settings) {
+    m_contextSettings = settings;
 }
 
 void WindowManager::SetFullscreen(bool enable) {
-    fullscreen = enable;
+    m_fullscreen = enable;
+}
+
+bool WindowManager::IsOpen() const {
+    return m_window && m_window->isOpen();
+}
+
+sf::RenderWindow& WindowManager::GetWindow() {
+    if (m_window) {
+        return *m_window;
+    }
+    throw std::runtime_error("RenderWindow is not initialized.");
 }

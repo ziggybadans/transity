@@ -9,14 +9,17 @@ public:
     PlaceAreaRenderer();
     ~PlaceAreaRenderer();
 
+    /* Core Methods */
     bool Init();
-    void SetWorldMap(const std::shared_ptr<WorldMap>& map);
     void Render(sf::RenderWindow& window, const Camera& camera);
     void Shutdown();
 
-private:
-    std::shared_ptr<WorldMap> worldMap;
+    /* Setters */
+    void SetWorldMap(const std::shared_ptr<WorldMap>& map);
 
-    // Helper methods
-    void renderPlaceAreas(sf::RenderWindow& window, const Camera& camera);
+private:
+    void RenderPlaceAreas(sf::RenderWindow& window, const Camera& camera);
+
+    /* Renderer State */
+    std::shared_ptr<WorldMap> m_worldMap;
 };

@@ -1,212 +1,119 @@
 #include "Camera.h"
 #include <iostream>
 
-/**
-<summary>
-Camera class handles the in-game camera view, allowing zooming, panning, and clamping to keep the view within the world bounds.
-The camera ensures that the visible portion of the world fits within specified limits, providing a consistent user experience.
-</summary>
-*/
 Camera::Camera(const sf::Vector2u& windowSize)
-    : currentPosition(0.0f, 0.0f),
-    currentZoom(1.0f),
-    windowSize(windowSize),
-    worldWidth(3600.0f),
-    worldHeight(1800.0f),
-    minZoomLevel(0.001f),
-    maxZoomLevel(1.0f)
+    : m_currentPosition(0.0f, 0.0f)
+    , m_currentZoom(1.0f)
+    , m_windowSize(windowSize)
+    , m_worldWidth(3600.0f)
+    , m_worldHeight(1800.0f)
+    , m_minZoomLevel(0.001f)
+    , m_maxZoomLevel(1.0f)
 {
-    baseViewSize = sf::Vector2f(static_cast<float>(windowSize.x), static_cast<float>(windowSize.y));
-    view.setSize(baseViewSize);
-    view.setCenter(currentPosition);
+    m_baseViewSize = sf::Vector2f(static_cast<float>(windowSize.x), static_cast<float>(windowSize.y));
+    m_view.setSize(m_baseViewSize);
+    m_view.setCenter(m_currentPosition);
 }
 
-/**
-<summary>
-Destructor for the Camera class.
-</summary>
-*/
 Camera::~Camera() {}
 
-/**
-<summary>
-Sets the bounds of the world that the camera should stay within.
-</summary>
-<param name="width">The width of the world.</param>
-<param name="height">The height of the world.</param>
-*/
-void Camera::SetWorldBounds(float width, float height) {
-    worldWidth = width;
-    worldHeight = height;
-    ClampPosition();
-}
-
-/**
-<summary>
-Sets the minimum zoom level allowed for the camera.
-</summary>
-<param name="value">The minimum zoom level value.</param>
-*/
-void Camera::setMinZoomLevel(float value) {
-    minZoomLevel = value;
-}
-
-/**
-<summary>
-Sets the maximum zoom level allowed for the camera.
-</summary>
-<param name="value">The maximum zoom level value.</param>
-*/
-void Camera::setMaxZoomLevel(float value) {
-    maxZoomLevel = value;
-}
-
-/**
-<summary>
-Sets the zoom level of the camera, clamping it between the minimum and maximum zoom levels.
-</summary>
-<param name="zoomLevel">The new zoom level for the camera.</param>
-<exception cref="std::invalid_argument">Thrown if the zoom level is not positive.</exception>
-*/
-void Camera::SetZoom(float zoomLevel) {
-    if (zoomLevel <= 0.0f) {
-        throw std::invalid_argument("Zoom level must be positive.");
-    }
-    currentZoom = std::clamp(zoomLevel, minZoomLevel, maxZoomLevel);
-    view.setSize(baseViewSize.x * currentZoom, baseViewSize.y * currentZoom);
-    ClampPosition();
-}
-
-/**
-<summary>
-Sets the position of the camera within the world.
-The position is clamped to ensure that it stays within the world bounds.
-</summary>
-<param name="position">The new position for the camera.</param>
-*/
-void Camera::SetPosition(const sf::Vector2f& position) {
-    currentPosition = position;
-    ClampPosition();
-    view.setCenter(currentPosition);
-}
-
-/**
-<summary>
-Moves the camera by the specified offset, clamping the new position within the world bounds.
-</summary>
-<param name="offset">The offset by which to move the camera.</param>
-*/
-void Camera::Move(const sf::Vector2f& offset) {
-    currentPosition += offset;
-    ClampPosition();
-    view.setCenter(currentPosition);
-}
-
-/**
-<summary>
-Gets the current position of the camera in the world.
-</summary>
-<returns>The current position of the camera as a vector.</returns>
-*/
-sf::Vector2f Camera::GetPosition() const {
-    return currentPosition;
-}
-
-/**
-<summary>
-Gets the current zoom level of the camera.
-</summary>
-<returns>The current zoom level as a float.</returns>
-*/
-float Camera::GetZoomLevel() const {
-    return currentZoom;
-}
-
-/**
-<summary>
-Updates the camera's position. This method ensures that the view stays centered at the current position.
-</summary>
-<param name="deltaTime">Time elapsed since the last frame.</param>
-*/
 void Camera::Update(float /*deltaTime*/) {
-    view.setCenter(currentPosition);
+    m_view.setCenter(m_currentPosition);
     ClampPosition();
 }
 
-/**
-<summary>
-Applies the current camera view to the provided render window.
-</summary>
-<param name="window">Reference to the SFML RenderWindow that the view will be applied to.</param>
-*/
 void Camera::ApplyView(sf::RenderWindow& window) const {
-    window.setView(view);
+    window.setView(m_view);
+}
+
+void Camera::OnResize(const sf::Vector2u& newSize) {
+    m_windowSize = newSize;
+    m_baseViewSize = sf::Vector2f(static_cast<float>(newSize.x), static_cast<float>(newSize.y));
+    m_view.setSize(m_baseViewSize.x * m_currentZoom, m_baseViewSize.y * m_currentZoom);
+    ClampPosition();
+}
+
+void Camera::Move(const sf::Vector2f& offset) {
+    m_currentPosition += offset;
+    ClampPosition();
+    m_view.setCenter(m_currentPosition);
 }
 
 /**
-<summary>
-Adjusts the zoom level of the camera by the given factor, clamping the result between the minimum and maximum zoom levels.
-</summary>
-<param name="factor">The factor by which to adjust the current zoom level.</param>
-<exception cref="std::invalid_argument">Thrown if the zoom factor is not positive.</exception>
-*/
+ * @brief Adjusts the zoom level by the given factor
+ * @param factor The factor by which to adjust the current zoom level
+ * @throws std::invalid_argument if zoom factor is not positive
+ */
 void Camera::Zoom(float factor) {
     if (factor <= 0.0f) {
         throw std::invalid_argument("Zoom factor must be positive.");
     }
-    currentZoom = std::clamp(currentZoom * factor, minZoomLevel, maxZoomLevel);
-    view.setSize(baseViewSize.x * currentZoom, baseViewSize.y * currentZoom);
-    ClampPosition();
-
-    std::cout << "Zoom level is " << currentZoom << std::endl;
-}
-
-/**
-<summary>
-Handles resizing of the render window by adjusting the view size accordingly.
-</summary>
-<param name="newSize">The new size of the render window.</param>
-*/
-void Camera::OnResize(const sf::Vector2u& newSize) {
-    windowSize = newSize;
-    baseViewSize = sf::Vector2f(static_cast<float>(newSize.x), static_cast<float>(newSize.y));
-    view.setSize(baseViewSize.x * currentZoom, baseViewSize.y * currentZoom);
+    m_currentZoom = std::clamp(m_currentZoom * factor, m_minZoomLevel, m_maxZoomLevel);
+    m_view.setSize(m_baseViewSize.x * m_currentZoom, m_baseViewSize.y * m_currentZoom);
     ClampPosition();
 }
 
-/**
-<summary>
-Ensures that the camera's position is clamped within the bounds of the world.
-This method prevents the camera from moving beyond the edges of the defined world space.
-</summary>
-*/
-void Camera::ClampPosition() {
-    float halfViewWidth = view.getSize().x / 2.0f;
-    float halfViewHeight = view.getSize().y / 2.0f;
-
-    if (worldWidth < view.getSize().x) {
-        currentPosition.x = worldWidth / 2.0f;
-    }
-    else {
-        currentPosition.x = std::clamp(currentPosition.x, halfViewWidth, worldWidth - halfViewWidth);
-    }
-
-    if (worldHeight < view.getSize().y) {
-        currentPosition.y = worldHeight / 2.0f;
-    }
-    else {
-        currentPosition.y = std::clamp(currentPosition.y, halfViewHeight, worldHeight - halfViewHeight);
-    }
-
-    view.setCenter(currentPosition);
+void Camera::SetPosition(const sf::Vector2f& position) {
+    m_currentPosition = position;
+    ClampPosition();
+    m_view.setCenter(m_currentPosition);
 }
 
 /**
-<summary>
-Gets the current SFML View object that represents the camera's viewport.
-</summary>
-<returns>Constant reference to the SFML View.</returns>
-*/
+ * @brief Sets the zoom level, clamping between min and max values
+ * @param zoomLevel The new zoom level to set
+ * @throws std::invalid_argument if zoom level is not positive
+ */
+void Camera::SetZoom(float zoomLevel) {
+    if (zoomLevel <= 0.0f) {
+        throw std::invalid_argument("Zoom level must be positive.");
+    }
+    m_currentZoom = std::clamp(zoomLevel, m_minZoomLevel, m_maxZoomLevel);
+    m_view.setSize(m_baseViewSize.x * m_currentZoom, m_baseViewSize.y * m_currentZoom);
+    ClampPosition();
+}
+
+void Camera::SetWorldBounds(float width, float height) {
+    m_worldWidth = width;
+    m_worldHeight = height;
+    ClampPosition();
+}
+
+void Camera::SetMinZoomLevel(float value) {
+    m_minZoomLevel = value;
+}
+
+void Camera::SetMaxZoomLevel(float value) {
+    m_maxZoomLevel = value;
+}
+
+sf::Vector2f Camera::GetPosition() const {
+    return m_currentPosition;
+}
+
+float Camera::GetZoomLevel() const {
+    return m_currentZoom;
+}
+
 const sf::View& Camera::GetView() const {
-    return view;
+    return m_view;
+}
+
+void Camera::ClampPosition() {
+    float halfViewWidth = m_view.getSize().x / 2.0f;
+    float halfViewHeight = m_view.getSize().y / 2.0f;
+
+    if (m_worldWidth < m_view.getSize().x) {
+        m_currentPosition.x = m_worldWidth / 2.0f;
+    } else {
+        m_currentPosition.x = std::clamp(m_currentPosition.x, halfViewWidth, m_worldWidth - halfViewWidth);
+    }
+
+    if (m_worldHeight < m_view.getSize().y) {
+        m_currentPosition.y = m_worldHeight / 2.0f;
+    } else {
+        m_currentPosition.y = std::clamp(m_currentPosition.y, halfViewHeight, m_worldHeight - halfViewHeight);
+    }
+
+    m_view.setCenter(m_currentPosition);
 }

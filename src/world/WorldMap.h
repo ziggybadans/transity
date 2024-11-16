@@ -11,40 +11,39 @@
 
 class WorldMap : public IInitializable {
 public:
-    // Constructors and Destructor
     WorldMap(const std::string& geoJsonPath,
              const std::string& citiesGeoJsonPath,
              const std::string& townsGeoJsonPath,
              const std::string& suburbsGeoJsonPath);
     ~WorldMap() = default;
 
-    // Delete copy constructor and copy assignment operator to prevent copying
     WorldMap(const WorldMap&) = delete;
     WorldMap& operator=(const WorldMap&) = delete;
 
-    // Initialization
+    /* Virtual Methods */
     bool Init() override;
 
-    // Rendering
+    /* Core Methods */
     void Render(sf::RenderWindow& window, const Camera& camera) const;
 
-    // Accessors
+    /* Getters */
     float GetWorldWidth() const { return WORLD_WIDTH; }
     float GetWorldHeight() const { return WORLD_HEIGHT; }
-
     const std::vector<PlaceArea>& GetPlaceAreas() const;
 
 private:
-    std::string geoJsonFilePath;
-    std::string citiesGeoJsonFilePath;
-    std::string townsGeoJsonFilePath;
-    std::string suburbsGeoJsonFilePath;
+    /* File Paths */
+    std::string m_geoJsonFilePath;
+    std::string m_citiesGeoJsonFilePath;
+    std::string m_townsGeoJsonFilePath;
+    std::string m_suburbsGeoJsonFilePath;
     
-    MapData mapData;
-    MapLoader mapLoader;
+    /* Map Components */
+    MapData m_mapData;
+    MapLoader m_mapLoader;
+    InitializationManager m_initManager;
 
-    InitializationManager initManager;
-
+    /* World Constants */
     static constexpr float WORLD_WIDTH = 3600.0f;
     static constexpr float WORLD_HEIGHT = 1800.0f;
 };

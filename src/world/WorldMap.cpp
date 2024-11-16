@@ -5,19 +5,19 @@ WorldMap::WorldMap(const std::string& geoJsonPath,
                    const std::string& citiesGeoJsonPath,
                    const std::string& townsGeoJsonPath,
                    const std::string& suburbsGeoJsonPath)
-    : geoJsonFilePath(geoJsonPath),
-      citiesGeoJsonFilePath(citiesGeoJsonPath),
-      townsGeoJsonFilePath(townsGeoJsonPath),
-      suburbsGeoJsonFilePath(suburbsGeoJsonPath),
-      mapLoader(mapData)
+    : m_geoJsonFilePath(geoJsonPath)
+    , m_citiesGeoJsonFilePath(citiesGeoJsonPath)
+    , m_townsGeoJsonFilePath(townsGeoJsonPath)
+    , m_suburbsGeoJsonFilePath(suburbsGeoJsonPath)
+    , m_mapLoader(m_mapData)
 {
 }
 
 bool WorldMap::Init() {
-    if (!mapLoader.LoadGeoJSONFiles(geoJsonFilePath,
-                                    citiesGeoJsonFilePath,
-                                    townsGeoJsonFilePath,
-                                    suburbsGeoJsonFilePath)) {
+    if (!m_mapLoader.LoadGeoJSONFiles(m_geoJsonFilePath,
+                                     m_citiesGeoJsonFilePath,
+                                     m_townsGeoJsonFilePath,
+                                     m_suburbsGeoJsonFilePath)) {
         std::cerr << "Failed to load GeoJSON data." << std::endl;
         return false;
     }
@@ -39,7 +39,7 @@ void WorldMap::Render(sf::RenderWindow& window, const Camera& camera) const {
     );
 
     // Draw only shapes that intersect with the camera's view
-    const auto& landShapes = mapData.GetLandShapes();
+    const auto& landShapes = m_mapData.GetLandShapes();
     for (const auto& shape : landShapes) {
         sf::FloatRect shapeBounds = shape.getBounds();
         if (cameraRect.intersects(shapeBounds)) {
@@ -51,5 +51,5 @@ void WorldMap::Render(sf::RenderWindow& window, const Camera& camera) const {
 }
 
 const std::vector<PlaceArea>& WorldMap::GetPlaceAreas() const {
-    return mapData.GetPlaceAreas();
+    return m_mapData.GetPlaceAreas();
 }

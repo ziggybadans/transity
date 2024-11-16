@@ -8,37 +8,36 @@ PlaceAreaRenderer::~PlaceAreaRenderer() {
 }
 
 bool PlaceAreaRenderer::Init() {
-    // Initialize if needed
     return true;
 }
 
-void PlaceAreaRenderer::SetWorldMap(const std::shared_ptr<WorldMap>& map) {
-    worldMap = map;
-}
-
 void PlaceAreaRenderer::Render(sf::RenderWindow& window, const Camera& camera) {
-    if (!worldMap) return;
-
-    renderPlaceAreas(window, camera);
+    if (!m_worldMap) return;
+    RenderPlaceAreas(window, camera);
 }
 
 void PlaceAreaRenderer::Shutdown() {
-    // Clean up resources if any
+    // Clean up resources if needed
 }
 
-void PlaceAreaRenderer::renderPlaceAreas(sf::RenderWindow& window, const Camera& camera) {
-    const auto& placeAreas = worldMap->GetPlaceAreas();
+void PlaceAreaRenderer::SetWorldMap(const std::shared_ptr<WorldMap>& map) {
+    m_worldMap = map;
+}
+
+void PlaceAreaRenderer::RenderPlaceAreas(sf::RenderWindow& window, const Camera& camera) {
+    const auto& placeAreas = m_worldMap->GetPlaceAreas();
+    
     for (const auto& area : placeAreas) {
-        // Create a ConvexShape from the filledShape VertexArray
+        // Render filled shape
         sf::ConvexShape shape;
         shape.setPointCount(area.filledShape.getVertexCount());
         for (size_t i = 0; i < area.filledShape.getVertexCount(); ++i) {
             shape.setPoint(i, area.filledShape[i].position);
         }
-        shape.setFillColor(sf::Color(100, 100, 100, 100)); // Semi-transparent gray
+        shape.setFillColor(sf::Color(100, 100, 100, 100));
         window.draw(shape);
 
-        // Optionally, you can also render the outline if needed
+        // Render outline if present
         if (area.outline.getVertexCount() > 0) {
             sf::ConvexShape outlineShape;
             outlineShape.setPointCount(area.outline.getVertexCount());
