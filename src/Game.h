@@ -17,7 +17,8 @@
 #include "utility/Task.h"
 #include "managers/WindowManager.h"
 #include "managers/UIManager.h"
-#include "managers/ActionRegistrar.h"
+#include "managers/ResourceManager.h"
+#include "registry/ActionRegistrar.h"
 
 class IInitializable;
 
@@ -72,4 +73,6 @@ private:
     sf::VideoMode m_videoMode;
     std::string m_windowTitle;
     sf::Clock m_deltaClock;
+
+    std::shared_ptr<ResourceManager> m_resourceManager;
 };

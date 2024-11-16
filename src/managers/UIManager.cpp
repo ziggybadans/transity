@@ -5,7 +5,7 @@
 UIManager::UIManager(std::shared_ptr<WorldMap> worldMap)
     : m_initialized(false)
     , m_renderWindow(nullptr)
-    , m_worldMap(worldMap)
+    , m_worldMap(std::move(worldMap))
     , m_timeScalePtr(nullptr)
     , m_fps(0.0f)
 {
@@ -34,14 +34,15 @@ void UIManager::ProcessEvent(const sf::Event& event) {
 }
 
 void UIManager::Update(float deltaTime) {
-    if (m_initialized && m_renderWindow) {
-        ImGui::SFML::Update(*m_renderWindow, sf::seconds(deltaTime));
+    if (!m_initialized || !m_renderWindow) {
+        return;
+    }
 
-        if (deltaTime > 0.0f) {
-            m_fps = 1.0f / deltaTime;
-        } else {
-            m_fps = 0.0f;
-        }
+    try {
+        ImGui::SFML::Update(*m_renderWindow, sf::seconds(deltaTime));
+        m_fps = deltaTime > 0.0f ? 1.0f / deltaTime : 0.0f;
+    } catch (const std::exception& e) {
+        std::cerr << "Error updating UI: " << e.what() << std::endl;
     }
 }
 
@@ -65,5 +66,8 @@ void UIManager::Shutdown() {
 }
 
 void UIManager::SetWindow(sf::RenderWindow& window) {
+    if (!window.isOpen()) {
+        throw std::invalid_argument("Cannot set closed window");
+    }
     m_renderWindow = &window;
 }

@@ -151,6 +151,7 @@
     <ClCompile Include="src\graphics\PlaceAreaRenderer.cpp" />
     <ClCompile Include="src\graphics\Renderer.cpp" />
     <ClCompile Include="src\managers\InputManager.cpp" />
+    <ClCompile Include="src\managers\ResourceManager.cpp" />
     <ClCompile Include="src\managers\UIManager.cpp" />
     <ClCompile Include="src\managers\WindowManager.cpp" />
     <ClCompile Include="src\Transity.cpp" />
@@ -177,6 +178,7 @@
     <ClInclude Include="src\managers\EventManager.h" />
     <ClInclude Include="src\managers\InitializationManager.h" />
     <ClInclude Include="src\managers\InputManager.h" />
+    <ClInclude Include="src\managers\ResourceManager.h" />
     <ClInclude Include="src\managers\UIManager.h" />
     <ClInclude Include="src\managers\WindowManager.h" />
     <ClInclude Include="src\utility\FastNoiseLite.h" />

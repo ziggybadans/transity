@@ -6,7 +6,7 @@ WindowManager::WindowManager()
       m_videoMode(1280, 720),      // Default resolution
       m_windowTitle("2D Transport Management Game"),
       m_contextSettings(),         // Default context settings
-      m_fullscreen(false)
+      m_fullscreen(true)
 {}
 
 WindowManager::~WindowManager() {
@@ -18,15 +18,19 @@ WindowManager::~WindowManager() {
 bool WindowManager::Init() {
     sf::Uint32 style = m_fullscreen ? sf::Style::Fullscreen : sf::Style::Default;
     
-    m_window = std::make_unique<sf::RenderWindow>(
-        m_videoMode, 
-        m_windowTitle, 
-        style, 
-        m_contextSettings
-    );
-    m_window->setFramerateLimit(240);
-
-    return m_window->isOpen();
+    try {
+        m_window = std::make_unique<sf::RenderWindow>(
+            m_videoMode, 
+            m_windowTitle, 
+            style, 
+            m_contextSettings
+        );
+        m_window->setFramerateLimit(240);
+        return m_window->isOpen();
+    } catch (const std::exception& e) {
+        std::cerr << "Failed to initialize window: " << e.what() << std::endl;
+        return false;
+    }
 }
 
 bool WindowManager::PollEvent(sf::Event& event) {
@@ -69,8 +73,8 @@ bool WindowManager::IsOpen() const {
 }
 
 sf::RenderWindow& WindowManager::GetWindow() {
-    if (m_window) {
-        return *m_window;
+    if (!m_window) {
+        throw std::runtime_error("Attempting to access uninitialized window");
     }
-    throw std::runtime_error("RenderWindow is not initialized.");
+    return *m_window;
 }
