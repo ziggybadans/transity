@@ -36,17 +36,16 @@ void Renderer::Render(sf::RenderWindow& window, const Camera& camera) {
 
     std::lock_guard<std::mutex> lock(m_renderMutex);
 
-    // Clear window with sky-blue background
-    window.clear(sf::Color(174, 223, 246));
+    // Apply the camera view
+    camera.ApplyView(window);
 
-    // Render the world map first (base layer)
+    // Render various components
     RenderWorldMap(window, camera);
-
-    // Render place areas on top
     m_placeAreaRenderer->Render(window, camera);
-    
-    // Render UI elements last
     RenderHoveredAreaName(window);
+
+    // Restore the original view if necessary
+    window.setView(window.getDefaultView());
 }
 
 void Renderer::Shutdown() {

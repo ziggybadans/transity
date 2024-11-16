@@ -21,15 +21,20 @@ void InputManager::HandleInput(float deltaTime)
 {
     // Handle zooming with mouse wheel
     if (ImGui::GetIO().MouseWheel != 0.0f) {
+        std::cout << "Mouse wheel input detected: " << ImGui::GetIO().MouseWheel << std::endl;
         if (ImGui::GetIO().MouseWheel > 0.0f) {
-            EmitAction(InputAction::ZoomIn);
-        } else if (ImGui::GetIO().MouseWheel < 0.0f) {
             EmitAction(InputAction::ZoomOut);
+            std::cout << "Emitting ZoomOut action." << std::endl;
+        } else if (ImGui::GetIO().MouseWheel < 0.0f) {
+            EmitAction(InputAction::ZoomIn);
+            std::cout << "Emitting ZoomIn action." << std::endl;
         }
     }
 
-    // Handle panning with arrow keys
+    // Handle panning with arrow keys and WASD
     sf::Vector2f movement(0.0f, 0.0f);
+    
+    // Arrow Keys
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) {
         movement.x -= m_panSpeed * deltaTime;
     }
@@ -40,6 +45,20 @@ void InputManager::HandleInput(float deltaTime)
         movement.y -= m_panSpeed * deltaTime;
     }
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down)) {
+        movement.y += m_panSpeed * deltaTime;
+    }
+
+    // WASD Keys
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) { // Move Left
+        movement.x -= m_panSpeed * deltaTime;
+    }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) { // Move Right
+        movement.x += m_panSpeed * deltaTime;
+    }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::W)) { // Move Up
+        movement.y -= m_panSpeed * deltaTime;
+    }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) { // Move Down
         movement.y += m_panSpeed * deltaTime;
     }
 

@@ -4,6 +4,8 @@
 #include <thread>
 #include <condition_variable>
 #include "Constants.h"
+#include "managers/InputManager.h"
+#include "managers/ActionRegistrar.h"
 
 Game::Game()
     : m_videoMode(Constants::WINDOW_WIDTH, Constants::WINDOW_HEIGHT)
@@ -46,6 +48,10 @@ bool Game::Init() {
     m_inputManager = std::make_shared<InputManager>(m_eventManager, m_windowManager->GetWindow());
     m_inputManager->SetZoomSpeed(Constants::CAMERA_ZOOM_SPEED);
     m_inputManager->SetPanSpeed(Constants::CAMERA_PAN_SPEED);
+
+    auto actionRegistrar = std::make_unique<ActionRegistrar>(m_inputManager, m_camera);
+    actionRegistrar->RegisterActions();
+    m_actionRegistrar = std::move(actionRegistrar);
 
     m_uiManager = std::make_shared<UIManager>(m_worldMap);
     m_uiManager->SetWindow(m_windowManager->GetWindow());
@@ -154,12 +160,12 @@ void Game::UpdateNonSimulation(float dt) {
         m_camera->Update(dt);
     }
 
-    if (m_inputManager) {
-        m_inputManager->HandleInput(dt);
-    }
-
     if (m_uiManager) {
         m_uiManager->Update(dt);
+    }
+
+    if (m_inputManager) {
+        m_inputManager->HandleInput(dt);
     }
 }
 

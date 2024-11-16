@@ -179,9 +179,7 @@
     <ClInclude Include="src\managers\InputManager.h" />
     <ClInclude Include="src\managers\UIManager.h" />
     <ClInclude Include="src\managers\WindowManager.h" />
-    <ClInclude Include="src\utility\Async.h" />
     <ClInclude Include="src\utility\FastNoiseLite.h" />
-    <ClInclude Include="src\utility\Quadtree.h" />
     <ClInclude Include="src\utility\Task.h" />
     <ClInclude Include="src\utility\ThreadPool.h" />
     <ClInclude Include="src\world\MapData.h" />

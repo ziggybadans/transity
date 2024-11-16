@@ -17,6 +17,7 @@
 #include "utility/Task.h"
 #include "managers/WindowManager.h"
 #include "managers/UIManager.h"
+#include "managers/ActionRegistrar.h"
 
 class IInitializable;
 
@@ -57,6 +58,9 @@ private:
     std::unique_ptr<Renderer> m_renderer;
     std::shared_ptr<Camera> m_camera;
     std::shared_ptr<InputManager> m_inputManager;
+
+    /* Action Registrar */
+    std::unique_ptr<ActionRegistrar> m_actionRegistrar;
 
     /* Game State */
     std::shared_ptr<WorldMap> m_worldMap;

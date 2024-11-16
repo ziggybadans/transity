@@ -28,4 +28,7 @@ private:
     sf::RenderWindow* m_renderWindow;
     std::shared_ptr<WorldMap> m_worldMap;
     float* m_timeScalePtr;
+
+    // New member variable to store FPS
+    float m_fps;
 };

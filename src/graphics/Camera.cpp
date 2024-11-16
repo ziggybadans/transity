@@ -51,6 +51,7 @@ void Camera::Zoom(float factor) {
     m_currentZoom = std::clamp(m_currentZoom * factor, m_minZoomLevel, m_maxZoomLevel);
     m_view.setSize(m_baseViewSize.x * m_currentZoom, m_baseViewSize.y * m_currentZoom);
     ClampPosition();
+    std::cout << "Camera zoom updated. New Zoom Level: " << m_currentZoom << std::endl;
 }
 
 void Camera::SetPosition(const sf::Vector2f& position) {
