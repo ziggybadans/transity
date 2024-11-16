@@ -11,10 +11,10 @@ Camera::Camera(const sf::Vector2u& windowSize)
     : currentPosition(0.0f, 0.0f),
     currentZoom(1.0f),
     windowSize(windowSize),
-    worldWidth(10000.0f),
-    worldHeight(10000.0f),
-    minZoomLevel(0.01f),
-    maxZoomLevel(5.0f)
+    worldWidth(3600.0f),
+    worldHeight(1800.0f),
+    minZoomLevel(0.001f),
+    maxZoomLevel(1.0f)
 {
     baseViewSize = sf::Vector2f(static_cast<float>(windowSize.x), static_cast<float>(windowSize.y));
     view.setSize(baseViewSize);
@@ -63,6 +63,22 @@ void Camera::setMaxZoomLevel(float value) {
 
 /**
 <summary>
+Sets the zoom level of the camera, clamping it between the minimum and maximum zoom levels.
+</summary>
+<param name="zoomLevel">The new zoom level for the camera.</param>
+<exception cref="std::invalid_argument">Thrown if the zoom level is not positive.</exception>
+*/
+void Camera::SetZoom(float zoomLevel) {
+    if (zoomLevel <= 0.0f) {
+        throw std::invalid_argument("Zoom level must be positive.");
+    }
+    currentZoom = std::clamp(zoomLevel, minZoomLevel, maxZoomLevel);
+    view.setSize(baseViewSize.x * currentZoom, baseViewSize.y * currentZoom);
+    ClampPosition();
+}
+
+/**
+<summary>
 Sets the position of the camera within the world.
 The position is clamped to ensure that it stays within the world bounds.
 </summary>
@@ -84,22 +100,6 @@ void Camera::Move(const sf::Vector2f& offset) {
     currentPosition += offset;
     ClampPosition();
     view.setCenter(currentPosition);
-}
-
-/**
-<summary>
-Sets the zoom level of the camera, clamping it between the minimum and maximum zoom levels.
-</summary>
-<param name="zoomLevel">The new zoom level for the camera.</param>
-<exception cref="std::invalid_argument">Thrown if the zoom level is not positive.</exception>
-*/
-void Camera::SetZoom(float zoomLevel) {
-    if (zoomLevel <= 0.0f) {
-        throw std::invalid_argument("Zoom level must be positive.");
-    }
-    currentZoom = std::clamp(zoomLevel, minZoomLevel, maxZoomLevel);
-    view.setSize(baseViewSize.x * currentZoom, baseViewSize.y * currentZoom);
-    ClampPosition();
 }
 
 /**

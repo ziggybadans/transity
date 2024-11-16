@@ -18,9 +18,6 @@ enum class InputAction {
     PanUp,
     PanDown,
     Select,
-    AddStation,
-    StartBuildingLine,
-    FinishBuildingLine,
     // Add more actions as needed
 };
 

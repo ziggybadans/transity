@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <memory>
+#include <iostream>
 
 class IInitializable {
 public:
@@ -18,12 +19,18 @@ public:
 
     // Initializes all registered modules. Returns false if any module fails to initialize.
     bool InitAll() {
-        for (auto& module : modules) {
-            if (!module->Init()) {
-                return false;
-            }
+    for (auto& module : modules) {
+        if (!module->Init()) {
+            std::cerr << "Failed to initialize a module." << std::endl;
+            return false;
         }
-        return true;
+    }
+    return true;
+}
+
+    // Shutdown all modules
+    void Shutdown() {
+        // Implement shutdown logic if needed
     }
 
 private:

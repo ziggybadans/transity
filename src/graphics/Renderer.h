@@ -7,8 +7,6 @@
 #include "../world/WorldMap.h"
 
 // Forward declarations for specialized renderers
-class LineRenderer;
-class StationRenderer;
 class PlaceAreaRenderer;
 
 class Renderer {
@@ -34,8 +32,6 @@ private:
     std::mutex renderMutex;
 
     // Specialized renderers
-    std::unique_ptr<LineRenderer> lineRenderer;
-    std::unique_ptr<StationRenderer> stationRenderer;
     std::unique_ptr<PlaceAreaRenderer> placeAreaRenderer;
 
     // Private helper functions

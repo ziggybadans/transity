@@ -1,9 +1,9 @@
 #include "Game.h"
-#include "managers/WorldMapController.h"
 #include <iostream>
 #include <future>
 #include <thread>
 #include <condition_variable>
+#include "Constants.h"
 
 // Constructor initializes video mode, window title, and sets isRunning to false
 Game::Game()
@@ -54,15 +54,6 @@ bool Game::Init() {
     inputManager->SetZoomSpeed(Constants::CAMERA_ZOOM_SPEED);  // Set camera zoom speed
     inputManager->SetPanSpeed(Constants::CAMERA_PAN_SPEED);    // Set camera pan speed
 
-    // Initialize WorldMapController with all required shared_ptr arguments
-    worldMapController = std::make_shared<WorldMapController>(
-        worldMap,          // std::shared_ptr<WorldMap>
-        inputManager,     // std::shared_ptr<InputManager>
-        camera,           // std::shared_ptr<Camera>
-        windowManager     // std::shared_ptr<WindowManager>
-    );
-    worldMapController->Init();
-
     // Initialize UIManager
     uiManager = std::make_shared<UIManager>(worldMap);
     uiManager->SetWindow(windowManager->GetWindow());
@@ -70,7 +61,6 @@ bool Game::Init() {
         std::cerr << "Failed to initialize UIManager." << std::endl;
         return false;
     }
-    uiManager->SetTimeScalePointer(&timeScale);
 
     isRunning = true;  // Set game state to running
     return true;
@@ -161,9 +151,6 @@ void Game::Run() {
         // Calculate scaled delta time for simulation
         float scaledDt = dt * timeScale.load();
 
-        // Update simulation components with scaled delta time
-        UpdateSimulation(scaledDt);
-
         // Render the current frame
         Render();
     }
@@ -188,25 +175,6 @@ void Game::UpdateNonSimulation(float dt) {
 
     if (uiManager) {
         uiManager->Update(dt);  // Update UI elements
-    }
-}
-
-void Game::UpdateSimulation(float scaledDt) {
-    if (worldMap) {
-        auto& lines = worldMap->GetLines();  // Get all lines in the WorldMap
-        for (auto& linePtr : lines) {
-            UpdateTrainsRecursive(linePtr.get(), scaledDt);
-        }
-    }
-}
-
-void Game::UpdateTrainsRecursive(Line* line, float scaledDt) {
-    auto& trains = line->GetTrains();
-    for (auto& train : trains) {
-        train.Update(scaledDt);
-    }
-    for (auto& childLinePtr : line->GetChildLines()) {
-        UpdateTrainsRecursive(childLinePtr.get(), scaledDt);
     }
 }
 

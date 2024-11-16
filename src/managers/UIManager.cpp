@@ -1,13 +1,11 @@
 #include "UIManager.h"
 #include <string>
 #include <iostream>
-#include <cstring>
 
 UIManager::UIManager(std::shared_ptr<WorldMap> worldMap)
     : initialized(false), renderWindow(nullptr), worldMap(worldMap), timeScalePtr(nullptr)
 {
-    // Initialize default color and thickness
-    // These can be removed if not needed
+    // Initialize default settings if needed
 }
 
 UIManager::~UIManager() {
@@ -16,7 +14,10 @@ UIManager::~UIManager() {
 
 bool UIManager::Init() {
     if (renderWindow) {
-        ImGui::SFML::Init(*renderWindow);
+        if (!ImGui::SFML::Init(*renderWindow)) {
+            std::cerr << "Failed to initialize ImGui SFML." << std::endl;
+            return false;
+        }
         initialized = true;
         return true;
     }
@@ -42,8 +43,8 @@ void UIManager::Update(float deltaTime) {
 void UIManager::Render() {
     if (!initialized) return;
 
-    RenderLineProperties();
-    RenderStationProperties();
+    // Example UI: Display information about place areas
+    RenderPlaceAreaInfo();
 
     ImGui::SFML::Render(*renderWindow);
 }
@@ -55,73 +56,15 @@ void UIManager::Shutdown() {
     }
 }
 
-void UIManager::RegisterUIAction(const std::string& action, std::function<void()> callback) {
-    uiActionCallbacks.emplace_back(action, callback);
-}
+void UIManager::RenderPlaceAreaInfo() {
+    ImGui::Begin("Place Areas");
 
-void UIManager::EmitUIAction(const std::string& action) {
-    for (const auto& pair : uiActionCallbacks) {
-        if (pair.first == action) {
-            pair.second();
-            return;
-        }
+    const auto& placeAreas = worldMap->GetPlaceAreas();
+    for (const auto& area : placeAreas) {
+        ImGui::Text("Name: %s", area.name.c_str());
+        ImGui::Text("Category: %d", static_cast<int>(area.category));
+        ImGui::Separator();
     }
-}
 
-void UIManager::SetTimeScalePointer(std::atomic<float>* ptr) {
-    timeScalePtr = ptr;
-}
-
-void UIManager::RenderLineProperties() {
-    Line* selectedLine = worldMap->GetSelectedLine();
-    if (selectedLine) {
-        ImGui::Begin("Line Properties");
-
-        // Thickness slider
-        static float thickness = selectedLine->GetThickness();
-        if (ImGui::SliderFloat("Line Thickness", &thickness, 1.0f, 10.0f)) {
-            selectedLine->SetThickness(thickness);
-        }
-
-        // Speed control
-        static float speed = selectedLine->GetSpeed();
-        if (ImGui::InputFloat("Speed (km/h)", &speed)) {
-            selectedLine->SetSpeed(speed);
-        }
-
-        // Button to add a train
-        if (ImGui::Button("Add Train")) {
-            selectedLine->AddTrain();
-        }
-
-        // Button to remove all trains
-        if (ImGui::Button("Remove All Trains")) {
-            selectedLine->RemoveTrains();
-        }
-
-        ImGui::End();
-    }
-}
-
-void UIManager::RenderStationProperties() {
-    Station* selectedStation = worldMap->GetSelectedStation();
-    if (selectedStation) {
-        ImGui::Begin("Station Properties");
-
-        // Get and edit station name
-        static char nameBuffer[128];
-        errno_t err = strncpy_s(nameBuffer, sizeof(nameBuffer), selectedStation->GetName().c_str(), _TRUNCATE);
-        if (err != 0) {
-            std::cerr << "Error copying station name with strncpy_s" << std::endl;
-            nameBuffer[0] = '\0'; // Ensure buffer is null-terminated
-        }
-
-        if (ImGui::InputText("Name", nameBuffer, sizeof(nameBuffer))) {
-            selectedStation->SetName(std::string(nameBuffer));
-        }
-
-        // Additional station properties can be added here
-
-        ImGui::End();
-    }
+    ImGui::End();
 }

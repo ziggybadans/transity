@@ -30,53 +30,43 @@ void InputManager::SetPanSpeed(float speed) {
 }
 
 void InputManager::HandleInput(float deltaTime) {
-    // Check if ImGui wants to capture keyboard or mouse input
-    if (ImGui::GetIO().WantCaptureKeyboard || ImGui::GetIO().WantCaptureMouse) {
-        // ImGui is handling the input, so we don't process it in the game
-        return;
-    }
-
-    // Handle continuous key presses for panning
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) {
-        EmitAction(InputAction::PanLeft);
-    }
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) {
-        EmitAction(InputAction::PanRight);
-    }
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::W)) {
-        EmitAction(InputAction::PanUp);
-    }
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) {
-        EmitAction(InputAction::PanDown);
-    }
-
-    // Handle mouse input
-    sf::Event event;
-    while (window.pollEvent(event)) {
-        // Dispatch events to EventManager if necessary
-        eventManager->Dispatch(event); // Existing event dispatching
-
-        if (event.type == sf::Event::MouseWheelScrolled) {
-            if (event.mouseWheelScroll.delta > 0) {
-                EmitAction(InputAction::ZoomIn);
-            }
-            else {
-                EmitAction(InputAction::ZoomOut);
-            }
+    // Zooming with mouse wheel
+    if (ImGui::GetIO().MouseWheel != 0.0f) {
+        if (ImGui::GetIO().MouseWheel > 0.0f) {
+            EmitAction(InputAction::ZoomIn);
         }
-
-        // Handle mouse button presses
-        if (event.type == sf::Event::MouseButtonPressed) {
-            if (event.mouseButton.button == sf::Mouse::Left) {
-                EmitAction(InputAction::Select);
-            }
-            if (event.mouseButton.button == sf::Mouse::Right) {
-                EmitAction(InputAction::AddStation);
-            }
+        else if (ImGui::GetIO().MouseWheel < 0.0f) {
+            EmitAction(InputAction::ZoomOut);
         }
-
-        // Handle other relevant events as needed
     }
+
+    // Panning with arrow keys
+    sf::Vector2f movement(0.0f, 0.0f);
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) {
+        movement.x -= panSpeed * deltaTime;
+    }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right)) {
+        movement.x += panSpeed * deltaTime;
+    }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up)) {
+        movement.y -= panSpeed * deltaTime;
+    }
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down)) {
+        movement.y += panSpeed * deltaTime;
+    }
+
+    if (movement.x != 0.0f || movement.y != 0.0f) {
+        // Assume you have access to the Camera instance here
+        // For example, through a shared pointer or other means
+        // This might require additional design changes
+        // Here, we'll emit actions for panning
+        if (movement.x < 0.0f) EmitAction(InputAction::PanLeft);
+        if (movement.x > 0.0f) EmitAction(InputAction::PanRight);
+        if (movement.y < 0.0f) EmitAction(InputAction::PanUp);
+        if (movement.y > 0.0f) EmitAction(InputAction::PanDown);
+    }
+
+    // Handle other continuous inputs as needed
 }
 
 void InputManager::RegisterActionCallback(InputAction action, std::function<void()> callback) {

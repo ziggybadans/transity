@@ -17,10 +17,9 @@
 #include "utility/Task.h"  // Include task utility for multi-threading
 #include "managers/WindowManager.h"  // Include window manager
 #include "managers/UIManager.h"  // Include UI manager
-#include "managers/WorldMapController.h"  // Include WorldMap controller
 
 // Forward declarations
-class WorldMapController;  // Forward declaration of WorldMapController
+class IInitializable;
 
 // Game class, inheriting from IInitializable to support initialization pattern
 class Game : public IInitializable {
@@ -46,7 +45,7 @@ public:
 private:
     // Managers
     InitializationManager initManager;  // Handles initialization of different game components
-    std::shared_ptr<EventManager> eventManager;  // Manages events such as input and window events
+    std::shared_ptr<EventManager> eventManager;  // Manages events such as input and window
     std::shared_ptr<WindowManager> windowManager;  // Manages window creation and events
     std::shared_ptr<UIManager> uiManager;  // Manages UI elements, likely for the debug GUI
 
@@ -57,8 +56,6 @@ private:
     std::shared_ptr<InputManager> inputManager;  // Manages player input (keyboard, mouse, etc.)
 
     std::shared_ptr<WorldMap> worldMap;  // Represents the game world; contains map data
-    std::shared_ptr<WorldMapController> worldMapController;  // Handles game logic related to WorldMap
-
     mutable std::mutex worldMapMutex;  // Mutex to guard access to worldMap, allowing thread-safe modifications
 
     // Game state
@@ -80,8 +77,6 @@ private:
 
     // Separate update functions
     void UpdateNonSimulation(float dt);  // Update input, camera, UI
-    void UpdateSimulation(float scaledDt); // Update simulation (e.g., trains)
-    void UpdateTrainsRecursive(Line* line, float scaledDt);
 
     void Render();  // Render the game, drawing everything to the screen
 };
