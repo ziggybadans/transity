@@ -23,8 +23,6 @@ public:
     void SetWindow(sf::RenderWindow& window);
 
 private:
-    void RenderPlaceAreaInfo();
-
     /* UI State */
     bool m_initialized;
     sf::RenderWindow* m_renderWindow;

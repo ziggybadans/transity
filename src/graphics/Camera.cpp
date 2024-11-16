@@ -57,6 +57,7 @@ void Camera::SetPosition(const sf::Vector2f& position) {
     m_currentPosition = position;
     ClampPosition();
     m_view.setCenter(m_currentPosition);
+    std::cout << "Camera Position: (" << m_currentPosition.x << ", " << m_currentPosition.y << ")" << std::endl;
 }
 
 /**

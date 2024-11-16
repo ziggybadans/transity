@@ -30,6 +30,7 @@ public:
     float GetWorldWidth() const { return WORLD_WIDTH; }
     float GetWorldHeight() const { return WORLD_HEIGHT; }
     const std::vector<PlaceArea>& GetPlaceAreas() const;
+    const MapData& GetMapData() const { return m_mapData; }
 
 private:
     /* File Paths */

@@ -31,15 +31,15 @@ bool Game::Init() {
 
     m_threadPool = std::make_unique<ThreadPool>(std::thread::hardware_concurrency());
 
-    m_renderer = std::make_unique<Renderer>();
-    if (!m_renderer->Init(m_windowManager->GetWindow())) {
-        std::cerr << "Failed to initialize Renderer." << std::endl;
-        return false;
-    }
-    m_renderer->SetWorldMap(m_worldMap);
-
     if (!LoadResources()) {
         std::cerr << "Failed to load initial resources." << std::endl;
+        return false;
+    }
+
+    m_renderer = std::make_unique<Renderer>();
+    m_renderer->SetWorldMap(m_worldMap);
+    if (!m_renderer->Init(m_windowManager->GetWindow())) {
+        std::cerr << "Failed to initialize Renderer." << std::endl;
         return false;
     }
 
@@ -119,6 +119,7 @@ bool Game::LoadResources() {
             m_worldMap->GetWorldWidth() / 2.0f,
             m_worldMap->GetWorldHeight() / 2.0f
         ));
+        std::cout << "Camera initialized to center of the world." << std::endl;
     }
     else {
         std::cerr << "WorldMap is not loaded." << std::endl;

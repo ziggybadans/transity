@@ -41,7 +41,6 @@ void UIManager::Update(float deltaTime) {
 void UIManager::Render() {
     if (!m_initialized) return;
 
-    RenderPlaceAreaInfo();
     ImGui::SFML::Render(*m_renderWindow);
 }
 
@@ -54,17 +53,4 @@ void UIManager::Shutdown() {
 
 void UIManager::SetWindow(sf::RenderWindow& window) {
     m_renderWindow = &window;
-}
-
-void UIManager::RenderPlaceAreaInfo() {
-    ImGui::Begin("Place Areas");
-
-    const auto& placeAreas = m_worldMap->GetPlaceAreas();
-    for (const auto& area : placeAreas) {
-        ImGui::Text("Name: %s", area.name.c_str());
-        ImGui::Text("Category: %d", static_cast<int>(area.category));
-        ImGui::Separator();
-    }
-
-    ImGui::End();
 }

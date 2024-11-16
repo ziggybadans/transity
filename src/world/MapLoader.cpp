@@ -39,9 +39,10 @@ bool MapLoader::LoadGeoJSONFiles(
     const std::string &townsGeoJsonPath,
     const std::string &suburbsGeoJsonPath)
 {
+    std::cout << "Loading land GeoJSON from: " << landGeoJsonPath << std::endl;
     if (!LoadGeoJSON(landGeoJsonPath, MapData::LAND_COLOR))
     {
-        std::cerr << "Failed to load land GeoJSON data." << std::endl;
+        std::cerr << "Failed to load land GeoJSON." << std::endl;
         return false;
     }
 
@@ -262,6 +263,7 @@ bool MapLoader::CreateVertexArrayFromPolygon(
     {
         m_mapData.AddLandShape(filledVA);
         m_mapData.AddLandShape(outlineVA);
+        std::cout << "Added land shape to MapData." << std::endl;
     }
 
     return true;
