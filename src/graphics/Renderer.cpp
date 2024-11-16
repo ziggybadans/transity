@@ -57,6 +57,9 @@ void Renderer::Shutdown() {
 
 void Renderer::SetWorldMap(const std::shared_ptr<WorldMap>& map) {
     m_worldMap = map;
+    if (m_placeAreaRenderer) {
+        m_placeAreaRenderer->SetWorldMap(map);
+    }
     std::cout << "WorldMap set in Renderer." << std::endl;
 }
 

@@ -8,46 +8,46 @@ PlaceAreaRenderer::~PlaceAreaRenderer() {
 }
 
 bool PlaceAreaRenderer::Init() {
+    if (!m_worldMap) {
+        std::cerr << "WorldMap not set in PlaceAreaRenderer" << std::endl;
+        return false;
+    }
     return true;
 }
 
 void PlaceAreaRenderer::Render(sf::RenderWindow& window, const Camera& camera) {
     if (!m_worldMap) return;
-    RenderPlaceAreas(window, camera);
+
+    // Calculate view bounds for culling
+    sf::Vector2f viewCenter = camera.GetView().getCenter();
+    sf::Vector2f viewSize = camera.GetView().getSize();
+    sf::FloatRect cameraRect(
+        viewCenter.x - viewSize.x / 2.0f,
+        viewCenter.y - viewSize.y / 2.0f,
+        viewSize.x,
+        viewSize.y
+    );
+
+    const auto& placeAreas = m_worldMap->GetPlaceAreas();
+    for (const auto& area : placeAreas) {
+        // Only render if the area intersects with the camera view
+        if (!cameraRect.intersects(area.bounds)) continue;
+
+        // Draw the filled shape directly using the vertex array
+        window.draw(area.filledShape);
+        
+        // Draw the outline
+        if (area.outline.getVertexCount() > 0) {
+            window.draw(area.outline);
+        }
+    }
 }
 
 void PlaceAreaRenderer::Shutdown() {
-    // Clean up resources if needed
+    m_worldMap.reset();
 }
 
 void PlaceAreaRenderer::SetWorldMap(const std::shared_ptr<WorldMap>& map) {
     m_worldMap = map;
-}
-
-void PlaceAreaRenderer::RenderPlaceAreas(sf::RenderWindow& window, const Camera& camera) {
-    const auto& placeAreas = m_worldMap->GetPlaceAreas();
-    
-    for (const auto& area : placeAreas) {
-        // Render filled shape
-        sf::ConvexShape shape;
-        shape.setPointCount(area.filledShape.getVertexCount());
-        for (size_t i = 0; i < area.filledShape.getVertexCount(); ++i) {
-            shape.setPoint(i, area.filledShape[i].position);
-        }
-        shape.setFillColor(sf::Color(100, 100, 100, 100));
-        window.draw(shape);
-
-        // Render outline if present
-        if (area.outline.getVertexCount() > 0) {
-            sf::ConvexShape outlineShape;
-            outlineShape.setPointCount(area.outline.getVertexCount());
-            for (size_t i = 0; i < area.outline.getVertexCount(); ++i) {
-                outlineShape.setPoint(i, area.outline[i].position);
-            }
-            outlineShape.setFillColor(sf::Color::Transparent);
-            outlineShape.setOutlineThickness(1.0f);
-            outlineShape.setOutlineColor(sf::Color::Black);
-            window.draw(outlineShape);
-        }
-    }
+    std::cout << "WorldMap set in PlaceAreaRenderer" << std::endl;
 }
