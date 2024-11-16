@@ -1,6 +1,7 @@
 #include "MapLoader.h"
 #include <iostream>
 #include <fstream>
+#include <ranges>
 
 using json = nlohmann::json;
 

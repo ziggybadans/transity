@@ -122,9 +122,11 @@ void Game::Run() {
 
 void Game::ProcessEvents() {
     sf::Event event;
-    while (m_windowManager->GetWindow().pollEvent(event)) {
-        m_eventManager->Dispatch(event);
-        m_uiManager->ProcessEvent(event);
+    while (m_windowManager->PollEvent(event)) {
+        std::invoke([this, &event] {
+            m_eventManager->Dispatch(event);
+            m_uiManager->ProcessEvent(event);
+        });
     }
 }
 

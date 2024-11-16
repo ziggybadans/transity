@@ -34,10 +34,7 @@ bool WindowManager::Init() {
 }
 
 bool WindowManager::PollEvent(sf::Event& event) {
-    if (m_window) {
-        return m_window->pollEvent(event);
-    }
-    return false;
+    return m_window && m_window->pollEvent(event);
 }
 
 void WindowManager::Clear(const sf::Color& color) {

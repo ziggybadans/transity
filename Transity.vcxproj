@@ -181,6 +181,7 @@
     <ClInclude Include="src\managers\ResourceManager.h" />
     <ClInclude Include="src\managers\UIManager.h" />
     <ClInclude Include="src\managers\WindowManager.h" />
+    <ClInclude Include="src\registry\ActionRegistrar.h" />
     <ClInclude Include="src\utility\FastNoiseLite.h" />
     <ClInclude Include="src\utility\Task.h" />
     <ClInclude Include="src\utility\ThreadPool.h" />

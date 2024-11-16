@@ -77,31 +77,10 @@ void Renderer::RenderWorldMap(sf::RenderWindow& window, const Camera& camera) {
         viewSize.y
     );
 
-    // Draw land shapes with culling
     const auto& landShapes = m_worldMap->GetMapData().GetLandShapes();
     for (const auto& shape : landShapes) {
-        // Calculate bounds manually for vertex array
-        sf::FloatRect shapeBounds;
-        if (shape.getVertexCount() > 0) {
-            float minX = shape[0].position.x;
-            float minY = shape[0].position.y;
-            float maxX = minX;
-            float maxY = minY;
-            
-            for (size_t i = 1; i < shape.getVertexCount(); ++i) {
-                const auto& pos = shape[i].position;
-                minX = std::min(minX, pos.x);
-                minY = std::min(minY, pos.y);
-                maxX = std::max(maxX, pos.x);
-                maxY = std::max(maxY, pos.y);
-            }
-            
-            shapeBounds = sf::FloatRect(minX, minY, maxX - minX, maxY - minY);
-            
-            // Only draw if in view
-            if (cameraRect.intersects(shapeBounds)) {
-                window.draw(shape);
-            }
+        if (shape.getVertexCount() > 0 && cameraRect.intersects(shape.getBounds())) {
+            window.draw(shape);
         }
     }
 
