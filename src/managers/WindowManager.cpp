@@ -1,5 +1,5 @@
 #include "WindowManager.h"
-#include <iostream>
+#include "../Debug.h"
 
 WindowManager::WindowManager()
     : m_window(nullptr),
@@ -28,7 +28,7 @@ bool WindowManager::Init() {
         m_window->setFramerateLimit(240);
         return m_window->isOpen();
     } catch (const std::exception& e) {
-        std::cerr << "Failed to initialize window: " << e.what() << std::endl;
+        DEBUG_ERROR("Failed to initialize window: ", e.what());
         return false;
     }
 }

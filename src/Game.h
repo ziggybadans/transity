@@ -18,6 +18,9 @@
 #include "managers/UIManager.h"
 #include "managers/ResourceManager.h"
 #include "registry/ActionRegistrar.h"
+#include "modding/PluginManager.h"
+#include "settings/GameSettings.h"
+#include "managers/SaveManager.h"
 
 class IInitializable;
 
@@ -73,4 +76,9 @@ private:
     sf::Clock m_deltaClock;
 
     std::shared_ptr<ResourceManager> m_resourceManager;
+
+    std::unique_ptr<PluginManager> m_pluginManager;
+
+    std::shared_ptr<GameSettings> m_gameSettings;
+    std::unique_ptr<SaveManager> m_saveManager;
 };

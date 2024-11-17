@@ -4,7 +4,7 @@
 #include <memory>
 #include <string>
 
-#include "InitializationManager.h"
+#include "../interfaces/IInitializable.h"
 
 class WindowManager : public IInitializable {
 public:

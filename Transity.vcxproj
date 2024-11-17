@@ -146,14 +146,22 @@
     <ClCompile Include="..\..\..\Downloads\imgui-1.89.9\imgui_tables.cpp" />
     <ClCompile Include="..\..\..\Downloads\imgui-1.89.9\imgui_widgets.cpp" />
     <ClCompile Include="..\..\..\Downloads\imgui-sfml-2.6\imgui-SFML.cpp" />
+    <ClCompile Include="src\core\ErrorHandler.cpp" />
+    <ClCompile Include="src\core\StateManager.cpp" />
+    <ClCompile Include="src\Debug.cpp" />
     <ClCompile Include="src\Game.cpp" />
     <ClCompile Include="src\graphics\Camera.cpp" />
     <ClCompile Include="src\graphics\Renderer.cpp" />
     <ClCompile Include="src\managers\InputManager.cpp" />
     <ClCompile Include="src\managers\ResourceManager.cpp" />
+    <ClCompile Include="src\managers\SaveManager.cpp" />
     <ClCompile Include="src\managers\UIManager.cpp" />
     <ClCompile Include="src\managers\WindowManager.cpp" />
+    <ClCompile Include="src\modding\PluginLoader.cpp" />
+    <ClCompile Include="src\modding\PluginManager.cpp" />
+    <ClCompile Include="src\settings\GameSettings.cpp" />
     <ClCompile Include="src\Transity.cpp" />
+    <ClCompile Include="src\utility\Sandbox.cpp" />
     <ClCompile Include="src\utility\ThreadPool.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -167,17 +175,28 @@
     <ClInclude Include="include\mapbox\earcut.hpp" />
     <ClInclude Include="include\nlohmann\json.hpp" />
     <ClInclude Include="src\Constants.h" />
+    <ClInclude Include="src\core\ErrorHandler.h" />
+    <ClInclude Include="src\core\StateManager.h" />
+    <ClInclude Include="src\Debug.h" />
     <ClInclude Include="src\Game.h" />
     <ClInclude Include="src\graphics\Camera.h" />
     <ClInclude Include="src\graphics\Renderer.h" />
+    <ClInclude Include="src\interfaces\IInitializable.h" />
     <ClInclude Include="src\managers\EventManager.h" />
     <ClInclude Include="src\managers\InitializationManager.h" />
     <ClInclude Include="src\managers\InputManager.h" />
     <ClInclude Include="src\managers\ResourceManager.h" />
+    <ClInclude Include="src\managers\SaveManager.h" />
     <ClInclude Include="src\managers\UIManager.h" />
     <ClInclude Include="src\managers\WindowManager.h" />
+    <ClInclude Include="src\modding\Plugin.h" />
+    <ClInclude Include="src\modding\PluginLoader.h" />
+    <ClInclude Include="src\modding\PluginManager.h" />
     <ClInclude Include="src\registry\ActionRegistrar.h" />
+    <ClInclude Include="src\settings\GameSettings.h" />
     <ClInclude Include="src\utility\FastNoiseLite.h" />
+    <ClInclude Include="src\utility\Profiler.h" />
+    <ClInclude Include="src\utility\Sandbox.h" />
     <ClInclude Include="src\utility\Task.h" />
     <ClInclude Include="src\utility\ThreadPool.h" />
   </ItemGroup>

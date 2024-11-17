@@ -4,6 +4,7 @@
 #include <thread>
 #include <condition_variable>
 #include "Constants.h"
+#include "Debug.h"
 
 Game::Game()
     : m_videoMode(Constants::WINDOW_WIDTH, Constants::WINDOW_HEIGHT)
@@ -19,13 +20,13 @@ Game::~Game() {
 bool Game::Init() {
     try {
         if (!InitManagers()) {
-            std::cerr << "Failed to initialize managers." << std::endl;
+            DEBUG_ERROR("Failed to initialize managers.");
             return false;
         }
 
         m_eventManager = std::make_shared<EventManager>();
         if (!m_windowManager) {
-            std::cerr << "Window manager not initialized." << std::endl;
+            DEBUG_ERROR("Window manager not initialized.");
             return false;
         }
 
@@ -39,13 +40,13 @@ bool Game::Init() {
 
         m_resourceManager = std::make_shared<ResourceManager>(m_threadPool);
         if (!m_resourceManager->LoadResources()) {
-            std::cerr << "Failed to load initial resources." << std::endl;
+            DEBUG_ERROR("Failed to load initial resources.");
             return false;
         }
 
         m_renderer = std::make_unique<Renderer>();
-        if (!m_renderer->Init(m_windowManager->GetWindow())) {
-            std::cerr << "Failed to initialize Renderer." << std::endl;
+        if (!m_renderer->Init() || !m_renderer->InitWithWindow(m_windowManager->GetWindow())) {
+            DEBUG_ERROR("Failed to initialize Renderer.");
             return false;
         }
 
@@ -60,14 +61,31 @@ bool Game::Init() {
         m_uiManager = std::make_shared<UIManager>();
         m_uiManager->SetWindow(m_windowManager->GetWindow());
         if (!m_uiManager->Init()) {
-            std::cerr << "Failed to initialize UIManager." << std::endl;
+            DEBUG_ERROR("Failed to initialize UIManager.");
             return false;
         }
 
+        m_pluginManager = std::make_unique<PluginManager>();
+
+        m_gameSettings = std::make_shared<GameSettings>();
+        if (!m_gameSettings->LoadSettings("config/settings.json")) {
+            DEBUG_WARNING("Failed to load game settings, using defaults.");
+        }
+
+        m_saveManager = std::make_unique<SaveManager>();
+        m_saveManager->SetGameSettings(m_gameSettings);
+
         m_isRunning = true;
+
+        // Enable debug logging
+        Debug::EnableFileLogging("game.log");
+        Debug::SetLevel(DebugLevel::Debug);  // Set default debug level
+        
+        DEBUG_INFO("Initializing game...");
+
         return true;
     } catch (const std::exception& e) {
-        std::cerr << "Error during initialization: " << e.what() << std::endl;
+        DEBUG_ERROR("Error during initialization: ", e.what());
         return false;
     }
 }
@@ -129,6 +147,10 @@ void Game::UpdateNonSimulation(float dt) {
     if (m_inputManager) {
         m_inputManager->HandleInput(dt);
     }
+
+    if (m_pluginManager) {
+        m_pluginManager->UpdatePlugins(dt);
+    }
 }
 
 void Game::Render() {
@@ -171,4 +193,5 @@ void Game::Shutdown() {
     m_resourceManager.reset();
     m_windowManager.reset();
     m_uiManager.reset();
+    m_pluginManager.reset();
 }

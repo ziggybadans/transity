@@ -5,14 +5,15 @@
 #include <SFML/Graphics.hpp>
 #include <memory>
 #include "EventManager.h"
+#include "../interfaces/IInitializable.h"
 
-class UIManager {
+class UIManager : public IInitializable {
 public:
     UIManager();
     ~UIManager();
 
     /* Core UI Methods */
-    bool Init();
+    bool Init() override;
     void ProcessEvent(const sf::Event& event);
     void Update(float deltaTime);
     void Render();
