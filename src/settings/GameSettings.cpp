@@ -2,6 +2,7 @@
 #include <fstream>
 #include <iostream>
 #include "../Debug.h"
+#include <filesystem>
 
 GameSettings::GameSettings()
     : m_resolution(1920, 1080)
@@ -18,6 +19,10 @@ GameSettings::GameSettings()
 
 bool GameSettings::LoadSettings(const std::string& filepath) {
     try {
+        // Create config directory if it doesn't exist
+        std::filesystem::path configPath = std::filesystem::path(filepath).parent_path();
+        std::filesystem::create_directories(configPath);
+
         std::ifstream file(filepath);
         if (!file.is_open()) {
             DEBUG_ERROR("Failed to open settings file: ", filepath);
@@ -54,6 +59,10 @@ bool GameSettings::LoadSettings(const std::string& filepath) {
 
 bool GameSettings::SaveSettings(const std::string& filepath) const {
     try {
+        // Create config directory if it doesn't exist
+        std::filesystem::path configPath = std::filesystem::path(filepath).parent_path();
+        std::filesystem::create_directories(configPath);
+
         nlohmann::json j;
 
         // Video settings

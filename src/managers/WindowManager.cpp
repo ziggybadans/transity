@@ -6,7 +6,9 @@ WindowManager::WindowManager()
       m_videoMode(1280, 720),      // Default resolution
       m_windowTitle("2D Transport Management Game"),
       m_contextSettings(),         // Default context settings
-      m_fullscreen(true)
+      m_fullscreen(false),
+      m_vsyncEnabled(false),
+      m_frameRateLimit(240)
 {}
 
 WindowManager::~WindowManager() {
@@ -74,4 +76,27 @@ sf::RenderWindow& WindowManager::GetWindow() {
         throw std::runtime_error("Attempting to access uninitialized window");
     }
     return *m_window;
+}
+
+void WindowManager::ApplyVideoMode() {
+    if (!m_window) return;
+    
+    sf::Uint32 style = m_fullscreen ? sf::Style::Fullscreen : sf::Style::Default;
+    m_window->create(m_videoMode, m_windowTitle, style, m_contextSettings);
+    m_window->setVerticalSyncEnabled(m_vsyncEnabled);
+    m_window->setFramerateLimit(m_frameRateLimit);
+}
+
+void WindowManager::SetVSync(bool enabled) {
+    m_vsyncEnabled = enabled;
+    if (m_window) {
+        m_window->setVerticalSyncEnabled(enabled);
+    }
+}
+
+void WindowManager::SetFramerateLimit(unsigned int limit) {
+    m_frameRateLimit = limit;
+    if (m_window) {
+        m_window->setFramerateLimit(limit);
+    }
 }

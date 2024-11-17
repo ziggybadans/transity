@@ -1,0 +1,21 @@
+{
+    "audio": {
+        "masterVolume": 1.0,
+        "musicVolume": 0.800000011920929,
+        "sfxVolume": 0.800000011920929
+    },
+    "gameplay": {
+        "autosaveInterval": 5,
+        "cameraPanSpeed": 500.0,
+        "cameraZoomSpeed": 1.100000023841858
+    },
+    "video": {
+        "frameRateLimit": 240,
+        "fullscreen": true,
+        "resolution": [
+            3440,
+            1440
+        ],
+        "vsync": false
+    }
+}

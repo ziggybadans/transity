@@ -60,17 +60,18 @@ bool Game::Init() {
 
         m_uiManager = std::make_shared<UIManager>();
         m_uiManager->SetWindow(m_windowManager->GetWindow());
+        m_gameSettings = std::make_shared<GameSettings>();
+        if (!m_gameSettings->LoadSettings("config/settings.json")) {
+            DEBUG_WARNING("Failed to load game settings, using defaults.");
+        }
+        m_uiManager->SetGameSettings(m_gameSettings);
+        m_uiManager->SetWindowManager(m_windowManager);
         if (!m_uiManager->Init()) {
             DEBUG_ERROR("Failed to initialize UIManager.");
             return false;
         }
 
         m_pluginManager = std::make_unique<PluginManager>();
-
-        m_gameSettings = std::make_shared<GameSettings>();
-        if (!m_gameSettings->LoadSettings("config/settings.json")) {
-            DEBUG_WARNING("Failed to load game settings, using defaults.");
-        }
 
         m_saveManager = std::make_unique<SaveManager>();
         m_saveManager->SetGameSettings(m_gameSettings);
@@ -82,6 +83,8 @@ bool Game::Init() {
         Debug::SetLevel(DebugLevel::Debug);  // Set default debug level
         
         DEBUG_INFO("Initializing game...");
+
+        m_uiManager->SetInputManager(m_inputManager);
 
         return true;
     } catch (const std::exception& e) {
