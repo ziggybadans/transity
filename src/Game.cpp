@@ -1,25 +1,20 @@
 #include "Game.h"
-#include "managers/WindowManager.h"
-#include "managers/UIManager.h"
-#include "managers/InputManager.h"
-#include "utility/ThreadPool.h"
-#include "graphics/Renderer.h"
-#include "graphics/Camera.h"
-#include "world/WorldMap.h"
-
 #include <iostream>
 #include <future>
 #include <thread>
 #include <condition_variable>
-
 #include "Constants.h"
+#include "Debug.h"
+#include "utility/Profiler.h"
+#include "utility/ThreadManager.h"
+#include "settings/SettingsDefinitions.h"
+#include "settings/SettingsRegistry.h"
 
-// Constructor initializes video mode, window title, and sets isRunning to false
 Game::Game()
-    : videoMode(Constants::WINDOW_WIDTH, Constants::WINDOW_HEIGHT),
-    windowTitle(Constants::WINDOW_TITLE),
-    isRunning(false),
-    timeScale(1.0f)  // Initialize timeScale to normal speed
+    : m_videoMode(Constants::WINDOW_WIDTH, Constants::WINDOW_HEIGHT)
+    , m_windowTitle(Constants::WINDOW_TITLE)
+    , m_isRunning(false)
+    , m_timeScale(1.0f)
 {}
 
 Game::~Game() {
@@ -27,269 +22,344 @@ Game::~Game() {
 }
 
 bool Game::Init() {
-    if (!InitManagers()) {  // Initialize managers (WindowManager, etc.)
-        std::cerr << "Failed to initialize managers." << std::endl;
-        return false;
-    }
-
-    // Initialize EventManager for handling system events
-    eventManager = std::make_shared<EventManager>();
-
-    // Initialize Camera with the current window size
-    sf::Vector2u windowSize = windowManager->GetWindow().getSize();
-    camera = std::make_shared<Camera>(windowSize);
-    camera->setMinZoomLevel(Constants::CAMERA_MIN_ZOOM);  // Set minimum zoom level
-    camera->setMaxZoomLevel(Constants::CAMERA_MAX_ZOOM);  // Set maximum zoom level
-
-    // Initialize ThreadPool with number of hardware threads available
-    threadPool = std::make_unique<ThreadPool>(std::thread::hardware_concurrency());
-    renderer = std::make_unique<Renderer>();
-    if (!renderer->Init(windowManager->GetWindow())) {  // Initialize renderer with the window
-        std::cerr << "Failed to initialize Renderer." << std::endl;
-        return false;
-    }
-
-    // Load initial resources asynchronously
-    if (!LoadResources()) {
-        std::cerr << "Failed to load initial resources." << std::endl;
-        return false;
-    }
-
-    // Initialize InputManager after WorldMap is loaded
-    inputManager = std::make_unique<InputManager>(eventManager, camera, windowManager->GetWindow(), worldMap);
-    inputManager->SetZoomSpeed(Constants::CAMERA_ZOOM_SPEED);  // Set camera zoom speed
-    inputManager->SetPanSpeed(Constants::CAMERA_PAN_SPEED);    // Set camera pan speed
-
-    // Subscribe to Window Close event
-    eventManager->Subscribe(EventType::Closed, [this](const sf::Event& event) {
-        isRunning = false;
-        windowManager->GetWindow().close();
-        });
-
-    // Subscribe to Window Resize event and adjust camera view accordingly
-    eventManager->Subscribe(EventType::Resized, [this](const sf::Event& event) {
-        if (event.type == sf::Event::Resized) {
-            sf::Vector2u newSize(event.size.width, event.size.height);
-            camera->OnResize(newSize);  // Notify camera of the new window size
-            sf::FloatRect visibleArea(0, 0, static_cast<float>(newSize.x), static_cast<float>(newSize.y));
-            windowManager->GetWindow().setView(sf::View(visibleArea));
+    try {
+        RegisterSettings();
+        
+        if (!InitManagers()) {
+            DEBUG_ERROR("Failed to initialize managers.");
+            return false;
         }
-        });
 
-    // Initialize UIManager for managing GUI elements
-    uiManager = std::make_shared<UIManager>(worldMap);
-    uiManager->SetWindow(windowManager->GetWindow());
-    if (!uiManager->Init()) {
-        std::cerr << "Failed to initialize UIManager." << std::endl;
+        m_eventManager = std::make_shared<EventManager>();
+        if (!m_windowManager) {
+            DEBUG_ERROR("Window manager not initialized.");
+            return false;
+        }
+
+        sf::Vector2u windowSize = m_windowManager->GetWindow().getSize();
+        m_camera = std::make_shared<Camera>(windowSize);
+        m_camera->SetMinZoomLevel(Constants::CAMERA_MIN_ZOOM);
+        m_camera->SetMaxZoomLevel(Constants::CAMERA_MAX_ZOOM);
+
+        m_threadManager = std::make_unique<ThreadManager>(std::thread::hardware_concurrency());
+
+        m_resourceManager = std::make_shared<ResourceManager>(m_threadManager);
+        if (!m_resourceManager->LoadResources()) {
+            DEBUG_ERROR("Failed to load initial resources.");
+            return false;
+        }
+
+        m_renderer = std::make_unique<Renderer>();
+        if (!m_renderer->Init() || !m_renderer->InitWithWindow(m_windowManager->GetWindow())) {
+            DEBUG_ERROR("Failed to initialize Renderer.");
+            return false;
+        }
+
+        m_inputManager = std::make_shared<InputManager>(m_eventManager, m_windowManager->GetWindow());
+        m_inputManager->SetZoomSpeed(Constants::CAMERA_ZOOM_SPEED);
+        m_inputManager->SetPanSpeed(Constants::CAMERA_PAN_SPEED);
+
+        auto actionRegistrar = std::make_unique<ActionRegistrar>(m_inputManager, m_camera);
+        actionRegistrar->RegisterActions();
+        m_actionRegistrar = std::move(actionRegistrar);
+
+        m_uiManager = std::make_shared<UIManager>();
+        m_uiManager->SetWindow(m_windowManager->GetWindow());
+        m_gameSettings = std::make_shared<GameSettings>();
+        if (!m_gameSettings->LoadSettings("config/settings.json")) {
+            DEBUG_WARNING("Failed to load game settings, using defaults.");
+        }
+        m_uiManager->SetGameSettings(m_gameSettings);
+        m_uiManager->SetWindowManager(m_windowManager);
+        if (!m_uiManager->Init()) {
+            DEBUG_ERROR("Failed to initialize UIManager.");
+            return false;
+        }
+
+        m_pluginManager = std::make_unique<PluginManager>();
+
+        m_saveManager = std::make_unique<SaveManager>();
+        m_saveManager->SetGameSettings(m_gameSettings);
+
+        m_isRunning = true;
+
+        // Enable debug logging
+        Debug::EnableFileLogging("game.log");
+        Debug::SetLevel(DebugLevel::Debug);  // Set default debug level
+        
+        DEBUG_INFO("Initializing game...");
+
+        m_uiManager->SetInputManager(m_inputManager);
+
+        return true;
+    } catch (const std::exception& e) {
+        DEBUG_ERROR("Error during initialization: ", e.what());
         return false;
     }
-
-    // Pass the address of timeScale to UIManager for UI control
-    uiManager->SetTimeScalePointer(&timeScale);
-
-    // Initialize Renderer with WorldMap and configure camera
-    if (worldMap) {
-        camera->SetZoom(Constants::CAMERA_MAX_ZOOM);  // Set initial camera zoom level
-        camera->SetWorldBounds(worldMap->GetWorldWidth(), worldMap->GetWorldHeight());  // Set camera boundaries to match world size
-        camera->SetPosition(sf::Vector2f(worldMap->GetWorldWidth() / 2.0f, worldMap->GetWorldHeight() / 2.0f));  // Center camera on the world
-
-        // Set WorldMap in Renderer
-        renderer->SetWorldMap(worldMap);
-    }
-    else {
-        std::cerr << "WorldMap is not loaded." << std::endl;
-        return false;
-    }
-
-    isRunning = true;  // Set game state to running
-    return true;
 }
 
 bool Game::InitManagers() {
-    // Initialize WindowManager and configure it with settings
     auto windowMgr = std::make_shared<WindowManager>();
-    windowMgr->SetVideoMode(sf::VideoMode(videoMode));  // Set window video mode
-    windowMgr->SetTitle(windowTitle);  // Set window title
+    windowMgr->SetVideoMode(sf::VideoMode(m_videoMode));
+    windowMgr->SetTitle(m_windowTitle);
 
-    // Enable fullscreen mode if desired (currently set to true)
-    windowMgr->SetFullscreen(true);  // Set to false if you want windowed mode
-
-    // Configure advanced graphics settings for the window
     sf::ContextSettings settings;
-    settings.antialiasingLevel = 8;  // Set antialiasing level for smoother graphics
-    settings.depthBits = 24;          // Set depth buffer bits
-    settings.stencilBits = 8;         // Set stencil buffer bits
-    settings.majorVersion = 3;        // Set OpenGL version (major)
-    settings.minorVersion = 0;        // Set OpenGL version (minor)
+    settings.antialiasingLevel = 8;
+    settings.depthBits = 24;
+    settings.stencilBits = 8;
+    settings.majorVersion = 3;
+    settings.minorVersion = 0;
     windowMgr->SetContextSettings(settings);
 
-    if (!windowMgr->Init()) return false;  // Initialize window and check for success
-    initManager.Register(windowMgr);       // Register WindowManager with InitializationManager
-    windowManager = windowMgr;
-
-    // Register other initializable modules and initialize all
-    return initManager.InitAll();
-}
-
-bool Game::LoadResources() {
-    std::condition_variable cv;
-    bool loaded = false;
-    std::mutex cvMutex;
-
-    // Create a task to load the WorldMap and enqueue it to ThreadPool
-    Task loadWorldMapTask([this, &cv, &loaded]() {
-        auto tempWorldMap = std::make_shared<WorldMap>("assets/land_shapes.json", "assets/features/cities.geojson", "assets/features/towns.geojson", "assets/features/suburbs.geojson");
-        if (tempWorldMap->Init()) {
-            {
-                std::lock_guard<std::mutex> lock(worldMapMutex);  // Lock mutex before updating shared resource
-                worldMap = tempWorldMap;  // Assign the loaded WorldMap
-                loaded = true;           // Set loaded flag to true
-            }
-            cv.notify_one();  // Notify waiting thread that WorldMap is loaded
-        }
-        else {
-            std::cerr << "Failed to initialize WorldMap." << std::endl;
-        }
-        });
-    threadPool->enqueueTask(loadWorldMapTask);  // Enqueue the task for loading WorldMap
-
-    // Wait for WorldMap to load using a condition variable
-    std::unique_lock<std::mutex> lock(cvMutex);
-    cv.wait(lock, [&loaded]() { return loaded; });
-
-    // Configure Camera based on WorldMap dimensions
-    if (worldMap) {
-        camera->SetZoom(Constants::CAMERA_MAX_ZOOM);  // Set maximum zoom level
-        camera->SetWorldBounds(worldMap->GetWorldWidth(), worldMap->GetWorldHeight());  // Set camera boundaries to match world size
-        camera->SetPosition(sf::Vector2f(worldMap->GetWorldWidth() / 2.0f, worldMap->GetWorldHeight() / 2.0f));  // Center camera on the world
-
-        // Set WorldMap in Renderer
-        renderer->SetWorldMap(worldMap);
-    }
-    else {
-        std::cerr << "WorldMap is not loaded." << std::endl;
+    if (!windowMgr->Init()) {
         return false;
     }
+    
+    m_initManager.Register(std::static_pointer_cast<IInitializable>(windowMgr));
+    m_windowManager = windowMgr;
 
-    return true;
+    return m_initManager.InitAll();
 }
 
 void Game::Run() {
-    while (isRunning && windowManager->IsOpen()) {  // Loop until the game is no longer running or window is closed
-        ProcessEvents();  // Handle all pending events
+    while (m_isRunning && m_windowManager->GetWindow().isOpen()) {
+        PROFILE_SCOPE("Game Loop");
+        {
+            PROFILE_SCOPE("Event Processing");
+            ProcessEvents();
+        }
 
-        // Calculate delta time (time since last frame)
-        float dt = deltaClock.restart().asSeconds();
+        float dt = m_deltaClock.restart().asSeconds();
+        {
+            PROFILE_SCOPE("Non-Simulation Update");
+            UpdateNonSimulation(dt);
+        }
 
-        // Update non-simulation components with unscaled delta time
-        UpdateNonSimulation(dt);
+        float scaledDt = dt * m_timeScale.load();
+        {
+            PROFILE_SCOPE("Render");
+            Render();
+        }
+    }
+}
 
-        // Calculate scaled delta time for simulation
-        float scaledDt = dt * timeScale.load();
-
-        // Update simulation components with scaled delta time
-        UpdateSimulation(scaledDt);
-
-        // Render the current frame
-        Render();
+void Game::ProcessEvents() {
+    sf::Event event;
+    while (m_windowManager->PollEvent(event)) {
+        std::invoke([this, &event] {
+            m_eventManager->Dispatch(event);
+            m_uiManager->ProcessEvent(event);
+        });
     }
 }
 
 void Game::UpdateNonSimulation(float dt) {
-    if (camera) {
-        camera->Update(dt);  // Update camera position and zoom based on input
+    if (m_camera) {
+        m_camera->Update(dt);
     }
 
-    if (inputManager) {
-        inputManager->HandleInput(dt);  // Process player input (keyboard, mouse, etc.)
+    if (m_uiManager) {
+        m_uiManager->Update(dt);
     }
 
-    if (uiManager) {
-        uiManager->Update(dt);  // Update UI elements
+    if (m_inputManager) {
+        m_inputManager->HandleInput(dt);
     }
-}
 
-void Game::UpdateSimulation(float scaledDt) {
-    if (worldMap) {
-        auto& lines = worldMap->GetLines();  // Get all lines in the WorldMap
-        for (auto& linePtr : lines) {
-            UpdateTrainsRecursive(linePtr.get(), scaledDt);
-        }
-    }
-}
-
-void Game::UpdateTrainsRecursive(Line* line, float scaledDt) {
-    auto& trains = line->GetTrains();
-    for (auto& train : trains) {
-        train.Update(scaledDt);
-    }
-    for (auto& childLinePtr : line->GetChildLines()) {
-        UpdateTrainsRecursive(childLinePtr.get(), scaledDt);
-    }
-}
-
-
-// Handle input and window events
-void Game::ProcessEvents() {
-    sf::Event event;
-    while (windowManager->PollEvent(event)) {  // Poll events from WindowManager
-        eventManager->Dispatch(event);  // Dispatch events to relevant handlers
-        uiManager->ProcessEvent(event);  // Pass events to UIManager for GUI handling
+    if (m_pluginManager) {
+        m_pluginManager->UpdatePlugins(dt);
     }
 }
 
 void Game::Render() {
-    // Clear the window with a background color
-    windowManager->Clear(sf::Color(174, 223, 246));  // Clear with sky-blue color
+    m_windowManager->GetWindow().clear(sf::Color(174, 223, 246));
 
-    // Apply camera view to the window to render the game world
-    if (camera) {
-        camera->ApplyView(windowManager->GetWindow());
+    if (m_camera) {
+        m_camera->ApplyView(m_windowManager->GetWindow());
     }
 
-    // Render all game elements via the Renderer
-    if (renderer) {
-        renderer->Render(windowManager->GetWindow(), *camera);
+    if (m_renderer) {
+        m_renderer->Render(m_windowManager->GetWindow(), *m_camera);
     }
 
-    // Reset to default view to render UI elements
-    windowManager->GetWindow().setView(windowManager->GetWindow().getDefaultView());
+    m_windowManager->GetWindow().setView(m_windowManager->GetWindow().getDefaultView());
 
-    // Render UI elements like HUD, menus, etc.
-    if (uiManager) {
-        uiManager->Render();
+    if (m_uiManager) {
+        m_uiManager->Render();
     }
 
-    // Display the rendered frame on the screen
-    windowManager->Display();
+    m_windowManager->GetWindow().display();
 }
 
 void Game::Shutdown() {
-    if (isRunning) {
-        isRunning = false;  // Set game state to not running
+    m_isRunning = false;
+
+    if (m_uiManager) {
+        m_uiManager->Shutdown();
+    }
+    if (m_renderer) {
+        m_renderer->Shutdown();
+    }
+    if (m_threadManager) {
+        m_threadManager->Shutdown();
     }
 
-    // Shutdown Renderer to release graphics resources
-    if (renderer) {
-        renderer->Shutdown();
-    }
+    m_renderer.reset();
+    m_threadManager.reset();
+    m_inputManager.reset();
+    m_camera.reset();
+    m_resourceManager.reset();
+    m_windowManager.reset();
+    m_uiManager.reset();
+    m_pluginManager.reset();
+}
 
-    // Shutdown ThreadPool to stop all threads
-    if (threadPool) {
-        threadPool->shutdown();
-    }
+void Game::RegisterSettings() {
+    auto& registry = SettingsRegistry::Instance();
 
-    // Shutdown UIManager to clean up GUI-related resources
-    if (uiManager) {
-        uiManager->Shutdown();
-    }
+    // Video Settings
+    registry.RegisterSetting({
+        Settings::Names::RESOLUTION,
+        Settings::Categories::VIDEO,
+        SettingType::Vector2u,
+        Settings::Defaults::RESOLUTION,
+        [this](const std::any& value) {
+            auto resolution = std::any_cast<sf::Vector2u>(value);
+            if (m_windowManager) {
+                m_windowManager->SetVideoMode(sf::VideoMode(resolution.x, resolution.y));
+                m_windowManager->ApplyVideoMode();
+            }
+        }
+    });
 
-    // Clean up other modules by resetting smart pointers
-    renderer.reset();
-    threadPool.reset();
-    inputManager.reset();
-    camera.reset();
-    worldMap.reset();
-    windowManager.reset();
-    uiManager.reset();
+    registry.RegisterSetting({
+        Settings::Names::FULLSCREEN,
+        Settings::Categories::VIDEO,
+        SettingType::Boolean,
+        Settings::Defaults::FULLSCREEN,
+        [this](const std::any& value) {
+            if (m_windowManager) {
+                m_windowManager->SetFullscreen(std::any_cast<bool>(value));
+                m_windowManager->ApplyVideoMode();
+            }
+        }
+    });
+
+    registry.RegisterSetting({
+        Settings::Names::VSYNC,
+        Settings::Categories::VIDEO,
+        SettingType::Boolean,
+        Settings::Defaults::VSYNC,
+        [this](const std::any& value) {
+            if (m_windowManager) {
+                m_windowManager->SetVSync(std::any_cast<bool>(value));
+            }
+        }
+    });
+
+    registry.RegisterSetting({
+        Settings::Names::FRAME_RATE_LIMIT,
+        Settings::Categories::VIDEO,
+        SettingType::Integer,
+        Settings::Defaults::FRAME_RATE_LIMIT,
+        [this](const std::any& value) {
+            auto limit = std::any_cast<unsigned int>(value);
+            if (m_windowManager) {
+                m_windowManager->SetFramerateLimit(limit);
+            }
+        },
+        [](const std::any& value) {
+            auto limit = std::any_cast<unsigned int>(value);
+            return limit >= 30 && limit <= 240;
+        }
+    });
+
+    // Audio Settings
+    registry.RegisterSetting({
+        Settings::Names::MASTER_VOLUME,
+        Settings::Categories::AUDIO,
+        SettingType::Float,
+        Settings::Defaults::MASTER_VOLUME,
+        nullptr,
+        [](const std::any& value) {
+            auto volume = std::any_cast<float>(value);
+            return volume >= 0.0f && volume <= 1.0f;
+        }
+    });
+
+    registry.RegisterSetting({
+        Settings::Names::MUSIC_VOLUME,
+        Settings::Categories::AUDIO,
+        SettingType::Float,
+        Settings::Defaults::MUSIC_VOLUME,
+        nullptr,
+        [](const std::any& value) {
+            auto volume = std::any_cast<float>(value);
+            return volume >= 0.0f && volume <= 1.0f;
+        }
+    });
+
+    registry.RegisterSetting({
+        Settings::Names::SFX_VOLUME,
+        Settings::Categories::AUDIO,
+        SettingType::Float,
+        Settings::Defaults::SFX_VOLUME,
+        nullptr,
+        [](const std::any& value) {
+            auto volume = std::any_cast<float>(value);
+            return volume >= 0.0f && volume <= 1.0f;
+        }
+    });
+
+    // Gameplay Settings
+    registry.RegisterSetting({
+        Settings::Names::CAMERA_ZOOM_SPEED,
+        Settings::Categories::GAMEPLAY,
+        SettingType::Float,
+        Settings::Defaults::CAMERA_ZOOM_SPEED,
+        [this](const std::any& value) {
+            auto speed = std::any_cast<float>(value);
+            if (m_inputManager) {
+                m_inputManager->SetZoomSpeed(speed);
+            }
+        },
+        [](const std::any& value) {
+            auto speed = std::any_cast<float>(value);
+            return speed >= 1.0f && speed <= 2.0f;
+        }
+    });
+
+    registry.RegisterSetting({
+        Settings::Names::CAMERA_PAN_SPEED,
+        Settings::Categories::GAMEPLAY,
+        SettingType::Float,
+        Settings::Defaults::CAMERA_PAN_SPEED,
+        [this](const std::any& value) {
+            auto speed = std::any_cast<float>(value);
+            if (m_inputManager) {
+                m_inputManager->SetPanSpeed(speed);
+            }
+        },
+        [](const std::any& value) {
+            auto speed = std::any_cast<float>(value);
+            return speed >= 100.0f && speed <= 1000.0f;
+        }
+    });
+
+    registry.RegisterSetting({
+        Settings::Names::AUTOSAVE_INTERVAL,
+        Settings::Categories::GAMEPLAY,
+        SettingType::Integer,
+        Settings::Defaults::AUTOSAVE_INTERVAL,
+        [this](const std::any& value) {
+            auto interval = std::any_cast<unsigned int>(value);
+            if (m_saveManager) {
+                m_saveManager->SetAutosaveInterval(interval);
+            }
+        },
+        [](const std::any& value) {
+            auto interval = std::any_cast<unsigned int>(value);
+            return interval >= 1 && interval <= 30;
+        }
+    });
 }

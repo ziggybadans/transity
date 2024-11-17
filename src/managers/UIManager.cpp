@@ -1,202 +1,284 @@
 #include "UIManager.h"
-#include <string> // For std::strncpy
-#include <stdio.h>
-#include "../core/Station.h" // Include Station class
+#include <iostream>
+#include <array>
+#include "../Debug.h"
+#include "../utility/Profiler.h"
+#include "../settings/SettingsDefinitions.h"
 
-/**
-<summary>
-UIManager is responsible for managing the ImGui-based user interface of the application.
-It interacts with the WorldMap and provides UI components for modifying game elements such as line properties.
-</summary>
-*/
-UIManager::UIManager(std::shared_ptr<WorldMap> worldMap)
-    : initialized(false), renderWindow(nullptr), worldMap(worldMap), timeScalePtr(nullptr)
-{
-    // Initialize default color and thickness
-    thickness = 2.0f;
-    color[0] = 0.0f; // Red
-    color[1] = 0.0f; // Green
-    color[2] = 1.0f; // Blue
-    color[3] = 1.0f; // Alpha
-}
+UIManager::UIManager()
+    : m_initialized(false)
+    , m_renderWindow(nullptr)
+    , m_timeScalePtr(nullptr)
+    , m_fps(0.0f)
+    , m_showSettingsPanel(false)
+    , m_showPerformanceWindow(true)
+    , m_gameSettings(nullptr)
+{}
 
-/**
-<summary>
-Destructor for UIManager. Ensures that ImGui is properly shut down before the object is destroyed.
-</summary>
-*/
 UIManager::~UIManager() {
     Shutdown();
 }
 
-void UIManager::SetTimeScalePointer(std::atomic<float>* ptr) {
-    timeScalePtr = ptr;
-}
-
-/**
-<summary>
-Sets the render window that the UI will be drawn on.
-</summary>
-<param name="window">Reference to the SFML RenderWindow to be used for rendering ImGui.</param>
-*/
-void UIManager::SetWindow(sf::RenderWindow& window) {
-    renderWindow = &window;
-}
-
-/**
-<summary>
-Initializes ImGui for use with the provided render window.
-</summary>
-<returns>True if ImGui was successfully initialized, otherwise false.</returns>
-*/
 bool UIManager::Init() {
-    if (renderWindow) {
-        ImGui::SFML::Init(*renderWindow);
-        initialized = true;
-        return true;
+    if (!m_renderWindow) {
+        DEBUG_ERROR("No render window set for UIManager");
+        return false;
     }
-    return false;
+
+    try {
+        if (!ImGui::SFML::Init(*m_renderWindow)) {
+            DEBUG_ERROR("Failed to initialize ImGui SFML.");
+            return false;
+        }
+        m_initialized = true;
+        return true;
+    } catch (const std::exception& e) {
+        DEBUG_ERROR("Exception during ImGui initialization: " + std::string(e.what()));
+        return false;
+    }
 }
 
-/**
-<summary>
-Processes an SFML event, forwarding it to ImGui for handling.
-</summary>
-<param name="event">Reference to the SFML Event object to be processed by ImGui.</param>
-*/
 void UIManager::ProcessEvent(const sf::Event& event) {
-    if (initialized) {
+    if (m_initialized && m_renderWindow) {
         ImGui::SFML::ProcessEvent(event);
     }
 }
 
-/**
-<summary>
-Updates ImGui with the current frame's delta time, allowing it to handle animations and UI interactions.
-</summary>
-<param name="deltaTime">Time elapsed since the last frame, in seconds.</param>
-*/
 void UIManager::Update(float deltaTime) {
-    if (initialized && renderWindow) {
-        ImGui::SFML::Update(*renderWindow, sf::seconds(deltaTime));
+    if (!m_initialized || !m_renderWindow) {
+        return;
+    }
+
+    try {
+        ImGui::SFML::Update(*m_renderWindow, sf::seconds(deltaTime));
+        m_fps = deltaTime > 0.0f ? 1.0f / deltaTime : 0.0f;
+    } catch (const std::exception& e) {
+        DEBUG_ERROR("Error updating UI: " + std::string(e.what()));
+        Shutdown(); // Safely shutdown on error
     }
 }
 
-/**
-<summary>
-Renders the ImGui components to the screen, such as line properties for the selected line in the WorldMap.
-</summary>
-*/
 void UIManager::Render() {
-    if (initialized && renderWindow) {
-        Line* selectedLine = worldMap->GetSelectedLine();
-        if (selectedLine) {
-            ImGui::Begin("Line Properties");
+    if (!m_initialized || !m_renderWindow) {
+        return;
+    }
 
-            // Retrieve current properties
-            sf::Color lineColor = selectedLine->GetColor();
-            color[0] = lineColor.r / 255.0f;
-            color[1] = lineColor.g / 255.0f;
-            color[2] = lineColor.b / 255.0f;
-            color[3] = lineColor.a / 255.0f;
-            thickness = selectedLine->GetThickness();
-
-            // Color picker
-            if (ImGui::ColorEdit4("Line Color", color)) {
-                // Update the selected line's color
-                sf::Color newColor(
-                    static_cast<sf::Uint8>(color[0] * 255),
-                    static_cast<sf::Uint8>(color[1] * 255),
-                    static_cast<sf::Uint8>(color[2] * 255),
-                    static_cast<sf::Uint8>(color[3] * 255)
-                );
-                selectedLine->SetColor(newColor);
+    try {
+        RenderPerformanceOverlay();
+        RenderPerformanceWindow();
+        
+        // Settings button in top-right corner
+        ImGui::SetNextWindowPos(ImVec2(static_cast<float>(m_renderWindow->getSize().x) - 100.0f, 10.0f), ImGuiCond_Always);
+        ImGui::SetNextWindowSize(ImVec2(90.0f, 40.0f), ImGuiCond_Always);
+        if (ImGui::Begin("Settings Button", nullptr, 
+            ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove)) {
+            if (ImGui::Button("Settings", ImVec2(80, 30))) {
+                m_showSettingsPanel = !m_showSettingsPanel;
             }
+        }
+        ImGui::End();
 
-            // Thickness slider
-            if (ImGui::SliderFloat("Line Thickness", &thickness, 1.0f, 10.0f)) {
-                selectedLine->SetThickness(thickness);
-            }
-
-            // Speed control
-            speedKmPerHour = selectedLine->GetSpeed();
-            if (ImGui::InputFloat("Speed (km/h)", &speedKmPerHour)) {
-                selectedLine->SetSpeed(speedKmPerHour);
-            }
-
-            // Button to add a train
-            if (ImGui::Button("Add Train")) {
-                selectedLine->AddTrain();
-            }
-
-            if (ImGui::Button("Remove All Trains")) {
-                selectedLine->RemoveTrains();
-            }
-
-            ImGui::End();
+        if (m_showSettingsPanel) {
+            RenderSettingsPanel();
         }
 
-        // Add station properties UI
-        Station* selectedStation = worldMap->GetSelectedStation();
-        if (selectedStation) {
-            ImGui::Begin("Station Properties");
-
-            // Get current name
-            char nameBuffer[128];
-            strncpy_s(nameBuffer, selectedStation->GetName().c_str(), sizeof(nameBuffer));
-            nameBuffer[sizeof(nameBuffer) - 1] = '\0';
-
-            if (ImGui::InputText("Station Name", nameBuffer, sizeof(nameBuffer))) {
-                selectedStation->SetName(nameBuffer);
-            }
-
-            ImGui::End();
-        }
-
-        if (timeScalePtr) {
-            ImGui::Begin("Time Control");
-
-            // Display current time scale
-            float currentScale = timeScalePtr->load();
-            ImGui::Text("Current Time Scale: %.1fx", currentScale);
-
-            // Slider for time scale
-            if (ImGui::SliderFloat("Adjust Time Scale", &currentScale, 0.0f, 4.0f)) {
-                timeScalePtr->store(currentScale);
-            }
-
-            // Preset speed buttons
-            if (ImGui::Button("Pause")) {
-                timeScalePtr->store(0.0f);
-            }
-            ImGui::SameLine();
-            if (ImGui::Button("1x")) {
-                timeScalePtr->store(1.0f);
-            }
-            ImGui::SameLine();
-            if (ImGui::Button("2x")) {
-                timeScalePtr->store(2.0f);
-            }
-            ImGui::SameLine();
-            if (ImGui::Button("4x")) {
-                timeScalePtr->store(4.0f);
-            }
-
-            ImGui::End();
-        }
-
-        ImGui::SFML::Render(*renderWindow);
+        ImGui::SFML::Render(*m_renderWindow);
+    } catch (const std::exception& e) {
+        DEBUG_ERROR("Error rendering UI: " + std::string(e.what()));
+        Shutdown();
     }
 }
 
-/**
-<summary>
-Shuts down ImGui and cleans up any allocated resources.
-</summary>
-*/
-void UIManager::Shutdown() {
-    if (initialized) {
-        ImGui::SFML::Shutdown();
-        initialized = false;
+void UIManager::RenderPerformanceOverlay() {
+    ImGui::SetNextWindowPos(ImVec2(10.0f, 10.0f), ImGuiCond_Always);
+    ImGui::SetNextWindowSize(ImVec2(200.0f, 60.0f), ImGuiCond_Always);
+    ImGui::Begin("Performance", nullptr, 
+        ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
+    ImGui::Text("FPS: %.1f", m_fps);
+    if (ImGui::Button(m_showPerformanceWindow ? "Hide Profiler" : "Show Profiler")) {
+        m_showPerformanceWindow = !m_showPerformanceWindow;
     }
+    ImGui::End();
+}
+
+void UIManager::RenderSettingsPanel() {
+    if (!m_gameSettings) return;
+
+    ImGui::SetNextWindowPos(
+        ImVec2(
+            static_cast<float>(m_renderWindow->getSize().x) / 2.0f - 300.0f,
+            static_cast<float>(m_renderWindow->getSize().y) / 2.0f - 200.0f
+        ),
+        ImGuiCond_FirstUseEver
+    );
+    ImGui::SetNextWindowSize(ImVec2(600.0f, 400.0f), ImGuiCond_FirstUseEver);
+
+    if (ImGui::Begin("Settings", &m_showSettingsPanel)) {
+        if (ImGui::BeginTabBar("SettingsTabs")) {
+            if (ImGui::BeginTabItem("Video")) {
+                RenderVideoSettings();
+                ImGui::EndTabItem();
+            }
+            if (ImGui::BeginTabItem("Gameplay")) {
+                RenderGameplaySettings();
+                ImGui::EndTabItem();
+            }
+            ImGui::EndTabBar();
+        }
+
+        ImGui::Separator();
+
+        if (ImGui::Button("Save Settings")) {
+            m_gameSettings->SaveSettings("config/settings.json");
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Close")) {
+            m_showSettingsPanel = false;
+        }
+    }
+    ImGui::End();
+}
+
+void UIManager::RenderVideoSettings() {
+    bool settingsChanged = false;
+    
+    static const std::array<sf::Vector2u, 4> resolutions = {
+        sf::Vector2u(1920, 1080),
+        sf::Vector2u(2560, 1440),
+        sf::Vector2u(3440, 1440),
+        sf::Vector2u(3840, 2160)
+    };
+
+    sf::Vector2u currentRes = m_gameSettings->GetValue<sf::Vector2u>(Settings::Names::RESOLUTION);
+    int currentItem = -1;
+    
+    // Find current resolution in the list
+    for (size_t i = 0; i < resolutions.size(); i++) {
+        if (resolutions[i] == currentRes) {
+            currentItem = static_cast<int>(i);
+            break;
+        }
+    }
+
+    std::vector<std::string> items;
+    for (const auto& res : resolutions) {
+        items.push_back(std::to_string(res.x) + "x" + std::to_string(res.y));
+    }
+
+    std::vector<const char*> itemsStr;
+    for (const auto& item : items) {
+        itemsStr.push_back(item.c_str());
+    }
+
+    if (ImGui::Combo("Resolution", &currentItem, itemsStr.data(), static_cast<int>(itemsStr.size()))) {
+        if (currentItem >= 0 && currentItem < static_cast<int>(resolutions.size())) {
+            m_gameSettings->SetValue(Settings::Names::RESOLUTION, resolutions[currentItem]);
+            settingsChanged = true;
+        }
+    }
+
+    bool fullscreen = m_gameSettings->GetValue<bool>(Settings::Names::FULLSCREEN);
+    if (ImGui::Checkbox("Fullscreen", &fullscreen)) {
+        m_gameSettings->SetValue(Settings::Names::FULLSCREEN, fullscreen);
+        settingsChanged = true;
+    }
+
+    bool vsync = m_gameSettings->GetValue<bool>(Settings::Names::VSYNC);
+    if (ImGui::Checkbox("V-Sync", &vsync)) {
+        m_gameSettings->SetValue(Settings::Names::VSYNC, vsync);
+        m_windowManager->SetVSync(vsync);
+    }
+
+    int frameLimit = static_cast<int>(m_gameSettings->GetValue<unsigned int>(Settings::Names::FRAME_RATE_LIMIT));
+    if (ImGui::SliderInt("Frame Rate Limit", &frameLimit, 30, 240)) {
+        m_gameSettings->SetValue(Settings::Names::FRAME_RATE_LIMIT, static_cast<unsigned int>(frameLimit));
+        m_windowManager->SetFramerateLimit(frameLimit);
+    }
+
+    if (settingsChanged && m_windowManager) {
+        auto resolution = m_gameSettings->GetValue<sf::Vector2u>(Settings::Names::RESOLUTION);
+        m_windowManager->SetVideoMode(sf::VideoMode(resolution.x, resolution.y));
+        m_windowManager->SetFullscreen(m_gameSettings->GetValue<bool>(Settings::Names::FULLSCREEN));
+        m_windowManager->ApplyVideoMode();
+    }
+}
+
+void UIManager::RenderGameplaySettings() {
+    float zoomSpeed = m_gameSettings->GetValue<float>(Settings::Names::CAMERA_ZOOM_SPEED);
+    if (ImGui::SliderFloat("Camera Zoom Speed", &zoomSpeed, 1.0f, 2.0f, "%.2f")) {
+        m_gameSettings->SetValue(Settings::Names::CAMERA_ZOOM_SPEED, zoomSpeed);
+        if (m_inputManager) {
+            m_inputManager->SetZoomSpeed(zoomSpeed);
+        }
+    }
+
+    float panSpeed = m_gameSettings->GetValue<float>(Settings::Names::CAMERA_PAN_SPEED);
+    if (ImGui::SliderFloat("Camera Pan Speed", &panSpeed, 100.0f, 1000.0f, "%.0f")) {
+        m_gameSettings->SetValue(Settings::Names::CAMERA_PAN_SPEED, panSpeed);
+        if (m_inputManager) {
+            m_inputManager->SetPanSpeed(panSpeed);
+        }
+    }
+
+    int autosaveInterval = static_cast<int>(m_gameSettings->GetValue<unsigned int>(Settings::Names::AUTOSAVE_INTERVAL));
+    if (ImGui::SliderInt("Autosave Interval (minutes)", &autosaveInterval, 1, 30)) {
+        m_gameSettings->SetValue(Settings::Names::AUTOSAVE_INTERVAL, static_cast<unsigned int>(autosaveInterval));
+    }
+}
+
+void UIManager::RenderPerformanceWindow() {
+    if (!m_showPerformanceWindow) return;
+
+    ImGui::SetNextWindowPos(ImVec2(10.0f, 80.0f), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(300.0f, 400.0f), ImGuiCond_FirstUseEver);
+    
+    if (ImGui::Begin("Performance Profiler", &m_showPerformanceWindow)) {
+        ImGui::Text("FPS: %.1f", m_fps);
+        ImGui::Separator();
+        
+        if (ImGui::BeginTable("ProfilerData", 2, 
+            ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY)) {
+            
+            ImGui::TableSetupColumn("Section", ImGuiTableColumnFlags_WidthStretch);
+            ImGui::TableSetupColumn("Time (ms)", ImGuiTableColumnFlags_WidthFixed, 80.0f);
+            ImGui::TableHeadersRow();
+
+            auto profiles = Profiler::GetSortedProfiles();
+            for (const auto& profile : profiles) {
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn();
+                ImGui::Text("%s", profile.name.c_str());
+                ImGui::TableNextColumn();
+                ImGui::Text("%.3f", profile.duration);
+            }
+            
+            ImGui::EndTable();
+        }
+    }
+    ImGui::End();
+}
+
+void UIManager::Shutdown() {
+    if (m_initialized) {
+        try {
+            ImGui::SFML::Shutdown();
+        } catch (const std::exception& e) {
+            DEBUG_ERROR("Error during ImGui shutdown: " + std::string(e.what()));
+        }
+        m_initialized = false;
+    }
+    m_renderWindow = nullptr; // Clear the window pointer
+}
+
+void UIManager::SetWindow(sf::RenderWindow& window) {
+    if (!window.isOpen()) {
+        throw std::invalid_argument("Cannot set closed window");
+    }
+    
+    // If we already have an initialized ImGui context, shut it down first
+    if (m_initialized) {
+        Shutdown();
+    }
+    
+    m_renderWindow = &window;
 }

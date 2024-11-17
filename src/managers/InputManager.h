@@ -2,67 +2,48 @@
 
 #include <SFML/Graphics.hpp>
 #include <memory>
-#include <string>
-#include <imgui.h> // Include ImGui header
-
+#include <functional>
+#include <vector>
+#include <utility>
 #include "EventManager.h"
 #include "../graphics/Camera.h"
-#include "../world/WorldMap.h"
+
+enum class InputAction {
+    ZoomIn,
+    ZoomOut,
+    PanLeft,
+    PanRight,
+    PanUp,
+    PanDown,
+    Select
+};
 
 class InputManager {
 public:
-    // Constructor that initializes the InputManager with references to event manager, camera, window, and world map.
-    InputManager(std::shared_ptr<EventManager> eventManager,
-        std::shared_ptr<Camera> camera,
-        sf::RenderWindow& window,
-        std::shared_ptr<WorldMap> worldMap);
+    InputManager(std::shared_ptr<EventManager> eventMgr, sf::RenderWindow& win);
     ~InputManager();
 
-    // Set the zoom speed for the camera.
-    void SetZoomSpeed(float speed);
+    /* Input Processing */
+    void HandleInput(float deltaTime);
+    void RegisterActionCallback(InputAction action, std::function<void()> callback);
 
-    // Set the pan speed for the camera.
+    /* Setters */
+    void SetZoomSpeed(float speed);
     void SetPanSpeed(float speed);
 
-    // Handles user input every frame, using the current delta time for smooth movement.
-    void HandleInput(float deltaTime);
+    /* Getters */
+    float GetPanSpeed() const { return m_panSpeed; }
+    float GetZoomSpeed() const { return m_zoomSpeed; }
 
 private:
-    std::shared_ptr<EventManager> eventManager; // Reference to the event manager.
-    std::shared_ptr<Camera> camera; // Reference to the camera for manipulating the view.
-    sf::RenderWindow& window; // Reference to the SFML RenderWindow.
-    std::shared_ptr<WorldMap> worldMap; // Reference to the world map for accessing game data.
+    void EmitAction(InputAction action);
 
-    // Configuration parameters for input management.
-    float zoomSpeed; // Speed factor for zooming the camera.
-    float panSpeed; // Speed factor for panning the camera.
+    /* Core Components */
+    std::shared_ptr<EventManager> m_eventManager;
+    sf::RenderWindow& m_window;
 
-    // Event handlers for different types of input events.
-    void OnMouseWheelScrolled(const sf::Event& event); // Handles mouse wheel scrolling.
-    void OnKeyPressed(const sf::Event& event); // Handles key press events.
-    void OnMouseMoved(const sf::Event& event); // Handles mouse movement.
-    void OnMouseButtonPressed(const sf::Event& event); // Handles mouse button presses.
-    void OnMouseButtonReleased(const sf::Event& event);
-
-    // State tracking for panning.
-    bool isPanning; // Flag to track whether panning is currently active.
-    sf::Vector2i lastMousePosition; // Stores the last mouse position for calculating panning movement.
-
-    // State tracking for continuous input.
-    sf::Vector2f continuousMovement; // Tracks continuous movement for smooth panning.
-
-    // Line building state.
-    Station* startingStation; // Pointer to the starting station for building lines.
-
-    // Line selection state.
-    Line* selectedLine; // Pointer to the currently selected line.
-
-    // Node selection and dragging
-    bool isDraggingNode = false;
-    int selectedNodeIndex = -1;
-    Line* editingLine = nullptr; // Pointer to the line currently being edited
-
-    // Station dragging
-    bool isDraggingStation = false;
-    Station* selectedStation = nullptr; // Pointer to the station currently being moved
+    /* Input Configuration */
+    float m_zoomSpeed;
+    float m_panSpeed;
+    std::vector<std::pair<InputAction, std::function<void()>>> m_actionCallbacks;
 };

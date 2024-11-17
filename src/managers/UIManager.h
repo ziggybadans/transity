@@ -4,48 +4,47 @@
 #include <imgui-SFML.h>
 #include <SFML/Graphics.hpp>
 #include <memory>
-
-#include "InitializationManager.h"
-#include "../world/WorldMap.h"
+#include "../settings/GameSettings.h"
+#include "../interfaces/IInitializable.h"
+#include "../managers/WindowManager.h"
+#include "../managers/InputManager.h"
 
 class UIManager : public IInitializable {
 public:
-    // Constructor that initializes the UIManager with a shared pointer to the WorldMap.
-    UIManager(std::shared_ptr<WorldMap> worldMap);
+    UIManager();
     ~UIManager();
 
-    // Initializes ImGui and other UI components.
+    /* Core UI Methods */
     bool Init() override;
-
-    // Sets the reference to the SFML RenderWindow.
-    void SetWindow(sf::RenderWindow& window);
-
-    // Processes input events from the SFML window (e.g., mouse clicks, keyboard inputs).
     void ProcessEvent(const sf::Event& event);
-
-    // Updates the UI elements each frame.
     void Update(float deltaTime);
-
-    // Renders the ImGui elements to the screen.
     void Render();
-
-    // Shuts down ImGui and cleans up resources.
     void Shutdown();
 
-    // Setter for timeScale pointer
-    void SetTimeScalePointer(std::atomic<float>* ptr);
+    /* Setters */
+    void SetWindow(sf::RenderWindow& window);
+    void SetGameSettings(std::shared_ptr<GameSettings> settings) { m_gameSettings = settings; }
+    void SetWindowManager(std::shared_ptr<WindowManager> windowManager) { m_windowManager = windowManager; }
+    void SetInputManager(std::shared_ptr<InputManager> inputManager) { m_inputManager = inputManager; }
 
 private:
-    bool initialized; // Flag to indicate if the UIManager has been initialized.
-    sf::RenderWindow* renderWindow; // Pointer to the SFML RenderWindow.
-    std::shared_ptr<WorldMap> worldMap; // Reference to the world map for accessing game data.
+    /* UI Panels */
+    void RenderPerformanceOverlay();
+    void RenderSettingsPanel();
+    void RenderVideoSettings();
+    void RenderGameplaySettings();
+    void RenderPerformanceWindow();
 
-    // Time control pointer
-    std::atomic<float>* timeScalePtr;
+    /* UI State */
+    bool m_initialized;
+    sf::RenderWindow* m_renderWindow;
+    float* m_timeScalePtr;
+    float m_fps;
+    bool m_showSettingsPanel;
+    bool m_showPerformanceWindow;
 
-    // Parameters for UI customization.
-    float thickness; // Thickness value for rendering elements.
-    float color[4]; // RGBA values for setting color (values between 0.0f and 1.0f).
-
-    float speedKmPerHour; // Speed for the selected line
+    /* Game Settings */
+    std::shared_ptr<GameSettings> m_gameSettings;
+    std::shared_ptr<WindowManager> m_windowManager;
+    std::shared_ptr<InputManager> m_inputManager;
 };

@@ -1,13 +1,10 @@
 #pragma once
+
 #include <vector>
 #include <memory>
-
-class IInitializable {
-public:
-    // Pure virtual function to initialize the module, must be implemented by derived classes.
-    virtual bool Init() = 0;
-    virtual ~IInitializable() = default; // Default virtual destructor.
-};
+#include <iostream>
+#include "../Debug.h"
+#include "../interfaces/IInitializable.h"
 
 class InitializationManager {
 public:
@@ -18,12 +15,22 @@ public:
 
     // Initializes all registered modules. Returns false if any module fails to initialize.
     bool InitAll() {
+        DEBUG_INFO("Starting initialization of ", modules.size(), " modules");
         for (auto& module : modules) {
             if (!module->Init()) {
+                DEBUG_ERROR("Module initialization failed");
                 return false;
             }
+            DEBUG_DEBUG("Module initialized successfully");
         }
+        DEBUG_INFO("All modules initialized successfully");
         return true;
+    }
+
+    // Shutdown all modules
+    void Shutdown() {
+        // Clear all registered modules
+        modules.clear();
     }
 
 private:

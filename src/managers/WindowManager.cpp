@@ -1,145 +1,102 @@
 #include "WindowManager.h"
+#include "../Debug.h"
 
-/**
-<summary>
-WindowManager is responsible for creating and managing the main application window.
-It provides methods to initialize the window, set video properties, and handle rendering.
-This class abstracts away the complexity of managing SFML's RenderWindow and offers
-an easy-to-use interface for window-related operations.
-</summary>
-*/
 WindowManager::WindowManager()
-    : window(nullptr),
-    videoMode(1280, 720), // Default resolution
-    windowTitle("2D Transport Management Game"), // Default title
-    contextSettings() {} // Default context settings
+    : m_window(nullptr),
+      m_videoMode(1280, 720),      // Default resolution
+      m_windowTitle("2D Transport Management Game"),
+      m_contextSettings(),         // Default context settings
+      m_fullscreen(false),
+      m_vsyncEnabled(false),
+      m_frameRateLimit(240)
+{}
 
-/**
-<summary>
-Destructor for WindowManager. Ensures that the window is properly closed
-before the object is destroyed.
-</summary>
-*/
 WindowManager::~WindowManager() {
-    if (window && window->isOpen()) {
-        window->close();
+    if (m_window && m_window->isOpen()) {
+        m_window->close();
     }
 }
 
-/**
-<summary>
-Sets the video mode for the window.
-</summary>
-<param name="vm">The new video mode to be set (e.g., resolution).</param>
-*/
-void WindowManager::SetVideoMode(const sf::VideoMode& vm) {
-    videoMode = vm;
-}
-
-/**
-<summary>
-Sets the title of the window.
-</summary>
-<param name="title">The new title for the window.</param>
-*/
-void WindowManager::SetTitle(const std::string& title) {
-    windowTitle = title;
-}
-
-/**
-<summary>
-Sets the OpenGL context settings for the window.
-</summary>
-<param name="settings">The context settings to be applied (e.g., depth buffer bits).</param>
-*/
-void WindowManager::SetContextSettings(const sf::ContextSettings& settings) {
-    contextSettings = settings;
-}
-
-/**
-<summary>
-Initializes the window with the specified settings, including video mode, title, and context.
-It also sets the frame rate limit to 240 frames per second.
-</summary>
-<returns>True if the window was successfully created and is open, otherwise false.</returns>
-*/
 bool WindowManager::Init() {
-    // Check if fullscreen is enabled and set appropriate style
-    sf::Uint32 style = fullscreen ? sf::Style::Fullscreen : sf::Style::Default;
-
-    window = std::make_unique<sf::RenderWindow>(videoMode, windowTitle, style, contextSettings);
-    window->setFramerateLimit(240);
-
-    return window->isOpen();
+    sf::Uint32 style = m_fullscreen ? sf::Style::Fullscreen : sf::Style::Default;
+    
+    try {
+        m_window = std::make_unique<sf::RenderWindow>(
+            m_videoMode, 
+            m_windowTitle, 
+            style, 
+            m_contextSettings
+        );
+        m_window->setFramerateLimit(240);
+        return m_window->isOpen();
+    } catch (const std::exception& e) {
+        DEBUG_ERROR("Failed to initialize window: ", e.what());
+        return false;
+    }
 }
 
-/**
-<summary>
-Polls for events from the window's event queue.
-</summary>
-<param name="event">Reference to an SFML Event object to be populated.</param>
-<returns>True if an event was polled, otherwise false.</returns>
-*/
 bool WindowManager::PollEvent(sf::Event& event) {
-    if (window) {
-        return window->pollEvent(event);
-    }
-    return false;
+    return m_window && m_window->pollEvent(event);
 }
 
-/**
-<summary>
-Checks if the window is currently open.
-</summary>
-<returns>True if the window is open, otherwise false.</returns>
-*/
-bool WindowManager::IsOpen() const {
-    return window && window->isOpen();
-}
-
-/**
-<summary>
-Clears the window with the specified color.
-</summary>
-<param name="color">The color to clear the window with.</param>
-*/
 void WindowManager::Clear(const sf::Color& color) {
-    if (window) {
-        window->clear(color);
+    if (m_window) {
+        m_window->clear(color);
     }
 }
 
-/**
-<summary>
-Displays the contents of the current render buffer on the window.
-</summary>
-*/
 void WindowManager::Display() {
-    if (window) {
-        window->display();
+    if (m_window) {
+        m_window->display();
     }
 }
 
-/**
-<summary>
-Provides access to the underlying SFML RenderWindow.
-</summary>
-<returns>A reference to the SFML RenderWindow object.</returns>
-<exception cref="std::runtime_error">Thrown if the window is not initialized.</exception>
-*/
-sf::RenderWindow& WindowManager::GetWindow() {
-    if (window) {
-        return *window;
-    }
-    throw std::runtime_error("RenderWindow is not initialized.");
+void WindowManager::SetVideoMode(const sf::VideoMode& vm) {
+    m_videoMode = vm;
 }
 
-/**
-<summary>
-Enables or disables fullscreen mode for the window.
-</summary>
-<param name="enable">True to enable fullscreen, false to disable it.</param>
-*/
+void WindowManager::SetTitle(const std::string& title) {
+    m_windowTitle = title;
+}
+
+void WindowManager::SetContextSettings(const sf::ContextSettings& settings) {
+    m_contextSettings = settings;
+}
+
 void WindowManager::SetFullscreen(bool enable) {
-    fullscreen = enable;
+    m_fullscreen = enable;
+}
+
+bool WindowManager::IsOpen() const {
+    return m_window && m_window->isOpen();
+}
+
+sf::RenderWindow& WindowManager::GetWindow() {
+    if (!m_window) {
+        throw std::runtime_error("Attempting to access uninitialized window");
+    }
+    return *m_window;
+}
+
+void WindowManager::ApplyVideoMode() {
+    if (!m_window) return;
+    
+    sf::Uint32 style = m_fullscreen ? sf::Style::Fullscreen : sf::Style::Default;
+    m_window->create(m_videoMode, m_windowTitle, style, m_contextSettings);
+    m_window->setVerticalSyncEnabled(m_vsyncEnabled);
+    m_window->setFramerateLimit(m_frameRateLimit);
+}
+
+void WindowManager::SetVSync(bool enabled) {
+    m_vsyncEnabled = enabled;
+    if (m_window) {
+        m_window->setVerticalSyncEnabled(enabled);
+    }
+}
+
+void WindowManager::SetFramerateLimit(unsigned int limit) {
+    m_frameRateLimit = limit;
+    if (m_window) {
+        m_window->setFramerateLimit(limit);
+    }
 }

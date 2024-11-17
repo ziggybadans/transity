@@ -4,50 +4,41 @@
 #include <memory>
 #include <string>
 
-#include "InitializationManager.h"
+#include "../interfaces/IInitializable.h"
 
-class WindowManager : public IInitializable { // Changed to public inheritance
+class WindowManager : public IInitializable {
 public:
     WindowManager();
     ~WindowManager();
 
-    // Initialize the SFML window without parameters
+    /* Virtual Methods */
     bool Init() override;
 
-    // Set video mode before initialization
-    void SetVideoMode(const sf::VideoMode& vm);
-
-    // Set window title before initialization
-    void SetTitle(const std::string& title);
-
-    // Set context settings before initialization
-    void SetContextSettings(const sf::ContextSettings& settings);
-
-    // Poll and retrieve window events
+    /* Window Operations */
     bool PollEvent(sf::Event& event);
-
-    // Check if the window is open
-    bool IsOpen() const;
-
-    // Clear the window with a specified color
     void Clear(const sf::Color& color = sf::Color::Black);
-
-    // Display the rendered frame
     void Display();
+    void ApplyVideoMode();
 
-    // Get a reference to the SFML window
+    /* Setters */
+    void SetVideoMode(const sf::VideoMode& vm);
+    void SetTitle(const std::string& title);
+    void SetContextSettings(const sf::ContextSettings& settings);
+    void SetFullscreen(bool enable);
+    void SetVSync(bool enabled);
+    void SetFramerateLimit(unsigned int limit);
+
+    /* Getters */
+    bool IsOpen() const;
     sf::RenderWindow& GetWindow();
 
-    // Enable or disable fullscreen mode
-    void SetFullscreen(bool enable);
-
 private:
-    std::unique_ptr<sf::RenderWindow> window; // Pointer to the SFML window
-
-    // Configuration parameters
-    sf::VideoMode videoMode; // Video mode (resolution, color depth, etc.)
-    std::string windowTitle; // Title of the window
-    sf::ContextSettings contextSettings; // OpenGL context settings
-
-    bool fullscreen; // Flag to indicate whether fullscreen is enabled
+    /* Window Properties */
+    std::unique_ptr<sf::RenderWindow> m_window;
+    sf::VideoMode m_videoMode;
+    std::string m_windowTitle;
+    sf::ContextSettings m_contextSettings;
+    bool m_fullscreen;
+    bool m_vsyncEnabled;
+    unsigned int m_frameRateLimit;
 };
