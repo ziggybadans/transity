@@ -43,20 +43,7 @@ bool Game::Init() {
             return false;
         }
 
-        m_worldMap = m_resourceManager->GetWorldMap();
-        
-        if (m_worldMap) {
-            m_camera->SetZoom(Constants::CAMERA_MAX_ZOOM);
-            m_camera->SetWorldBounds(m_worldMap->GetWorldWidth(), m_worldMap->GetWorldHeight());
-            m_camera->SetPosition(sf::Vector2f(
-                m_worldMap->GetWorldWidth() / 2.0f,
-                m_worldMap->GetWorldHeight() / 2.0f
-            ));
-            std::cout << "Camera initialized to center of the world." << std::endl;
-        }
-
         m_renderer = std::make_unique<Renderer>();
-        m_renderer->SetWorldMap(m_worldMap);
         if (!m_renderer->Init(m_windowManager->GetWindow())) {
             std::cerr << "Failed to initialize Renderer." << std::endl;
             return false;
@@ -70,7 +57,7 @@ bool Game::Init() {
         actionRegistrar->RegisterActions();
         m_actionRegistrar = std::move(actionRegistrar);
 
-        m_uiManager = std::make_shared<UIManager>(m_worldMap);
+        m_uiManager = std::make_shared<UIManager>();
         m_uiManager->SetWindow(m_windowManager->GetWindow());
         if (!m_uiManager->Init()) {
             std::cerr << "Failed to initialize UIManager." << std::endl;
@@ -181,8 +168,7 @@ void Game::Shutdown() {
     m_threadPool.reset();
     m_inputManager.reset();
     m_camera.reset();
-    m_worldMap.reset();
+    m_resourceManager.reset();
     m_windowManager.reset();
     m_uiManager.reset();
-    m_resourceManager.reset();
 }

@@ -148,7 +148,6 @@
     <ClCompile Include="..\..\..\Downloads\imgui-sfml-2.6\imgui-SFML.cpp" />
     <ClCompile Include="src\Game.cpp" />
     <ClCompile Include="src\graphics\Camera.cpp" />
-    <ClCompile Include="src\graphics\PlaceAreaRenderer.cpp" />
     <ClCompile Include="src\graphics\Renderer.cpp" />
     <ClCompile Include="src\managers\InputManager.cpp" />
     <ClCompile Include="src\managers\ResourceManager.cpp" />
@@ -156,9 +155,6 @@
     <ClCompile Include="src\managers\WindowManager.cpp" />
     <ClCompile Include="src\Transity.cpp" />
     <ClCompile Include="src\utility\ThreadPool.cpp" />
-    <ClCompile Include="src\world\MapData.cpp" />
-    <ClCompile Include="src\world\MapLoader.cpp" />
-    <ClCompile Include="src\world\WorldMap.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitignore" />
@@ -173,7 +169,6 @@
     <ClInclude Include="src\Constants.h" />
     <ClInclude Include="src\Game.h" />
     <ClInclude Include="src\graphics\Camera.h" />
-    <ClInclude Include="src\graphics\PlaceAreaRenderer.h" />
     <ClInclude Include="src\graphics\Renderer.h" />
     <ClInclude Include="src\managers\EventManager.h" />
     <ClInclude Include="src\managers\InitializationManager.h" />
@@ -185,9 +180,6 @@
     <ClInclude Include="src\utility\FastNoiseLite.h" />
     <ClInclude Include="src\utility\Task.h" />
     <ClInclude Include="src\utility\ThreadPool.h" />
-    <ClInclude Include="src\world\MapData.h" />
-    <ClInclude Include="src\world\MapLoader.h" />
-    <ClInclude Include="src\world\WorldMap.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

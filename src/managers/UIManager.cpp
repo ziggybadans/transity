@@ -2,10 +2,9 @@
 #include <string>
 #include <iostream>
 
-UIManager::UIManager(std::shared_ptr<WorldMap> worldMap)
+UIManager::UIManager()
     : m_initialized(false)
     , m_renderWindow(nullptr)
-    , m_worldMap(std::move(worldMap))
     , m_timeScalePtr(nullptr)
     , m_fps(0.0f)
 {

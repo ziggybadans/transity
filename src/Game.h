@@ -10,7 +10,6 @@
 #include "managers/InitializationManager.h"
 #include "managers/EventManager.h"
 #include "managers/InputManager.h"
-#include "world/WorldMap.h"
 #include "graphics/Renderer.h"
 #include "graphics/Camera.h"
 #include "utility/ThreadPool.h"
@@ -64,8 +63,7 @@ private:
     std::unique_ptr<ActionRegistrar> m_actionRegistrar;
 
     /* Game State */
-    std::shared_ptr<WorldMap> m_worldMap;
-    mutable std::mutex m_worldMapMutex;
+    mutable std::mutex m_gameMutex;
     std::atomic<bool> m_isRunning;
     std::atomic<float> m_timeScale;
 

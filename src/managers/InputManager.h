@@ -7,7 +7,6 @@
 #include <utility>
 #include "EventManager.h"
 #include "../graphics/Camera.h"
-#include "../world/WorldMap.h"
 
 enum class InputAction {
     ZoomIn,

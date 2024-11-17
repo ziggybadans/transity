@@ -5,8 +5,8 @@
 #include <condition_variable>
 #include <string>
 #include <unordered_map>
+#include <iostream>
 #include <SFML/Graphics.hpp>
-#include "../world/WorldMap.h"
 #include "../utility/ThreadPool.h"
 
 class ResourceManager {
@@ -15,7 +15,6 @@ public:
     ~ResourceManager() = default;
 
     bool LoadResources();
-    std::shared_ptr<WorldMap> GetWorldMap() const { return m_worldMap; }
 
     template<typename T>
     std::shared_ptr<T> LoadResource(const std::string& key, const std::string& filePath);
@@ -25,8 +24,7 @@ private:
     void StoreResource(const std::string& key, std::shared_ptr<T> resource);
 
     std::unique_ptr<ThreadPool>& m_threadPool;
-    std::shared_ptr<WorldMap> m_worldMap;
-    std::mutex m_worldMapMutex;
+    std::mutex m_resourceMutex;
 
     // Resource containers
     std::unordered_map<std::string, std::shared_ptr<sf::Texture>> m_textures;

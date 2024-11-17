@@ -5,11 +5,10 @@
 #include <SFML/Graphics.hpp>
 #include <memory>
 #include "EventManager.h"
-#include "../world/WorldMap.h"
 
 class UIManager {
 public:
-    UIManager(std::shared_ptr<WorldMap> worldMap);
+    UIManager();
     ~UIManager();
 
     /* Core UI Methods */
@@ -26,9 +25,6 @@ private:
     /* UI State */
     bool m_initialized;
     sf::RenderWindow* m_renderWindow;
-    std::shared_ptr<WorldMap> m_worldMap;
     float* m_timeScalePtr;
-
-    // New member variable to store FPS
     float m_fps;
 };
