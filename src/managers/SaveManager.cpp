@@ -2,6 +2,8 @@
 #include <fstream>
 #include <iostream>
 #include "../Debug.h"
+#include "../settings/SettingsDefinitions.h"
+#include <SFML/Graphics.hpp>
 
 SaveManager::SaveManager()
     : m_savesDirectory("saves")
@@ -105,24 +107,27 @@ bool SaveManager::SerializeGameState(nlohmann::json& j) const {
     }
 
     try {
-        // Serialize game settings
+        // Serialize settings
         j["settings"] = {
-            {"resolution", {m_gameSettings->GetResolution().x, m_gameSettings->GetResolution().y}},
-            {"fullscreen", m_gameSettings->IsFullscreen()},
-            {"vsync", m_gameSettings->IsVSyncEnabled()},
-            {"frameRateLimit", m_gameSettings->GetFrameRateLimit()},
-            {"masterVolume", m_gameSettings->GetMasterVolume()},
-            {"musicVolume", m_gameSettings->GetMusicVolume()},
-            {"sfxVolume", m_gameSettings->GetSFXVolume()},
-            {"cameraZoomSpeed", m_gameSettings->GetCameraZoomSpeed()},
-            {"cameraPanSpeed", m_gameSettings->GetCameraPanSpeed()},
-            {"autosaveInterval", m_gameSettings->GetAutosaveInterval()}
+            {"resolution", {
+                m_gameSettings->GetValue<sf::Vector2u>(Settings::Names::RESOLUTION).x,
+                m_gameSettings->GetValue<sf::Vector2u>(Settings::Names::RESOLUTION).y
+            }},
+            {"fullscreen", m_gameSettings->GetValue<bool>(Settings::Names::FULLSCREEN)},
+            {"vsync", m_gameSettings->GetValue<bool>(Settings::Names::VSYNC)},
+            {"frameRateLimit", m_gameSettings->GetValue<unsigned int>(Settings::Names::FRAME_RATE_LIMIT)},
+            {"masterVolume", m_gameSettings->GetValue<float>(Settings::Names::MASTER_VOLUME)},
+            {"musicVolume", m_gameSettings->GetValue<float>(Settings::Names::MUSIC_VOLUME)},
+            {"sfxVolume", m_gameSettings->GetValue<float>(Settings::Names::SFX_VOLUME)},
+            {"cameraZoomSpeed", m_gameSettings->GetValue<float>(Settings::Names::CAMERA_ZOOM_SPEED)},
+            {"cameraPanSpeed", m_gameSettings->GetValue<float>(Settings::Names::CAMERA_PAN_SPEED)},
+            {"autosaveInterval", m_gameSettings->GetValue<unsigned int>(Settings::Names::AUTOSAVE_INTERVAL)}
         };
 
         return true;
     }
     catch (const std::exception& e) {
-        std::cerr << "Error serializing game state: " << e.what() << std::endl;
+        DEBUG_ERROR("Error serializing game state: ", e.what());
         return false;
     }
 }
@@ -135,21 +140,22 @@ bool SaveManager::DeserializeGameState(const nlohmann::json& j) {
     try {
         // Deserialize settings
         auto& settings = j["settings"];
-        m_gameSettings->SetResolution(sf::Vector2u(settings["resolution"][0], settings["resolution"][1]));
-        m_gameSettings->SetFullscreen(settings["fullscreen"]);
-        m_gameSettings->SetVSync(settings["vsync"]);
-        m_gameSettings->SetFrameRateLimit(settings["frameRateLimit"]);
-        m_gameSettings->SetMasterVolume(settings["masterVolume"]);
-        m_gameSettings->SetMusicVolume(settings["musicVolume"]);
-        m_gameSettings->SetSFXVolume(settings["sfxVolume"]);
-        m_gameSettings->SetCameraZoomSpeed(settings["cameraZoomSpeed"]);
-        m_gameSettings->SetCameraPanSpeed(settings["cameraPanSpeed"]);
-        m_gameSettings->SetAutosaveInterval(settings["autosaveInterval"]);
+        m_gameSettings->SetValue(Settings::Names::RESOLUTION, 
+            sf::Vector2u(settings["resolution"][0], settings["resolution"][1]));
+        m_gameSettings->SetValue(Settings::Names::FULLSCREEN, settings["fullscreen"]);
+        m_gameSettings->SetValue(Settings::Names::VSYNC, settings["vsync"]);
+        m_gameSettings->SetValue(Settings::Names::FRAME_RATE_LIMIT, settings["frameRateLimit"]);
+        m_gameSettings->SetValue(Settings::Names::MASTER_VOLUME, settings["masterVolume"]);
+        m_gameSettings->SetValue(Settings::Names::MUSIC_VOLUME, settings["musicVolume"]);
+        m_gameSettings->SetValue(Settings::Names::SFX_VOLUME, settings["sfxVolume"]);
+        m_gameSettings->SetValue(Settings::Names::CAMERA_ZOOM_SPEED, settings["cameraZoomSpeed"]);
+        m_gameSettings->SetValue(Settings::Names::CAMERA_PAN_SPEED, settings["cameraPanSpeed"]);
+        m_gameSettings->SetValue(Settings::Names::AUTOSAVE_INTERVAL, settings["autosaveInterval"]);
 
         return true;
     }
     catch (const std::exception& e) {
-        std::cerr << "Error deserializing game state: " << e.what() << std::endl;
+        DEBUG_ERROR("Error deserializing game state: ", e.what());
         return false;
     }
 }

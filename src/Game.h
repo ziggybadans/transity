@@ -43,7 +43,6 @@ public:
 private:
     /* Initialization Methods */
     bool InitManagers();
-    bool LoadResources();
 
     /* Game Loop Methods */
     void ProcessEvents();
@@ -81,4 +80,6 @@ private:
 
     std::shared_ptr<GameSettings> m_gameSettings;
     std::unique_ptr<SaveManager> m_saveManager;
+
+    void RegisterSettings();
 };

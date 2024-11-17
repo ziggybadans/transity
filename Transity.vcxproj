@@ -160,6 +160,7 @@
     <ClCompile Include="src\modding\PluginLoader.cpp" />
     <ClCompile Include="src\modding\PluginManager.cpp" />
     <ClCompile Include="src\settings\GameSettings.cpp" />
+    <ClCompile Include="src\settings\SettingsRegistry.cpp" />
     <ClCompile Include="src\Transity.cpp" />
     <ClCompile Include="src\utility\Profiler.cpp" />
     <ClCompile Include="src\utility\Sandbox.cpp" />
@@ -196,6 +197,8 @@
     <ClInclude Include="src\modding\PluginManager.h" />
     <ClInclude Include="src\registry\ActionRegistrar.h" />
     <ClInclude Include="src\settings\GameSettings.h" />
+    <ClInclude Include="src\settings\SettingsDefinitions.h" />
+    <ClInclude Include="src\settings\SettingsRegistry.h" />
     <ClInclude Include="src\utility\FastNoiseLite.h" />
     <ClInclude Include="src\utility\Profiler.h" />
     <ClInclude Include="src\utility\Sandbox.h" />

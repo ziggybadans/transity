@@ -16,6 +16,6 @@
             3440,
             1440
         ],
-        "vsync": false
+        "vsync": true
     }
 }

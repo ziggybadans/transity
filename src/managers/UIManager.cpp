@@ -3,6 +3,7 @@
 #include <array>
 #include "../Debug.h"
 #include "../utility/Profiler.h"
+#include "../settings/SettingsDefinitions.h"
 
 UIManager::UIManager()
     : m_initialized(false)
@@ -148,7 +149,7 @@ void UIManager::RenderVideoSettings() {
         sf::Vector2u(3840, 2160)
     };
 
-    sf::Vector2u currentRes = m_gameSettings->GetResolution();
+    sf::Vector2u currentRes = m_gameSettings->GetValue<sf::Vector2u>(Settings::Names::RESOLUTION);
     int currentItem = -1;
     
     // Find current resolution in the list
@@ -159,7 +160,6 @@ void UIManager::RenderVideoSettings() {
         }
     }
 
-    // Create items string array for ImGui::Combo
     std::vector<std::string> items;
     for (const auto& res : resolutions) {
         items.push_back(std::to_string(res.x) + "x" + std::to_string(res.y));
@@ -172,56 +172,57 @@ void UIManager::RenderVideoSettings() {
 
     if (ImGui::Combo("Resolution", &currentItem, itemsStr.data(), static_cast<int>(itemsStr.size()))) {
         if (currentItem >= 0 && currentItem < static_cast<int>(resolutions.size())) {
-            m_gameSettings->SetResolution(resolutions[currentItem]);
+            m_gameSettings->SetValue(Settings::Names::RESOLUTION, resolutions[currentItem]);
             settingsChanged = true;
         }
     }
 
-    bool fullscreen = m_gameSettings->IsFullscreen();
+    bool fullscreen = m_gameSettings->GetValue<bool>(Settings::Names::FULLSCREEN);
     if (ImGui::Checkbox("Fullscreen", &fullscreen)) {
-        m_gameSettings->SetFullscreen(fullscreen);
+        m_gameSettings->SetValue(Settings::Names::FULLSCREEN, fullscreen);
         settingsChanged = true;
     }
 
-    bool vsync = m_gameSettings->IsVSyncEnabled();
+    bool vsync = m_gameSettings->GetValue<bool>(Settings::Names::VSYNC);
     if (ImGui::Checkbox("V-Sync", &vsync)) {
-        m_gameSettings->SetVSync(vsync);
+        m_gameSettings->SetValue(Settings::Names::VSYNC, vsync);
         m_windowManager->SetVSync(vsync);
     }
 
-    int frameLimit = static_cast<int>(m_gameSettings->GetFrameRateLimit());
+    int frameLimit = static_cast<int>(m_gameSettings->GetValue<unsigned int>(Settings::Names::FRAME_RATE_LIMIT));
     if (ImGui::SliderInt("Frame Rate Limit", &frameLimit, 30, 240)) {
-        m_gameSettings->SetFrameRateLimit(frameLimit);
+        m_gameSettings->SetValue(Settings::Names::FRAME_RATE_LIMIT, static_cast<unsigned int>(frameLimit));
         m_windowManager->SetFramerateLimit(frameLimit);
     }
 
     if (settingsChanged && m_windowManager) {
-        m_windowManager->SetVideoMode(sf::VideoMode(m_gameSettings->GetResolution().x, m_gameSettings->GetResolution().y));
-        m_windowManager->SetFullscreen(m_gameSettings->IsFullscreen());
+        auto resolution = m_gameSettings->GetValue<sf::Vector2u>(Settings::Names::RESOLUTION);
+        m_windowManager->SetVideoMode(sf::VideoMode(resolution.x, resolution.y));
+        m_windowManager->SetFullscreen(m_gameSettings->GetValue<bool>(Settings::Names::FULLSCREEN));
         m_windowManager->ApplyVideoMode();
     }
 }
 
 void UIManager::RenderGameplaySettings() {
-    float zoomSpeed = m_gameSettings->GetCameraZoomSpeed();
+    float zoomSpeed = m_gameSettings->GetValue<float>(Settings::Names::CAMERA_ZOOM_SPEED);
     if (ImGui::SliderFloat("Camera Zoom Speed", &zoomSpeed, 1.0f, 2.0f, "%.2f")) {
-        m_gameSettings->SetCameraZoomSpeed(zoomSpeed);
+        m_gameSettings->SetValue(Settings::Names::CAMERA_ZOOM_SPEED, zoomSpeed);
         if (m_inputManager) {
             m_inputManager->SetZoomSpeed(zoomSpeed);
         }
     }
 
-    float panSpeed = m_gameSettings->GetCameraPanSpeed();
+    float panSpeed = m_gameSettings->GetValue<float>(Settings::Names::CAMERA_PAN_SPEED);
     if (ImGui::SliderFloat("Camera Pan Speed", &panSpeed, 100.0f, 1000.0f, "%.0f")) {
-        m_gameSettings->SetCameraPanSpeed(panSpeed);
+        m_gameSettings->SetValue(Settings::Names::CAMERA_PAN_SPEED, panSpeed);
         if (m_inputManager) {
             m_inputManager->SetPanSpeed(panSpeed);
         }
     }
 
-    int autosaveInterval = static_cast<int>(m_gameSettings->GetAutosaveInterval());
+    int autosaveInterval = static_cast<int>(m_gameSettings->GetValue<unsigned int>(Settings::Names::AUTOSAVE_INTERVAL));
     if (ImGui::SliderInt("Autosave Interval (minutes)", &autosaveInterval, 1, 30)) {
-        m_gameSettings->SetAutosaveInterval(autosaveInterval);
+        m_gameSettings->SetValue(Settings::Names::AUTOSAVE_INTERVAL, static_cast<unsigned int>(autosaveInterval));
     }
 }
 

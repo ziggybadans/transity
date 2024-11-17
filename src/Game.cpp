@@ -7,6 +7,8 @@
 #include "Debug.h"
 #include "utility/Profiler.h"
 #include "utility/ThreadManager.h"
+#include "settings/SettingsDefinitions.h"
+#include "settings/SettingsRegistry.h"
 
 Game::Game()
     : m_videoMode(Constants::WINDOW_WIDTH, Constants::WINDOW_HEIGHT)
@@ -21,6 +23,8 @@ Game::~Game() {
 
 bool Game::Init() {
     try {
+        RegisterSettings();
+        
         if (!InitManagers()) {
             DEBUG_ERROR("Failed to initialize managers.");
             return false;
@@ -208,4 +212,154 @@ void Game::Shutdown() {
     m_windowManager.reset();
     m_uiManager.reset();
     m_pluginManager.reset();
+}
+
+void Game::RegisterSettings() {
+    auto& registry = SettingsRegistry::Instance();
+
+    // Video Settings
+    registry.RegisterSetting({
+        Settings::Names::RESOLUTION,
+        Settings::Categories::VIDEO,
+        SettingType::Vector2u,
+        Settings::Defaults::RESOLUTION,
+        [this](const std::any& value) {
+            auto resolution = std::any_cast<sf::Vector2u>(value);
+            if (m_windowManager) {
+                m_windowManager->SetVideoMode(sf::VideoMode(resolution.x, resolution.y));
+                m_windowManager->ApplyVideoMode();
+            }
+        }
+    });
+
+    registry.RegisterSetting({
+        Settings::Names::FULLSCREEN,
+        Settings::Categories::VIDEO,
+        SettingType::Boolean,
+        Settings::Defaults::FULLSCREEN,
+        [this](const std::any& value) {
+            if (m_windowManager) {
+                m_windowManager->SetFullscreen(std::any_cast<bool>(value));
+                m_windowManager->ApplyVideoMode();
+            }
+        }
+    });
+
+    registry.RegisterSetting({
+        Settings::Names::VSYNC,
+        Settings::Categories::VIDEO,
+        SettingType::Boolean,
+        Settings::Defaults::VSYNC,
+        [this](const std::any& value) {
+            if (m_windowManager) {
+                m_windowManager->SetVSync(std::any_cast<bool>(value));
+            }
+        }
+    });
+
+    registry.RegisterSetting({
+        Settings::Names::FRAME_RATE_LIMIT,
+        Settings::Categories::VIDEO,
+        SettingType::Integer,
+        Settings::Defaults::FRAME_RATE_LIMIT,
+        [this](const std::any& value) {
+            auto limit = std::any_cast<unsigned int>(value);
+            if (m_windowManager) {
+                m_windowManager->SetFramerateLimit(limit);
+            }
+        },
+        [](const std::any& value) {
+            auto limit = std::any_cast<unsigned int>(value);
+            return limit >= 30 && limit <= 240;
+        }
+    });
+
+    // Audio Settings
+    registry.RegisterSetting({
+        Settings::Names::MASTER_VOLUME,
+        Settings::Categories::AUDIO,
+        SettingType::Float,
+        Settings::Defaults::MASTER_VOLUME,
+        nullptr,
+        [](const std::any& value) {
+            auto volume = std::any_cast<float>(value);
+            return volume >= 0.0f && volume <= 1.0f;
+        }
+    });
+
+    registry.RegisterSetting({
+        Settings::Names::MUSIC_VOLUME,
+        Settings::Categories::AUDIO,
+        SettingType::Float,
+        Settings::Defaults::MUSIC_VOLUME,
+        nullptr,
+        [](const std::any& value) {
+            auto volume = std::any_cast<float>(value);
+            return volume >= 0.0f && volume <= 1.0f;
+        }
+    });
+
+    registry.RegisterSetting({
+        Settings::Names::SFX_VOLUME,
+        Settings::Categories::AUDIO,
+        SettingType::Float,
+        Settings::Defaults::SFX_VOLUME,
+        nullptr,
+        [](const std::any& value) {
+            auto volume = std::any_cast<float>(value);
+            return volume >= 0.0f && volume <= 1.0f;
+        }
+    });
+
+    // Gameplay Settings
+    registry.RegisterSetting({
+        Settings::Names::CAMERA_ZOOM_SPEED,
+        Settings::Categories::GAMEPLAY,
+        SettingType::Float,
+        Settings::Defaults::CAMERA_ZOOM_SPEED,
+        [this](const std::any& value) {
+            auto speed = std::any_cast<float>(value);
+            if (m_inputManager) {
+                m_inputManager->SetZoomSpeed(speed);
+            }
+        },
+        [](const std::any& value) {
+            auto speed = std::any_cast<float>(value);
+            return speed >= 1.0f && speed <= 2.0f;
+        }
+    });
+
+    registry.RegisterSetting({
+        Settings::Names::CAMERA_PAN_SPEED,
+        Settings::Categories::GAMEPLAY,
+        SettingType::Float,
+        Settings::Defaults::CAMERA_PAN_SPEED,
+        [this](const std::any& value) {
+            auto speed = std::any_cast<float>(value);
+            if (m_inputManager) {
+                m_inputManager->SetPanSpeed(speed);
+            }
+        },
+        [](const std::any& value) {
+            auto speed = std::any_cast<float>(value);
+            return speed >= 100.0f && speed <= 1000.0f;
+        }
+    });
+
+    registry.RegisterSetting({
+        Settings::Names::AUTOSAVE_INTERVAL,
+        Settings::Categories::GAMEPLAY,
+        SettingType::Integer,
+        Settings::Defaults::AUTOSAVE_INTERVAL,
+        [this](const std::any& value) {
+            auto interval = std::any_cast<unsigned int>(value);
+            if (m_saveManager) {
+                m_saveManager->SetAutosaveInterval(interval);
+            }
+        },
+        [](const std::any& value) {
+            auto interval = std::any_cast<unsigned int>(value);
+            return interval >= 1 && interval <= 30;
+        }
+    });
 }
