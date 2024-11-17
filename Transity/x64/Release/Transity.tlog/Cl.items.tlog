@@ -18,5 +18,6 @@ C:\Users\Ziggy\Documents\Transity\Transity\src\modding\PluginLoader.cpp;C:\Users
 C:\Users\Ziggy\Documents\Transity\Transity\src\modding\PluginManager.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Release\PluginManager.obj
 C:\Users\Ziggy\Documents\Transity\Transity\src\settings\GameSettings.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Release\GameSettings.obj
 C:\Users\Ziggy\Documents\Transity\Transity\src\Transity.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Release\Transity.obj
+C:\Users\Ziggy\Documents\Transity\Transity\src\utility\Profiler.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Release\Profiler.obj
 C:\Users\Ziggy\Documents\Transity\Transity\src\utility\Sandbox.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Release\Sandbox.obj
 C:\Users\Ziggy\Documents\Transity\Transity\src\utility\ThreadPool.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Release\ThreadPool.obj

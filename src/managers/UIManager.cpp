@@ -2,6 +2,7 @@
 #include <iostream>
 #include <array>
 #include "../Debug.h"
+#include "../utility/Profiler.h"
 
 UIManager::UIManager()
     : m_initialized(false)
@@ -9,6 +10,7 @@ UIManager::UIManager()
     , m_timeScalePtr(nullptr)
     , m_fps(0.0f)
     , m_showSettingsPanel(false)
+    , m_showPerformanceWindow(true)
     , m_gameSettings(nullptr)
 {}
 
@@ -62,6 +64,7 @@ void UIManager::Render() {
 
     try {
         RenderPerformanceOverlay();
+        RenderPerformanceWindow();
         
         // Settings button in top-right corner
         ImGui::SetNextWindowPos(ImVec2(static_cast<float>(m_renderWindow->getSize().x) - 100.0f, 10.0f), ImGuiCond_Always);
@@ -91,6 +94,9 @@ void UIManager::RenderPerformanceOverlay() {
     ImGui::Begin("Performance", nullptr, 
         ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
     ImGui::Text("FPS: %.1f", m_fps);
+    if (ImGui::Button(m_showPerformanceWindow ? "Hide Profiler" : "Show Profiler")) {
+        m_showPerformanceWindow = !m_showPerformanceWindow;
+    }
     ImGui::End();
 }
 
@@ -217,6 +223,38 @@ void UIManager::RenderGameplaySettings() {
     if (ImGui::SliderInt("Autosave Interval (minutes)", &autosaveInterval, 1, 30)) {
         m_gameSettings->SetAutosaveInterval(autosaveInterval);
     }
+}
+
+void UIManager::RenderPerformanceWindow() {
+    if (!m_showPerformanceWindow) return;
+
+    ImGui::SetNextWindowPos(ImVec2(10.0f, 80.0f), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(300.0f, 400.0f), ImGuiCond_FirstUseEver);
+    
+    if (ImGui::Begin("Performance Profiler", &m_showPerformanceWindow)) {
+        ImGui::Text("FPS: %.1f", m_fps);
+        ImGui::Separator();
+        
+        if (ImGui::BeginTable("ProfilerData", 2, 
+            ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY)) {
+            
+            ImGui::TableSetupColumn("Section", ImGuiTableColumnFlags_WidthStretch);
+            ImGui::TableSetupColumn("Time (ms)", ImGuiTableColumnFlags_WidthFixed, 80.0f);
+            ImGui::TableHeadersRow();
+
+            auto profiles = Profiler::GetSortedProfiles();
+            for (const auto& profile : profiles) {
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn();
+                ImGui::Text("%s", profile.name.c_str());
+                ImGui::TableNextColumn();
+                ImGui::Text("%.3f", profile.duration);
+            }
+            
+            ImGui::EndTable();
+        }
+    }
+    ImGui::End();
 }
 
 void UIManager::Shutdown() {

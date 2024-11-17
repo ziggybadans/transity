@@ -161,6 +161,7 @@
     <ClCompile Include="src\modding\PluginManager.cpp" />
     <ClCompile Include="src\settings\GameSettings.cpp" />
     <ClCompile Include="src\Transity.cpp" />
+    <ClCompile Include="src\utility\Profiler.cpp" />
     <ClCompile Include="src\utility\Sandbox.cpp" />
     <ClCompile Include="src\utility\ThreadPool.cpp" />
   </ItemGroup>

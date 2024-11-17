@@ -33,6 +33,7 @@ private:
     void RenderSettingsPanel();
     void RenderVideoSettings();
     void RenderGameplaySettings();
+    void RenderPerformanceWindow();
 
     /* UI State */
     bool m_initialized;
@@ -40,6 +41,7 @@ private:
     float* m_timeScalePtr;
     float m_fps;
     bool m_showSettingsPanel;
+    bool m_showPerformanceWindow;
 
     /* Game Settings */
     std::shared_ptr<GameSettings> m_gameSettings;

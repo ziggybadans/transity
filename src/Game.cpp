@@ -5,6 +5,7 @@
 #include <condition_variable>
 #include "Constants.h"
 #include "Debug.h"
+#include "utility/Profiler.h"
 
 Game::Game()
     : m_videoMode(Constants::WINDOW_WIDTH, Constants::WINDOW_HEIGHT)
@@ -118,13 +119,23 @@ bool Game::InitManagers() {
 
 void Game::Run() {
     while (m_isRunning && m_windowManager->GetWindow().isOpen()) {
-        ProcessEvents();
+        PROFILE_SCOPE("Game Loop");
+        {
+            PROFILE_SCOPE("Event Processing");
+            ProcessEvents();
+        }
 
         float dt = m_deltaClock.restart().asSeconds();
-        UpdateNonSimulation(dt);
+        {
+            PROFILE_SCOPE("Non-Simulation Update");
+            UpdateNonSimulation(dt);
+        }
 
         float scaledDt = dt * m_timeScale.load();
-        Render();
+        {
+            PROFILE_SCOPE("Render");
+            Render();
+        }
     }
 }
 
