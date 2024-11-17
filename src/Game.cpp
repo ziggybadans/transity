@@ -6,6 +6,7 @@
 #include "Constants.h"
 #include "Debug.h"
 #include "utility/Profiler.h"
+#include "utility/ThreadManager.h"
 
 Game::Game()
     : m_videoMode(Constants::WINDOW_WIDTH, Constants::WINDOW_HEIGHT)
@@ -36,10 +37,9 @@ bool Game::Init() {
         m_camera->SetMinZoomLevel(Constants::CAMERA_MIN_ZOOM);
         m_camera->SetMaxZoomLevel(Constants::CAMERA_MAX_ZOOM);
 
-        unsigned int threadCount = std::max(1u, std::thread::hardware_concurrency());
-        m_threadPool = std::make_unique<ThreadPool>(threadCount);
+        m_threadManager = std::make_unique<ThreadManager>(std::thread::hardware_concurrency());
 
-        m_resourceManager = std::make_shared<ResourceManager>(m_threadPool);
+        m_resourceManager = std::make_shared<ResourceManager>(m_threadManager);
         if (!m_resourceManager->LoadResources()) {
             DEBUG_ERROR("Failed to load initial resources.");
             return false;
@@ -196,12 +196,12 @@ void Game::Shutdown() {
     if (m_renderer) {
         m_renderer->Shutdown();
     }
-    if (m_threadPool) {
-        m_threadPool->shutdown();
+    if (m_threadManager) {
+        m_threadManager->Shutdown();
     }
 
     m_renderer.reset();
-    m_threadPool.reset();
+    m_threadManager.reset();
     m_inputManager.reset();
     m_camera.reset();
     m_resourceManager.reset();

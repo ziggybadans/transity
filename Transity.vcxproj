@@ -163,6 +163,7 @@
     <ClCompile Include="src\Transity.cpp" />
     <ClCompile Include="src\utility\Profiler.cpp" />
     <ClCompile Include="src\utility\Sandbox.cpp" />
+    <ClCompile Include="src\utility\ThreadManager.cpp" />
     <ClCompile Include="src\utility\ThreadPool.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -199,6 +200,7 @@
     <ClInclude Include="src\utility\Profiler.h" />
     <ClInclude Include="src\utility\Sandbox.h" />
     <ClInclude Include="src\utility\Task.h" />
+    <ClInclude Include="src\utility\ThreadManager.h" />
     <ClInclude Include="src\utility\ThreadPool.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

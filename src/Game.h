@@ -12,7 +12,7 @@
 #include "managers/InputManager.h"
 #include "graphics/Renderer.h"
 #include "graphics/Camera.h"
-#include "utility/ThreadPool.h"
+#include "utility/ThreadManager.h"
 #include "utility/Task.h"
 #include "managers/WindowManager.h"
 #include "managers/UIManager.h"
@@ -57,7 +57,7 @@ private:
     std::shared_ptr<UIManager> m_uiManager;
 
     /* Core Systems */
-    std::unique_ptr<ThreadPool> m_threadPool;
+    std::unique_ptr<ThreadManager> m_threadManager;
     std::unique_ptr<Renderer> m_renderer;
     std::shared_ptr<Camera> m_camera;
     std::shared_ptr<InputManager> m_inputManager;

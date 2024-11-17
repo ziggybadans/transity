@@ -7,11 +7,11 @@
 #include <unordered_map>
 #include <iostream>
 #include <SFML/Graphics.hpp>
-#include "../utility/ThreadPool.h"
+#include "../utility/ThreadManager.h"
 
 class ResourceManager {
 public:
-    ResourceManager(std::unique_ptr<ThreadPool>& threadPool);
+    ResourceManager(std::unique_ptr<ThreadManager>& threadManager);
     ~ResourceManager() = default;
 
     bool LoadResources();
@@ -23,7 +23,7 @@ private:
     template<typename T>
     void StoreResource(const std::string& key, std::shared_ptr<T> resource);
 
-    std::unique_ptr<ThreadPool>& m_threadPool;
+    std::unique_ptr<ThreadManager>& m_threadManager;
     std::mutex m_resourceMutex;
 
     // Resource containers
