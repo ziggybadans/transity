@@ -157,6 +157,11 @@
     <ClCompile Include="src\managers\SaveManager.cpp" />
     <ClCompile Include="src\managers\UIManager.cpp" />
     <ClCompile Include="src\managers\WindowManager.cpp" />
+    <ClCompile Include="src\map\MapLoader.cpp" />
+    <ClCompile Include="src\map\OSMDataStore.cpp" />
+    <ClCompile Include="src\map\PBFParser.cpp" />
+    <ClCompile Include="src\map\ProgressTracker.cpp" />
+    <ClCompile Include="src\map\SpatialIndex.cpp" />
     <ClCompile Include="src\modding\PluginLoader.cpp" />
     <ClCompile Include="src\modding\PluginManager.cpp" />
     <ClCompile Include="src\settings\GameSettings.cpp" />
@@ -192,6 +197,14 @@
     <ClInclude Include="src\managers\SaveManager.h" />
     <ClInclude Include="src\managers\UIManager.h" />
     <ClInclude Include="src\managers\WindowManager.h" />
+    <ClInclude Include="src\map\MapLoader.h" />
+    <ClInclude Include="src\map\OSMDataStore.h" />
+    <ClInclude Include="src\map\OSMNode.h" />
+    <ClInclude Include="src\map\OSMRelation.h" />
+    <ClInclude Include="src\map\OSMWay.h" />
+    <ClInclude Include="src\map\PBFParser.h" />
+    <ClInclude Include="src\map\ProgressTracker.h" />
+    <ClInclude Include="src\map\SpatialIndex.h" />
     <ClInclude Include="src\modding\Plugin.h" />
     <ClInclude Include="src\modding\PluginLoader.h" />
     <ClInclude Include="src\modding\PluginManager.h" />
