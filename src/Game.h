@@ -21,6 +21,7 @@
 #include "modding/PluginManager.h"
 #include "settings/GameSettings.h"
 #include "managers/SaveManager.h"
+#include "core/StateManager.h"
 
 class IInitializable;
 
@@ -46,7 +47,7 @@ private:
 
     /* Game Loop Methods */
     void ProcessEvents();
-    void UpdateNonSimulation(float dt);
+    void UpdateNonSimulation(float dt); // Updates things like the camera, UI and inputs
     void Render();
 
     /* Managers */
@@ -66,8 +67,9 @@ private:
 
     /* Game State */
     mutable std::mutex m_gameMutex;
-    std::atomic<bool> m_isRunning;
+    //std::atomic<bool> m_isRunning;
     std::atomic<float> m_timeScale;
+    std::unique_ptr<StateManager> m_stateManager;
 
     /* Window Settings */
     sf::VideoMode m_videoMode;

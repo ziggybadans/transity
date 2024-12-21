@@ -1,8 +1,10 @@
 #include "Game.h"
+
 #include <iostream>
 #include <future>
 #include <thread>
 #include <condition_variable>
+
 #include "Constants.h"
 #include "Debug.h"
 #include "utility/Profiler.h"
@@ -13,7 +15,6 @@
 Game::Game()
     : m_videoMode(Constants::WINDOW_WIDTH, Constants::WINDOW_HEIGHT)
     , m_windowTitle(Constants::WINDOW_TITLE)
-    , m_isRunning(false)
     , m_timeScale(1.0f)
 {}
 
@@ -23,18 +24,18 @@ Game::~Game() {
 
 bool Game::Init() {
     try {
-        RegisterSettings();
+        m_stateManager = std::make_unique<StateManager>();
+        m_stateManager->InitializeCoreStates();
+        m_stateManager->SetState("Loading", true);
+
+        RegisterSettings(); // Settings registry
         
-        if (!InitManagers()) {
+        if (!InitManagers()) { // TODO: Fix disparity between InitManagers and init of other managers
             DEBUG_ERROR("Failed to initialize managers.");
             return false;
         }
 
         m_eventManager = std::make_shared<EventManager>();
-        if (!m_windowManager) {
-            DEBUG_ERROR("Window manager not initialized.");
-            return false;
-        }
 
         sf::Vector2u windowSize = m_windowManager->GetWindow().getSize();
         m_camera = std::make_shared<Camera>(windowSize);
@@ -50,7 +51,7 @@ bool Game::Init() {
         }
 
         m_renderer = std::make_unique<Renderer>();
-        if (!m_renderer->Init() || !m_renderer->InitWithWindow(m_windowManager->GetWindow())) {
+        if (!m_renderer->Init() || !m_renderer->InitWithWindow(m_windowManager->GetWindow())) { // Tries to start the renderer even if the window hasn't been fully initialized yet
             DEBUG_ERROR("Failed to initialize Renderer.");
             return false;
         }
@@ -81,15 +82,16 @@ bool Game::Init() {
         m_saveManager = std::make_unique<SaveManager>();
         m_saveManager->SetGameSettings(m_gameSettings);
 
-        m_isRunning = true;
+        m_uiManager->SetInputManager(m_inputManager);
+
+        m_stateManager->SetState("Loading", false);
+        m_stateManager->SetState("Running", true);
 
         // Enable debug logging
         Debug::EnableFileLogging("game.log");
         Debug::SetLevel(DebugLevel::Debug);  // Set default debug level
         
         DEBUG_INFO("Initializing game...");
-
-        m_uiManager->SetInputManager(m_inputManager);
 
         return true;
     } catch (const std::exception& e) {
@@ -107,8 +109,7 @@ bool Game::InitManagers() {
     settings.antialiasingLevel = 8;
     settings.depthBits = 24;
     settings.stencilBits = 8;
-    settings.majorVersion = 3;
-    settings.minorVersion = 0;
+    settings.majorVersion = 3; settings.minorVersion = 0; // OpenGL version to use
     windowMgr->SetContextSettings(settings);
 
     if (!windowMgr->Init()) {
@@ -122,8 +123,8 @@ bool Game::InitManagers() {
 }
 
 void Game::Run() {
-    while (m_isRunning && m_windowManager->GetWindow().isOpen()) {
-        PROFILE_SCOPE("Game Loop");
+    while (m_stateManager->GetState<bool>("Running") && m_windowManager->GetWindow().isOpen()) {
+        PROFILE_SCOPE("Game Loop"); // Splitting profiling of processing into categories
         {
             PROFILE_SCOPE("Event Processing");
             ProcessEvents();
@@ -192,7 +193,7 @@ void Game::Render() {
 }
 
 void Game::Shutdown() {
-    m_isRunning = false;
+    m_stateManager->SetState("Running", false);
 
     if (m_uiManager) {
         m_uiManager->Shutdown();

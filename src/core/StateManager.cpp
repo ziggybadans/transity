@@ -2,6 +2,12 @@
 #include <stdexcept>
 #include <iostream>
 
+void StateManager::InitializeCoreStates() {
+    for (GameState state : {GameState::MainMenu, GameState::Paused, GameState::Running, GameState::Loading}) {
+        RegisterState(GameStateToString(state));
+    }
+}
+
 void StateManager::RegisterState(const std::string& stateName) {
     std::lock_guard<std::mutex> lock(m_stateMutex);
     if (m_states.find(stateName) == m_states.end()) {
