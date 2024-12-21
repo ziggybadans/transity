@@ -21,7 +21,6 @@ public:
     /* Setters */
     void SetPosition(const sf::Vector2f& position);
     void SetZoom(float zoomLevel);
-    void SetWorldBounds(float width, float height);
     void SetMinZoomLevel(float value);
     void SetMaxZoomLevel(float value);
 
@@ -33,7 +32,6 @@ public:
     const sf::View& GetView() const;
 
 private:
-    void ClampPosition();
 
     /* View Properties */
     sf::View m_view;
@@ -43,10 +41,6 @@ private:
     /* Window Properties */
     sf::Vector2u m_windowSize;
     sf::Vector2f m_baseViewSize;
-
-    /* World Boundaries */
-    float m_worldWidth;
-    float m_worldHeight;
 
     /* Zoom Constraints */
     float m_minZoomLevel;

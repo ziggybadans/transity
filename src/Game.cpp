@@ -95,7 +95,10 @@ bool Game::Init() {
             return false;
         }
 
-        // Stage 4: Finish initialization
+        // Stage 4: World
+        InitializeWorld();
+
+        // Stage 5: Finish initialization
         m_stateManager->SetState("Loading", false);
         m_stateManager->SetState("Running", true);
 
@@ -108,6 +111,10 @@ bool Game::Init() {
         DEBUG_ERROR("Error during initialization: ", e.what());
         return false;
     }
+}
+
+void Game::InitializeWorld() {
+    m_map = std::make_shared<Map>(Constants::MAP_SIZE);
 }
 
 void Game::Run() {
@@ -143,21 +150,10 @@ void Game::ProcessEvents() {
 }
 
 void Game::UpdateNonSimulation(float dt) {
-    if (m_camera) {
-        m_camera->Update(dt);
-    }
-
-    if (m_uiManager) {
-        m_uiManager->Update(dt);
-    }
-
-    if (m_inputManager) {
-        m_inputManager->HandleInput(dt);
-    }
-
-    if (m_pluginManager) {
-        m_pluginManager->UpdatePlugins(dt);
-    }
+    if (m_camera) { m_camera->Update(dt); }
+    if (m_uiManager) { m_uiManager->Update(dt); }
+    if (m_inputManager) { m_inputManager->HandleInput(dt); }
+    if (m_pluginManager) { m_pluginManager->UpdatePlugins(dt); }
 }
 
 void Game::Render() {
@@ -168,7 +164,7 @@ void Game::Render() {
     }
 
     if (m_renderer) {
-        m_renderer->Render(m_windowManager->GetWindow(), *m_camera);
+        m_renderer->Render(m_windowManager->GetWindow(), *m_camera, *m_map);
     }
 
     m_windowManager->GetWindow().setView(m_windowManager->GetWindow().getDefaultView());
@@ -183,15 +179,9 @@ void Game::Render() {
 void Game::Shutdown() {
     m_stateManager->SetState("Running", false);
 
-    if (m_uiManager) {
-        m_uiManager->Shutdown();
-    }
-    if (m_renderer) {
-        m_renderer->Shutdown();
-    }
-    if (m_threadManager) {
-        m_threadManager->Shutdown();
-    }
+    if (m_uiManager) { m_uiManager->Shutdown(); }
+    if (m_renderer) { m_renderer->Shutdown(); }
+    if (m_threadManager) { m_threadManager->Shutdown(); }
 
     m_renderer.reset();
     m_threadManager.reset();
