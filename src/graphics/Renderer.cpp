@@ -48,6 +48,13 @@ void Renderer::RenderMap(sf::RenderWindow& window, const Map& map) {
             window.draw(tileShape);
         }
     }
+
+    for (City city : map.m_cities) {
+        sf::CircleShape circleShape(city.radius);
+        circleShape.setPosition(city.position);
+        circleShape.setFillColor(sf::Color::Black);
+        window.draw(circleShape);
+    }
 }
 
 void Renderer::Shutdown() {

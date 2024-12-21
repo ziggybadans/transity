@@ -76,14 +76,11 @@ bool Game::Init() {
             return false;
         }
 
-        // Stage 3: Inputs
-        m_inputManager = std::make_shared<InputManager>(m_eventManager, m_windowManager->GetWindow());
-        m_inputManager->SetZoomSpeed(Constants::CAMERA_ZOOM_SPEED);
-        m_inputManager->SetPanSpeed(Constants::CAMERA_PAN_SPEED);
+        // Stage 3: World
+        InitializeWorld();
 
-        auto actionRegistrar = std::make_unique<ActionRegistrar>(m_inputManager, m_camera);
-        actionRegistrar->RegisterActions();
-        m_actionRegistrar = std::move(actionRegistrar);
+        // Stage 4: Inputs
+        m_inputManager = std::make_shared<InputManager>(m_eventManager, m_windowManager->GetWindow(), m_camera, m_map);
 
         m_uiManager = std::make_shared<UIManager>();
         m_uiManager->SetWindow(m_windowManager->GetWindow());
@@ -94,9 +91,6 @@ bool Game::Init() {
             DEBUG_ERROR("Failed to initialize UIManager.");
             return false;
         }
-
-        // Stage 4: World
-        InitializeWorld();
 
         // Stage 5: Finish initialization
         m_stateManager->SetState("Loading", false);
@@ -146,6 +140,8 @@ void Game::ProcessEvents() {
             m_eventManager->Dispatch(event);
             m_uiManager->ProcessEvent(event);
         });
+
+        if (event.type == sf::Event::Closed) { Shutdown(); }
     }
 }
 
@@ -178,6 +174,7 @@ void Game::Render() {
 
 void Game::Shutdown() {
     m_stateManager->SetState("Running", false);
+    m_windowManager->GetWindow().close();
 
     if (m_uiManager) { m_uiManager->Shutdown(); }
     if (m_renderer) { m_renderer->Shutdown(); }
@@ -298,9 +295,6 @@ void Game::RegisterSettings() {
         Settings::Defaults::CAMERA_ZOOM_SPEED,
         [this](const std::any& value) {
             auto speed = std::any_cast<float>(value);
-            if (m_inputManager) {
-                m_inputManager->SetZoomSpeed(speed);
-            }
         },
         [](const std::any& value) {
             auto speed = std::any_cast<float>(value);
@@ -315,9 +309,6 @@ void Game::RegisterSettings() {
         Settings::Defaults::CAMERA_PAN_SPEED,
         [this](const std::any& value) {
             auto speed = std::any_cast<float>(value);
-            if (m_inputManager) {
-                m_inputManager->SetPanSpeed(speed);
-            }
         },
         [](const std::any& value) {
             auto speed = std::any_cast<float>(value);

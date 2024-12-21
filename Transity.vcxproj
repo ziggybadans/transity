@@ -152,7 +152,6 @@
     <ClCompile Include="src\Game.cpp" />
     <ClCompile Include="src\graphics\Camera.cpp" />
     <ClCompile Include="src\graphics\Renderer.cpp" />
-    <ClCompile Include="src\managers\InputManager.cpp" />
     <ClCompile Include="src\managers\ResourceManager.cpp" />
     <ClCompile Include="src\managers\SaveManager.cpp" />
     <ClCompile Include="src\managers\UIManager.cpp" />
@@ -186,7 +185,6 @@
     <ClInclude Include="src\graphics\Renderer.h" />
     <ClInclude Include="src\interfaces\IInitializable.h" />
     <ClInclude Include="src\managers\EventManager.h" />
-    <ClInclude Include="src\managers\InitializationManager.h" />
     <ClInclude Include="src\managers\InputManager.h" />
     <ClInclude Include="src\managers\ResourceManager.h" />
     <ClInclude Include="src\managers\SaveManager.h" />
@@ -195,7 +193,6 @@
     <ClInclude Include="src\modding\Plugin.h" />
     <ClInclude Include="src\modding\PluginLoader.h" />
     <ClInclude Include="src\modding\PluginManager.h" />
-    <ClInclude Include="src\registry\ActionRegistrar.h" />
     <ClInclude Include="src\settings\GameSettings.h" />
     <ClInclude Include="src\settings\SettingsDefinitions.h" />
     <ClInclude Include="src\settings\SettingsRegistry.h" />
@@ -205,6 +202,7 @@
     <ClInclude Include="src\utility\Task.h" />
     <ClInclude Include="src\utility\ThreadManager.h" />
     <ClInclude Include="src\utility\ThreadPool.h" />
+    <ClInclude Include="src\world\City.h" />
     <ClInclude Include="src\world\Map.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

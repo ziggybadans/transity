@@ -7,7 +7,6 @@
 #include <memory>
 #include <mutex>
 
-#include "managers/InitializationManager.h"
 #include "managers/EventManager.h"
 #include "managers/InputManager.h"
 #include "graphics/Renderer.h"
@@ -17,7 +16,6 @@
 #include "managers/WindowManager.h"
 #include "managers/UIManager.h"
 #include "managers/ResourceManager.h"
-#include "registry/ActionRegistrar.h"
 #include "modding/PluginManager.h"
 #include "settings/GameSettings.h"
 #include "managers/SaveManager.h"
@@ -66,9 +64,6 @@ private:
 
     /* Core Systems */
     std::shared_ptr<Map> m_map;
-
-    /* Action Registrar */
-    std::unique_ptr<ActionRegistrar> m_actionRegistrar;
 
     /* Game State */
     mutable std::mutex m_gameMutex;

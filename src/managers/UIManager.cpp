@@ -207,17 +207,11 @@ void UIManager::RenderGameplaySettings() {
     float zoomSpeed = m_gameSettings->GetValue<float>(Settings::Names::CAMERA_ZOOM_SPEED);
     if (ImGui::SliderFloat("Camera Zoom Speed", &zoomSpeed, 1.0f, 2.0f, "%.2f")) {
         m_gameSettings->SetValue(Settings::Names::CAMERA_ZOOM_SPEED, zoomSpeed);
-        if (m_inputManager) {
-            m_inputManager->SetZoomSpeed(zoomSpeed);
-        }
     }
 
     float panSpeed = m_gameSettings->GetValue<float>(Settings::Names::CAMERA_PAN_SPEED);
     if (ImGui::SliderFloat("Camera Pan Speed", &panSpeed, 100.0f, 1000.0f, "%.0f")) {
         m_gameSettings->SetValue(Settings::Names::CAMERA_PAN_SPEED, panSpeed);
-        if (m_inputManager) {
-            m_inputManager->SetPanSpeed(panSpeed);
-        }
     }
 
     int autosaveInterval = static_cast<int>(m_gameSettings->GetValue<unsigned int>(Settings::Names::AUTOSAVE_INTERVAL));

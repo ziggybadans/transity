@@ -14,7 +14,6 @@ enum class EventType {
     MouseWheelScrolled,
     MouseButtonPressed,
     MouseButtonReleased,
-    // Add other event types as needed
     None // Represents no specific event
 };
 
