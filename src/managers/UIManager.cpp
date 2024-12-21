@@ -66,10 +66,11 @@ void UIManager::Render() {
     try {
         RenderPerformanceOverlay();
         RenderPerformanceWindow();
+        RenderGUI();
         
         // Settings button in top-right corner
-        ImGui::SetNextWindowPos(ImVec2(static_cast<float>(m_renderWindow->getSize().x) - 100.0f, 10.0f), ImGuiCond_Always);
-        ImGui::SetNextWindowSize(ImVec2(90.0f, 40.0f), ImGuiCond_Always);
+        ImGui::SetNextWindowPos(ImVec2(static_cast<float>(m_renderWindow->getSize().x) - 140.0f, 10.0f), ImGuiCond_Always);
+        ImGui::SetNextWindowSize(ImVec2(98.0f, 48.0f), ImGuiCond_Always);
         if (ImGui::Begin("Settings Button", nullptr, 
             ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove)) {
             if (ImGui::Button("Settings", ImVec2(80, 30))) {
@@ -93,7 +94,7 @@ void UIManager::RenderPerformanceOverlay() {
     ImGui::SetNextWindowPos(ImVec2(10.0f, 10.0f), ImGuiCond_Always);
     ImGui::SetNextWindowSize(ImVec2(200.0f, 60.0f), ImGuiCond_Always);
     ImGui::Begin("Performance", nullptr, 
-        ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
+        ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar);
     ImGui::Text("FPS: %.1f", m_fps);
     if (ImGui::Button(m_showPerformanceWindow ? "Hide Profiler" : "Show Profiler")) {
         m_showPerformanceWindow = !m_showPerformanceWindow;
@@ -247,6 +248,19 @@ void UIManager::RenderPerformanceWindow() {
             }
             
             ImGui::EndTable();
+        }
+    }
+    ImGui::End();
+}
+
+void UIManager::RenderGUI()
+{
+    ImGui::SetNextWindowPos(ImVec2(static_cast<float>(m_renderWindow->getSize().x) / 2, (m_renderWindow->getSize().y) - 100.0f), ImGuiCond_Always);
+    ImGui::SetNextWindowSize(ImVec2(98.0f, 48.0f), ImGuiCond_Always);
+    if (ImGui::Begin("Tools", nullptr,
+        ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar)) {
+        if (ImGui::Button("Line Mode", ImVec2(80, 30))) {
+            m_eventManager->Dispatch(EventType::ToolChanged, ToolChangedEvent{ "LineTool" });
         }
     }
     ImGui::End();

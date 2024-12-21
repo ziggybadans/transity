@@ -26,6 +26,7 @@ public:
     void SetGameSettings(std::shared_ptr<GameSettings> settings) { m_gameSettings = settings; }
     void SetWindowManager(std::shared_ptr<WindowManager> windowManager) { m_windowManager = windowManager; }
     void SetInputManager(std::shared_ptr<InputManager> inputManager) { m_inputManager = inputManager; }
+    void SetEventManager(std::shared_ptr<EventManager> eventManager) { m_eventManager = eventManager; }
 
 private:
     /* UI Panels */
@@ -34,6 +35,7 @@ private:
     void RenderVideoSettings();
     void RenderGameplaySettings();
     void RenderPerformanceWindow();
+    void RenderGUI();
 
     /* UI State */
     bool m_initialized;
@@ -47,4 +49,5 @@ private:
     std::shared_ptr<GameSettings> m_gameSettings;
     std::shared_ptr<WindowManager> m_windowManager;
     std::shared_ptr<InputManager> m_inputManager;
+    std::shared_ptr<EventManager> m_eventManager;
 };

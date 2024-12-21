@@ -116,10 +116,16 @@ public:
 private:
     void InitializeSubscriptions() {
         m_eventManager->Subscribe(EventType::MouseButtonPressed,
-            [this](const sf::Event& event) {
-                if (event.mouseButton.button == sf::Mouse::Right) {
-                    DEBUG_DEBUG("InputManager: Right mouse button clicked.");
-                    ExecuteCommand(InputAction::Place);
+            [this](const EventData& data) {
+                if (std::holds_alternative<sf::Event>(data)) {
+                    const sf::Event& event = std::get<sf::Event>(data);
+
+                    if (event.type == sf::Event::MouseButtonPressed) {
+                        if (event.mouseButton.button == sf::Mouse::Right) {
+                            DEBUG_DEBUG("InputManager: Right mouse button clicked.");
+                            ExecuteCommand(InputAction::Place);
+                        }
+                    }
                 }
             });
     }

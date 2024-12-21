@@ -3,23 +3,27 @@
 #include <functional>
 #include <map>
 #include <vector>
+#include <variant>
 #include <SFML/Window/Event.hpp>
 
 // Enum representing different types of events.
 enum class EventType {
     Closed,
-    Resized,
-    KeyPressed,
-    MouseMoved,
-    MouseWheelScrolled,
     MouseButtonPressed,
-    MouseButtonReleased,
+    ToolChanged,
     None // Represents no specific event
 };
 
+struct ToolChangedEvent {
+    std::string newTool; // Example data: the name of the new tool
+};
+
+// Define a variant that can hold either an SFML event or a custom event
+using EventData = std::variant<sf::Event, ToolChangedEvent>;
+
 class EventManager {
 public:
-    using EventCallback = std::function<void(const sf::Event&)>;
+    using EventCallback = std::function<void(const EventData&)>;
 
     // Subscribes a callback function to a specific type of event.
     void Subscribe(EventType type, EventCallback callback) {
@@ -32,9 +36,21 @@ public:
         if (type == EventType::None) {
             return; // Ignore unhandled events
         }
+        EventData data = event; // Wrap the SFML event in the variant
         // Call all the registered callbacks for the given event type.
         for (auto& callback : listeners[type]) {
-            callback(event);
+            callback(data);
+        }
+    }
+
+    // Dispatches a custom event to all the listeners that have subscribed to the corresponding event type.
+    void Dispatch(EventType type, const ToolChangedEvent& customEvent) {
+        if (type != EventType::ToolChanged) {
+            return; // Extend this if handling more custom events
+        }
+        EventData data = customEvent; // Wrap the custom event in the variant
+        for (auto& callback : listeners[type]) {
+            callback(data);
         }
     }
 
@@ -47,18 +63,8 @@ private:
         switch (event.type) {
         case sf::Event::Closed:
             return EventType::Closed;
-        case sf::Event::Resized:
-            return EventType::Resized;
-        case sf::Event::KeyPressed:
-            return EventType::KeyPressed;
-        case sf::Event::MouseMoved:
-            return EventType::MouseMoved;
-        case sf::Event::MouseWheelScrolled:
-            return EventType::MouseWheelScrolled;
         case sf::Event::MouseButtonPressed:
             return EventType::MouseButtonPressed;
-        case sf::Event::MouseButtonReleased:
-            return EventType::MouseButtonReleased;
         default:
             return EventType::None; // No action for unhandled events
         }

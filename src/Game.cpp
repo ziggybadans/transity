@@ -87,6 +87,7 @@ bool Game::Init() {
         m_uiManager->SetGameSettings(m_gameSettings);
         m_uiManager->SetWindowManager(m_windowManager);
         m_uiManager->SetInputManager(m_inputManager);
+        m_uiManager->SetEventManager(m_eventManager);
         if (!m_uiManager->Init()) {
             DEBUG_ERROR("Failed to initialize UIManager.");
             return false;
@@ -130,6 +131,13 @@ void Game::Run() {
             PROFILE_SCOPE("Render");
             Render();
         }
+
+        m_eventManager->Subscribe(EventType::ToolChanged, [](const EventData& data) {
+            if (std::holds_alternative<ToolChangedEvent>(data)) {
+                const ToolChangedEvent& toolEvent = std::get<ToolChangedEvent>(data);
+                DEBUG_DEBUG("Tool changed to: " + toolEvent.newTool);
+            }
+        });
     }
 }
 
