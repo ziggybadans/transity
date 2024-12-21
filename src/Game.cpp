@@ -25,7 +25,7 @@ Game::~Game() {
 bool Game::Init() {
     try {
         // Stage 1: Utilities and core systems
-        m_stateManager = std::make_unique<StateManager>();
+        m_stateManager = std::make_shared<StateManager>();
         m_stateManager->InitializeCoreStates();
         m_stateManager->SetState("Loading", true);
 
@@ -80,14 +80,14 @@ bool Game::Init() {
         InitializeWorld();
 
         // Stage 4: Inputs
-        m_inputManager = std::make_shared<InputManager>(m_eventManager, m_windowManager->GetWindow(), m_camera, m_map);
+        m_inputManager = std::make_shared<InputManager>(m_eventManager, m_stateManager, m_windowManager->GetWindow(), m_camera, m_map);
 
         m_uiManager = std::make_shared<UIManager>();
         m_uiManager->SetWindow(m_windowManager->GetWindow());
         m_uiManager->SetGameSettings(m_gameSettings);
         m_uiManager->SetWindowManager(m_windowManager);
         m_uiManager->SetInputManager(m_inputManager);
-        m_uiManager->SetEventManager(m_eventManager);
+        m_uiManager->SetStateManager(m_stateManager);
         if (!m_uiManager->Init()) {
             DEBUG_ERROR("Failed to initialize UIManager.");
             return false;
@@ -110,6 +110,9 @@ bool Game::Init() {
 
 void Game::InitializeWorld() {
     m_map = std::make_shared<Map>(Constants::MAP_SIZE);
+
+    m_stateManager->RegisterState("CurrentTool");
+    m_stateManager->SetState("CurrentTool", std::string("Place"));
 }
 
 void Game::Run() {
@@ -131,13 +134,6 @@ void Game::Run() {
             PROFILE_SCOPE("Render");
             Render();
         }
-
-        m_eventManager->Subscribe(EventType::ToolChanged, [](const EventData& data) {
-            if (std::holds_alternative<ToolChangedEvent>(data)) {
-                const ToolChangedEvent& toolEvent = std::get<ToolChangedEvent>(data);
-                DEBUG_DEBUG("Tool changed to: " + toolEvent.newTool);
-            }
-        });
     }
 }
 

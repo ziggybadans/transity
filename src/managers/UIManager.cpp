@@ -255,12 +255,22 @@ void UIManager::RenderPerformanceWindow() {
 
 void UIManager::RenderGUI()
 {
+    static bool isLineMode = false;
+
     ImGui::SetNextWindowPos(ImVec2(static_cast<float>(m_renderWindow->getSize().x) / 2, (m_renderWindow->getSize().y) - 100.0f), ImGuiCond_Always);
-    ImGui::SetNextWindowSize(ImVec2(98.0f, 48.0f), ImGuiCond_Always);
+    ImGui::SetNextWindowSize(ImVec2(110.0f, 48.0f), ImGuiCond_Always);
+
     if (ImGui::Begin("Tools", nullptr,
         ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar)) {
-        if (ImGui::Button("Line Mode", ImVec2(80, 30))) {
-            m_eventManager->Dispatch(EventType::ToolChanged, ToolChangedEvent{ "LineTool" });
+        if (ImGui::Button(isLineMode ? "Line Mode ON" : "Line Mode OFF", ImVec2(95, 30))) {
+            isLineMode = !isLineMode;
+
+            if (isLineMode) {
+                m_stateManager->SetState("CurrentTool", std::string("Line"));
+            }
+            else {
+                m_stateManager->SetState("CurrentTool", std::string("Place"));
+            }
         }
     }
     ImGui::End();

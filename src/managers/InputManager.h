@@ -9,6 +9,8 @@
 #include "../graphics/Camera.h"
 #include "../world/Map.h"
 #include "../Debug.h"
+#include <string>
+#include "../core/StateManager.h"
 
 enum class InputAction {
     ZoomIn,
@@ -75,16 +77,24 @@ public:
 
 class InputManager {
 public:
-    InputManager(std::shared_ptr<EventManager> eventMgr,
+    InputManager(std::shared_ptr<EventManager> eventMgr, std::shared_ptr<StateManager> stateMgr,
         sf::RenderWindow& win,
         std::shared_ptr<Camera> camera, std::shared_ptr<Map> map)
         : m_eventManager(eventMgr)
+        , m_stateManager(stateMgr)
         , m_window(win)
         , m_camera(camera)
         , m_map(map)
         , m_config{}
     {
         DEBUG_INFO("InputManager: Initializing InputManager");
+        m_stateManager->Subscribe("CurrentTool", [this](const std::any& data) {
+            if (data.has_value()) {
+                auto value = std::any_cast<std::string>(data);
+                CheckSubscriptions();
+                DEBUG_DEBUG("Now listening for CurrentTool state change on InputManager");
+            }
+        });
         InitializeSubscriptions();
         InitializeCommands();
     }
@@ -115,10 +125,11 @@ public:
 
 private:
     void InitializeSubscriptions() {
-        m_eventManager->Subscribe(EventType::MouseButtonPressed,
+        placeSubscription = m_eventManager->Subscribe(EventType::MouseButtonPressed,
             [this](const EventData& data) {
                 if (std::holds_alternative<sf::Event>(data)) {
                     const sf::Event& event = std::get<sf::Event>(data);
+                    DEBUG_DEBUG("Subscribing to PlaceSubscription...");
 
                     if (event.type == sf::Event::MouseButtonPressed) {
                         if (event.mouseButton.button == sf::Mouse::Right) {
@@ -127,7 +138,35 @@ private:
                         }
                     }
                 }
-            });
+            }
+        );
+    }
+
+    void CheckSubscriptions() {
+        if (m_stateManager->GetState<std::string>("CurrentTool") == std::string("Place")) {
+            placeSubscription = m_eventManager->Subscribe(EventType::MouseButtonPressed,
+                [this](const EventData& data) {
+                    if (std::holds_alternative<sf::Event>(data)) {
+                        const sf::Event& event = std::get<sf::Event>(data);
+                        DEBUG_DEBUG("Subscribing to PlaceSubscription...");
+
+                        if (event.type == sf::Event::MouseButtonPressed) {
+                            if (event.mouseButton.button == sf::Mouse::Right) {
+                                DEBUG_DEBUG("InputManager: Right mouse button clicked.");
+                                ExecuteCommand(InputAction::Place);
+                            }
+                        }
+                    }
+                }
+            );
+        }
+        else {
+            if (m_stateManager->GetState<std::string>("CurrentTool") != std::string("Place")) {
+                DEBUG_DEBUG("Unsubscribing...");
+                m_eventManager->Unsubscribe(placeSubscription);
+                placeSubscription;
+            }
+        }
     }
 
     void InitializeCommands() {
@@ -172,6 +211,7 @@ private:
     }
 
     std::shared_ptr<EventManager> m_eventManager;
+    std::shared_ptr<StateManager> m_stateManager;
     sf::RenderWindow& m_window;
     std::shared_ptr<Camera> m_camera;
     std::shared_ptr<Map> m_map;
@@ -179,4 +219,6 @@ private:
 
     std::unordered_map<InputAction, std::unique_ptr<InputCommand>> m_commands;
     std::vector<std::pair<sf::Keyboard::Key, InputAction>> m_keyMappings;
+
+    EventManager::SubscriptionID placeSubscription;
 };

@@ -8,6 +8,7 @@
 #include "../interfaces/IInitializable.h"
 #include "../managers/WindowManager.h"
 #include "../managers/InputManager.h"
+#include "../core/StateManager.h"
 
 class UIManager : public IInitializable {
 public:
@@ -26,7 +27,7 @@ public:
     void SetGameSettings(std::shared_ptr<GameSettings> settings) { m_gameSettings = settings; }
     void SetWindowManager(std::shared_ptr<WindowManager> windowManager) { m_windowManager = windowManager; }
     void SetInputManager(std::shared_ptr<InputManager> inputManager) { m_inputManager = inputManager; }
-    void SetEventManager(std::shared_ptr<EventManager> eventManager) { m_eventManager = eventManager; }
+    void SetStateManager(std::shared_ptr<StateManager> stateManager) { m_stateManager = stateManager; }
 
 private:
     /* UI Panels */
@@ -49,5 +50,5 @@ private:
     std::shared_ptr<GameSettings> m_gameSettings;
     std::shared_ptr<WindowManager> m_windowManager;
     std::shared_ptr<InputManager> m_inputManager;
-    std::shared_ptr<EventManager> m_eventManager;
+    std::shared_ptr<StateManager> m_stateManager;
 };

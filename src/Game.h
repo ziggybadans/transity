@@ -69,7 +69,7 @@ private:
     mutable std::mutex m_gameMutex;
     //std::atomic<bool> m_isRunning;
     std::atomic<float> m_timeScale;
-    std::unique_ptr<StateManager> m_stateManager;
+    std::shared_ptr<StateManager> m_stateManager;
 
     /* Window Settings */
     sf::VideoMode m_videoMode;
