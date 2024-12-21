@@ -7,7 +7,7 @@
 
 class Map {
 public:
-	Map(unsigned int size) : m_size(size), m_grid(size, std::vector<int>(size, 1)) {}
+	Map(unsigned int size) : m_size(size), m_grid(size, std::vector<int>(size, 1)), m_minRadius(100) {}
 
 	void SetTile(unsigned int x, unsigned int y, int value) {
 		if (x >= m_size || y >= m_size) throw std::out_of_range("Invalid tile coordinates");
@@ -23,14 +23,26 @@ public:
 	}
 
 	void AddCity(sf::Vector2f pos) {
+		/* Validation checks */
+		// Check inside map bounds
 		if (pos.x < 0 || pos.y < 0) { return; }
 		if (pos.x >= m_size * (Constants::TILE_SIZE * 0.98) || pos.y >= m_size * (Constants::TILE_SIZE * 0.98)) { return; }
 
+		// Check outside minimum radius to another city
+		for (City city : m_cities) {
+			sf::Vector2f diff = city.position - pos;
+			float distanceSquared = diff.x * diff.x + diff.y * diff.y;
+			if (distanceSquared <= m_minRadius * m_minRadius) {
+				return;
+			}
+		}
+
+		/* Data generation*/
 		static int citySuffix = 1;
 		std::string name = "City" + std::to_string(citySuffix++);
 		unsigned int population = 1000;
 
-		m_cities.emplace_back(name, pos, population);
+		m_cities.emplace_back(name, pos, population); // Adds to the list of cities
 	}
 
 	std::vector<City> m_cities;
@@ -38,6 +50,8 @@ public:
 private:
 	std::vector<std::vector<int>> m_grid;
 	unsigned int m_size;
+
+	unsigned int m_minRadius;
 
 	void Resize(unsigned int newSize) {
 		m_grid.resize(newSize, std::vector<int>(newSize, 1));
