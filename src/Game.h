@@ -42,16 +42,12 @@ public:
     void SetTimeScale(float scale) { m_timeScale.store(scale); }
 
 private:
-    /* Initialization Methods */
-    bool InitManagers();
-
     /* Game Loop Methods */
     void ProcessEvents();
     void UpdateNonSimulation(float dt); // Updates things like the camera, UI and inputs
     void Render();
 
     /* Managers */
-    InitializationManager m_initManager;
     std::shared_ptr<EventManager> m_eventManager;
     std::shared_ptr<WindowManager> m_windowManager;
     std::shared_ptr<UIManager> m_uiManager;

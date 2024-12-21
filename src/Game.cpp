@@ -24,25 +24,13 @@ Game::~Game() {
 
 bool Game::Init() {
     try {
+        // Stage 1: Utilities and core systems
         m_stateManager = std::make_unique<StateManager>();
         m_stateManager->InitializeCoreStates();
         m_stateManager->SetState("Loading", true);
 
-        RegisterSettings(); // Settings registry
-        
-        if (!InitManagers()) { // TODO: Fix disparity between InitManagers and init of other managers
-            DEBUG_ERROR("Failed to initialize managers.");
-            return false;
-        }
-
-        m_eventManager = std::make_shared<EventManager>();
-
-        sf::Vector2u windowSize = m_windowManager->GetWindow().getSize();
-        m_camera = std::make_shared<Camera>(windowSize);
-        m_camera->SetMinZoomLevel(Constants::CAMERA_MIN_ZOOM);
-        m_camera->SetMaxZoomLevel(Constants::CAMERA_MAX_ZOOM);
-
         m_threadManager = std::make_unique<ThreadManager>(std::thread::hardware_concurrency());
+        m_eventManager = std::make_shared<EventManager>();
 
         m_resourceManager = std::make_shared<ResourceManager>(m_threadManager);
         if (!m_resourceManager->LoadResources()) {
@@ -50,12 +38,45 @@ bool Game::Init() {
             return false;
         }
 
+        RegisterSettings(); // Settings registry
+
+        m_gameSettings = std::make_shared<GameSettings>();
+        if (!m_gameSettings->LoadSettings("config/settings.json")) {
+            DEBUG_WARNING("Failed to load game settings, using defaults.");
+        }
+
+        m_pluginManager = std::make_unique<PluginManager>();
+
+        m_saveManager = std::make_unique<SaveManager>();
+        m_saveManager->SetGameSettings(m_gameSettings);
+
+        // Stage 2: Graphics
+        auto windowMgr = std::make_shared<WindowManager>();
+        windowMgr->SetVideoMode(sf::VideoMode(m_videoMode));
+        windowMgr->SetTitle(m_windowTitle);
+
+        sf::ContextSettings settings;
+        settings.antialiasingLevel = 8;
+        settings.depthBits = 24;
+        settings.stencilBits = 8;
+        settings.majorVersion = 3; settings.minorVersion = 0; // OpenGL version to use
+        windowMgr->SetContextSettings(settings);
+
+        if (!windowMgr->Init()) { return false; }
+        m_windowManager = windowMgr;
+
+        sf::Vector2u windowSize = m_windowManager->GetWindow().getSize();
+        m_camera = std::make_shared<Camera>(windowSize);
+        m_camera->SetMinZoomLevel(Constants::CAMERA_MIN_ZOOM);
+        m_camera->SetMaxZoomLevel(Constants::CAMERA_MAX_ZOOM);
+
         m_renderer = std::make_unique<Renderer>();
         if (!m_renderer->Init() || !m_renderer->InitWithWindow(m_windowManager->GetWindow())) { // Tries to start the renderer even if the window hasn't been fully initialized yet
             DEBUG_ERROR("Failed to initialize Renderer.");
             return false;
         }
 
+        // Stage 3: Inputs
         m_inputManager = std::make_shared<InputManager>(m_eventManager, m_windowManager->GetWindow());
         m_inputManager->SetZoomSpeed(Constants::CAMERA_ZOOM_SPEED);
         m_inputManager->SetPanSpeed(Constants::CAMERA_PAN_SPEED);
@@ -66,31 +87,20 @@ bool Game::Init() {
 
         m_uiManager = std::make_shared<UIManager>();
         m_uiManager->SetWindow(m_windowManager->GetWindow());
-        m_gameSettings = std::make_shared<GameSettings>();
-        if (!m_gameSettings->LoadSettings("config/settings.json")) {
-            DEBUG_WARNING("Failed to load game settings, using defaults.");
-        }
         m_uiManager->SetGameSettings(m_gameSettings);
         m_uiManager->SetWindowManager(m_windowManager);
+        m_uiManager->SetInputManager(m_inputManager);
         if (!m_uiManager->Init()) {
             DEBUG_ERROR("Failed to initialize UIManager.");
             return false;
         }
 
-        m_pluginManager = std::make_unique<PluginManager>();
-
-        m_saveManager = std::make_unique<SaveManager>();
-        m_saveManager->SetGameSettings(m_gameSettings);
-
-        m_uiManager->SetInputManager(m_inputManager);
-
+        // Stage 4: Finish initialization
         m_stateManager->SetState("Loading", false);
         m_stateManager->SetState("Running", true);
 
-        // Enable debug logging
-        Debug::EnableFileLogging("game.log");
+        Debug::EnableFileLogging("game.log"); // Enable debug logging
         Debug::SetLevel(DebugLevel::Debug);  // Set default debug level
-        
         DEBUG_INFO("Initializing game...");
 
         return true;
@@ -98,28 +108,6 @@ bool Game::Init() {
         DEBUG_ERROR("Error during initialization: ", e.what());
         return false;
     }
-}
-
-bool Game::InitManagers() {
-    auto windowMgr = std::make_shared<WindowManager>();
-    windowMgr->SetVideoMode(sf::VideoMode(m_videoMode));
-    windowMgr->SetTitle(m_windowTitle);
-
-    sf::ContextSettings settings;
-    settings.antialiasingLevel = 8;
-    settings.depthBits = 24;
-    settings.stencilBits = 8;
-    settings.majorVersion = 3; settings.minorVersion = 0; // OpenGL version to use
-    windowMgr->SetContextSettings(settings);
-
-    if (!windowMgr->Init()) {
-        return false;
-    }
-    
-    m_initManager.Register(std::static_pointer_cast<IInitializable>(windowMgr));
-    m_windowManager = windowMgr;
-
-    return m_initManager.InitAll();
 }
 
 void Game::Run() {
