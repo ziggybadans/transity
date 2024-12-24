@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <algorithm>
 #include <stdexcept>
 
 #include "City.h"
@@ -88,21 +89,29 @@ public:
 	void AddToLine(sf::Vector2f pos) {
 		DEBUG_DEBUG("Adding city to line " + selectedLine->name + "...");
 		City* firstCity = nullptr;
+
 		for (auto& city : m_cities) {
 			sf::Vector2f diff = city.position - pos;
 			float distanceSquared = diff.x * diff.x + diff.y * diff.y;
 			if (distanceSquared <= m_minRadius * m_minRadius) {
 				firstCity = &city;
-
-				selectedLine->AddCity(firstCity);
-				DEBUG_DEBUG("Added city with name " + firstCity->name + " to line with name " + selectedLine->name);
-				return;
+				break;
 			}
 		}
 
 		if (firstCity == nullptr) {
 			DEBUG_DEBUG("You need to click on a city to add one to the line!");
+			return;
 		}
+
+		auto it = std::find(selectedLine->GetCities().begin(), selectedLine->GetCities().end(), firstCity);
+		if (it != selectedLine->GetCities().end()) {
+			DEBUG_DEBUG("You cannot add a city to the same line twice!");
+			return;
+		}
+
+		selectedLine->AddCity(firstCity);
+		DEBUG_DEBUG("Added city with name " + firstCity->name + " to line with name " + selectedLine->name);
 	}
 
 	void SelectLine(Line* line) {
@@ -115,7 +124,7 @@ public:
 		selectedLine = nullptr;
 	}
 
-	std::vector<City> m_cities;
+	std::list<City> m_cities;
 	std::vector<Line> m_lines;
 	Line* selectedLine;
 

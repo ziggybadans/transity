@@ -17,4 +17,8 @@ struct City {
 		position(cityPosition),
 		population(cityPopulation),
 		radius(cityRadius) {}
+
+	bool operator==(const City& other) const {
+		return name == other.name && position == other.position;
+	}
 };
