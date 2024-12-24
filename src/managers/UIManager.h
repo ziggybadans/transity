@@ -28,6 +28,7 @@ public:
     void SetWindowManager(std::shared_ptr<WindowManager> windowManager) { m_windowManager = windowManager; }
     void SetInputManager(std::shared_ptr<InputManager> inputManager) { m_inputManager = inputManager; }
     void SetStateManager(std::shared_ptr<StateManager> stateManager) { m_stateManager = stateManager; }
+    void SetMap(std::shared_ptr<Map> map) { m_map = map; }
 
 private:
     /* UI Panels */
@@ -51,4 +52,5 @@ private:
     std::shared_ptr<WindowManager> m_windowManager;
     std::shared_ptr<InputManager> m_inputManager;
     std::shared_ptr<StateManager> m_stateManager;
+    std::shared_ptr<Map> m_map;
 };

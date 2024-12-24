@@ -88,6 +88,7 @@ bool Game::Init() {
         m_uiManager->SetWindowManager(m_windowManager);
         m_uiManager->SetInputManager(m_inputManager);
         m_uiManager->SetStateManager(m_stateManager);
+        m_uiManager->SetMap(m_map);
         if (!m_uiManager->Init()) {
             DEBUG_ERROR("Failed to initialize UIManager.");
             return false;

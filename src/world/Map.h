@@ -62,28 +62,35 @@ public:
 	void CreateLine(sf::Vector2f pos) {
 		DEBUG_DEBUG("Creating new line...");
 		City* firstCity = nullptr;
+
+		if (m_cities.empty()) {
+			DEBUG_DEBUG("You need to create a city first!");
+			return;
+		}
+
 		for (auto& city : m_cities) {
 			sf::Vector2f diff = city.position - pos;
 			float distanceSquared = diff.x * diff.x + diff.y * diff.y;
 			if (distanceSquared <= m_minRadius * m_minRadius) {
 				firstCity = &city;
-
-				static int lineSuffix = 1;
-				std::string name = "Line" + std::to_string(lineSuffix++);
-
-				Line newLine = Line(firstCity, name);
-
-				m_lines.emplace_back(newLine);
-				selectedLine = &m_lines.back();
-
-				DEBUG_DEBUG("New line created originating from " + firstCity->name + " with name " + name + ". Selected line has been updated for new line.");
-				return;
+				break;
 			}
 		}
 
 		if (firstCity == nullptr) {
 			DEBUG_DEBUG("You need to click on a city to create a line!");
+			return;
 		}
+
+		static int lineSuffix = 1;
+		std::string name = "Line" + std::to_string(lineSuffix++);
+
+		Line newLine = Line(firstCity, name);
+
+		m_lines.emplace_back(newLine);
+		SelectLine(&m_lines.back());
+
+		DEBUG_DEBUG("New line created originating from " + firstCity->name + " with name " + name + ". Selected line has been updated for new line.");
 	}
 
 	void AddToLine(sf::Vector2f pos) {
@@ -120,7 +127,7 @@ public:
 	}
 
 	void DeselectLine() {
-		DEBUG_DEBUG("No line is selected.");
+		DEBUG_DEBUG("Any line has been deselected.");
 		selectedLine = nullptr;
 	}
 

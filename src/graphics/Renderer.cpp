@@ -50,14 +50,6 @@ void Renderer::RenderMap(sf::RenderWindow& window, const Map& map) {
         }
     }
 
-    /* Cities */
-    for (City city : map.m_cities) {
-        sf::CircleShape circleShape(city.radius);
-        circleShape.setPosition(city.position);
-        circleShape.setFillColor(sf::Color::Black);
-        window.draw(circleShape);
-    }
-
     /* Lines */
     for (auto& line : map.m_lines) {
         std::vector<City*> cities = line.GetCities();
@@ -69,6 +61,15 @@ void Renderer::RenderMap(sf::RenderWindow& window, const Map& map) {
         }
         
         window.draw(lineVertices);
+    }
+
+    /* Cities */
+    for (City city : map.m_cities) {
+        sf::CircleShape circleShape(city.radius);
+        circleShape.setOrigin(city.radius, city.radius);
+        circleShape.setPosition(city.position);
+        circleShape.setFillColor(sf::Color::Black);
+        window.draw(circleShape);
     }
 }
 
