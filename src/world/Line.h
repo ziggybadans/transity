@@ -6,8 +6,8 @@
 
 class Line {
 public:
-	Line(City* startCity, const std::string& lineName, const sf::Color& lineColor = sf::Color::Yellow)
-		: name(lineName), color(lineColor) {
+	Line(City* startCity, const std::string& lineName, const sf::Color& lineColor = sf::Color::Blue, float lineThickness = 8.0f)
+		: name(lineName), color(lineColor), thickness(lineThickness) {
 		cities.push_back(startCity);
 	}
 
@@ -19,14 +19,15 @@ public:
 		return cities;
 	}
 
-	const sf::Color GetColor() const {
-		return color;
+	void SetThickness(float newThickness) {
+		thickness = newThickness;
 	}
 
 	std::string name;
+	sf::Color color;
+	float thickness;
 
 private:
-	sf::Color color;
 
 	std::vector<City*> cities;
 };

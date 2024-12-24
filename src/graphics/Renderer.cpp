@@ -53,14 +53,24 @@ void Renderer::RenderMap(sf::RenderWindow& window, const Map& map) {
     /* Lines */
     for (auto& line : map.m_lines) {
         std::vector<City*> cities = line.GetCities();
+        float thickness = line.thickness;
+        sf::Color color = line.color;
 
-        sf::VertexArray lineVertices(sf::Lines);
         for (size_t i = 0; i < cities.size() - 1; ++i) {
-            lineVertices.append(sf::Vertex(cities[i]->position, line.GetColor()));
-            lineVertices.append(sf::Vertex(cities[i + 1]->position, line.GetColor()));
+            sf::Vector2f start = cities[i]->position;
+            sf::Vector2 end = cities[i + 1]->position;
+
+            sf::Vector2f direction = end - start;
+            float length = std::sqrt(direction.x * direction.x + direction.y * direction.y);
+            float angle = std::atan2(direction.y, direction.x) * 180 / 3.14159265f;
+
+            sf::RectangleShape lineShape(sf::Vector2f(length, thickness));
+            lineShape.setPosition(start);
+            lineShape.setFillColor(color);
+            lineShape.setRotation(angle);
+            lineShape.setOrigin(0, thickness / 2);
+            window.draw(lineShape);
         }
-        
-        window.draw(lineVertices);
     }
 
     /* Cities */
