@@ -203,7 +203,9 @@
     <ClInclude Include="src\utility\ThreadManager.h" />
     <ClInclude Include="src\utility\ThreadPool.h" />
     <ClInclude Include="src\world\City.h" />
+    <ClInclude Include="src\world\Line.h" />
     <ClInclude Include="src\world\Map.h" />
+    <ClInclude Include="src\world\Node.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
