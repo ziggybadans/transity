@@ -98,7 +98,7 @@ void Map::CreateLine(sf::Vector2f pos) {
 }
 
 void Map::AddToLine(sf::Vector2f pos) {
-    DEBUG_DEBUG("Adding city to line " + selectedLine->name + "...");
+    DEBUG_DEBUG("Adding city to line " + selectedLine->GetName() + "...");
     City* firstCity = nullptr;
 
     for (auto& city : m_cities) {
@@ -122,11 +122,11 @@ void Map::AddToLine(sf::Vector2f pos) {
     }
 
     selectedLine->AddCity(firstCity);
-    DEBUG_DEBUG("Added city with name " + firstCity->name + " to line with name " + selectedLine->name);
+    DEBUG_DEBUG("Added city with name " + firstCity->name + " to line with name " + selectedLine->GetName());
 }
 
 void Map::SelectLine(Line* line) {
-    DEBUG_DEBUG("Line of name " + line->name + " has been selected.");
+    DEBUG_DEBUG("Line of name " + line->GetName() + " has been selected.");
     selectedLine = line;
 }
 

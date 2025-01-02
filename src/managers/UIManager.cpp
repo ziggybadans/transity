@@ -293,7 +293,7 @@ void UIManager::RenderInfoPanel() {
     // Route Name
     Line* route = selectedTrain->GetRoute();
     if (route) {
-        ImGui::Text("Route: %s", route->name.c_str());
+        ImGui::Text("Route: %s", route->GetName().c_str());
     }
     else {
         ImGui::Text("Route: N/A");
@@ -318,7 +318,7 @@ void UIManager::RenderInfoPanel() {
 
     // Current City and Next City
     if (route) {
-        int currentIndex = selectedTrain->GetCurrentCityIndex();
+        int currentIndex = selectedTrain->GetCurrentPointIndex();
         const std::vector<City*>& cities = route->GetCities();
 
         if (currentIndex >= 0 && currentIndex < static_cast<int>(cities.size())) {

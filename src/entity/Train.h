@@ -15,11 +15,19 @@ public:
         m_currentSpeed(0.0f),
         m_position(route->GetCities().front()->position),
         m_selected(false),
-        m_currentCityIndex(0),
+        m_currentPointIndex(0),
         m_forward(true),
-        m_state(State::Moving),
-        m_waitTime(0.0f)
+        m_state(State::Waiting),
+        m_waitTime(STOP_DURATION)
     {
+        // Generate the entire path (with intermediate Bezier points).
+        // `m_cityIndices` will mark which indices correspond to actual cities.
+        m_pathPoints = m_route->GetPathPoints(100, m_cityIndices);
+
+        // If there's a valid path, start at the very first point
+        if (!m_pathPoints.empty()) {
+            m_position = m_pathPoints.front();
+        }
     }
 
     // Update train position
@@ -59,7 +67,7 @@ public:
         return m_forward ? "Forward" : "Reverse";
     }
 
-    int GetCurrentCityIndex() const { return m_currentCityIndex; }
+    int GetCurrentPointIndex() const { return m_currentPointIndex; }
 
     float GetWaitTime() const { return m_waitTime; }
 
@@ -85,76 +93,110 @@ private:
     bool m_selected;
 
     // State management
-    int m_currentCityIndex;       // Index of the current city
     bool m_forward;               // Direction of travel
     State m_state;                // Current state (Moving or Waiting)
     float m_waitTime;             // Time left to wait at a city
+
+    // Path
+    std::vector<sf::Vector2f> m_pathPoints;
+    std::vector<int> m_cityIndices; // Indices in m_pathPoints that correspond to cities
+    int m_currentPointIndex;        // Index of the current point
+    int m_nextCityIndex;            // Index of the next city in the path
 
     // Constants
     const float ACCELERATION = 20.0f;   // Pixels per second squared
     const float DECELERATION = 20.0f;   // Pixels per second squared
     const float STOP_DURATION = 2.0f;   // Seconds to wait at each city
+    const float PROXIMITY_THRESHOLD = 5.0f; // Distance to consider as arrived at the city
 
     // Helper methods
     void Move(float dt) {
-        const auto& cities = m_route->GetCities();
-        if (cities.empty()) return;
+        if (m_pathPoints.empty()) return;
 
-        // Determine next city index based on direction
-        int targetIndex = m_currentCityIndex;
-        if (m_forward) {
-            if (m_currentCityIndex >= static_cast<int>(cities.size()) - 1) {
-                // Reached end, reverse direction
-                m_forward = false;
-                targetIndex = m_currentCityIndex - 1;
+        // 1. Figure out the next path point index for stepping along the curve.
+        int targetIndex = m_currentPointIndex + (m_forward ? 1 : -1);
+
+        // 2. Check if we need to reverse direction (end of line) or clamp index.
+        if (targetIndex >= static_cast<int>(m_pathPoints.size())) {
+            // reached the end going forward
+            m_forward = false;
+            targetIndex = m_currentPointIndex - 1;
+
+            // Arrive at the end city
+            if (IsCityIndex(m_currentPointIndex)) {
+                ArriveAtCity();
+                return; // Exit to wait before moving
             }
-            else {
-                targetIndex = m_currentCityIndex + 1;
+        }
+        else if (targetIndex < 0) {
+            // reached the front going backward
+            m_forward = true;
+            targetIndex = m_currentPointIndex + 1;
+
+            // Arrive at the start city
+            if (IsCityIndex(m_currentPointIndex)) {
+                ArriveAtCity();
+                return; // Exit to wait before moving
+            }
+        }
+
+        sf::Vector2f nextPoint = m_pathPoints[targetIndex];
+        sf::Vector2f toNextPt = nextPoint - m_position;
+        float distToNextPt = Length(toNextPt);
+
+        // If we're basically on top of the next point, skip movement & city check
+        if (distToNextPt < 0.001f) {
+            m_currentPointIndex = targetIndex;
+            // Possibly check if it's a city
+            if (IsCityIndex(m_currentPointIndex)) {
+                ArriveAtCity();
+            }
+            return;
+        }
+
+        // 3. Normalize direction to the next path point for the actual movement
+        sf::Vector2f direction = toNextPt / distToNextPt;
+
+        // 4. Find the NEXT city (not the next path point) to do speed logic
+        int cityIndex = FindNextCityIndex();
+        if (cityIndex < 0) {
+            // No further cities in this direction => do normal acceleration or stay at max?
+            // Or optionally reverse direction. For now, we just accelerate if not at max.
+            if (m_currentSpeed < m_maxSpeed) {
+                m_currentSpeed = std::min(m_maxSpeed, m_currentSpeed + ACCELERATION * dt);
             }
         }
         else {
-            if (m_currentCityIndex <= 0) {
-                // Reached start, reverse direction
-                m_forward = true;
-                targetIndex = m_currentCityIndex + 1;
+            // Next city is at pathPoints[ cityIndex ]
+            sf::Vector2f cityPos = m_pathPoints[cityIndex];
+            float distToCity = Distance(m_position, cityPos);
+            float stoppingDistance = (m_currentSpeed * m_currentSpeed) / (2.f * DECELERATION);
+
+            // Decelerate if within stopping distance, otherwise accelerate
+            if (distToCity <= stoppingDistance) {
+                m_currentSpeed -= DECELERATION * dt;
+                if (m_currentSpeed < 0.f) m_currentSpeed = 0.f;
             }
             else {
-                targetIndex = m_currentCityIndex - 1;
+                if (m_currentSpeed < m_maxSpeed) {
+                    m_currentSpeed += ACCELERATION * dt;
+                    if (m_currentSpeed > m_maxSpeed) m_currentSpeed = m_maxSpeed;
+                }
             }
         }
 
-        const sf::Vector2f currentPos = m_position;
-        const sf::Vector2f targetPos = cities[targetIndex]->position;
-        sf::Vector2f direction = targetPos - currentPos;
-        float distance = std::sqrt(direction.x * direction.x + direction.y * direction.y);
-
-        if (distance == 0.0f) return; // Already at the target
-
-        // Normalize direction
-        direction /= distance;
-
-        // Determine if we need to start decelerating
-        float stoppingDistance = (m_currentSpeed * m_currentSpeed) / (2 * DECELERATION);
-        if (distance <= stoppingDistance) {
-            // Decelerate
-            m_currentSpeed -= DECELERATION * dt;
-            if (m_currentSpeed < 0.0f) m_currentSpeed = 0.0f;
-        }
-        else {
-            // Accelerate up to max speed
-            m_currentSpeed += ACCELERATION * dt;
-            if (m_currentSpeed > m_maxSpeed) m_currentSpeed = m_maxSpeed;
-        }
-
-        // Move the train
+        // 5. Move the train toward the next path point using the final speed
         sf::Vector2f movement = direction * m_currentSpeed * dt;
-        if (std::sqrt(movement.x * movement.x + movement.y * movement.y) > distance) {
-            // Reached or overshot the target
-            m_position = targetPos;
-            m_currentCityIndex = targetIndex;
-            m_state = State::Waiting;
-            m_waitTime = STOP_DURATION;
-            m_currentSpeed = 0.0f;
+
+        // If we would overshoot the next path point, clamp to it
+        if (Length(movement) > distToNextPt) {
+            m_position = nextPoint;
+            m_currentPointIndex = targetIndex;
+
+            // Check if this path point is a city
+            if (IsCityIndex(m_currentPointIndex)) {
+                ArriveAtCity();
+            }
         }
         else {
             m_position += movement;
@@ -166,5 +208,51 @@ private:
         if (m_waitTime <= 0.0f) {
             m_state = State::Moving;
         }
+    }
+
+    void ArriveAtCity() {
+        m_state = State::Waiting;
+        m_waitTime = STOP_DURATION;
+        m_currentSpeed = 0.0f;
+    }
+
+    // Finds the index of the next city based on current position and direction
+    int FindNextCityIndex() const {
+        if (m_pathPoints.empty()) return -1;
+
+        if (m_forward) {
+            // We look for the first city index that is greater than m_currentPointIndex
+            for (int cityIdx : m_cityIndices) {
+                if (cityIdx > m_currentPointIndex) {
+                    return cityIdx;
+                }
+            }
+        }
+        else {
+            // We look for the last city index that is less than m_currentPointIndex
+            for (auto it = m_cityIndices.rbegin(); it != m_cityIndices.rend(); ++it) {
+                if (*it < m_currentPointIndex) {
+                    return *it;
+                }
+            }
+        }
+        return -1; // no city found in that direction
+    }
+
+    bool IsCityIndex(int index) const {
+        // Check if 'index' is in m_cityIndices
+        return std::find(m_cityIndices.begin(), m_cityIndices.end(), index) != m_cityIndices.end();
+    }
+
+    // Utility: distance between two points
+    float Distance(const sf::Vector2f& a, const sf::Vector2f& b) const {
+        float dx = b.x - a.x;
+        float dy = b.y - a.y;
+        return std::sqrt(dx * dx + dy * dy);
+    }
+
+    // Utility: length of a vector
+    float Length(const sf::Vector2f& v) const {
+        return std::sqrt(v.x * v.x + v.y * v.y);
     }
 };
