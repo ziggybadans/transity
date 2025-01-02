@@ -32,7 +32,7 @@ bool Renderer::InitWithWindow(sf::RenderWindow& window) {
     return true;
 }
 
-void Renderer::Render(sf::RenderWindow& window, const Camera& camera, const Map& map) {
+void Renderer::Render(sf::RenderWindow& window, const Camera& camera, Map& map) {
     if (!m_isInitialized) return;
 
     RenderMap(window, map);
@@ -41,7 +41,7 @@ void Renderer::Render(sf::RenderWindow& window, const Camera& camera, const Map&
     camera.ApplyView(window);
 }
 
-void Renderer::RenderMap(sf::RenderWindow& window, const Map& map) {
+void Renderer::RenderMap(sf::RenderWindow& window, Map& map) const {
     /* Map */
     sf::RectangleShape tileShape(sf::Vector2f(Constants::TILE_SIZE, Constants::TILE_SIZE));
     for (size_t y = 0; y < map.GetSize(); ++y) {
@@ -57,7 +57,7 @@ void Renderer::RenderMap(sf::RenderWindow& window, const Map& map) {
     }
 
     /* Lines */
-    for (auto& line : map.m_lines) {
+    for (auto& line : map.GetLines()) {
         std::vector<City*> cities = line.GetCities();
         float thickness = line.thickness;
         sf::Color color = line.color;
@@ -80,7 +80,7 @@ void Renderer::RenderMap(sf::RenderWindow& window, const Map& map) {
     }
 
     /* Cities */
-    for (City city : map.m_cities) {
+    for (City city : map.GetCities()) {
         sf::CircleShape circleShape(city.radius);
         circleShape.setOrigin(city.radius, city.radius);
         circleShape.setPosition(city.position);
@@ -104,7 +104,7 @@ void Renderer::RenderMap(sf::RenderWindow& window, const Map& map) {
     }
 
     // Render all trains
-    for (const auto& train : map.m_trains) {
+    for (const auto& train : map.GetTrains()) {
         sf::CircleShape trainShape(6.f); // small circle for the train
         trainShape.setOrigin(6.f, 6.f);
         if (train.IsSelected()) {

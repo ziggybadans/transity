@@ -263,7 +263,7 @@ void UIManager::RenderInfoPanel() {
         return;
     }
 
-    Train* selectedTrain = m_map->selectedTrain;
+    Train* selectedTrain = m_map->GetSelectedTrain();
     if (!selectedTrain) {
         // No train is selected; do not render the panel
         return;

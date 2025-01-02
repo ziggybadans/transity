@@ -206,11 +206,16 @@ void Map::SelectTrain(sf::Vector2f pos) {
     }
     else {
         DEBUG_DEBUG("No train found near the clicked position.");
-        for (auto& train : m_trains) {
-            train.SetSelected(false);
-        }
-        selectedTrain = nullptr;
+        DeselectTrain();
     }
+}
+
+void Map::DeselectTrain() {
+    DEBUG_DEBUG("Any train has been deselected.");
+    for (auto& train : m_trains) {
+        train.SetSelected(false);
+    }
+    selectedTrain = nullptr;
 }
 
 void Map::SelectTrain(Train* train) {

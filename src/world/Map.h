@@ -26,6 +26,7 @@ public:
 
     // City management
     void AddCity(sf::Vector2f pos);
+    std::list<City>& GetCities() { return m_cities; }
 
     // Line management
     void UseLineMode(sf::Vector2f pos);
@@ -34,18 +35,15 @@ public:
     void SelectLine(Line* line);
     void SelectLine(sf::Vector2f pos);
     void DeselectLine();
+    std::list<Line>& GetLines() { return m_lines; }
 
     // Train management
     void AddTrain();
     void SelectTrain(Train* train);
     void SelectTrain(sf::Vector2f pos);
-
-    // Public members
-    std::list<Train> m_trains; // Container of trains
-    std::list<City> m_cities;
-    std::list<Line> m_lines;
-    Line* selectedLine;
-    Train* selectedTrain;
+    void DeselectTrain();
+    Train* GetSelectedTrain() { return selectedTrain; }
+    std::list<Train>& GetTrains() { return m_trains; }
 
 private:
     // Grid representation
@@ -56,4 +54,11 @@ private:
 
     // Helper functions
     void Resize(unsigned int newSize);
+
+    // Public members
+    std::list<City> m_cities;
+    std::list<Line> m_lines;
+    std::list<Train> m_trains;
+    Line* selectedLine;
+    Train* selectedTrain;
 };

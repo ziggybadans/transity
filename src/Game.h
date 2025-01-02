@@ -47,6 +47,7 @@ private:
     /* Game Loop Methods */
     void ProcessEvents();
     void UpdateNonSimulation(float dt); // Updates things like the camera, UI and inputs
+    void UpdateSimulation(float scaledDt);
     void Render();
 
     /* Managers */

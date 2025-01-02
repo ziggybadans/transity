@@ -155,12 +155,7 @@ void Game::Run()
             float scaledDt = dt * currentTimeScale;
             {
                 PROFILE_SCOPE("Simulation Update");
-                // Update simulation elements with scaled delta time
-                for (auto& train : m_map->m_trains) {
-                    train.Update(scaledDt);
-                }
-
-                // Add other simulation updates here
+                UpdateSimulation(scaledDt);
             }
         }
 
@@ -187,6 +182,12 @@ void Game::UpdateNonSimulation(float dt) {
     if (m_uiManager) { m_uiManager->Update(dt); }
     if (m_inputManager) { m_inputManager->HandleInput(dt); }
     if (m_pluginManager) { m_pluginManager->UpdatePlugins(dt); }
+}
+
+void Game::UpdateSimulation(float scaledDt) {
+    for (auto& train : m_map->GetTrains()) {
+        train.Update(scaledDt);
+    }
 }
 
 void Game::Render() {

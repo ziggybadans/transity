@@ -15,7 +15,7 @@ public:
     /* Core Renderer Methods */
     bool Init() override;
     bool InitWithWindow(sf::RenderWindow& window);
-    void Render(sf::RenderWindow& window, const Camera& camera, const Map& map);
+    void Render(sf::RenderWindow& window, const Camera& camera, Map& map);
     void Shutdown();
 
 private:
@@ -24,7 +24,7 @@ private:
     std::mutex m_renderMutex;
 
     /* World Rendering */
-    void RenderMap(sf::RenderWindow& window, const Map& map);
+    void RenderMap(sf::RenderWindow& window, Map& map) const;
 
     sf::Font m_font;
 };
