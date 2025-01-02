@@ -1,9 +1,12 @@
+// UIManager.h
+
 #pragma once
 
 #include <imgui.h>
 #include <imgui-SFML.h>
 #include <SFML/Graphics.hpp>
 #include <memory>
+#include <functional>
 #include "../settings/GameSettings.h"
 #include "../interfaces/IInitializable.h"
 #include "../managers/WindowManager.h"
@@ -30,6 +33,12 @@ public:
     void SetStateManager(std::shared_ptr<StateManager> stateManager) { m_stateManager = stateManager; }
     void SetMap(std::shared_ptr<Map> map) { m_map = map; }
 
+    /* Time Scale Callbacks */
+    void SetTimeScaleCallback(std::function<void(float)> setCallback, std::function<float()> getCallback) {
+        m_setTimeScale = setCallback;
+        m_getTimeScale = getCallback;
+    }
+
 private:
     /* UI Panels */
     void RenderPerformanceOverlay();
@@ -38,12 +47,12 @@ private:
     void RenderGameplaySettings();
     void RenderPerformanceWindow();
     void RenderInfoPanel();
+    void RenderTimeControls();
     void RenderGUI();
 
     /* UI State */
     bool m_initialized;
     sf::RenderWindow* m_renderWindow;
-    float* m_timeScalePtr;
     float m_fps;
     bool m_showSettingsPanel;
     bool m_showPerformanceWindow;
@@ -54,4 +63,9 @@ private:
     std::shared_ptr<InputManager> m_inputManager;
     std::shared_ptr<StateManager> m_stateManager;
     std::shared_ptr<Map> m_map;
+
+    /* Time Scale Management */
+    std::function<void(float)> m_setTimeScale;
+    std::function<float()> m_getTimeScale;
+    float m_lastTimeScale = 1.0f;
 };

@@ -9,11 +9,12 @@
 UIManager::UIManager()
     : m_initialized(false)
     , m_renderWindow(nullptr)
-    , m_timeScalePtr(nullptr)
     , m_fps(0.0f)
     , m_showSettingsPanel(false)
     , m_showPerformanceWindow(true)
     , m_gameSettings(nullptr)
+    , m_setTimeScale(nullptr)
+    , m_getTimeScale(nullptr)
 {}
 
 UIManager::~UIManager() {
@@ -68,6 +69,7 @@ void UIManager::Render() {
         RenderPerformanceOverlay();
         RenderPerformanceWindow();
         RenderInfoPanel();
+        RenderTimeControls();
         RenderGUI();
         
         // Settings button in top-right corner
@@ -267,45 +269,157 @@ void UIManager::RenderInfoPanel() {
         return;
     }
 
-    // Begin a new ImGui window for the Train Info Panel
-    // Position it at a desired location, e.g., bottom-right corner
+    // Define panel size
+    const float panelWidth = 300.0f;
+    const float panelHeight = 200.0f; // Adjust as needed
+
+    // Set the window position to bottom-right corner with padding
     ImGui::SetNextWindowPos(ImVec2(
-        static_cast<float>(m_renderWindow->getSize().x) - 310.0f, // 300 width + 10 padding
-        static_cast<float>(m_renderWindow->getSize().y) - 150.0f  // 140 height + 10 padding
+        static_cast<float>(m_renderWindow->getSize().x) - panelWidth - 10.0f, // 10 pixels padding from right
+        static_cast<float>(m_renderWindow->getSize().y) - panelHeight - 10.0f  // 10 pixels padding from bottom
     ), ImGuiCond_Always);
 
-    ImGui::SetNextWindowSize(ImVec2(300.0f, 140.0f), ImGuiCond_Always);
+    // Optionally set the window size
+    ImGui::SetNextWindowSize(ImVec2(panelWidth, panelHeight), ImGuiCond_Always);
+
+    // Begin ImGui window
     ImGui::Begin("Train Information", nullptr,
-        ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
+        ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 
     // Display Train Information
     ImGui::Text("Train Details");
     ImGui::Separator();
 
-    // Display Speed
-    ImGui::Text("Speed: %.2f units/s", selectedTrain->GetSpeed());
+    // Route Name
+    Line* route = selectedTrain->GetRoute();
+    if (route) {
+        ImGui::Text("Route: %s", route->name.c_str());
+    }
+    else {
+        ImGui::Text("Route: N/A");
+    }
 
-    // Display Position
-    sf::Vector2f pos = selectedTrain->GetPosition();
-    ImGui::Text("Position: (%.2f, %.2f)", pos.x, pos.y);
+    // Position
+    sf::Vector2f position = selectedTrain->GetPosition();
+    ImGui::Text("Position: (%.2f, %.2f)", position.x, position.y);
 
-    // Display Route Information
-    if (selectedTrain->GetRoute()) {
-        ImGui::Text("Route: %s", selectedTrain->GetRoute()->name.c_str());
+    // Speed
+    float currentSpeed = selectedTrain->GetSpeed();
+    float maxSpeed = selectedTrain->GetMaxSpeed();
+    ImGui::Text("Speed: %.2f / %.2f px/s", currentSpeed, maxSpeed);
 
-        // Display Current City Index
-        ImGui::Text("Current City Index: %d", selectedTrain->GetCurrentCityIndex());
+    // State
+    std::string state = selectedTrain->GetState();
+    ImGui::Text("State: %s", state.c_str());
 
-        // Optionally, display next city
-        int nextCityIndex = selectedTrain->GetNextCityIndex();
-        if (nextCityIndex >= 0 && nextCityIndex < selectedTrain->GetRoute()->GetCities().size()) {
-            ImGui::Text("Next City: %s", selectedTrain->GetRoute()->GetCities()[nextCityIndex]->name.c_str());
+    // Direction
+    std::string direction = selectedTrain->GetDirection();
+    ImGui::Text("Direction: %s", direction.c_str());
+
+    // Current City and Next City
+    if (route) {
+        int currentIndex = selectedTrain->GetCurrentCityIndex();
+        const std::vector<City*>& cities = route->GetCities();
+
+        if (currentIndex >= 0 && currentIndex < static_cast<int>(cities.size())) {
+            const City* currentCity = cities[currentIndex];
+            ImGui::Text("Current City: %s", currentCity->name.c_str());
+
+            // Determine next city based on direction
+            int nextIndex = currentIndex + (selectedTrain->GetDirection() == "Forward" ? 1 : -1);
+            if (nextIndex >= 0 && nextIndex < static_cast<int>(cities.size())) {
+                const City* nextCity = cities[nextIndex];
+                ImGui::Text("Next City: %s", nextCity->name.c_str());
+            }
+            else {
+                ImGui::Text("Next City: N/A");
+            }
+        }
+        else {
+            ImGui::Text("Current City: N/A");
+            ImGui::Text("Next City: N/A");
         }
     }
 
-    // Optionally, add more details like selected state
-    ImGui::Text("Selected: %s", selectedTrain->IsSelected() ? "Yes" : "No");
+    // Wait Time (if in Waiting state)
+    if (state == "Waiting") {
+        float waitTime = selectedTrain->GetWaitTime();
+        ImGui::Text("Wait Time: %.2f s", waitTime);
+    }
 
+    ImGui::End();
+}
+
+void UIManager::RenderTimeControls()
+{
+    // Position the time controls window at the bottom-left corner
+    ImGui::SetNextWindowPos(ImVec2(10.0f, static_cast<float>(m_renderWindow->getSize().y) - 100.0f), ImGuiCond_Always);
+    //ImGui::SetNextWindowSize(ImVec2(200.0f, 90.0f), ImGuiCond_Always);
+
+    // Create a window for Time Controls without title bar and with no resizing/moving
+    if (ImGui::Begin("Time Controls", nullptr,
+        ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        float currentScale = m_getTimeScale();
+        bool isPaused = (currentScale == 0.0f);
+
+        // Display current time scale
+        ImGui::Text("Time Scale: %.2fx", isPaused ? 0.0f : currentScale);
+        ImGui::Separator();
+
+        bool canSpeedUp = (currentScale < 4.0f);
+        bool canSlowDown = (currentScale > 0.25f);
+
+        // Speed Up Button
+        if (!canSpeedUp) {
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.5f, 0.5f, 0.5f, 1.0f)); // Gray out
+        }
+        if (ImGui::Button("Speed Up", ImVec2(70, 30)))
+        {
+            if (canSpeedUp && !isPaused)
+            {
+                float newScale = std::min(currentScale + 0.25f, 4.0f);
+                m_setTimeScale(newScale);
+            }
+        }
+        if (!canSpeedUp) {
+            ImGui::PopStyleColor();
+        }
+        ImGui::SameLine();
+
+        // Slow Down Button
+        if (!canSlowDown) {
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.5f, 0.5f, 0.5f, 1.0f)); // Gray out
+        }
+        if (ImGui::Button("Slow Down", ImVec2(70, 30)))
+        {
+            if (canSlowDown && !isPaused)
+            {
+                float newScale = std::max(currentScale - 0.25f, 0.25f);
+                m_setTimeScale(newScale);
+            }
+        }
+        if (!canSlowDown) {
+            ImGui::PopStyleColor();
+        }
+
+        // Pause/Resume Button
+        if (isPaused)
+        {
+            if (ImGui::Button("Resume", ImVec2(148, 30)))
+            {
+                m_setTimeScale(m_lastTimeScale);
+            }
+        }
+        else
+        {
+            if (ImGui::Button("Pause", ImVec2(148, 30)))
+            {
+                m_lastTimeScale = currentScale; // Save current scale before pausing
+                m_setTimeScale(0.0f);
+            }
+        }
+    }
     ImGui::End();
 }
 

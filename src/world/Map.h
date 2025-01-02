@@ -41,9 +41,9 @@ public:
     void SelectTrain(sf::Vector2f pos);
 
     // Public members
-    std::vector<Train> m_trains; // Container of trains
+    std::list<Train> m_trains; // Container of trains
     std::list<City> m_cities;
-    std::vector<Line> m_lines;
+    std::list<Line> m_lines;
     Line* selectedLine;
     Train* selectedTrain;
 

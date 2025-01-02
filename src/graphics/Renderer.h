@@ -25,4 +25,6 @@ private:
 
     /* World Rendering */
     void RenderMap(sf::RenderWindow& window, const Map& map);
+
+    sf::Font m_font;
 };

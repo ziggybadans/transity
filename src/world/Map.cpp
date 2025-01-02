@@ -209,6 +209,7 @@ void Map::SelectTrain(sf::Vector2f pos) {
         for (auto& train : m_trains) {
             train.SetSelected(false);
         }
+        selectedTrain = nullptr;
     }
 }
 

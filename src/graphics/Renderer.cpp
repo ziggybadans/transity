@@ -21,6 +21,12 @@ bool Renderer::Init() {
 bool Renderer::InitWithWindow(sf::RenderWindow& window) {
     if (m_isInitialized) return true;
 
+    // Load the font
+    if (!m_font.loadFromFile("data/PTSans-Regular.ttf")) { // Ensure the path is correct
+        DEBUG_ERROR("Failed to load font.");
+        return false;
+    }
+
     m_isInitialized = true;
     DEBUG_INFO("Renderer initialized successfully.");
     return true;
@@ -80,6 +86,21 @@ void Renderer::RenderMap(sf::RenderWindow& window, const Map& map) {
         circleShape.setPosition(city.position);
         circleShape.setFillColor(sf::Color::Black);
         window.draw(circleShape);
+
+        // Create and configure the text label
+        sf::Text text;
+        text.setFont(m_font); // Use the loaded font
+        text.setString(city.name);
+        text.setCharacterSize(14); // Adjust as needed
+        text.setFillColor(sf::Color::Black); // Choose a color that contrasts with the map
+
+        // Calculate the position: below the city
+        sf::FloatRect textBounds = text.getLocalBounds();
+        float textX = city.position.x - textBounds.width / 2;
+        float textY = city.position.y + city.radius + 5.0f; // 5 pixels below the city
+
+        text.setPosition(textX, textY);
+        window.draw(text);
     }
 
     // Render all trains

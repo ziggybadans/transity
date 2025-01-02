@@ -89,6 +89,13 @@ bool Game::Init() {
         m_uiManager->SetInputManager(m_inputManager);
         m_uiManager->SetStateManager(m_stateManager);
         m_uiManager->SetMap(m_map);
+
+        // Set time scale callbacks
+        m_uiManager->SetTimeScaleCallback(
+            [this](float newScale) { this->SetTimeScale(newScale); }, // Setter
+            [this]() -> float { return this->GetTimeScale(); }        // Getter
+        );
+
         if (!m_uiManager->Init()) {
             DEBUG_ERROR("Failed to initialize UIManager.");
             return false;
@@ -116,7 +123,8 @@ void Game::InitializeWorld() {
     m_stateManager->SetState("CurrentTool", std::string("Place"));
 }
 
-void Game::Run() {
+void Game::Run()
+{
     while (m_stateManager->GetState<bool>("Running")) {
         std::shared_ptr<WindowManager> windowMgrCopy;
         {
@@ -128,26 +136,37 @@ void Game::Run() {
             break;
         }
 
-        PROFILE_SCOPE("Game Loop"); // Splitting profiling of processing into categories
+        PROFILE_SCOPE("Game Loop");
+
         {
             PROFILE_SCOPE("Event Processing");
             ProcessEvents();
         }
 
         float dt = m_deltaClock.restart().asSeconds();
+        float currentTimeScale = m_timeScale.load();
+
         {
             PROFILE_SCOPE("Non-Simulation Update");
             UpdateNonSimulation(dt);
         }
 
-        float scaledDt = dt * m_timeScale.load();
+        if (currentTimeScale != 0.0f) { // Only update simulation if not paused
+            float scaledDt = dt * currentTimeScale;
+            {
+                PROFILE_SCOPE("Simulation Update");
+                // Update simulation elements with scaled delta time
+                for (auto& train : m_map->m_trains) {
+                    train.Update(scaledDt);
+                }
+
+                // Add other simulation updates here
+            }
+        }
+
         {
             PROFILE_SCOPE("Render");
             Render();
-
-            for (auto& train : m_map->m_trains) {
-                train.Update(scaledDt);
-            }
         }
     }
 }
