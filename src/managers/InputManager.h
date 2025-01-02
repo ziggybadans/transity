@@ -5,13 +5,16 @@
 #include <functional>
 #include <vector>
 #include <utility>
+#include <unordered_map>
+#include <string>
+#include <any>
 #include "EventManager.h"
 #include "../graphics/Camera.h"
 #include "../world/Map.h"
 #include "../Debug.h"
-#include <string>
 #include "../core/StateManager.h"
 
+// Enumeration for different input actions
 enum class InputAction {
     ZoomIn,
     ZoomOut,
@@ -20,9 +23,11 @@ enum class InputAction {
     PanUp,
     PanDown,
     Place,
-    Draw
+    Draw,
+    Select
 };
 
+// Configuration structure for input settings
 struct InputConfig {
     float zoomSpeed = 1.1f;
     float panSpeed = 500.0f;
@@ -36,235 +41,71 @@ public:
     virtual void execute() = 0;
 };
 
-// Concrete commands
+// Concrete command for zooming
 class ZoomCommand : public InputCommand {
     std::shared_ptr<Camera> m_camera;
     float m_factor;
 public:
-    ZoomCommand(std::shared_ptr<Camera> camera, float factor)
-        : m_camera(camera), m_factor(factor) {}
-    void execute() override { 
-        DEBUG_DEBUG("ZoomCommand: Zooming camera by factor ", m_factor);
-        m_camera->Zoom(m_factor);
-    }
+    ZoomCommand(std::shared_ptr<Camera> camera, float factor);
+    void execute() override;
 };
 
+// Concrete command for panning
 class PanCommand : public InputCommand {
     std::shared_ptr<Camera> m_camera;
     sf::Vector2f m_direction;
 public:
-    PanCommand(std::shared_ptr<Camera> camera, sf::Vector2f direction)
-        : m_camera(camera), m_direction(direction) {}
-    void execute() override { 
-        DEBUG_DEBUG("PanCommand: Panning camera by direction ", m_direction.x, ", ", m_direction.y);
-        m_camera->Move(m_direction); 
-    }
+    PanCommand(std::shared_ptr<Camera> camera, sf::Vector2f direction);
+    void execute() override;
 };
 
+// Concrete command for placing objects
 class PlaceCommand : public InputCommand {
     std::shared_ptr<Camera> m_camera;
     sf::RenderWindow& m_window;
     std::shared_ptr<Map> m_map;
 public:
-    PlaceCommand(std::shared_ptr<Camera> camera, sf::RenderWindow& window, std::shared_ptr<Map> map)
-        : m_camera(camera), m_window(window), m_map(map) {}
-    void execute() override { 
-        sf::Vector2i pixelPos = sf::Mouse::getPosition(m_window);
-        sf::Vector2f worldPos = m_window.mapPixelToCoords(pixelPos, m_camera->GetView());
-        DEBUG_DEBUG("PlaceCommand: Attempting to place line at world position ", worldPos.x, ", ", worldPos.y);
-        m_map->AddCity(worldPos);
-    }
+    PlaceCommand(std::shared_ptr<Camera> camera, sf::RenderWindow& window, std::shared_ptr<Map> map);
+    void execute() override;
 };
 
+// Concrete command for drawing
 class DrawCommand : public InputCommand {
     std::shared_ptr<Camera> m_camera;
     sf::RenderWindow& m_window;
     std::shared_ptr<Map> m_map;
 public:
-    DrawCommand(std::shared_ptr<Camera> camera, sf::RenderWindow& window, std::shared_ptr<Map> map)
-        : m_camera(camera), m_window(window), m_map(map) {}
-    void execute() override {
-        sf::Vector2i pixelPos = sf::Mouse::getPosition(m_window);
-        sf::Vector2f worldPos = m_window.mapPixelToCoords(pixelPos, m_camera->GetView());
-        DEBUG_DEBUG("Attempting to use the line tool.");
-        m_map->UseLineMode(worldPos);
-    }
+    DrawCommand(std::shared_ptr<Camera> camera, sf::RenderWindow& window, std::shared_ptr<Map> map);
+    void execute() override;
 };
 
+class SelectCommand : public InputCommand {
+    std::shared_ptr<Camera> m_camera;
+    sf::RenderWindow& m_window;
+    std::shared_ptr<Map> m_map;
+public:
+    SelectCommand(std::shared_ptr<Camera> camera, sf::RenderWindow& window, std::shared_ptr<Map> map);
+    void execute() override;
+};
+
+// InputManager class declaration
 class InputManager {
 public:
-    InputManager(std::shared_ptr<EventManager> eventMgr, std::shared_ptr<StateManager> stateMgr,
+    InputManager(std::shared_ptr<EventManager> eventMgr,
+        std::shared_ptr<StateManager> stateMgr,
         sf::RenderWindow& win,
-        std::shared_ptr<Camera> camera, std::shared_ptr<Map> map)
-        : m_eventManager(eventMgr)
-        , m_stateManager(stateMgr)
-        , m_window(win)
-        , m_camera(camera)
-        , m_map(map)
-        , m_config{}
-    {
-        DEBUG_INFO("InputManager: Initializing InputManager");
-        m_stateManager->Subscribe("CurrentTool", [this](const std::any& data) {
-            if (data.has_value()) {
-                auto value = std::any_cast<std::string>(data);
-                CheckSubscriptions();
-                DEBUG_DEBUG("Now listening for CurrentTool state change on InputManager");
-            }
-        });
-        InitializeSubscriptions();
-        InitializeCommands();
-    }
+        std::shared_ptr<Camera> camera,
+        std::shared_ptr<Map> map);
 
-    void HandleInput(float deltaTime) {
-        // Handle zoom
-        float mouseWheel = ImGui::GetIO().MouseWheel;
-        if (mouseWheel != 0.0f) {
-            DEBUG_VERBOSE("InputManager: Mouse wheel event detected: ", mouseWheel);
-            ExecuteCommand(mouseWheel > 0.0f ? InputAction::ZoomOut : InputAction::ZoomIn);
-        }
-
-        // Handle movement
-        for (const auto& [key, action] : m_keyMappings) {
-            if (sf::Keyboard::isKeyPressed(key)) {
-                DEBUG_VERBOSE("InputManager: Key pressed: ", key);
-                ExecuteCommand(action);
-            }
-        }
-    }
-
-    void SetConfig(const InputConfig& config) {
-        DEBUG_INFO("InputManager: Setting new input configuration.");
-        DEBUG_DEBUG("InputManager: Zoom Speed: ", config.zoomSpeed, ", Pan Speed: ", config.panSpeed);
-        m_config = config;
-    }
-    const InputConfig& GetConfig() const { return m_config; }
+    void HandleInput(float deltaTime);
+    void SetConfig(const InputConfig& config);
+    const InputConfig& GetConfig() const;
 
 private:
-    void InitializeSubscriptions() {
-        if (m_stateManager->GetState<std::string>("CurrentTool") == std::string("Place")) {
-            DEBUG_DEBUG("Subscribing to PlaceSubscription...");
-            placeSubscription = m_eventManager->Subscribe(EventType::MouseButtonPressed,
-                [this](const EventData& data) {
-                    if (std::holds_alternative<sf::Event>(data)) {
-                        const sf::Event& event = std::get<sf::Event>(data);
-
-                        if (event.type == sf::Event::MouseButtonPressed) {
-                            if (event.mouseButton.button == sf::Mouse::Right) {
-                                DEBUG_DEBUG("InputManager: Right mouse button clicked.");
-                                ExecuteCommand(InputAction::Place);
-                            }
-                        }
-                    }
-                }
-            );
-        }
-
-        if (m_stateManager->GetState<std::string>("CurrentTool") == std::string("Draw")) {
-            DEBUG_DEBUG("Subscribing to DrawSubscription...");
-            drawSubscription = m_eventManager->Subscribe(EventType::MouseButtonPressed,
-                [this](const EventData& data) {
-                    if (std::holds_alternative<sf::Event>(data)) {
-                        const sf::Event& event = std::get<sf::Event>(data);
-
-                        if (event.type == sf::Event::MouseButtonPressed) {
-                            if (event.mouseButton.button == sf::Mouse::Right) {
-                                DEBUG_DEBUG("InputManager: Right mouse button clicked.");
-                                ExecuteCommand(InputAction::Draw);
-                            }
-                        }
-                    }
-                }
-            );
-        }
-    }
-
-    void CheckSubscriptions() {
-        if (m_stateManager->GetState<std::string>("CurrentTool") == std::string("Place")) {
-            DEBUG_DEBUG("Subscribing to PlaceSubscription...");
-            placeSubscription = m_eventManager->Subscribe(EventType::MouseButtonPressed,
-                [this](const EventData& data) {
-                    if (std::holds_alternative<sf::Event>(data)) {
-                        const sf::Event& event = std::get<sf::Event>(data);
-
-                        if (event.type == sf::Event::MouseButtonPressed) {
-                            if (event.mouseButton.button == sf::Mouse::Right) {
-                                DEBUG_DEBUG("InputManager: Right mouse button clicked.");
-                                ExecuteCommand(InputAction::Place);
-                            }
-                        }
-                    }
-                }
-            );
-        }
-        else {
-            DEBUG_DEBUG("Unsubscribing...");
-            m_eventManager->Unsubscribe(placeSubscription);
-        }
-
-        if (m_stateManager->GetState<std::string>("CurrentTool") == std::string("Line")) {
-            DEBUG_DEBUG("Subscribing to DrawSubscription...");
-            drawSubscription = m_eventManager->Subscribe(EventType::MouseButtonPressed,
-                [this](const EventData& data) {
-                    if (std::holds_alternative<sf::Event>(data)) {
-                        const sf::Event& event = std::get<sf::Event>(data);
-
-                        if (event.type == sf::Event::MouseButtonPressed) {
-                            if (event.mouseButton.button == sf::Mouse::Right) {
-                                DEBUG_DEBUG("InputManager: Right mouse button clicked.");
-                                ExecuteCommand(InputAction::Draw);
-                            }
-                        }
-                    }
-                }
-            );
-        }
-        else {
-            DEBUG_DEBUG("Unsubscribing...");
-            m_eventManager->Unsubscribe(drawSubscription);
-        }
-    }
-
-    void InitializeCommands() {
-        DEBUG_INFO("InputManager: Initializing input commands.");
-        // Initialize zoom commands
-        m_commands[InputAction::ZoomIn] = std::make_unique<ZoomCommand>(m_camera, m_config.zoomSpeed);
-        m_commands[InputAction::ZoomOut] = std::make_unique<ZoomCommand>(m_camera, 1.0f / m_config.zoomSpeed);
-        DEBUG_DEBUG("InputManager: Zoom commands initialized.");
-
-        // Initialize pan commands
-        m_commands[InputAction::PanLeft] = std::make_unique<PanCommand>(m_camera, sf::Vector2f(-1, 0));
-        m_commands[InputAction::PanRight] = std::make_unique<PanCommand>(m_camera, sf::Vector2f(1, 0));
-        m_commands[InputAction::PanUp] = std::make_unique<PanCommand>(m_camera, sf::Vector2f(0, -1));
-        m_commands[InputAction::PanDown] = std::make_unique<PanCommand>(m_camera, sf::Vector2f(0, 1));
-        DEBUG_DEBUG("InputManager: Pan commands initialized.");
-
-        m_commands[InputAction::Place] = std::make_unique<PlaceCommand>(m_camera, m_window, m_map);
-        m_commands[InputAction::Draw] = std::make_unique<DrawCommand>(m_camera, m_window, m_map);
-        DEBUG_DEBUG("InputManager: Tool commands initialized.");
-
-        // Initialize key mappings
-        m_keyMappings = {
-            {sf::Keyboard::Left, InputAction::PanLeft},
-            {sf::Keyboard::A, InputAction::PanLeft},
-            {sf::Keyboard::Right, InputAction::PanRight},
-            {sf::Keyboard::D, InputAction::PanRight},
-            {sf::Keyboard::Up, InputAction::PanUp},
-            {sf::Keyboard::W, InputAction::PanUp},
-            {sf::Keyboard::Down, InputAction::PanDown},
-            {sf::Keyboard::S, InputAction::PanDown}
-        };
-        DEBUG_DEBUG("InputManager: Key mappings initialized.");
-    }
-
-    void ExecuteCommand(InputAction action) {
-        DEBUG_DEBUG("InputManager: Executing command for action: ", static_cast<int>(action));
-        if (auto it = m_commands.find(action); it != m_commands.end()) {
-            it->second->execute();
-        }
-        else {
-            DEBUG_WARNING("InputManager: No command found for action: ", static_cast<int>(action));
-        }
-    }
+    void InitializeSubscriptions();
+    void CheckSubscriptions();
+    void InitializeCommands();
+    void ExecuteCommand(InputAction action);
 
     std::shared_ptr<EventManager> m_eventManager;
     std::shared_ptr<StateManager> m_stateManager;

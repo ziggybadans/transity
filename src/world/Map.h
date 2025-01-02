@@ -1,151 +1,59 @@
+// Map.h
 #pragma once
+
 #include <vector>
+#include <list>
 #include <algorithm>
 #include <stdexcept>
+#include <string>
 
 #include "City.h"
 #include "Line.h"
-#include "Node.h"
 #include "../Constants.h"
 #include "../Debug.h"
+#include "../entity/Train.h"
+#include <SFML/Graphics.hpp> // Assuming sf::Vector2f is from SFML
 
 class Map {
 public:
-	Map(unsigned int size) : m_size(size), m_grid(size, std::vector<int>(size, 1)), m_minRadius(100), selectedLine(nullptr) {}
+    // Constructor
+    Map(unsigned int size);
 
-	void SetTile(unsigned int x, unsigned int y, int value) {
-		if (x >= m_size || y >= m_size) throw std::out_of_range("Invalid tile coordinates");
-		m_grid[x][y] = value;
-	}
+    // Tile management
+    void SetTile(unsigned int x, unsigned int y, int value);
+    int GetSize() const;
+    int GetTile(int x, int y) const;
 
-	int GetSize() const {
-		return m_size;
-	}
+    // City management
+    void AddCity(sf::Vector2f pos);
 
-	int GetTile(int x, int y) const {
-		return m_grid[x][y];
-	}
+    // Line management
+    void UseLineMode(sf::Vector2f pos);
+    void CreateLine(sf::Vector2f pos);
+    void AddToLine(sf::Vector2f pos);
+    void SelectLine(Line* line);
+    void SelectLine(sf::Vector2f pos);
+    void DeselectLine();
 
-	void AddCity(sf::Vector2f pos) {
-		/* Validation checks */
-		// Check inside map bounds
-		if (pos.x < 0 || pos.y < 0) { return; }
-		if (pos.x >= m_size * (Constants::TILE_SIZE * 0.98) || pos.y >= m_size * (Constants::TILE_SIZE * 0.98)) { return; }
+    // Train management
+    void AddTrain();
+    void SelectTrain(Train* train);
+    void SelectTrain(sf::Vector2f pos);
 
-		// Check outside minimum radius to another city
-		for (City city : m_cities) {
-			sf::Vector2f diff = city.position - pos;
-			float distanceSquared = diff.x * diff.x + diff.y * diff.y;
-			if (distanceSquared <= m_minRadius * m_minRadius) {
-				return;
-			}
-		}
-
-		/* Data generation*/
-		static int citySuffix = 1;
-		std::string name = "City" + std::to_string(citySuffix++);
-		unsigned int population = 1000;
-
-		m_cities.emplace_back(name, pos, population); // Adds to the list of cities
-	}
-
-	void UseLineMode(sf::Vector2f pos) {
-		DEBUG_DEBUG("Choosing to either create new line or add to existing line.");
-		if (selectedLine == nullptr) {
-			CreateLine(pos);
-		}
-		else {
-			AddToLine(pos);
-		}
-	}
-
-	void CreateLine(sf::Vector2f pos) {
-		DEBUG_DEBUG("Creating new line...");
-		City* firstCity = nullptr;
-
-		if (m_cities.empty()) {
-			DEBUG_DEBUG("You need to create a city first!");
-			return;
-		}
-
-		for (auto& city : m_cities) {
-			sf::Vector2f diff = city.position - pos;
-			float distanceSquared = diff.x * diff.x + diff.y * diff.y;
-			if (distanceSquared <= m_minRadius * m_minRadius) {
-				firstCity = &city;
-				break;
-			}
-		}
-
-		if (firstCity == nullptr) {
-			DEBUG_DEBUG("You need to click on a city to create a line!");
-			return;
-		}
-
-		static int lineSuffix = 1;
-		std::string name = "Line" + std::to_string(lineSuffix++);
-
-		Line newLine = Line(firstCity, name);
-
-		m_lines.emplace_back(newLine);
-		SelectLine(&m_lines.back());
-
-		DEBUG_DEBUG("New line created originating from " + firstCity->name + " with name " + name + ". Selected line has been updated for new line.");
-	}
-
-	void AddToLine(sf::Vector2f pos) {
-		DEBUG_DEBUG("Adding city to line " + selectedLine->name + "...");
-		City* firstCity = nullptr;
-
-		for (auto& city : m_cities) {
-			sf::Vector2f diff = city.position - pos;
-			float distanceSquared = diff.x * diff.x + diff.y * diff.y;
-			if (distanceSquared <= m_minRadius * m_minRadius) {
-				firstCity = &city;
-				break;
-			}
-		}
-
-		if (firstCity == nullptr) {
-			DEBUG_DEBUG("You need to click on a city to add one to the line!");
-			return;
-		}
-
-		auto it = std::find(selectedLine->GetCities().begin(), selectedLine->GetCities().end(), firstCity);
-		if (it != selectedLine->GetCities().end()) {
-			DEBUG_DEBUG("You cannot add a city to the same line twice!");
-			return;
-		}
-
-		selectedLine->AddCity(firstCity);
-		DEBUG_DEBUG("Added city with name " + firstCity->name + " to line with name " + selectedLine->name);
-	}
-
-	void SelectLine(Line* line) {
-		DEBUG_DEBUG("Line of name " + line->name + "has been selected.");
-		selectedLine = line;
-	}
-
-	void DeselectLine() {
-		DEBUG_DEBUG("Any line has been deselected.");
-		selectedLine = nullptr;
-	}
-
-	std::list<City> m_cities;
-	std::vector<Line> m_lines;
-	Line* selectedLine;
+    // Public members
+    std::vector<Train> m_trains; // Container of trains
+    std::list<City> m_cities;
+    std::vector<Line> m_lines;
+    Line* selectedLine;
+    Train* selectedTrain;
 
 private:
-	std::vector<std::vector<int>> m_grid;
-	unsigned int m_size;
+    // Grid representation
+    std::vector<std::vector<int>> m_grid;
+    unsigned int m_size;
 
-	unsigned int m_minRadius;
+    unsigned int m_minRadius;
 
-	void Resize(unsigned int newSize) {
-		m_grid.resize(newSize, std::vector<int>(newSize, 1));
-		for (auto& row : m_grid) {
-			row.resize(newSize, 1);
-		}
-		m_size = newSize;
-	}
+    // Helper functions
+    void Resize(unsigned int newSize);
 };

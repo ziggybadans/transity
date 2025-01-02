@@ -67,6 +67,7 @@ void UIManager::Render() {
     try {
         RenderPerformanceOverlay();
         RenderPerformanceWindow();
+        RenderInfoPanel();
         RenderGUI();
         
         // Settings button in top-right corner
@@ -254,6 +255,60 @@ void UIManager::RenderPerformanceWindow() {
     ImGui::End();
 }
 
+void UIManager::RenderInfoPanel() {
+    if (!m_map) {
+        DEBUG_ERROR("UIManager::RenderInfoPanel - Map is not set.");
+        return;
+    }
+
+    Train* selectedTrain = m_map->selectedTrain;
+    if (!selectedTrain) {
+        // No train is selected; do not render the panel
+        return;
+    }
+
+    // Begin a new ImGui window for the Train Info Panel
+    // Position it at a desired location, e.g., bottom-right corner
+    ImGui::SetNextWindowPos(ImVec2(
+        static_cast<float>(m_renderWindow->getSize().x) - 310.0f, // 300 width + 10 padding
+        static_cast<float>(m_renderWindow->getSize().y) - 150.0f  // 140 height + 10 padding
+    ), ImGuiCond_Always);
+
+    ImGui::SetNextWindowSize(ImVec2(300.0f, 140.0f), ImGuiCond_Always);
+    ImGui::Begin("Train Information", nullptr,
+        ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
+
+    // Display Train Information
+    ImGui::Text("Train Details");
+    ImGui::Separator();
+
+    // Display Speed
+    ImGui::Text("Speed: %.2f units/s", selectedTrain->GetSpeed());
+
+    // Display Position
+    sf::Vector2f pos = selectedTrain->GetPosition();
+    ImGui::Text("Position: (%.2f, %.2f)", pos.x, pos.y);
+
+    // Display Route Information
+    if (selectedTrain->GetRoute()) {
+        ImGui::Text("Route: %s", selectedTrain->GetRoute()->name.c_str());
+
+        // Display Current City Index
+        ImGui::Text("Current City Index: %d", selectedTrain->GetCurrentCityIndex());
+
+        // Optionally, display next city
+        int nextCityIndex = selectedTrain->GetNextCityIndex();
+        if (nextCityIndex >= 0 && nextCityIndex < selectedTrain->GetRoute()->GetCities().size()) {
+            ImGui::Text("Next City: %s", selectedTrain->GetRoute()->GetCities()[nextCityIndex]->name.c_str());
+        }
+    }
+
+    // Optionally, add more details like selected state
+    ImGui::Text("Selected: %s", selectedTrain->IsSelected() ? "Yes" : "No");
+
+    ImGui::End();
+}
+
 void UIManager::RenderGUI()
 {
     static bool isLineMode = false;
@@ -275,10 +330,13 @@ void UIManager::RenderGUI()
         }
         ImGui::SameLine();
         ImGui::BeginDisabled(m_stateManager->GetState<std::string>("CurrentTool") != std::string("Line"));
-        if (ImGui::Button("Finish Line", ImVec2(95, 30))) {
+        if (ImGui::Button("Deselect Line", ImVec2(95, 30))) {
             m_map->DeselectLine();
         }
         ImGui::EndDisabled();
+        if (ImGui::Button("Add Train", ImVec2(95, 30))) {
+            m_map->AddTrain();
+        }
     }
     ImGui::End();
 }

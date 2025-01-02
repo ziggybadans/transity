@@ -87,6 +87,12 @@
     <ClCompile Include="src\utility\ThreadManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\managers\InputManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\world\Map.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Game.h">
@@ -194,7 +200,7 @@
     <ClInclude Include="src\world\Line.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\world\Node.h">
+    <ClInclude Include="src\entity\Train.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -52,6 +52,7 @@ private:
     /* Managers */
     std::shared_ptr<EventManager> m_eventManager;
     std::shared_ptr<WindowManager> m_windowManager;
+    std::mutex m_windowManagerMutex;
     std::shared_ptr<UIManager> m_uiManager;
     std::unique_ptr<ThreadManager> m_threadManager;
     std::unique_ptr<Renderer> m_renderer;

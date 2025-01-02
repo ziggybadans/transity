@@ -117,7 +117,17 @@ void Game::InitializeWorld() {
 }
 
 void Game::Run() {
-    while (m_stateManager->GetState<bool>("Running") && m_windowManager->GetWindow().isOpen()) {
+    while (m_stateManager->GetState<bool>("Running")) {
+        std::shared_ptr<WindowManager> windowMgrCopy;
+        {
+            std::lock_guard<std::mutex> lock(m_windowManagerMutex);
+            windowMgrCopy = m_windowManager;
+        }
+
+        if (!windowMgrCopy || !windowMgrCopy->GetWindow().isOpen()) {
+            break;
+        }
+
         PROFILE_SCOPE("Game Loop"); // Splitting profiling of processing into categories
         {
             PROFILE_SCOPE("Event Processing");
@@ -134,6 +144,10 @@ void Game::Run() {
         {
             PROFILE_SCOPE("Render");
             Render();
+
+            for (auto& train : m_map->m_trains) {
+                train.Update(scaledDt);
+            }
         }
     }
 }
@@ -144,9 +158,8 @@ void Game::ProcessEvents() {
         std::invoke([this, &event] {
             m_eventManager->Dispatch(event);
             m_uiManager->ProcessEvent(event);
+            if (event.type == sf::Event::Closed) { Shutdown(); }
         });
-
-        if (event.type == sf::Event::Closed) { Shutdown(); }
     }
 }
 
@@ -177,22 +190,43 @@ void Game::Render() {
     m_windowManager->GetWindow().display();
 }
 
-void Game::Shutdown() {
-    m_stateManager->SetState("Running", false);
-    m_windowManager->GetWindow().close();
+std::atomic<bool> m_isShuttingDown{ false };
 
+void Game::Shutdown() {
+    bool expected = false;
+    if (!m_isShuttingDown.compare_exchange_strong(expected, true)) {
+        // Shutdown already in progress
+        return;
+    }
+
+    // First, set "Running" to false to ensure the loop exits
+    m_stateManager->SetState("Running", false);
+
+    {
+        std::lock_guard<std::mutex> lock(m_windowManagerMutex);
+        if (m_windowManager) {
+            m_windowManager->GetWindow().close();
+        }
+    }
+
+    // Proceed with shutting down other managers
     if (m_uiManager) { m_uiManager->Shutdown(); }
     if (m_renderer) { m_renderer->Shutdown(); }
     if (m_threadManager) { m_threadManager->Shutdown(); }
 
+    // Reset managers after ensuring the loop has exited
     m_renderer.reset();
     m_threadManager.reset();
     m_inputManager.reset();
     m_camera.reset();
     m_resourceManager.reset();
-    m_windowManager.reset();
     m_uiManager.reset();
     m_pluginManager.reset();
+    
+    {
+        std::lock_guard<std::mutex> lock(m_windowManagerMutex);
+        m_windowManager.reset();
+    }
 }
 
 void Game::RegisterSettings() {

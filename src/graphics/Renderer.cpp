@@ -81,6 +81,20 @@ void Renderer::RenderMap(sf::RenderWindow& window, const Map& map) {
         circleShape.setFillColor(sf::Color::Black);
         window.draw(circleShape);
     }
+
+    // Render all trains
+    for (const auto& train : map.m_trains) {
+        sf::CircleShape trainShape(6.f); // small circle for the train
+        trainShape.setOrigin(6.f, 6.f);
+        if (train.IsSelected()) {
+            trainShape.setFillColor(sf::Color::Yellow);
+        }
+        else {
+            trainShape.setFillColor(sf::Color::Red);
+        }
+        trainShape.setPosition(train.GetPosition());
+        window.draw(trainShape);
+    }
 }
 
 void Renderer::Shutdown() {

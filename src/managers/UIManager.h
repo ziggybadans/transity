@@ -37,6 +37,7 @@ private:
     void RenderVideoSettings();
     void RenderGameplaySettings();
     void RenderPerformanceWindow();
+    void RenderInfoPanel();
     void RenderGUI();
 
     /* UI State */
