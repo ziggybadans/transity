@@ -51,6 +51,16 @@ void SelectCommand::execute() {
     m_map->SelectObject(worldPos);
 }
 
+MoveCommand::MoveCommand(std::shared_ptr<Camera> camera, sf::RenderWindow& window, std::shared_ptr<Map> map)
+    : m_camera(camera), m_window(window), m_map(map) {}
+
+void MoveCommand::execute() {
+    sf::Vector2i pixelPos = sf::Mouse::getPosition(m_window);
+    sf::Vector2f worldPos = m_window.mapPixelToCoords(pixelPos, m_camera->GetView());
+    DEBUG_DEBUG("Attempting to select object at world position ", worldPos.x, ", ", worldPos.y);
+    m_map->MoveSelectedLineHandle(worldPos);
+}
+
 // Implementation of InputManager
 InputManager::InputManager(std::shared_ptr<EventManager> eventMgr,
     std::shared_ptr<StateManager> stateMgr,
@@ -62,7 +72,9 @@ InputManager::InputManager(std::shared_ptr<EventManager> eventMgr,
     , m_window(win)
     , m_camera(camera)
     , m_map(map)
-    , m_config{}
+    , m_isDragging(false)
+    , m_lastMousePos()
+    , m_config {}
 {
     DEBUG_INFO("InputManager: Initializing InputManager");
     m_stateManager->Subscribe("CurrentTool", [this](const std::any& data) {
@@ -89,6 +101,23 @@ void InputManager::HandleInput(float deltaTime) {
         if (sf::Keyboard::isKeyPressed(key)) {
             DEBUG_VERBOSE("InputManager: Key pressed: ", key);
             ExecuteCommand(action);
+        }
+    }
+
+    // Handle mouse dragging
+    if (sf::Mouse::isButtonPressed(sf::Mouse::Left)) {
+        sf::Vector2f currentMousePos = sf::Vector2f(ImGui::GetIO().MousePos.x, ImGui::GetIO().MousePos.y);
+        sf::Vector2f delta = currentMousePos - m_lastMousePos;
+        float distanceSquared = delta.x * delta.x + delta.y * delta.y;
+        float thresholdSquared = m_dragThreshold * m_dragThreshold;
+
+        if (!m_isDragging && distanceSquared >= thresholdSquared) {
+            m_isDragging = true;
+            DEBUG_DEBUG("InputManager: Dragging started.");
+        }
+
+        if (m_isDragging) {
+            ExecuteCommand(InputAction::Move);
         }
     }
 }
@@ -149,17 +178,27 @@ void InputManager::InitializeSubscriptions() {
         );
     }
 
-    // Only Event Manager
+    // Add mouse button released subscription
+    m_eventManager->Subscribe(EventType::MouseButtonReleased,
+        [this](const EventData& data) {
+            if (std::holds_alternative<sf::Event>(data)) {
+                const sf::Event& event = std::get<sf::Event>(data);
+                if (event.mouseButton.button == sf::Mouse::Left) {
+                    m_isDragging = false;
+                }
+            }
+        }
+    );
+
+    // Modify existing MouseButtonPressed subscription
     m_eventManager->Subscribe(EventType::MouseButtonPressed,
         [this](const EventData& data) {
             if (std::holds_alternative<sf::Event>(data)) {
                 const sf::Event& event = std::get<sf::Event>(data);
-
-                if (event.type == sf::Event::MouseButtonPressed) {
-                    if (event.mouseButton.button == sf::Mouse::Left) {
-                        DEBUG_DEBUG("InputManager: Left mouse button clicked.");
-                        ExecuteCommand(InputAction::Select);
-                    }
+                if (event.mouseButton.button == sf::Mouse::Left) {
+                    ExecuteCommand(InputAction::Select);
+                    m_isDragging = false;
+                    m_lastMousePos = sf::Vector2f(event.mouseButton.x, event.mouseButton.y);
                 }
             }
         }
@@ -230,6 +269,7 @@ void InputManager::InitializeCommands() {
     m_commands[InputAction::Place] = std::make_unique<PlaceCommand>(m_camera, m_window, m_map);
     m_commands[InputAction::Draw] = std::make_unique<DrawCommand>(m_camera, m_window, m_map);
     m_commands[InputAction::Select] = std::make_unique<SelectCommand>(m_camera, m_window, m_map);
+    m_commands[InputAction::Move] = std::make_unique<MoveCommand>(m_camera, m_window, m_map);
     DEBUG_DEBUG("InputManager: Tool commands initialized.");
 
     // Initialize key mappings

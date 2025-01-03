@@ -1,7 +1,8 @@
 #pragma once
 
 #include <SFML/Graphics.hpp>
-#include "../world/Map.h"
+
+class Line;
 
 // A simple Train class that travels along a Line's cities sequentially.
 class Train {

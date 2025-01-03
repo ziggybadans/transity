@@ -35,13 +35,18 @@ bool Renderer::InitWithWindow(sf::RenderWindow& window) {
 void Renderer::Render(sf::RenderWindow& window, const Camera& camera, Map& map) {
     if (!m_isInitialized) return;
 
-    RenderMap(window, map);
+    RenderMap(window, map, camera);
 
     std::lock_guard<std::mutex> lock(m_renderMutex);
     camera.ApplyView(window);
 }
 
-void Renderer::RenderMap(sf::RenderWindow& window, Map& map) const {
+void Renderer::RenderMap(sf::RenderWindow& window, Map& map, const Camera& camera) const {
+    sf::Vector2i pixelPos = sf::Mouse::getPosition(window);
+    sf::Vector2f worldPos = window.mapPixelToCoords(pixelPos, camera.GetView());
+    const float BOUNDING_BOX_RADIUS = 10.0f;
+    float boundingBoxSquared = BOUNDING_BOX_RADIUS * BOUNDING_BOX_RADIUS;
+
     /* Map */
     sf::RectangleShape tileShape(sf::Vector2f(Constants::TILE_SIZE, Constants::TILE_SIZE));
     for (size_t y = 0; y < map.GetSize(); ++y) {
@@ -102,9 +107,6 @@ void Renderer::RenderMap(sf::RenderWindow& window, Map& map) const {
                 curve[i].color = color;
             }
 
-            // To simulate thickness, you can draw multiple offset lines or use a shader.
-            // Here, we'll draw a thick line by offsetting perpendicular vectors.
-
             // Simple approach: draw multiple lines shifted perpendicularly
             int lineCount = static_cast<int>(thickness / 2); // Number of offset lines
             float halfThickness = thickness / 2.0f;
@@ -149,12 +151,21 @@ void Renderer::RenderMap(sf::RenderWindow& window, Map& map) const {
                 float handleRadius = 8.0f;
                 sf::Color defaultHandleColor = sf::Color::Green;
                 sf::Color selectedHandleColor = sf::Color::Yellow;
+                sf::Color hoverHandleColor = sf::Color::Blue;
 
                 for (const auto& handle : line.GetHandles()) {
                     sf::CircleShape handleShape(handleRadius);
                     handleShape.setOrigin(handleRadius, handleRadius);
-                    handleShape.setPosition(line.GetPointPosition(handle.index));
-                    handleShape.setFillColor(handle.isSelected ? selectedHandleColor : defaultHandleColor);
+                    sf::Vector2f handlePos = line.GetPointPosition(handle.index);
+                    handleShape.setPosition(handlePos);
+                    sf::Vector2f diff = handlePos - worldPos;
+                    float distanceSquared = diff.x * diff.x + diff.y * diff.y;
+                    if (distanceSquared < boundingBoxSquared) {
+                        handleShape.setFillColor(hoverHandleColor);
+                    }
+                    else {
+                        handleShape.setFillColor(handle.isSelected ? selectedHandleColor : defaultHandleColor);
+                    }
                     window.draw(handleShape);
                 }
             }

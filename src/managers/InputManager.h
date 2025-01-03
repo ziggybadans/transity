@@ -24,7 +24,8 @@ enum class InputAction {
     PanDown,
     Place,
     Draw,
-    Select
+    Select,
+    Move
 };
 
 // Configuration structure for input settings
@@ -88,6 +89,15 @@ public:
     void execute() override;
 };
 
+class MoveCommand : public InputCommand {
+    std::shared_ptr<Camera> m_camera;
+    sf::RenderWindow& m_window;
+    std::shared_ptr<Map> m_map;
+public:
+    MoveCommand(std::shared_ptr<Camera> camera, sf::RenderWindow& window, std::shared_ptr<Map> map);
+    void execute() override;
+};
+
 // InputManager class declaration
 class InputManager {
 public:
@@ -119,4 +129,8 @@ private:
 
     EventManager::SubscriptionID placeSubscription;
     EventManager::SubscriptionID drawSubscription;
+
+    bool m_isDragging;
+    sf::Vector2f m_lastMousePos;
+    float m_dragThreshold = 5.0f;
 };

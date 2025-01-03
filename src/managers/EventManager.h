@@ -12,6 +12,7 @@
 enum class EventType {
     Closed,
     MouseButtonPressed,
+    MouseButtonReleased,
     ToolChanged,
     None // Represents no specific event
 };
@@ -105,6 +106,8 @@ private:
             return EventType::Closed;
         case sf::Event::MouseButtonPressed:
             return EventType::MouseButtonPressed;
+        case sf::Event::MouseButtonReleased:
+            return EventType::MouseButtonReleased;
         default:
             return EventType::None; // No action for unhandled events
         }

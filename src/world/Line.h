@@ -1,8 +1,11 @@
 #pragma once
 #include <string>
+#include <list>
 #include <SFML/Graphics.hpp>
 
 #include "City.h"
+
+class Train;
 
 struct BezierSegment {
 	sf::Vector2f start;
@@ -63,11 +66,16 @@ public:
 	void DeselectHandles();
 	int GetSelectedHandleIndex() const;
 	std::vector<Handle> GetHandles() const { return handles; }
+	void MoveHandle(int index, sf::Vector2f newPos);
+
+	void AddTrain(Train* train) { trains.emplace_back(train); }
+	bool HasTrains() { return trains.empty(); }
 
 private:
 	std::vector<LinePoint> points;
 	std::vector<BezierSegment> bezierSegments;
 	std::vector<Handle> handles;
+	std::vector<Train*> trains;
 	std::string name;
 	sf::Color color;
 	float thickness;

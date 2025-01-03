@@ -273,3 +273,22 @@ void Line::UpdateBezierSegments() {
         bezierSegments.push_back(segment);
     }
 }
+
+void Line::MoveHandle(int index, sf::Vector2f newPos)
+{
+    if (index < 0 || index >= static_cast<int>(points.size())) {
+        DEBUG_ERROR("MoveHandle: Invalid handle index.");
+        return;
+    }
+
+    // If this point is a city, move the city as well
+    if (points[index].isCity && points[index].city != nullptr) {
+        points[index].city->position = newPos;
+    }
+
+    // Always move the line point
+    points[index].position = newPos;
+
+    // Recompute the bezier segments to update the path
+    UpdateBezierSegments();
+}

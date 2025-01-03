@@ -122,6 +122,11 @@ void Map::UseLineMode(sf::Vector2f pos) {
         CreateLine(pos);
     }
     else {
+        if (!selectedLine->HasTrains()) {
+            DEBUG_DEBUG("You need to remove any trains from the line before modifying it!");
+            return;
+        }
+
         // Attempt to find if a city was clicked
         City* clickedCity = FindCityAtPosition(pos);
 
@@ -301,8 +306,30 @@ void Map::AddTrain() {
         DEBUG_DEBUG("No line selected. Cannot add train.");
         return;
     }
-    Train newTrain(selectedLine, 50.0f); // speed = 50.0f (as an example)
-    m_trains.push_back(newTrain);
+    m_trains.emplace_back(selectedLine, 50.0f);
+    selectedLine->AddTrain(&m_trains.back());
+}
+
+void Map::MoveSelectedLineHandle(sf::Vector2f newPos)
+{
+    if (selectedLine == nullptr) {
+        DEBUG_DEBUG("MoveSelectedLineHandle: No line selected.");
+        return;
+    }
+
+    if (!selectedLine->HasTrains()) {
+        DEBUG_DEBUG("You need to remove any trains before you modify the line!");
+        return;
+    }
+
+    int handleIndex = selectedLine->GetSelectedHandleIndex();
+    if (handleIndex == -1) {
+        DEBUG_DEBUG("MoveSelectedLineHandle: No handle is currently selected.");
+        return;
+    }
+
+    // Ask the line to move the handle
+    selectedLine->MoveHandle(handleIndex, newPos);
 }
 
 void Map::SelectTrain(Train* train) {
