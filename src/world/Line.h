@@ -11,18 +11,32 @@ struct BezierSegment {
 	sf::Vector2f end;
 };
 
+struct LinePoint {
+	bool isCity;             // True if it represents a city, false if it's a node
+	sf::Vector2f position;   // The world position of the city or node
+	City* city;              // Pointer to a City if isCity == true, otherwise nullptr
+};
+
 class Line {
 public:
 	enum class Handle{ None, Start, End };
 
-	Line(City* startCity, const std::string& lineName, const sf::Color& lineColor = sf::Color::Blue, float lineThickness = 4.0f)
+	Line(City* startCity, const std::string& lineName,
+		const sf::Color& lineColor = sf::Color::Blue, float lineThickness = 4.0f)
 		: name(lineName), color(lineColor), thickness(lineThickness), selected(false) {
-		cities.push_back(startCity);
+
+		LinePoint p;
+		p.isCity = true;
+		p.position = startCity->position;
+		p.city = startCity;
+		points.push_back(p);
 	}
 
     void AddCityToStart(City* city);
 	void AddCityToEnd(City* city);
-	const std::vector<City*>& GetCities() const { return cities; }
+	const std::vector<City*> GetCities() const;
+	const std::vector<LinePoint>& GetPoints() const { return points; }
+	void AddNode(sf::Vector2f pos);
 
 	void SetThickness(float newThickness) { thickness = newThickness; }
     void SetSelected(bool value) { selected = value; }
@@ -39,7 +53,7 @@ public:
 	Handle GetSelectedHandle() const { return selectedHandle; }
 
 private:
-	std::vector<City*> cities;
+	std::vector<LinePoint> points;
 	std::vector<BezierSegment> bezierSegments;
 	std::string name;
 	sf::Color color;

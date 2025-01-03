@@ -120,17 +120,23 @@ void Map::UseLineMode(sf::Vector2f pos) {
         CreateLine(pos);
     }
     else {
-        // Check which handle is selected
-        Line::Handle handle = selectedLine->GetSelectedHandle();
-        if (handle == Line::Handle::Start) {
-            AddToLineStart(pos);
-        }
-        else if (handle == Line::Handle::End) {
-            AddToLineEnd(pos);
+        City* clickedCity = FindCityAtPosition(pos);
+        if (clickedCity) {
+            // Check which handle is selected
+            Line::Handle handle = selectedLine->GetSelectedHandle();
+            if (handle == Line::Handle::Start) {
+                AddToLineStart(pos);
+            }
+            else if (handle == Line::Handle::End) {
+                AddToLineEnd(pos);
+            }
+            else {
+                // If no handle is selected, default to adding to the end
+                AddToLineEnd(pos);
+            }
         }
         else {
-            // If no handle is selected, default to adding to the end
-            AddToLineEnd(pos);
+            selectedLine->AddNode(pos);
         }
     }
 }
@@ -179,7 +185,8 @@ void Map::AddToLineStart(sf::Vector2f pos) {
     }
 
     // Check if the city is already part of the line
-    if (std::find(selectedLine->GetCities().begin(), selectedLine->GetCities().end(), newCity) != selectedLine->GetCities().end()) {
+    auto cityList = selectedLine->GetCities();
+    if (std::find(cityList.begin(), cityList.end(), newCity) != cityList.end()) {
         DEBUG_DEBUG("The city is already part of the line.");
         return;
     }
@@ -198,7 +205,8 @@ void Map::AddToLineEnd(sf::Vector2f pos) {
     }
 
     // Check if the city is already part of the line
-    if (std::find(selectedLine->GetCities().begin(), selectedLine->GetCities().end(), newCity) != selectedLine->GetCities().end()) {
+    auto cityList = selectedLine->GetCities();
+    if (std::find(cityList.begin(), cityList.end(), newCity) != cityList.end()) {
         DEBUG_DEBUG("The city is already part of the line.");
         return;
     }

@@ -1,15 +1,41 @@
 #include "Line.h"
 
 void Line::AddCityToStart(City* city) {
-    if (cities.empty()) return;
-    cities.insert(cities.begin(), city);
+    LinePoint p;
+    p.isCity = true;
+    p.position = city->position;
+    p.city = city;
+    points.insert(points.begin(), p);
     UpdateBezierSegments();
 }
 
 void Line::AddCityToEnd(City* city) {
-    if (cities.empty()) return;
-    cities.push_back(city);
+    LinePoint p;
+    p.isCity = true;
+    p.position = city->position;
+    p.city = city;
+    points.push_back(p);
     UpdateBezierSegments();
+}
+
+void Line::AddNode(sf::Vector2f pos)
+{
+    LinePoint p;
+    p.isCity = false;
+    p.position = pos;
+    p.city = nullptr;
+    points.push_back(p);
+    UpdateBezierSegments();
+}
+
+const std::vector<City*> Line::GetCities() const {
+    std::vector<City*> cityList;
+    for (const auto& point : points) {
+        if (point.isCity && point.city != nullptr) {
+            cityList.push_back(point.city);
+        }
+    }
+    return cityList;
 }
 
 std::vector<sf::Vector2f> Line::GetPathPoints(int pointsPerSegment, std::vector<int>& cityIndices) const {
@@ -17,7 +43,7 @@ std::vector<sf::Vector2f> Line::GetPathPoints(int pointsPerSegment, std::vector<
     cityIndices.clear();
 
     bool firstSegment = true;
-    int currentIndex = 0;
+    size_t pointIndex = 0; // Index for LinePoint
 
     for (const auto& segment : bezierSegments) {
         std::vector<sf::Vector2f> segmentPoints = ComputeCubicBezier(segment, pointsPerSegment);
@@ -29,28 +55,32 @@ std::vector<sf::Vector2f> Line::GetPathPoints(int pointsPerSegment, std::vector<
             resampledSegment.erase(resampledSegment.begin());
         }
         path.insert(path.end(), resampledSegment.begin(), resampledSegment.end());
-        currentIndex += resampledSegment.size();
-        // Assuming each segment starts at a city
-        cityIndices.push_back(currentIndex - 1);
+
+        // Check if the end point of the segment is a city
+        if (points.size() > pointIndex + 1) { // Ensure we don't go out of bounds
+            if (points[pointIndex + 1].isCity) {
+                cityIndices.push_back(path.size() - 1);
+            }
+        }
 
         if (firstSegment) {
             cityIndices.insert(cityIndices.begin(), 0);
             firstSegment = false;
         }
+
+        pointIndex++;
     }
     return path;
 }
 
-sf::Vector2f Line::GetStartPosition() const
-{
-    if (cities.empty()) return sf::Vector2f(0.f, 0.f);
-    return cities.front()->position;
+sf::Vector2f Line::GetStartPosition() const {
+    if (points.empty()) return sf::Vector2f(0.f, 0.f);
+    return points.front().position;
 }
 
-sf::Vector2f Line::GetEndPosition() const
-{
-    if (cities.empty()) return sf::Vector2f(0.f, 0.f);
-    return cities.back()->position;
+sf::Vector2f Line::GetEndPosition() const {
+    if (points.empty()) return sf::Vector2f(0.f, 0.f);
+    return points.back().position;
 }
 
 std::vector<sf::Vector2f> Line::ComputeCubicBezier(const BezierSegment& segment, int numPoints) const {
@@ -120,24 +150,24 @@ std::vector<sf::Vector2f> Line::ResampleEquallySpaced(const std::vector<sf::Vect
 
 void Line::UpdateBezierSegments() {
     bezierSegments.clear();
-    size_t numCities = cities.size();
-    if (numCities < 2) return; // Need at least two cities to form a segment
+    size_t numPoints = points.size();
+    if (numPoints < 2) return; // Need at least two cities to form a segment
 
     // Precompute directions for all cities
-    std::vector<sf::Vector2f> directions(numCities, sf::Vector2f(0.f, 0.f));
-    for (size_t i = 0; i < numCities; ++i) {
+    std::vector<sf::Vector2f> directions(numPoints, sf::Vector2f(0.f, 0.f));
+    for (size_t i = 0; i < numPoints; ++i) {
         if (i == 0) {
             // For the first city, direction is towards the next city
-            directions[i] = cities[i + 1]->position - cities[i]->position;
+            directions[i] = points[i + 1].position - points[i].position;
         }
-        else if (i == numCities - 1) {
+        else if (i == numPoints - 1) {
             // For the last city, direction is from the previous city
-            directions[i] = cities[i]->position - cities[i - 1]->position;
+            directions[i] = points[i].position - points[i - 1].position;
         }
         else {
             // For middle cities, average the directions
-            sf::Vector2f dirPrev = cities[i]->position - cities[i - 1]->position;
-            sf::Vector2f dirNext = cities[i + 1]->position - cities[i]->position;
+            sf::Vector2f dirPrev = points[i].position - points[i - 1].position;
+            sf::Vector2f dirNext = points[i + 1].position - points[i].position;
             directions[i] = Normalize(dirPrev) + Normalize(dirNext);
         }
         directions[i] = Normalize(directions[i]);
@@ -146,22 +176,22 @@ void Line::UpdateBezierSegments() {
     // Define an offset for control points
     float offset = 50.0f; // Adjust this value as needed for smoothness
 
-    for (size_t i = 0; i < numCities - 1; ++i) {
+    for (size_t i = 0; i < numPoints - 1; ++i) {
         BezierSegment segment;
-        segment.start = cities[i]->position;
-        segment.end = cities[i + 1]->position;
+        segment.start = points[i].position;
+        segment.end = points[i + 1].position;
 
         // Set startControl based on the current city's direction
         segment.startControl = segment.start + directions[i] * offset;
 
         // Set endControl based on the next city's direction
         // If it's the last segment, use the current direction
-        if (i + 1 < numCities) {
+        if (i + 1 < numPoints) {
             segment.endControl = segment.end - directions[i + 1] * offset;
         }
         else {
             // For the last segment, align the endControl with the current direction
-            sf::Vector2f direction = Normalize(cities[i + 1]->position - cities[i]->position);
+            sf::Vector2f direction = Normalize(points[i + 1].position - points[i].position);
             segment.endControl = segment.end - direction * offset;
         }
 
