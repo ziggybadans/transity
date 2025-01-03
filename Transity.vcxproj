@@ -166,6 +166,7 @@
     <ClCompile Include="src\utility\Sandbox.cpp" />
     <ClCompile Include="src\utility\ThreadManager.cpp" />
     <ClCompile Include="src\utility\ThreadPool.cpp" />
+    <ClCompile Include="src\world\Line.cpp" />
     <ClCompile Include="src\world\Map.cpp" />
   </ItemGroup>
   <ItemGroup>

@@ -17,15 +17,20 @@
 class Map {
 public:
     // Constructor
-    Map(unsigned int size);
+    Map(unsigned int size)
+        : m_size(size),
+        m_grid(size, std::vector<int>(size, 1)),
+        m_minRadius(100),
+        selectedLine(nullptr),
+        selectedTrain(nullptr) {}
 
     void SelectObject(sf::Vector2f pos);
     void DeselectAll();
 
     // Tile management
     void SetTile(unsigned int x, unsigned int y, int value);
-    int GetSize() const;
-    int GetTile(int x, int y) const;
+    int GetSize() const { return m_size; }
+    int GetTile(int x, int y) const { return m_grid[x][y]; }
 
     // City management
     void AddCity(sf::Vector2f pos);
@@ -37,9 +42,11 @@ public:
     // Line management
     void UseLineMode(sf::Vector2f pos);
     void CreateLine(sf::Vector2f pos);
-    void AddToLine(sf::Vector2f pos);
+    void AddToLineStart(sf::Vector2f pos);
+    void AddToLineEnd(sf::Vector2f pos);
     void SelectLine(Line* line);
     bool SelectLine(sf::Vector2f pos);
+    bool SelectLineHandle(sf::Vector2f pos);
     void DeselectLine();
     std::list<Line>& GetLines() { return m_lines; }
 
@@ -62,6 +69,7 @@ private:
     void Resize(unsigned int newSize);
     float DistancePointToBezier(sf::Vector2f point, const BezierSegment& segment) const;
     sf::Vector2f ComputeCubicBezierPoint(const BezierSegment& segment, float t) const;
+    City* FindCityAtPosition(sf::Vector2f pos);
 
     // Public members
     std::list<City> m_cities;

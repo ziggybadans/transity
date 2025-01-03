@@ -1,16 +1,5 @@
-// Map.cpp
-
 #include "Map.h"
 
-// Constructor
-Map::Map(unsigned int size)
-    : m_size(size),
-    m_grid(size, std::vector<int>(size, 1)),
-    m_minRadius(100),
-    selectedLine(nullptr),
-    selectedTrain(nullptr) {}
-
-// In Map.cpp
 void Map::SelectObject(sf::Vector2f pos) {
     // Attempt to select a Train first
     bool trainSelected = SelectTrain(pos);
@@ -19,7 +8,13 @@ void Map::SelectObject(sf::Vector2f pos) {
         return;
     }
 
-    // If no Train was selected, attempt to select a Line
+    // If no Train was selected, attempt to select a Line handle
+    if (SelectLineHandle(pos)) {
+        DEBUG_DEBUG("Line handle selected.");
+        return;
+    }
+
+    // If no Handle was selected, attempt to select a Line
     bool lineSelected = SelectLine(pos);
     if (lineSelected) {
         DEBUG_DEBUG("Line selected.");
@@ -49,14 +44,6 @@ void Map::SetTile(unsigned int x, unsigned int y, int value) {
     if (x >= m_size || y >= m_size)
         throw std::out_of_range("Invalid tile coordinates");
     m_grid[x][y] = value;
-}
-
-int Map::GetSize() const {
-    return m_size;
-}
-
-int Map::GetTile(int x, int y) const {
-    return m_grid[x][y];
 }
 
 // City management
@@ -89,15 +76,15 @@ void Map::AddCity(sf::Vector2f pos) {
 void Map::SelectCity(City* city) {
     if (selectedCity != nullptr) {
         // Implement if you have a selectedCity pointer
-        // selectedCity->SetSelected(false);
+        selectedCity->selected = false;
     }
 
     selectedCity = city;
 
     if (selectedCity != nullptr) {
-        // Implement selection visualization if needed
-        // DeselectTrain();
-        // DeselectLine();
+        selectedCity->selected = true;
+        DeselectTrain();
+        DeselectLine();
     }
 }
 
@@ -133,7 +120,18 @@ void Map::UseLineMode(sf::Vector2f pos) {
         CreateLine(pos);
     }
     else {
-        AddToLine(pos);
+        // Check which handle is selected
+        Line::Handle handle = selectedLine->GetSelectedHandle();
+        if (handle == Line::Handle::Start) {
+            AddToLineStart(pos);
+        }
+        else if (handle == Line::Handle::End) {
+            AddToLineEnd(pos);
+        }
+        else {
+            // If no handle is selected, default to adding to the end
+            AddToLineEnd(pos);
+        }
     }
 }
 
@@ -171,32 +169,42 @@ void Map::CreateLine(sf::Vector2f pos) {
     DEBUG_DEBUG("New line created originating from " + firstCity->name + " with name " + name + ". Selected line has been updated for new line.");
 }
 
-void Map::AddToLine(sf::Vector2f pos) {
-    DEBUG_DEBUG("Adding city to line " + selectedLine->GetName() + "...");
-    City* firstCity = nullptr;
+void Map::AddToLineStart(sf::Vector2f pos) {
+    DEBUG_DEBUG("Adding city to the start of line " + selectedLine->GetName() + "...");
 
-    for (auto& city : m_cities) {
-        sf::Vector2f diff = city.position - pos;
-        float distanceSquared = diff.x * diff.x + diff.y * diff.y;
-        if (distanceSquared <= static_cast<float>(m_minRadius * m_minRadius)) {
-            firstCity = &city;
-            break;
-        }
-    }
-
-    if (firstCity == nullptr) {
-        DEBUG_DEBUG("You need to click on a city to add one to the line!");
+    City* newCity = FindCityAtPosition(pos);
+    if (newCity == nullptr) {
+        DEBUG_DEBUG("No valid city found at the clicked position to add to the line.");
         return;
     }
 
-    auto it = std::find(selectedLine->GetCities().begin(), selectedLine->GetCities().end(), firstCity);
-    if (it != selectedLine->GetCities().end()) {
-        DEBUG_DEBUG("You cannot add a city to the same line twice!");
+    // Check if the city is already part of the line
+    if (std::find(selectedLine->GetCities().begin(), selectedLine->GetCities().end(), newCity) != selectedLine->GetCities().end()) {
+        DEBUG_DEBUG("The city is already part of the line.");
         return;
     }
 
-    selectedLine->AddCity(firstCity);
-    DEBUG_DEBUG("Added city with name " + firstCity->name + " to line with name " + selectedLine->GetName());
+    selectedLine->AddCityToStart(newCity);
+    DEBUG_DEBUG("Added city with name " + newCity->name + " to the start of line " + selectedLine->GetName());
+}
+
+void Map::AddToLineEnd(sf::Vector2f pos) {
+    DEBUG_DEBUG("Adding city to the end of line " + selectedLine->GetName() + "...");
+
+    City* newCity = FindCityAtPosition(pos);
+    if (newCity == nullptr) {
+        DEBUG_DEBUG("No valid city found at the clicked position to add to the line.");
+        return;
+    }
+
+    // Check if the city is already part of the line
+    if (std::find(selectedLine->GetCities().begin(), selectedLine->GetCities().end(), newCity) != selectedLine->GetCities().end()) {
+        DEBUG_DEBUG("The city is already part of the line.");
+        return;
+    }
+
+    selectedLine->AddCityToEnd(newCity);
+    DEBUG_DEBUG("Added city with name " + newCity->name + " to the end of line " + selectedLine->GetName());
 }
 
 void Map::SelectLine(Line* line) {
@@ -239,6 +247,36 @@ void Map::DeselectLine() {
         line.SetSelected(false);
     }
     selectedLine = nullptr;
+}
+
+bool Map::SelectLineHandle(sf::Vector2f pos)
+{
+    const float HANDLE_CLICK_THRESHOLD = 10.0f; // Adjust as needed
+
+    if (selectedLine == nullptr)
+        return false;
+
+    // Check start handle
+    sf::Vector2f startPos = selectedLine->GetStartPosition();
+    sf::Vector2f diffStart = startPos - pos;
+    float distanceSquaredStart = diffStart.x * diffStart.x + diffStart.y * diffStart.y;
+    if (distanceSquaredStart <= HANDLE_CLICK_THRESHOLD * HANDLE_CLICK_THRESHOLD) {
+        selectedLine->SetSelectedHandle(Line::Handle::Start);
+        return true;
+    }
+
+    // Check end handle
+    sf::Vector2f endPos = selectedLine->GetEndPosition();
+    sf::Vector2f diffEnd = endPos - pos;
+    float distanceSquaredEnd = diffEnd.x * diffEnd.x + diffEnd.y * diffEnd.y;
+    if (distanceSquaredEnd <= HANDLE_CLICK_THRESHOLD * HANDLE_CLICK_THRESHOLD) {
+        selectedLine->SetSelectedHandle(Line::Handle::End);
+        return true;
+    }
+
+    // If no handle was clicked, deselect handle selection
+    selectedLine->SetSelectedHandle(Line::Handle::None);
+    return false;
 }
 
 // Train management
@@ -341,4 +379,20 @@ sf::Vector2f Map::ComputeCubicBezierPoint(const BezierSegment& segment, float t)
     point += ttt * segment.end; // fourth term
 
     return point;
+}
+
+City* Map::FindCityAtPosition(sf::Vector2f pos)
+{
+    const float CLICK_THRESHOLD = 10.0f; // Adjust as needed
+
+    for (auto& city : m_cities) {
+        sf::Vector2f diff = city.position - pos;
+        float distanceSquared = diff.x * diff.x + diff.y * diff.y;
+
+        if (distanceSquared <= (city.radius + CLICK_THRESHOLD) * (city.radius + CLICK_THRESHOLD)) {
+            return &city;
+        }
+    }
+
+    return nullptr;
 }

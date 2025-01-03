@@ -73,7 +73,7 @@ void UIManager::Render() {
         RenderGUI();
         
         // Settings button in top-right corner
-        ImGui::SetNextWindowPos(ImVec2(static_cast<float>(m_renderWindow->getSize().x) - 140.0f, 10.0f), ImGuiCond_Always);
+        ImGui::SetNextWindowPos(ImVec2(static_cast<float>(m_renderWindow->getSize().x) - 110.0f, 10.0f), ImGuiCond_Always);
         ImGui::SetNextWindowSize(ImVec2(98.0f, 48.0f), ImGuiCond_Always);
         if (ImGui::Begin("Settings Button", nullptr, 
             ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove)) {
@@ -353,7 +353,7 @@ void UIManager::RenderInfoPanel() {
 void UIManager::RenderTimeControls()
 {
     // Position the time controls window at the bottom-left corner
-    ImGui::SetNextWindowPos(ImVec2(10.0f, static_cast<float>(m_renderWindow->getSize().y) - 100.0f), ImGuiCond_Always);
+    ImGui::SetNextWindowPos(ImVec2(10.0f, static_cast<float>(m_renderWindow->getSize().y) - 110.0f), ImGuiCond_Always);
     //ImGui::SetNextWindowSize(ImVec2(200.0f, 90.0f), ImGuiCond_Always);
 
     // Create a window for Time Controls without title bar and with no resizing/moving
@@ -443,11 +443,6 @@ void UIManager::RenderGUI()
             }
         }
         ImGui::SameLine();
-        ImGui::BeginDisabled(m_stateManager->GetState<std::string>("CurrentTool") != std::string("Line"));
-        if (ImGui::Button("Deselect Line", ImVec2(95, 30))) {
-            m_map->DeselectLine();
-        }
-        ImGui::EndDisabled();
         if (ImGui::Button("Add Train", ImVec2(95, 30))) {
             m_map->AddTrain();
         }

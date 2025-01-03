@@ -63,12 +63,8 @@ public:
         }
     }
 
-    std::string GetDirection() const {
-        return m_forward ? "Forward" : "Reverse";
-    }
-
+    std::string GetDirection() const { return m_forward ? "Forward" : "Reverse"; }
     int GetCurrentPointIndex() const { return m_currentPointIndex; }
-
     float GetWaitTime() const { return m_waitTime; }
 
     // Method to draw the train (optional, for visualization)

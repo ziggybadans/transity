@@ -56,6 +56,30 @@ void Renderer::RenderMap(sf::RenderWindow& window, Map& map) const {
         }
     }
 
+    /* Cities */
+    for (City city : map.GetCities()) {
+        sf::CircleShape circleShape(city.radius);
+        circleShape.setOrigin(city.radius, city.radius);
+        circleShape.setPosition(city.position);
+        circleShape.setFillColor(sf::Color::Black);
+        window.draw(circleShape);
+
+        // Create and configure the text label
+        sf::Text text;
+        text.setFont(m_font); // Use the loaded font
+        text.setString(city.name);
+        text.setCharacterSize(14); // Adjust as needed
+        text.setFillColor(sf::Color::Black); // Choose a color that contrasts with the map
+
+        // Calculate the position: below the city
+        sf::FloatRect textBounds = text.getLocalBounds();
+        float textX = city.position.x - textBounds.width / 2;
+        float textY = city.position.y + city.radius + 5.0f; // 5 pixels below the city
+
+        text.setPosition(textX, textY);
+        window.draw(text);
+    }
+
     /* Lines */
     for (const auto& line : map.GetLines()) {
         const std::vector<BezierSegment>& segments = line.GetBezierSegments();
@@ -119,34 +143,34 @@ void Renderer::RenderMap(sf::RenderWindow& window, Map& map) const {
 
             // Draw the main curve
             window.draw(curve);
+
+            if (line.IsSelected()) {
+                // Define handle properties
+                float handleRadius = 8.0f;
+                sf::Color defaultHandleColor = sf::Color::Green;
+                sf::Color selectedHandleColor = sf::Color::Yellow;
+
+                // Determine which handle is selected
+                Line::Handle selectedHandle = line.GetSelectedHandle();
+
+                // Draw start handle
+                sf::CircleShape startHandle(handleRadius);
+                startHandle.setOrigin(handleRadius, handleRadius);
+                startHandle.setPosition(line.GetStartPosition());
+                startHandle.setFillColor(selectedHandle == Line::Handle::Start ? selectedHandleColor : defaultHandleColor);
+                window.draw(startHandle);
+
+                // Draw end handle
+                sf::CircleShape endHandle(handleRadius);
+                endHandle.setOrigin(handleRadius, handleRadius);
+                endHandle.setPosition(line.GetEndPosition());
+                endHandle.setFillColor(selectedHandle == Line::Handle::End ? selectedHandleColor : defaultHandleColor);
+                window.draw(endHandle);
+            }
         }
     }
 
-    /* Cities */
-    for (City city : map.GetCities()) {
-        sf::CircleShape circleShape(city.radius);
-        circleShape.setOrigin(city.radius, city.radius);
-        circleShape.setPosition(city.position);
-        circleShape.setFillColor(sf::Color::Black);
-        window.draw(circleShape);
-
-        // Create and configure the text label
-        sf::Text text;
-        text.setFont(m_font); // Use the loaded font
-        text.setString(city.name);
-        text.setCharacterSize(14); // Adjust as needed
-        text.setFillColor(sf::Color::Black); // Choose a color that contrasts with the map
-
-        // Calculate the position: below the city
-        sf::FloatRect textBounds = text.getLocalBounds();
-        float textX = city.position.x - textBounds.width / 2;
-        float textY = city.position.y + city.radius + 5.0f; // 5 pixels below the city
-
-        text.setPosition(textX, textY);
-        window.draw(text);
-    }
-
-    // Render all trains
+    /* Trains */
     for (const auto& train : map.GetTrains()) {
         sf::CircleShape trainShape(6.f); // small circle for the train
         trainShape.setOrigin(6.f, 6.f);
