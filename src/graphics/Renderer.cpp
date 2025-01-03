@@ -144,28 +144,19 @@ void Renderer::RenderMap(sf::RenderWindow& window, Map& map) const {
             // Draw the main curve
             window.draw(curve);
 
+            // Draw handles for all nodes if the line is selected
             if (line.IsSelected()) {
-                // Define handle properties
                 float handleRadius = 8.0f;
                 sf::Color defaultHandleColor = sf::Color::Green;
                 sf::Color selectedHandleColor = sf::Color::Yellow;
 
-                // Determine which handle is selected
-                Line::Handle selectedHandle = line.GetSelectedHandle();
-
-                // Draw start handle
-                sf::CircleShape startHandle(handleRadius);
-                startHandle.setOrigin(handleRadius, handleRadius);
-                startHandle.setPosition(line.GetStartPosition());
-                startHandle.setFillColor(selectedHandle == Line::Handle::Start ? selectedHandleColor : defaultHandleColor);
-                window.draw(startHandle);
-
-                // Draw end handle
-                sf::CircleShape endHandle(handleRadius);
-                endHandle.setOrigin(handleRadius, handleRadius);
-                endHandle.setPosition(line.GetEndPosition());
-                endHandle.setFillColor(selectedHandle == Line::Handle::End ? selectedHandleColor : defaultHandleColor);
-                window.draw(endHandle);
+                for (const auto& handle : line.GetHandles()) {
+                    sf::CircleShape handleShape(handleRadius);
+                    handleShape.setOrigin(handleRadius, handleRadius);
+                    handleShape.setPosition(line.GetPointPosition(handle.index));
+                    handleShape.setFillColor(handle.isSelected ? selectedHandleColor : defaultHandleColor);
+                    window.draw(handleShape);
+                }
             }
         }
     }

@@ -17,10 +17,15 @@ struct LinePoint {
 	City* city;              // Pointer to a City if isCity == true, otherwise nullptr
 };
 
+struct Handle {
+	int index; // Index of the node in the points vector
+	bool isSelected;
+
+	Handle(int idx) : index(idx), isSelected(false) {}
+};
+
 class Line {
 public:
-	enum class Handle{ None, Start, End };
-
 	Line(City* startCity, const std::string& lineName,
 		const sf::Color& lineColor = sf::Color::Blue, float lineThickness = 4.0f)
 		: name(lineName), color(lineColor), thickness(lineThickness), selected(false) {
@@ -30,10 +35,13 @@ public:
 		p.position = startCity->position;
 		p.city = startCity;
 		points.push_back(p);
+
+		handles.emplace_back(0);
 	}
 
     void AddCityToStart(City* city);
 	void AddCityToEnd(City* city);
+	void InsertCityAfter(int index, City* city);
 	const std::vector<City*> GetCities() const;
 	const std::vector<LinePoint>& GetPoints() const { return points; }
 	void AddNode(sf::Vector2f pos);
@@ -49,17 +57,21 @@ public:
 	const std::vector<BezierSegment>& GetBezierSegments() const { return bezierSegments; }
 	sf::Vector2f GetStartPosition() const;
 	sf::Vector2f GetEndPosition() const;
-	void SetSelectedHandle(Handle handle) { selectedHandle = handle; }
-	Handle GetSelectedHandle() const { return selectedHandle; }
+	sf::Vector2f GetPointPosition(int index) const;
+
+	void SelectHandle(int index);
+	void DeselectHandles();
+	int GetSelectedHandleIndex() const;
+	std::vector<Handle> GetHandles() const { return handles; }
 
 private:
 	std::vector<LinePoint> points;
 	std::vector<BezierSegment> bezierSegments;
+	std::vector<Handle> handles;
 	std::string name;
 	sf::Color color;
 	float thickness;
     bool selected;
-	Handle selectedHandle;
 
     std::vector<sf::Vector2f> ComputeCubicBezier(const BezierSegment& segment, int numPoints) const;
     std::vector<float> CalculateCumulativeArcLength(const std::vector<sf::Vector2f>& points) const;

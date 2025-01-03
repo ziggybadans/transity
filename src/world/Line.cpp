@@ -1,4 +1,5 @@
 #include "Line.h"
+#include "../Debug.h"
 
 void Line::AddCityToStart(City* city) {
     LinePoint p;
@@ -6,6 +7,14 @@ void Line::AddCityToStart(City* city) {
     p.position = city->position;
     p.city = city;
     points.insert(points.begin(), p);
+
+    // Insert a new handle at the beginning
+    handles.insert(handles.begin(), Handle(0));
+    // Update existing handle indices
+    for (size_t i = 1; i < handles.size(); ++i) {
+        handles[i].index = i;
+    }
+
     UpdateBezierSegments();
 }
 
@@ -15,6 +24,37 @@ void Line::AddCityToEnd(City* city) {
     p.position = city->position;
     p.city = city;
     points.push_back(p);
+
+    // Add a new handle at the end
+    handles.emplace_back(handles.size());
+
+    UpdateBezierSegments();
+}
+
+void Line::InsertCityAfter(int index, City* city) {
+    if (index < 0 || index >= static_cast<int>(points.size())) {
+        DEBUG_ERROR("InsertCityAfter: Invalid handle index.");
+        return;
+    }
+
+    // Create a new LinePoint for the city
+    LinePoint newPoint;
+    newPoint.isCity = true;
+    newPoint.position = city->position;
+    newPoint.city = city;
+
+    // Insert the new point after the specified index
+    points.insert(points.begin() + index + 1, newPoint);
+
+    // Create and insert a new handle for this point
+    handles.emplace(handles.begin() + index + 1, Handle(index + 1));
+
+    // Update handle indices for subsequent handles
+    for (size_t i = index + 2; i < handles.size(); ++i) {
+        handles[i].index = static_cast<int>(i);
+    }
+
+    // Recompute Bezier segments to accommodate the new point
     UpdateBezierSegments();
 }
 
@@ -25,6 +65,10 @@ void Line::AddNode(sf::Vector2f pos)
     p.position = pos;
     p.city = nullptr;
     points.push_back(p);
+
+    // Add a new handle for the node
+    handles.emplace_back(handles.size());
+
     UpdateBezierSegments();
 }
 
@@ -81,6 +125,37 @@ sf::Vector2f Line::GetStartPosition() const {
 sf::Vector2f Line::GetEndPosition() const {
     if (points.empty()) return sf::Vector2f(0.f, 0.f);
     return points.back().position;
+}
+
+sf::Vector2f Line::GetPointPosition(int index) const {
+    if (index >= 0 && index < points.size()) {
+        return points[index].position;
+    }
+    return sf::Vector2f(0.f, 0.f);
+}
+
+void Line::SelectHandle(int index) {
+    DeselectHandles();
+    for (auto& handle : handles) {
+        if (handle.index == index) {
+            handle.isSelected = true;
+        }
+    }
+}
+
+void Line::DeselectHandles() {
+    for (auto& handle : handles) {
+        handle.isSelected = false;
+    }
+}
+
+int Line::GetSelectedHandleIndex() const {
+    for (const auto& handle : handles) {
+        if (handle.isSelected) {
+            return handle.index;
+        }
+    }
+    return -1; // No handle selected
 }
 
 std::vector<sf::Vector2f> Line::ComputeCubicBezier(const BezierSegment& segment, int numPoints) const {

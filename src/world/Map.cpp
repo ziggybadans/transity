@@ -115,27 +115,42 @@ void Map::DeselectCity() {
 
 // Line management
 void Map::UseLineMode(sf::Vector2f pos) {
-    DEBUG_DEBUG("Choosing to either create new line or add to existing line.");
+    DEBUG_DEBUG("Choosing to either create a new line or modify an existing line.");
+
     if (selectedLine == nullptr) {
+        // No line is currently selected; create a new line starting at 'pos'
         CreateLine(pos);
     }
     else {
+        // Attempt to find if a city was clicked
         City* clickedCity = FindCityAtPosition(pos);
+
         if (clickedCity) {
-            // Check which handle is selected
-            Line::Handle handle = selectedLine->GetSelectedHandle();
-            if (handle == Line::Handle::Start) {
-                AddToLineStart(pos);
-            }
-            else if (handle == Line::Handle::End) {
-                AddToLineEnd(pos);
+            // Retrieve the index of the selected handle (node)
+            int selectedHandleIndex = selectedLine->GetSelectedHandleIndex();
+
+            if (selectedHandleIndex != -1) {
+                // Handle is selected; determine where to add the new city relative to it
+                if (selectedHandleIndex == 0) {
+                    // Selected handle is the first node; add the city to the start
+                    AddToLineStart(clickedCity->position);
+                }
+                else if (selectedHandleIndex == static_cast<int>(selectedLine->GetPoints().size() - 1)) {
+                    // Selected handle is the last node; add the city to the end
+                    AddToLineEnd(clickedCity->position);
+                }
+                else {
+                    // Selected handle is a middle node; insert the city after this handle
+                    selectedLine->InsertCityAfter(selectedHandleIndex, clickedCity);
+                }
             }
             else {
-                // If no handle is selected, default to adding to the end
-                AddToLineEnd(pos);
+                // No specific handle is selected; default action is to add to the end
+                AddToLineEnd(clickedCity->position);
             }
         }
         else {
+            // No city was clicked; add a generic node at the clicked position
             selectedLine->AddNode(pos);
         }
     }
@@ -257,33 +272,26 @@ void Map::DeselectLine() {
     selectedLine = nullptr;
 }
 
-bool Map::SelectLineHandle(sf::Vector2f pos)
-{
+bool Map::SelectLineHandle(sf::Vector2f pos) {
     const float HANDLE_CLICK_THRESHOLD = 10.0f; // Adjust as needed
 
     if (selectedLine == nullptr)
         return false;
 
-    // Check start handle
-    sf::Vector2f startPos = selectedLine->GetStartPosition();
-    sf::Vector2f diffStart = startPos - pos;
-    float distanceSquaredStart = diffStart.x * diffStart.x + diffStart.y * diffStart.y;
-    if (distanceSquaredStart <= HANDLE_CLICK_THRESHOLD * HANDLE_CLICK_THRESHOLD) {
-        selectedLine->SetSelectedHandle(Line::Handle::Start);
-        return true;
+    // Iterate through all handles
+    for (const auto& handle : selectedLine->GetHandles()) {
+        sf::Vector2f handlePos = selectedLine->GetPointPosition(handle.index);
+        sf::Vector2f diff = handlePos - pos;
+        float distanceSquared = diff.x * diff.x + diff.y * diff.y;
+
+        if (distanceSquared <= HANDLE_CLICK_THRESHOLD * HANDLE_CLICK_THRESHOLD) {
+            selectedLine->SelectHandle(handle.index);
+            return true;
+        }
     }
 
-    // Check end handle
-    sf::Vector2f endPos = selectedLine->GetEndPosition();
-    sf::Vector2f diffEnd = endPos - pos;
-    float distanceSquaredEnd = diffEnd.x * diffEnd.x + diffEnd.y * diffEnd.y;
-    if (distanceSquaredEnd <= HANDLE_CLICK_THRESHOLD * HANDLE_CLICK_THRESHOLD) {
-        selectedLine->SetSelectedHandle(Line::Handle::End);
-        return true;
-    }
-
-    // If no handle was clicked, deselect handle selection
-    selectedLine->SetSelectedHandle(Line::Handle::None);
+    // If no handle was clicked, deselect all handles
+    selectedLine->DeselectHandles();
     return false;
 }
 
