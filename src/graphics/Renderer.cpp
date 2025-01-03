@@ -60,7 +60,13 @@ void Renderer::RenderMap(sf::RenderWindow& window, Map& map) const {
     for (const auto& line : map.GetLines()) {
         const std::vector<BezierSegment>& segments = line.GetBezierSegments();
         float thickness = line.GetThickness();
-        sf::Color color = line.GetColor();
+        sf::Color color = sf::Color::Black;
+        if (line.IsSelected()) {
+            color = sf::Color::Yellow;
+        }
+        else {
+            color = line.GetColor();
+        }
 
         for (const auto& segment : segments) {
             std::vector<sf::Vector2f> bezierPoints = ComputeCubicBezier(segment, 100);

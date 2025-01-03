@@ -47,9 +47,8 @@ SelectCommand::SelectCommand(std::shared_ptr<Camera> camera, sf::RenderWindow& w
 void SelectCommand::execute() {
     sf::Vector2i pixelPos = sf::Mouse::getPosition(m_window);
     sf::Vector2f worldPos = m_window.mapPixelToCoords(pixelPos, m_camera->GetView());
-    DEBUG_DEBUG("Attempting to select train.");
-    //m_map->SelectLine(worldPos);
-    m_map->SelectTrain(worldPos);
+    DEBUG_DEBUG("Attempting to select object at world position ", worldPos.x, ", ", worldPos.y);
+    m_map->SelectObject(worldPos);
 }
 
 // Implementation of InputManager
@@ -248,6 +247,10 @@ void InputManager::InitializeCommands() {
 }
 
 void InputManager::ExecuteCommand(InputAction action) {
+    if (ImGui::GetIO().WantCaptureMouse) {
+        return;
+    }
+
     DEBUG_DEBUG("InputManager: Executing command for action: ", static_cast<int>(action));
     if (auto it = m_commands.find(action); it != m_commands.end()) {
         it->second->execute();

@@ -13,8 +13,8 @@ struct BezierSegment {
 
 class Line {
 public:
-	Line(City* startCity, const std::string& lineName, const sf::Color& lineColor = sf::Color::Blue, float lineThickness = 8.0f)
-		: name(lineName), color(lineColor), thickness(lineThickness) {
+	Line(City* startCity, const std::string& lineName, const sf::Color& lineColor = sf::Color::Blue, float lineThickness = 4.0f)
+		: name(lineName), color(lineColor), thickness(lineThickness), selected(false) {
 		cities.push_back(startCity);
 	}
 
@@ -36,9 +36,14 @@ public:
 		thickness = newThickness;
 	}
 
+    void SetSelected(bool value) {
+        selected = value;
+    }
+
 	std::string GetName() { return name; }
 	sf::Color GetColor() const { return color; }
 	float GetThickness() const { return thickness; }
+    bool IsSelected() const { return selected; }
 
     std::vector<sf::Vector2f> GetPathPoints(int pointsPerSegment, std::vector<int>& cityIndices) const {
         std::vector<sf::Vector2f> path;
@@ -75,6 +80,7 @@ private:
 	std::string name;
 	sf::Color color;
 	float thickness;
+    bool selected;
 
     std::vector<sf::Vector2f> ComputeCubicBezier(const BezierSegment& segment, int numPoints) const {
         std::vector<sf::Vector2f> points;

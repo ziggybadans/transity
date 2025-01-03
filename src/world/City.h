@@ -8,6 +8,7 @@ struct City {
 	unsigned int population;
 
 	float radius;
+	bool selected;
 
 	City(const std::string& cityName,
 		const sf::Vector2f& cityPosition,
@@ -16,7 +17,8 @@ struct City {
 		: name(cityName),
 		position(cityPosition),
 		population(cityPopulation),
-		radius(cityRadius) {}
+		radius(cityRadius),
+		selected(false) {}
 
 	bool operator==(const City& other) const {
 		return name == other.name && position == other.position;

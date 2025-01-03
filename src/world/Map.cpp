@@ -10,6 +10,40 @@ Map::Map(unsigned int size)
     selectedLine(nullptr),
     selectedTrain(nullptr) {}
 
+// In Map.cpp
+void Map::SelectObject(sf::Vector2f pos) {
+    // Attempt to select a Train first
+    bool trainSelected = SelectTrain(pos);
+    if (trainSelected) {
+        DEBUG_DEBUG("Train selected.");
+        return;
+    }
+
+    // If no Train was selected, attempt to select a Line
+    bool lineSelected = SelectLine(pos);
+    if (lineSelected) {
+        DEBUG_DEBUG("Line selected.");
+        return;
+    }
+
+    // If no Line was selected, attempt to select a City
+    bool citySelected = SelectCity(pos);
+    if (citySelected) {
+        DEBUG_DEBUG("City selected.");
+        return;
+    }
+
+    // If no object was selected, deselect any currently selected objects
+    DeselectAll();
+    DEBUG_DEBUG("No object selected. All selections cleared.");
+}
+
+void Map::DeselectAll() {
+    DeselectTrain();
+    DeselectLine();
+    DeselectCity();
+}
+
 // Tile management
 void Map::SetTile(unsigned int x, unsigned int y, int value) {
     if (x >= m_size || y >= m_size)
@@ -50,6 +84,46 @@ void Map::AddCity(sf::Vector2f pos) {
     unsigned int population = 1000;
 
     m_cities.emplace_back(name, pos, population); // Adds to the list of cities
+}
+
+void Map::SelectCity(City* city) {
+    if (selectedCity != nullptr) {
+        // Implement if you have a selectedCity pointer
+        // selectedCity->SetSelected(false);
+    }
+
+    selectedCity = city;
+
+    if (selectedCity != nullptr) {
+        // Implement selection visualization if needed
+        // DeselectTrain();
+        // DeselectLine();
+    }
+}
+
+bool Map::SelectCity(sf::Vector2f pos) {
+    const float CLICK_THRESHOLD = 10.0f; // Adjust as needed
+
+    for (auto& city : m_cities) {
+        sf::Vector2f diff = city.position - pos;
+        float distanceSquared = diff.x * diff.x + diff.y * diff.y;
+
+        if (distanceSquared <= (city.radius + CLICK_THRESHOLD) * (city.radius + CLICK_THRESHOLD)) {
+            SelectCity(&city);
+            return true;
+        }
+    }
+
+    DeselectCity();
+    return false;
+}
+
+void Map::DeselectCity() {
+    DEBUG_DEBUG("Any city has been deselected.");
+    for (auto& city : m_cities) {
+        city.selected = false;
+    }
+    selectedCity = nullptr;
 }
 
 // Line management
@@ -126,52 +200,44 @@ void Map::AddToLine(sf::Vector2f pos) {
 }
 
 void Map::SelectLine(Line* line) {
-    DEBUG_DEBUG("Line of name " + line->GetName() + " has been selected.");
+    if (selectedLine != nullptr) {
+        selectedLine->SetSelected(false);
+    }
+
     selectedLine = line;
+
+    if (selectedLine != nullptr) {
+        selectedLine->SetSelected(true);
+        DeselectTrain();
+        DeselectCity();
+    }
 }
 
-void Map::SelectLine(sf::Vector2f pos) {
-    const float CLICK_THRESHOLD = 5.0f; // Adjust this value to change click sensitivity
+bool Map::SelectLine(sf::Vector2f pos) {
+    const float CLICK_THRESHOLD = 5.0f; // Adjust as needed
 
     for (auto& line : m_lines) {
-        std::vector<City*> cities = line.GetCities();
-
-        // Need at least 2 cities to form a line
-        for (size_t i = 0; i < cities.size() - 1; ++i) {
-            sf::Vector2f start = cities[i]->position;
-            sf::Vector2f end = cities[i + 1]->position;
-
-            // Calculate distance from point to line segment
-            sf::Vector2f lineVec = end - start;
-            sf::Vector2f pointVec = pos - start;
-
-            float lineLength = std::sqrt(lineVec.x * lineVec.x + lineVec.y * lineVec.y);
-
-            // Normalize line vector
-            sf::Vector2f lineDir = lineVec / lineLength;
-
-            // Project point onto line
-            float projection = pointVec.x * lineDir.x + pointVec.y * lineDir.y;
-
-            // Check if projection is within line segment
-            if (projection >= 0 && projection <= lineLength) {
-                // Calculate perpendicular distance
-                sf::Vector2f projectedPoint = start + lineDir * projection;
-                sf::Vector2f diff = pos - projectedPoint;
-                float distance = std::sqrt(diff.x * diff.x + diff.y * diff.y);
-
-                if (distance <= CLICK_THRESHOLD) {
-                    SelectLine(&line);
-                    DEBUG_DEBUG("Line selected!");
-                    return;
-                }
+        // Iterate through all segments of the line
+        const std::vector<BezierSegment>& segments = line.GetBezierSegments();
+        for (const auto& segment : segments) {
+            // Calculate distance from click position to the segment
+            float distance = DistancePointToBezier(pos, segment);
+            if (distance <= CLICK_THRESHOLD) {
+                SelectLine(&line);
+                return true;
             }
         }
     }
+
+    DeselectLine();
+    return false;
 }
 
 void Map::DeselectLine() {
     DEBUG_DEBUG("Any line has been deselected.");
+    for (auto& line : m_lines) {
+        line.SetSelected(false);
+    }
     selectedLine = nullptr;
 }
 
@@ -185,13 +251,27 @@ void Map::AddTrain() {
     m_trains.push_back(newTrain);
 }
 
-void Map::SelectTrain(sf::Vector2f pos) {
-    const float CLICK_THRESHOLD = 10.0f; // Adjust this value as needed
+void Map::SelectTrain(Train* train) {
+    if (selectedTrain != nullptr) {
+        selectedTrain->SetSelected(false);
+    }
+
+    selectedTrain = train;
+
+    if (selectedTrain != nullptr) {
+        selectedTrain->SetSelected(true);
+        DeselectLine();
+        DeselectCity();
+    }
+}
+
+bool Map::SelectTrain(sf::Vector2f pos) {
+    const float CLICK_THRESHOLD = 10.0f; // Adjust as needed
     Train* closestTrain = nullptr;
     float closestDistanceSquared = CLICK_THRESHOLD * CLICK_THRESHOLD;
 
     for (auto& train : m_trains) {
-        sf::Vector2f trainPos = train.GetPosition(); // Assuming Train has GetPosition()
+        sf::Vector2f trainPos = train.GetPosition();
         sf::Vector2f diff = trainPos - pos;
         float distanceSquared = diff.x * diff.x + diff.y * diff.y;
 
@@ -203,10 +283,11 @@ void Map::SelectTrain(sf::Vector2f pos) {
 
     if (closestTrain != nullptr) {
         SelectTrain(closestTrain);
+        return true;
     }
     else {
-        DEBUG_DEBUG("No train found near the clicked position.");
         DeselectTrain();
+        return false;
     }
 }
 
@@ -218,20 +299,6 @@ void Map::DeselectTrain() {
     selectedTrain = nullptr;
 }
 
-void Map::SelectTrain(Train* train) {
-    if (selectedTrain != nullptr) {
-        // Optionally, deselect the previously selected train
-        selectedTrain->SetSelected(false); // Assuming Train has SetSelected
-    }
-
-    selectedTrain = train;
-
-    if (selectedTrain != nullptr) {
-        selectedTrain->SetSelected(true); // Highlight the selected train
-        DEBUG_DEBUG("Train selected.");
-    }
-}
-
 // Helper functions
 void Map::Resize(unsigned int newSize) {
     m_grid.resize(newSize, std::vector<int>(newSize, 1));
@@ -239,4 +306,39 @@ void Map::Resize(unsigned int newSize) {
         row.resize(newSize, 1);
     }
     m_size = newSize;
+}
+
+float Map::DistancePointToBezier(sf::Vector2f point, const BezierSegment& segment) const
+{
+    // Sample points along the Bezier curve and find the minimum distance
+    const int NUM_SAMPLES = 100;
+    float minDistance = std::numeric_limits<float>::max();
+
+    for (int i = 0; i <= NUM_SAMPLES; ++i) {
+        float t = static_cast<float>(i) / NUM_SAMPLES;
+        sf::Vector2f bezierPoint = ComputeCubicBezierPoint(segment, t);
+        sf::Vector2f diff = point - bezierPoint;
+        float distance = std::sqrt(diff.x * diff.x + diff.y * diff.y);
+        if (distance < minDistance) {
+            minDistance = distance;
+        }
+    }
+
+    return minDistance;
+}
+
+sf::Vector2f Map::ComputeCubicBezierPoint(const BezierSegment& segment, float t) const
+{
+    float u = 1.0f - t;
+    float tt = t * t;
+    float uu = u * u;
+    float uuu = uu * u;
+    float ttt = tt * t;
+
+    sf::Vector2f point = uuu * segment.start; // first term
+    point += 3 * uu * t * segment.startControl; // second term
+    point += 3 * u * tt * segment.endControl; // third term
+    point += ttt * segment.end; // fourth term
+
+    return point;
 }
