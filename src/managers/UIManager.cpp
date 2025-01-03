@@ -347,6 +347,10 @@ void UIManager::RenderInfoPanel() {
         ImGui::Text("Wait Time: %.2f s", waitTime);
     }
 
+    if (ImGui::Button("Remove", ImVec2(70, 30))) {
+        m_map->RemoveTrain();
+    }
+
     ImGui::End();
 }
 

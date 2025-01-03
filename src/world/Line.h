@@ -69,6 +69,7 @@ public:
 	void MoveHandle(int index, sf::Vector2f newPos);
 
 	void AddTrain(Train* train) { trains.emplace_back(train); }
+	void RemoveTrain(Train* train) { trains.erase(std::remove(trains.begin(), trains.end(), train), trains.end()); }
 	bool HasTrains() { return trains.empty(); }
 
 private:

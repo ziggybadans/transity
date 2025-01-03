@@ -186,7 +186,7 @@ void Game::UpdateNonSimulation(float dt) {
 
 void Game::UpdateSimulation(float scaledDt) {
     for (auto& train : m_map->GetTrains()) {
-        train.Update(scaledDt);
+        train->Update(scaledDt);
     }
 }
 

@@ -56,8 +56,9 @@ public:
     void SelectTrain(Train* train);
     bool SelectTrain(sf::Vector2f pos);
     void DeselectTrain();
+    void RemoveTrain();
     Train* GetSelectedTrain() { return selectedTrain; }
-    std::list<Train>& GetTrains() { return m_trains; }
+    std::vector<std::unique_ptr<Train>>& GetTrains() { return m_trains; }
 
 private:
     // Grid representation
@@ -75,7 +76,7 @@ private:
     // Public members
     std::list<City> m_cities;
     std::list<Line> m_lines;
-    std::list<Train> m_trains;
+    std::vector<std::unique_ptr<Train>> m_trains;
     City* selectedCity;
     Line* selectedLine;
     Train* selectedTrain;

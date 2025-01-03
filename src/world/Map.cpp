@@ -306,8 +306,11 @@ void Map::AddTrain() {
         DEBUG_DEBUG("No line selected. Cannot add train.");
         return;
     }
-    m_trains.emplace_back(selectedLine, 50.0f);
-    selectedLine->AddTrain(&m_trains.back());
+    // Create a new Train object and add it to the vector
+    auto newTrain = std::make_unique<Train>(selectedLine, 50.0f);
+    Train* trainPtr = newTrain.get(); // Get raw pointer for Line reference
+    m_trains.emplace_back(std::move(newTrain));
+    selectedLine->AddTrain(trainPtr);
 }
 
 void Map::MoveSelectedLineHandle(sf::Vector2f newPos)
@@ -352,13 +355,13 @@ bool Map::SelectTrain(sf::Vector2f pos) {
     float closestDistanceSquared = CLICK_THRESHOLD * CLICK_THRESHOLD;
 
     for (auto& train : m_trains) {
-        sf::Vector2f trainPos = train.GetPosition();
+        sf::Vector2f trainPos = train->GetPosition();
         sf::Vector2f diff = trainPos - pos;
         float distanceSquared = diff.x * diff.x + diff.y * diff.y;
 
         if (distanceSquared < closestDistanceSquared) {
             closestDistanceSquared = distanceSquared;
-            closestTrain = &train;
+            closestTrain = train.get();
         }
     }
 
@@ -375,9 +378,31 @@ bool Map::SelectTrain(sf::Vector2f pos) {
 void Map::DeselectTrain() {
     DEBUG_DEBUG("Any train has been deselected.");
     for (auto& train : m_trains) {
-        train.SetSelected(false);
+        train->SetSelected(false);
     }
     selectedTrain = nullptr;
+}
+
+void Map::RemoveTrain() {
+    if (!selectedTrain) { return; }
+
+    // Remove train from the line as you do now
+    selectedTrain->GetRoute()->RemoveTrain(selectedTrain);
+
+    // Erase from the vector
+    m_trains.erase(
+        std::remove_if(m_trains.begin(), m_trains.end(),
+            [this](const std::unique_ptr<Train>& tptr) {
+                return tptr.get() == selectedTrain;
+            }
+        ),
+        m_trains.end()
+    );
+
+    // selectedTrain is now invalid
+    selectedTrain = nullptr;
+
+    DeselectTrain();
 }
 
 // Helper functions

@@ -176,13 +176,13 @@ void Renderer::RenderMap(sf::RenderWindow& window, Map& map, const Camera& camer
     for (const auto& train : map.GetTrains()) {
         sf::CircleShape trainShape(6.f); // small circle for the train
         trainShape.setOrigin(6.f, 6.f);
-        if (train.IsSelected()) {
+        if (train->IsSelected()) {
             trainShape.setFillColor(sf::Color::Yellow);
         }
         else {
             trainShape.setFillColor(sf::Color::Red);
         }
-        trainShape.setPosition(train.GetPosition());
+        trainShape.setPosition(train->GetPosition());
         window.draw(trainShape);
     }
 }
