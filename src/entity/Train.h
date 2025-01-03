@@ -10,7 +10,7 @@ public:
     // Constructor
     // route: which line the train will travel on
     // maxSpeed: maximum speed in pixels-per-second
-    Train(Line* route, float maxSpeed = 50.0f)
+    Train(Line* route, std::string id, float maxSpeed = 50.0f)
         : m_route(route),
         m_maxSpeed(maxSpeed),
         m_currentSpeed(0.0f),
@@ -19,7 +19,8 @@ public:
         m_currentPointIndex(0),
         m_forward(true),
         m_state(State::Waiting),
-        m_waitTime(STOP_DURATION)
+        m_waitTime(STOP_DURATION),
+        m_id(id)
     {
         // Generate the entire path (with intermediate Bezier points).
         // `m_cityIndices` will mark which indices correspond to actual cities.
@@ -45,6 +46,7 @@ public:
     }
 
     // Simple getters
+    std::string GetID() const { return m_id; }
     sf::Vector2f GetPosition() const { return m_position; }
     float GetSpeed() const { return m_currentSpeed; }
     float GetMaxSpeed() const { return m_maxSpeed; }
@@ -83,6 +85,7 @@ private:
         Waiting
     };
 
+    std::string m_id;               // Unique id for the train
     Line* m_route;                // Pointer to the line this train travels on
     float m_maxSpeed;             // Maximum speed (pixels per second)
     float m_currentSpeed;         // Current speed

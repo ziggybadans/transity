@@ -71,6 +71,7 @@ public:
 	void AddTrain(Train* train) { trains.emplace_back(train); }
 	void RemoveTrain(Train* train) { trains.erase(std::remove(trains.begin(), trains.end(), train), trains.end()); }
 	bool HasTrains() { return trains.empty(); }
+	const std::vector<Train*>& GetTrains() const { return trains; }
 
 private:
 	std::vector<LinePoint> points;

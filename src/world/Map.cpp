@@ -300,14 +300,45 @@ bool Map::SelectLineHandle(sf::Vector2f pos) {
     return false;
 }
 
+void Map::RemoveLine()
+{
+    if (selectedLine == nullptr) {
+        DEBUG_DEBUG("No line selected. Cannot remove line.");
+        return;
+    }
+
+    if (!selectedLine->HasTrains()) {
+        DEBUG_DEBUG("Cannot remove line. It has trains assigned.");
+        return;
+    }
+
+    // Find the iterator to the selected line
+    auto it = std::find_if(m_lines.begin(), m_lines.end(),
+        [this](const Line& line) { return &line == selectedLine; });
+
+    if (it != m_lines.end()) {
+        DEBUG_DEBUG("Removing line: " + it->GetName());
+        m_lines.erase(it);
+        selectedLine = nullptr;
+        DEBUG_DEBUG("Line removed successfully.");
+    }
+    else {
+        DEBUG_DEBUG("Selected line not found in the lines list.");
+    }
+}
+
 // Train management
 void Map::AddTrain() {
     if (selectedLine == nullptr) {
         DEBUG_DEBUG("No line selected. Cannot add train.");
         return;
     }
+
+    static int trainSuffix = 1;
+    std::string name = "Train" + std::to_string(trainSuffix++);
+
     // Create a new Train object and add it to the vector
-    auto newTrain = std::make_unique<Train>(selectedLine, 50.0f);
+    auto newTrain = std::make_unique<Train>(selectedLine, name, 50.0f);
     Train* trainPtr = newTrain.get(); // Get raw pointer for Line reference
     m_trains.emplace_back(std::move(newTrain));
     selectedLine->AddTrain(trainPtr);

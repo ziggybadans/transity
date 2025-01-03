@@ -264,94 +264,182 @@ void UIManager::RenderInfoPanel() {
     }
 
     Train* selectedTrain = m_map->GetSelectedTrain();
-    if (!selectedTrain) {
+    Line* selectedLine = m_map->GetSelectedLine();
+    if (!selectedTrain && !selectedLine) {
         // No train is selected; do not render the panel
         return;
     }
 
-    // Define panel size
-    const float panelWidth = 300.0f;
-    const float panelHeight = 200.0f; // Adjust as needed
+    if (selectedTrain) {
+        // Define panel size
+        const float panelWidth = 300.0f;
+        const float panelHeight = 200.0f; // Adjust as needed
 
-    // Set the window position to bottom-right corner with padding
-    ImGui::SetNextWindowPos(ImVec2(
-        static_cast<float>(m_renderWindow->getSize().x) - panelWidth - 10.0f, // 10 pixels padding from right
-        static_cast<float>(m_renderWindow->getSize().y) - panelHeight - 10.0f  // 10 pixels padding from bottom
-    ), ImGuiCond_Always);
+        // Set the window position to bottom-right corner with padding
+        ImGui::SetNextWindowPos(ImVec2(
+            static_cast<float>(m_renderWindow->getSize().x) - panelWidth - 10.0f, // 10 pixels padding from right
+            static_cast<float>(m_renderWindow->getSize().y) - panelHeight - 10.0f  // 10 pixels padding from bottom
+        ), ImGuiCond_Always);
 
-    // Optionally set the window size
-    ImGui::SetNextWindowSize(ImVec2(panelWidth, panelHeight), ImGuiCond_Always);
+        // Optionally set the window size
+        ImGui::SetNextWindowSize(ImVec2(panelWidth, panelHeight), ImGuiCond_Always);
 
-    // Begin ImGui window
-    ImGui::Begin("Train Information", nullptr,
-        ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+        // Begin ImGui window
+        ImGui::Begin("Train Information", nullptr,
+            ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 
-    // Display Train Information
-    ImGui::Text("Train Details");
-    ImGui::Separator();
+        // Display Train Information
+        ImGui::Text("Train Details");
+        ImGui::Separator();
 
-    // Route Name
-    Line* route = selectedTrain->GetRoute();
-    if (route) {
-        ImGui::Text("Route: %s", route->GetName().c_str());
-    }
-    else {
-        ImGui::Text("Route: N/A");
-    }
+        // Route Name
+        Line* route = selectedTrain->GetRoute();
+        if (route) {
+            ImGui::Text("Route: %s", route->GetName().c_str());
+        }
+        else {
+            ImGui::Text("Route: N/A");
+        }
 
-    // Position
-    sf::Vector2f position = selectedTrain->GetPosition();
-    ImGui::Text("Position: (%.2f, %.2f)", position.x, position.y);
+        // Position
+        sf::Vector2f position = selectedTrain->GetPosition();
+        ImGui::Text("Position: (%.2f, %.2f)", position.x, position.y);
 
-    // Speed
-    float currentSpeed = selectedTrain->GetSpeed();
-    float maxSpeed = selectedTrain->GetMaxSpeed();
-    ImGui::Text("Speed: %.2f / %.2f px/s", currentSpeed, maxSpeed);
+        // Speed
+        float currentSpeed = selectedTrain->GetSpeed();
+        float maxSpeed = selectedTrain->GetMaxSpeed();
+        ImGui::Text("Speed: %.2f / %.2f px/s", currentSpeed, maxSpeed);
 
-    // State
-    std::string state = selectedTrain->GetState();
-    ImGui::Text("State: %s", state.c_str());
+        // State
+        std::string state = selectedTrain->GetState();
+        ImGui::Text("State: %s", state.c_str());
 
-    // Direction
-    std::string direction = selectedTrain->GetDirection();
-    ImGui::Text("Direction: %s", direction.c_str());
+        // Direction
+        std::string direction = selectedTrain->GetDirection();
+        ImGui::Text("Direction: %s", direction.c_str());
 
-    // Current City and Next City
-    if (route) {
-        int currentIndex = selectedTrain->GetCurrentPointIndex();
-        const std::vector<City*>& cities = route->GetCities();
+        // Current City and Next City
+        if (route) {
+            int currentIndex = selectedTrain->GetCurrentPointIndex();
+            const std::vector<City*>& cities = route->GetCities();
 
-        if (currentIndex >= 0 && currentIndex < static_cast<int>(cities.size())) {
-            const City* currentCity = cities[currentIndex];
-            ImGui::Text("Current City: %s", currentCity->name.c_str());
+            if (currentIndex >= 0 && currentIndex < static_cast<int>(cities.size())) {
+                const City* currentCity = cities[currentIndex];
+                ImGui::Text("Current City: %s", currentCity->name.c_str());
 
-            // Determine next city based on direction
-            int nextIndex = currentIndex + (selectedTrain->GetDirection() == "Forward" ? 1 : -1);
-            if (nextIndex >= 0 && nextIndex < static_cast<int>(cities.size())) {
-                const City* nextCity = cities[nextIndex];
-                ImGui::Text("Next City: %s", nextCity->name.c_str());
+                // Determine next city based on direction
+                int nextIndex = currentIndex + (selectedTrain->GetDirection() == "Forward" ? 1 : -1);
+                if (nextIndex >= 0 && nextIndex < static_cast<int>(cities.size())) {
+                    const City* nextCity = cities[nextIndex];
+                    ImGui::Text("Next City: %s", nextCity->name.c_str());
+                }
+                else {
+                    ImGui::Text("Next City: N/A");
+                }
             }
             else {
+                ImGui::Text("Current City: N/A");
                 ImGui::Text("Next City: N/A");
             }
         }
-        else {
-            ImGui::Text("Current City: N/A");
-            ImGui::Text("Next City: N/A");
+
+        // Wait Time (if in Waiting state)
+        if (state == "Waiting") {
+            float waitTime = selectedTrain->GetWaitTime();
+            ImGui::Text("Wait Time: %.2f s", waitTime);
         }
-    }
 
-    // Wait Time (if in Waiting state)
-    if (state == "Waiting") {
-        float waitTime = selectedTrain->GetWaitTime();
-        ImGui::Text("Wait Time: %.2f s", waitTime);
-    }
+        if (ImGui::Button("Remove", ImVec2(70, 30))) {
+            m_map->RemoveTrain();
+        }
 
-    if (ImGui::Button("Remove", ImVec2(70, 30))) {
-        m_map->RemoveTrain();
+        ImGui::End();
     }
+    if (selectedLine) {
+        // Define panel size
+        const float panelWidth = 300.0f;
+        const float panelHeight = 200.0f; // Adjust as needed
 
-    ImGui::End();
+        // Set the window position to bottom-right corner with padding
+        ImGui::SetNextWindowPos(ImVec2(
+            static_cast<float>(m_renderWindow->getSize().x) - panelWidth - 10.0f, // 10 pixels padding from right
+            static_cast<float>(m_renderWindow->getSize().y) - panelHeight - 10.0f  // 10 pixels padding from bottom
+        ), ImGuiCond_Always);
+
+        // Optionally set the window size
+        ImGui::SetNextWindowSize(ImVec2(panelWidth, panelHeight), ImGuiCond_Always);
+
+        // Begin ImGui window
+        ImGui::Begin("Line Information", nullptr,
+            ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
+
+        // Display Train Information
+        ImGui::Text("Line Details");
+        ImGui::Separator();
+
+        // Route Name
+        ImGui::Text("Route: %s", selectedLine->GetName().c_str());
+        ImGui::Separator();
+
+        // --- Cities Table ---
+        ImGui::Text("Cities on Line:");
+        if (ImGui::BeginTable("CitiesTable", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable)) {
+            // Define table columns
+            ImGui::TableSetupColumn("City Name", ImGuiTableColumnFlags_WidthStretch);
+            ImGui::TableSetupColumn("Population", ImGuiTableColumnFlags_WidthFixed, 100.0f);
+            ImGui::TableHeadersRow();
+
+            // Populate table with cities
+            const std::vector<City*> cities = selectedLine->GetCities();
+            for (const auto& city : cities) {
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn();
+                ImGui::Text("%s", city->name.c_str());
+                ImGui::TableNextColumn();
+                ImGui::Text("%u", city->population);
+            }
+
+            ImGui::EndTable();
+        }
+        ImGui::Separator();
+
+        // --- Trains Table ---
+        ImGui::Text("Trains on Line:");
+        const std::vector<Train*> trains = selectedLine->GetTrains();
+        if (trains.empty()) {
+            ImGui::Text("No trains on this line.");
+        }
+        else {
+            if (ImGui::BeginTable("TrainsTable", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable)) {
+                // Define table columns
+                ImGui::TableSetupColumn("Train ID", ImGuiTableColumnFlags_WidthFixed, 100.0f);
+                ImGui::TableSetupColumn("Speed (px/s)", ImGuiTableColumnFlags_WidthFixed, 120.0f);
+                ImGui::TableSetupColumn("State", ImGuiTableColumnFlags_WidthStretch);
+                ImGui::TableHeadersRow();
+
+                // Populate table with trains
+                for (const auto& train : trains) {
+                    ImGui::TableNextRow();
+                    ImGui::TableNextColumn();
+                    ImGui::Text("%s", train->GetID().c_str()); // Assuming Train has GetID()
+                    ImGui::TableNextColumn();
+                    ImGui::Text("%.2f", train->GetSpeed());
+                    ImGui::TableNextColumn();
+                    ImGui::Text("%s", train->GetState().c_str());
+                }
+
+                ImGui::EndTable();
+            }
+        }
+
+        ImGui::Separator();
+
+        if (ImGui::Button("Remove", ImVec2(70, 30))) {
+            m_map->RemoveLine();
+        }
+
+        ImGui::End();
+    }
 }
 
 void UIManager::RenderTimeControls()

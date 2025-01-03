@@ -48,7 +48,9 @@ public:
     bool SelectLine(sf::Vector2f pos);
     bool SelectLineHandle(sf::Vector2f pos);
     void DeselectLine();
+    void RemoveLine();
     std::list<Line>& GetLines() { return m_lines; }
+    Line* GetSelectedLine() { return selectedLine; }
     void MoveSelectedLineHandle(sf::Vector2f newPos);
 
     // Train management
