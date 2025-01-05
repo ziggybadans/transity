@@ -6,9 +6,11 @@
 #include <stdexcept>
 #include <string>
 #include <memory>
+#include <unordered_map>
 
 #include "City.h"
 #include "Line.h"
+#include "Segment.h"
 #include "HandleManager.h"
 #include "SelectionManager.h"
 #include "../Constants.h"
@@ -16,27 +18,34 @@
 #include "../entity/Train.h"
 #include <SFML/Graphics.hpp> // Assuming sf::Vector2f is from SFML
 
+class Camera;
+
 class Map {
 public:
     // Constructor
-    Map(unsigned int size)
+    explicit Map(unsigned int size)
         : m_size(size),
         m_grid(size, std::vector<int>(size, 1)),
         m_minRadius(100) {}
 
-    SelectionManager GetSelectionManager() const { return selectionManager; }
+    SelectionManager GetSelectionManager() { return selectionManager; }
+    const SelectionManager& GetSelectionManager() const { return selectionManager; }
 
     // Selection Handling
-    void SelectObject(sf::Vector2f pos);
+    void SelectObject(const sf::Vector2f& pos);
     void DeselectAll();
 
     // Tile management
     void SetTile(unsigned int x, unsigned int y, int value);
-    int GetSize() const { return m_size; }
-    int GetTile(int x, int y) const { return m_grid[x][y]; }
+    unsigned int GetSize() const { return m_size; }
+    int GetTile(unsigned int x, unsigned int y) const {
+        if (x >= m_size || y >= m_size)
+            throw std::out_of_range("GetTile: Invalid tile coordinates");
+        return m_grid[x][y];
+    }
 
     // City management
-    void AddCity(sf::Vector2f pos);
+    void AddCity(const sf::Vector2f pos);
     std::list<City>& GetCities() { return m_cities; }
     void SelectCity(City* city) { selectionManager.SelectCity(city); }
     bool SelectCity(sf::Vector2f pos);
@@ -55,6 +64,8 @@ public:
     std::list<Line>& GetLines() { return m_lines; }
     Line* GetSelectedLine() const { return selectionManager.GetSelectedLine(); }
     void MoveSelectedLineHandle(sf::Vector2f newPos);
+    void UpdateSharedSegments();
+    std::vector<Segment> GetSharedSegments() const { return sharedSegments; }
 
     // Train management
     void AddTrain();
@@ -76,11 +87,16 @@ private:
     void Resize(unsigned int newSize);
     City* FindCityAtPosition(sf::Vector2f pos);
     float DistancePointToSegment(const sf::Vector2f& point, const sf::Vector2f& segStart, const sf::Vector2f& segEnd);
+    std::pair<int, int> NormalizeSegment(int startIndex, int endIndex) const;
+    std::string GenerateSegmentKey(const sf::Vector2f& start, const sf::Vector2f& end) const;
+    static bool ArePositionsEqual(const sf::Vector2f& pos1, const sf::Vector2f& pos2, float epsilon = 0.1f);
 
     // Collections
     std::list<City> m_cities;
     std::list<Line> m_lines;
     std::vector<std::unique_ptr<Train>> m_trains;
+
+    std::vector<Segment> sharedSegments; // List of shared segments
 
     // Selection Manager
     SelectionManager selectionManager;

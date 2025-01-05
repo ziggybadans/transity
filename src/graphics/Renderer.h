@@ -25,6 +25,7 @@ private:
 
     /* World Rendering */
     void RenderMap(sf::RenderWindow& window, Map& map, const Camera& camera) const;
+    void DrawThickLine(sf::RenderWindow& window, const sf::Vector2f& start, const sf::Vector2f& end, float thickness, const sf::Color& color) const;
 
     sf::Font m_font;
 };

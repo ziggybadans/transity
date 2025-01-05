@@ -97,45 +97,16 @@ void Renderer::RenderMap(sf::RenderWindow& window, Map& map, const Camera& camer
         float thickness = line.GetThickness();
         sf::Color color = isSelected ? sf::Color::Yellow : line.GetColor();
 
-        // Retrieve the path points for the line
-        std::vector<sf::Vector2f> pathPoints = line.GetPathPoints();
+        // Retrieve the adjusted path points for the line
+        std::vector<sf::Vector2f> pathPoints = line.GetAdjustedPathPoints();
 
-        // Iterate through consecutive point pairs to draw straight lines
+        // Iterate through consecutive point pairs to draw thick lines
         for (size_t i = 0; i < pathPoints.size() - 1; ++i) {
             sf::Vector2f start = pathPoints[i];
             sf::Vector2f end = pathPoints[i + 1];
 
-            // Calculate the direction and perpendicular for thickness
-            sf::Vector2f direction = end - start;
-            float length = std::sqrt(direction.x * direction.x + direction.y * direction.y);
-            if (length == 0) continue; // Avoid division by zero
-            direction /= length;
-            sf::Vector2f perpendicular(-direction.y, direction.x);
-
-            // Number of offset lines based on thickness
-            int lineCount = static_cast<int>(thickness / 2);
-            float halfThickness = thickness / 2.0f;
-
-            // Draw multiple offset lines for thickness
-            for (int offset = -lineCount; offset <= lineCount; ++offset) {
-                if (offset == 0) continue; // Skip the main line to prevent overdrawing
-
-                sf::VertexArray thickLine(sf::Lines, 2);
-                sf::Vector2f offsetVec = perpendicular * static_cast<float>(offset);
-                thickLine[0].position = start + offsetVec;
-                thickLine[0].color = color;
-                thickLine[1].position = end + offsetVec;
-                thickLine[1].color = color;
-                window.draw(thickLine);
-            }
-
-            // Draw the main line
-            sf::VertexArray mainLine(sf::Lines, 2);
-            mainLine[0].position = start;
-            mainLine[0].color = color;
-            mainLine[1].position = end;
-            mainLine[1].color = color;
-            window.draw(mainLine);
+            // Draw thick line using the helper function
+            DrawThickLine(window, start, end, thickness, color);
         }
 
         // Draw handles for all nodes if the line is selected
@@ -185,4 +156,22 @@ void Renderer::RenderMap(sf::RenderWindow& window, Map& map, const Camera& camer
 
 void Renderer::Shutdown() {
     m_isInitialized = false;
+}
+
+void Renderer::DrawThickLine(sf::RenderWindow& window, const sf::Vector2f& start, const sf::Vector2f& end, float thickness, const sf::Color& color) const {
+    sf::Vector2f direction = end - start;
+    float length = std::sqrt(direction.x * direction.x + direction.y * direction.y);
+    if (length == 0) return;
+
+    // Calculate the angle of the line in degrees
+    float angle = std::atan2(direction.y, direction.x) * 180.0f / 3.14159265f;
+
+    // Create a rectangle to represent the thick line
+    sf::RectangleShape rectangle;
+    rectangle.setSize(sf::Vector2f(length, thickness));
+    rectangle.setFillColor(color);
+    rectangle.setOrigin(0, thickness / 2); // Center vertically
+    rectangle.setPosition(start);
+    rectangle.setRotation(angle);
+    window.draw(rectangle);
 }

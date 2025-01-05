@@ -1,7 +1,7 @@
 #include "Map.h"
 #include "../Debug.h"
 
-void Map::SelectObject(sf::Vector2f pos) {
+void Map::SelectObject(const sf::Vector2f& pos) {
     // Attempt to select a Train first
     if (SelectTrain(pos)) {
         DEBUG_DEBUG("Train selected.");
@@ -119,6 +119,7 @@ void Map::UseLineMode(sf::Vector2f pos) {
                 else {
                     // Selected handle is a middle node; insert the city after this handle
                     selectedLine->InsertCityAfter(selectedHandleIndex, clickedCity);
+                    UpdateSharedSegments();
                 }
             }
             else {
@@ -129,6 +130,7 @@ void Map::UseLineMode(sf::Vector2f pos) {
         else {
             // No city was clicked; add a generic node at the clicked position
             selectedLine->AddNode(pos);
+            UpdateSharedSegments();
         }
     }
 }
@@ -156,6 +158,8 @@ void Map::CreateLine(sf::Vector2f pos) {
     Line* newLine = &m_lines.back();
     SelectLine(newLine);
 
+    UpdateSharedSegments();
+
     DEBUG_DEBUG("New line created originating from " + firstCity->GetName() + " with name " + name + ". Selected line has been updated for new line.");
 }
 
@@ -176,6 +180,7 @@ void Map::AddToLineStart(sf::Vector2f pos) {
     }
 
     GetSelectedLine()->AddCityToStart(newCity);
+    UpdateSharedSegments();
     DEBUG_DEBUG("Added city with name " + newCity->GetName() + " to the start of line " + GetSelectedLine()->GetName());
 }
 
@@ -196,6 +201,7 @@ void Map::AddToLineEnd(sf::Vector2f pos) {
     }
 
     GetSelectedLine()->AddCityToEnd(newCity);
+    UpdateSharedSegments();
     DEBUG_DEBUG("Added city with name " + newCity->GetName() + " to the end of line " + GetSelectedLine()->GetName());
 }
 
@@ -296,6 +302,82 @@ void Map::MoveSelectedLineHandle(sf::Vector2f newPos) {
     selectedLine->MoveHandle(handleIndex, newPos);
 }
 
+void Map::UpdateSharedSegments() {
+    // Temporary map to track segments and associated lines
+    // Using sorted pair of positions as the key
+    struct PositionPair {
+        sf::Vector2f start;
+        sf::Vector2f end;
+
+        bool operator==(const PositionPair& other) const {
+            return (ArePositionsEqual(start, other.start) && ArePositionsEqual(end, other.end)) ||
+                (ArePositionsEqual(start, other.end) && ArePositionsEqual(end, other.start));
+        }
+    };
+
+    struct PositionPairHash {
+        std::size_t operator()(const PositionPair& pair) const {
+            std::size_t h1 = std::hash<float>()(std::round(pair.start.x * 10.0f) / 10.0f);
+            std::size_t h2 = std::hash<float>()(std::round(pair.start.y * 10.0f) / 10.0f);
+            std::size_t h3 = std::hash<float>()(std::round(pair.end.x * 10.0f) / 10.0f);
+            std::size_t h4 = std::hash<float>()(std::round(pair.end.y * 10.0f) / 10.0f);
+            return h1 ^ (h2 << 1) ^ (h3 << 2) ^ (h4 << 3);
+        }
+    };
+
+    std::unordered_map<PositionPair, std::vector<Line*>, PositionPairHash> segmentMap;
+
+    // Iterate through all lines and their segments
+    for (auto& line : m_lines) {
+        const auto& pathPoints = line.GetPathPoints();
+        for (size_t i = 0; i < pathPoints.size() - 1; ++i) {
+            sf::Vector2f start = pathPoints[i];
+            sf::Vector2f end = pathPoints[i + 1];
+
+            // Create a sorted PositionPair to ensure consistency
+            PositionPair pair;
+            if (start.x < end.x || (start.x == end.x && start.y <= end.y)) {
+                pair.start = start;
+                pair.end = end;
+            }
+            else {
+                pair.start = end;
+                pair.end = start;
+            }
+
+            // Insert the line into the segment's line list
+            segmentMap[pair].emplace_back(&line);
+        }
+    }
+
+    // Clear existing shared segments
+    sharedSegments.clear();
+
+    // Populate sharedSegments with segments shared by multiple lines
+    for (const auto& [pair, lines] : segmentMap) {
+        if (lines.size() > 1) {
+            // For each line that shares this segment, find the segment indices and create a Segment struct
+            for (auto* line : lines) {
+                const auto& pathPoints = line->GetPathPoints();
+                for (size_t i = 0; i < pathPoints.size() - 1; ++i) {
+                    if ((ArePositionsEqual(pathPoints[i], pair.start) && ArePositionsEqual(pathPoints[i + 1], pair.end)) ||
+                        (ArePositionsEqual(pathPoints[i], pair.end) && ArePositionsEqual(pathPoints[i + 1], pair.start))) {
+                        Segment seg(i, i + 1);
+                        seg.overlappingLines = lines; // All lines sharing this segment
+                        sharedSegments.emplace_back(seg);
+                        break; // Move to next line
+                    }
+                }
+            }
+        }
+    }
+
+    // Now, for each line, calculate its offsets based on the shared segments
+    for (auto& line : m_lines) {
+        line.CalculateOffsets(sharedSegments);
+    }
+}
+
 void Map::AddTrain() {
     Line* selectedLine = selectionManager.GetSelectedLine();
     if (selectedLine == nullptr) {
@@ -391,4 +473,43 @@ float Map::DistancePointToSegment(const sf::Vector2f& point, const sf::Vector2f&
     sf::Vector2f projection = segStart + t * seg;
     sf::Vector2f diff = point - projection;
     return std::sqrt(diff.x * diff.x + diff.y * diff.y);
+}
+
+// Normalize the segment by ordering the indices
+std::pair<int, int> Map::NormalizeSegment(int startIndex, int endIndex) const {
+    if (startIndex < endIndex)
+        return { startIndex, endIndex };
+    else
+        return { endIndex, startIndex };
+}
+
+std::string Map::GenerateSegmentKey(const sf::Vector2f& start, const sf::Vector2f& end) const {
+    // Define precision (e.g., 1 decimal place)
+    auto roundPos = [](const sf::Vector2f& pos) -> sf::Vector2f {
+        return sf::Vector2f(
+            std::round(pos.x * 10.0f) / 10.0f,
+            std::round(pos.y * 10.0f) / 10.0f
+        );
+        };
+
+    sf::Vector2f roundedStart = roundPos(start);
+    sf::Vector2f roundedEnd = roundPos(end);
+
+    // Order the points to ensure consistency (A-B same as B-A)
+    if (roundedStart.x < roundedEnd.x ||
+        (roundedStart.x == roundedEnd.x && roundedStart.y <= roundedEnd.y)) {
+        // Start comes first
+    }
+    else {
+        // Swap start and end
+        std::swap(roundedStart, roundedEnd);
+    }
+
+    // Create key string
+    return std::to_string(roundedStart.x) + "," + std::to_string(roundedStart.y) + "-" +
+        std::to_string(roundedEnd.x) + "," + std::to_string(roundedEnd.y);
+}
+
+bool Map::ArePositionsEqual(const sf::Vector2f& pos1, const sf::Vector2f& pos2, float epsilon) {
+    return (std::abs(pos1.x - pos2.x) <= epsilon) && (std::abs(pos1.y - pos2.y) <= epsilon);
 }

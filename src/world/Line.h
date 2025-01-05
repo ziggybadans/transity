@@ -7,6 +7,7 @@
 
 #include "City.h"
 #include "HandleManager.h"
+#include "Segment.h"
 
 class Train;
 
@@ -19,6 +20,12 @@ struct LinePoint {
         : isCity(cityFlag), position(pos), city(c) {}
 };
 
+// Offset information per segment
+struct OffsetInfo {
+    sf::Vector2f offsetVector; // The perpendicular offset vector
+    float transitionLength;    // Length over which to transition into/out of the offset
+};
+
 class Line {
 public:
     // Constructor
@@ -26,21 +33,25 @@ public:
         const sf::Color& lineColor = sf::Color::Blue, float lineThickness = 4.0f);
 
     // Destructor
-    ~Line();
+    ~Line() = default;
 
     // City management
     void AddCityToStart(City* city);
     void AddCityToEnd(City* city);
     void InsertCityAfter(int index, City* city);
-    const std::vector<City*> GetCities() const;
+    std::vector<City*> GetCities() const;
 
     // Node management
     void AddNode(sf::Vector2f pos);
 
+    // New methods for offset management
+    void CalculateOffsets(const std::vector<Segment>& sharedSegments);
+    std::vector<sf::Vector2f> GetAdjustedPathPoints() const;
+
     // Getters
     const std::vector<LinePoint>& GetPoints() const { return points; }
     std::vector<sf::Vector2f> GetPathPoints() const;
-    const std::vector<int> GetCityIndices() const;
+    std::vector<int> GetCityIndices() const;
     sf::Vector2f GetStartPosition() const;
     sf::Vector2f GetEndPosition() const;
     sf::Vector2f GetPointPosition(int index) const;
@@ -63,7 +74,7 @@ public:
     // Property setters and getters
     void SetThickness(float newThickness) { thickness = newThickness; }
     void SetSelected(bool value) { selected = value; }
-    std::string GetName() const { return name; }
+    const std::string GetName() const { return name; }
     sf::Color GetColor() const { return color; }
     float GetThickness() const { return thickness; }
     bool IsSelected() const { return selected; }
@@ -78,6 +89,10 @@ private:
     float thickness;                    // Thickness of the line when drawn
     bool selected;                      // Selection state
 
+    // New member variables for offset management
+    std::vector<OffsetInfo> offsetInfos;
+
     // Utility function to normalize a vector
     sf::Vector2f Normalize(const sf::Vector2f& vec) const;
+    sf::Vector2f GetPerpendicularVector(int segmentIndex) const;
 };

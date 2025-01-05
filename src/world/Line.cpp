@@ -6,8 +6,8 @@
 // Constructor
 Line::Line(City* startCity, const std::string& lineName,
     const sf::Color& lineColor, float lineThickness)
-    : name(lineName), color(lineColor), thickness(lineThickness), selected(false) {
-
+    : name(lineName), color(lineColor), thickness(lineThickness), selected(false) 
+{
     // Initialize with the starting city
     LinePoint p(true, startCity->GetPosition(), startCity);
     points.push_back(p);
@@ -16,33 +16,43 @@ Line::Line(City* startCity, const std::string& lineName,
     handleManager.AddHandle(0);
 }
 
-// Destructor
-Line::~Line() {
-    // Assuming Line does not own the Train objects
-}
-
 // Adds a city to the start of the line
-void Line::AddCityToStart(City* city) {
+void Line::AddCityToStart(City* city)
+{
+    if (!city) {
+        DEBUG_ERROR("AddCityToStart: nullptr city provided.");
+        return;
+    }
     LinePoint p(true, city->GetPosition(), city);
     points.insert(points.begin(), p);
     handleManager.InsertHandle(0, 0);
 }
 
 // Adds a city to the end of the line
-void Line::AddCityToEnd(City* city) {
+void Line::AddCityToEnd(City* city)
+{
+    if (!city) {
+        DEBUG_ERROR("AddCityToEnd: nullptr city provided.");
+        return;
+    }
     points.emplace_back(true, city->GetPosition(), city);
     handleManager.AddHandle(static_cast<int>(points.size() - 1));
 }
 
 // Inserts a city after a specified index
-void Line::InsertCityAfter(int index, City* city) {
+void Line::InsertCityAfter(int index, City* city)
+{
+    if (!city) {
+        DEBUG_ERROR("InsertCityAfter: nullptr city provided.");
+        return;
+    }
     if (index < 0 || index >= static_cast<int>(points.size())) {
         DEBUG_ERROR("InsertCityAfter: Invalid handle index.");
         return;
     }
 
     LinePoint newPoint(true, city->GetPosition(), city);
-    points.insert(points.begin() + index + 1, newPoint);
+    points.emplace(points.begin() + index + 1, newPoint);
     handleManager.InsertHandle(index + 1, index + 1);
 }
 
@@ -53,12 +63,100 @@ void Line::AddNode(sf::Vector2f pos) {
     handleManager.AddHandle(static_cast<int>(points.size() - 1));
 }
 
+void Line::CalculateOffsets(const std::vector<Segment>& sharedSegments) {
+    offsetInfos.clear();
+    offsetInfos.reserve(points.size() - 1); // One OffsetInfo per segment
+
+    for (size_t i = 0; i < points.size() - 1; ++i) {
+        // Check if this segment is shared by finding a matching Segment in sharedSegments
+        auto it = std::find_if(sharedSegments.begin(), sharedSegments.end(),
+            [this, i](const Segment& seg) {
+                return seg.startPointIndex == static_cast<int>(i) && seg.endPointIndex == static_cast<int>(i + 1);
+            });
+
+        if (it != sharedSegments.end() && it->overlappingLines.size() > 1) {
+            // This segment is shared by multiple lines
+            // Determine this line's index in overlappingLines
+            auto lineIt = std::find(it->overlappingLines.begin(), it->overlappingLines.end(), this);
+            if (lineIt != it->overlappingLines.end()) {
+                int lineIndex = static_cast<int>(std::distance(it->overlappingLines.begin(), lineIt));
+
+                // Define offset step based on line thickness
+                float offsetStep = thickness + 2.0f; // Thickness plus padding
+                float totalLines = static_cast<float>(it->overlappingLines.size());
+                float halfTotal = (totalLines - 1.0f) / 2.0f;
+
+                // Calculate offset magnitude centered around zero
+                float offsetMagnitude = (static_cast<float>(lineIndex) - halfTotal) * offsetStep;
+
+                // Calculate the perpendicular vector
+                sf::Vector2f direction = points[i + 1].position - points[i].position;
+                float length = std::sqrt(direction.x * direction.x + direction.y * direction.y);
+                if (length == 0) {
+                    offsetInfos.emplace_back(OffsetInfo{ sf::Vector2f(0.f, 0.f), 0.f });
+                    continue;
+                }
+                sf::Vector2f unitDir = direction / length;
+                sf::Vector2f perpendicular(-unitDir.y, unitDir.x);
+
+                sf::Vector2f offsetVec = perpendicular * offsetMagnitude;
+
+                // Define transition length (e.g., 20 pixels)
+                float transitionLen = 20.0f;
+
+                offsetInfos.emplace_back(OffsetInfo{ offsetVec, transitionLen });
+            }
+            else {
+                // Should not happen
+                offsetInfos.emplace_back(OffsetInfo{ sf::Vector2f(0.f, 0.f), 0.f });
+            }
+        }
+        else {
+            // Not a shared segment
+            offsetInfos.emplace_back(OffsetInfo{ sf::Vector2f(0.f, 0.f), 0.f });
+        }
+    }
+}
+
+std::vector<sf::Vector2f> Line::GetAdjustedPathPoints() const {
+    std::vector<sf::Vector2f> adjustedPoints;
+    adjustedPoints.reserve(points.size());
+
+    for (size_t i = 0; i < points.size(); ++i) {
+        if (i == 0 || i == points.size() - 1) {
+            // Start and end points are always unoffset
+            adjustedPoints.emplace_back(points[i].position);
+            continue;
+        }
+
+        // Average offsets from previous and next segments for smoothness
+        sf::Vector2f offsetPrev = (i - 1 < offsetInfos.size()) ? offsetInfos[i - 1].offsetVector : sf::Vector2f(0.f, 0.f);
+        sf::Vector2f offsetNext = (i < offsetInfos.size()) ? offsetInfos[i].offsetVector : sf::Vector2f(0.f, 0.f);
+
+        // Average the two offsets
+        sf::Vector2f averageOffset = (offsetPrev + offsetNext) / 2.0f;
+
+        // Apply the average offset
+        adjustedPoints.emplace_back(points[i].position + averageOffset);
+    }
+
+    // Adjust the start and end points with the first and last segments' offsets
+    if (!points.empty() && !adjustedPoints.empty()) {
+        adjustedPoints[0] = points[0].position + ((offsetInfos.empty()) ? sf::Vector2f(0.f, 0.f) : offsetInfos[0].offsetVector);
+        adjustedPoints.back() = points.back().position + ((offsetInfos.empty()) ? sf::Vector2f(0.f, 0.f) : offsetInfos.back().offsetVector);
+    }
+
+    return adjustedPoints;
+}
+
 // Retrieves all cities on the line
-const std::vector<City*> Line::GetCities() const {
+std::vector<City*> Line::GetCities() const
+{
     std::vector<City*> cityList;
+    cityList.reserve(points.size()); // Reserve maximum possible size to optimize allocations
     for (const auto& point : points) {
         if (point.isCity && point.city != nullptr) {
-            cityList.push_back(point.city);
+            cityList.emplace_back(point.city);
         }
     }
     return cityList;
@@ -77,8 +175,10 @@ std::vector<sf::Vector2f> Line::GetPathPoints() const {
 }
 
 // Retrieves the indices of all cities within the points vector
-const std::vector<int> Line::GetCityIndices() const {
+std::vector<int> Line::GetCityIndices() const
+{
     std::vector<int> cityIndices;
+    cityIndices.reserve(points.size());
     for (size_t i = 0; i < points.size(); ++i) {
         if (points[i].isCity) {
             cityIndices.emplace_back(static_cast<int>(i));
@@ -158,4 +258,18 @@ sf::Vector2f Line::Normalize(const sf::Vector2f& vec) const {
         return vec / length;
     else
         return sf::Vector2f(0.f, 0.f);
+}
+
+sf::Vector2f Line::GetPerpendicularVector(int segmentIndex) const {
+    if (segmentIndex < 0 || segmentIndex >= static_cast<int>(points.size() - 1))
+        return sf::Vector2f(0.f, 0.f);
+
+    sf::Vector2f direction = points[segmentIndex + 1].position - points[segmentIndex].position;
+    float length = std::sqrt(direction.x * direction.x + direction.y * direction.y);
+    if (length == 0)
+        return sf::Vector2f(0.f, 0.f);
+
+    sf::Vector2f unitDir = direction / length;
+    sf::Vector2f perpendicular(-unitDir.y, unitDir.x);
+    return perpendicular;
 }
