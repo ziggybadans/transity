@@ -71,9 +71,8 @@ private:
 
     // Helper functions
     void Resize(unsigned int newSize);
-    float DistancePointToBezier(sf::Vector2f point, const BezierSegment& segment) const;
-    sf::Vector2f ComputeCubicBezierPoint(const BezierSegment& segment, float t) const;
     City* FindCityAtPosition(sf::Vector2f pos);
+    float DistancePointToSegment(const sf::Vector2f& point, const sf::Vector2f& segStart, const sf::Vector2f& segEnd);
 
     // Public members
     std::list<City> m_cities;

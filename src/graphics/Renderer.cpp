@@ -87,7 +87,6 @@ void Renderer::RenderMap(sf::RenderWindow& window, Map& map, const Camera& camer
 
     /* Lines */
     for (const auto& line : map.GetLines()) {
-        const std::vector<BezierSegment>& segments = line.GetBezierSegments();
         float thickness = line.GetThickness();
         sf::Color color = sf::Color::Black;
         if (line.IsSelected()) {
@@ -97,54 +96,50 @@ void Renderer::RenderMap(sf::RenderWindow& window, Map& map, const Camera& camer
             color = line.GetColor();
         }
 
-        for (const auto& segment : segments) {
-            std::vector<sf::Vector2f> bezierPoints = ComputeCubicBezier(segment, 100);
+        for (const auto& line : map.GetLines()) {
+            float thickness = line.GetThickness();
+            sf::Color color = line.IsSelected() ? sf::Color::Yellow : line.GetColor();
 
-            // Draw the bezier curve as a line strip
-            sf::VertexArray curve(sf::LineStrip, bezierPoints.size());
-            for (size_t i = 0; i < bezierPoints.size(); ++i) {
-                curve[i].position = bezierPoints[i];
-                curve[i].color = color;
-            }
+            // Retrieve the path points for the line
+            std::vector<sf::Vector2f> pathPoints = line.GetPathPoints();
 
-            // Simple approach: draw multiple lines shifted perpendicularly
-            int lineCount = static_cast<int>(thickness / 2); // Number of offset lines
-            float halfThickness = thickness / 2.0f;
+            // Iterate through consecutive point pairs to draw straight lines
+            for (size_t i = 0; i < pathPoints.size() - 1; ++i) {
+                sf::Vector2f start = pathPoints[i];
+                sf::Vector2f end = pathPoints[i + 1];
 
-            for (int offset = -lineCount; offset <= lineCount; ++offset) {
-                if (offset == 0) continue; // Skip the main line to prevent overdrawing
+                // Calculate the direction and perpendicular for thickness
+                sf::Vector2f direction = end - start;
+                float length = std::sqrt(direction.x * direction.x + direction.y * direction.y);
+                if (length == 0) continue; // Avoid division by zero
+                direction /= length;
+                sf::Vector2f perpendicular(-direction.y, direction.x);
 
-                sf::VertexArray thickCurve(sf::LineStrip, bezierPoints.size());
-                for (size_t i = 0; i < bezierPoints.size(); ++i) {
-                    // Calculate perpendicular direction
-                    sf::Vector2f direction;
-                    if (i < bezierPoints.size() - 1) {
-                        direction = bezierPoints[i + 1] - bezierPoints[i];
-                    }
-                    else if (i > 0) {
-                        direction = bezierPoints[i] - bezierPoints[i - 1];
-                    }
-                    else {
-                        direction = sf::Vector2f(1.f, 0.f); // Default direction
-                    }
-                    // Normalize and get perpendicular
-                    float length = std::sqrt(direction.x * direction.x + direction.y * direction.y);
-                    if (length != 0) {
-                        direction /= length;
-                    }
-                    sf::Vector2f perpendicular(-direction.y, direction.x);
+                // Number of offset lines based on thickness
+                int lineCount = static_cast<int>(thickness / 2);
+                float halfThickness = thickness / 2.0f;
 
-                    // Apply offset
-                    sf::Vector2f offsetVec = perpendicular * (static_cast<float>(offset));
+                // Draw multiple offset lines for thickness
+                for (int offset = -lineCount; offset <= lineCount; ++offset) {
+                    if (offset == 0) continue; // Skip the main line to prevent overdrawing
 
-                    thickCurve[i].position = bezierPoints[i] + offsetVec;
-                    thickCurve[i].color = color;
+                    sf::VertexArray thickLine(sf::Lines, 2);
+                    sf::Vector2f offsetVec = perpendicular * static_cast<float>(offset);
+                    thickLine[0].position = start + offsetVec;
+                    thickLine[0].color = color;
+                    thickLine[1].position = end + offsetVec;
+                    thickLine[1].color = color;
+                    window.draw(thickLine);
                 }
-                window.draw(thickCurve);
-            }
 
-            // Draw the main curve
-            window.draw(curve);
+                // Draw the main line
+                sf::VertexArray mainLine(sf::Lines, 2);
+                mainLine[0].position = start;
+                mainLine[0].color = color;
+                mainLine[1].position = end;
+                mainLine[1].color = color;
+                window.draw(mainLine);
+            }
 
             // Draw handles for all nodes if the line is selected
             if (line.IsSelected()) {
@@ -185,25 +180,6 @@ void Renderer::RenderMap(sf::RenderWindow& window, Map& map, const Camera& camer
         trainShape.setPosition(train->GetPosition());
         window.draw(trainShape);
     }
-}
-
-std::vector<sf::Vector2f> Renderer::ComputeCubicBezier(const BezierSegment& segment, int numPoints) const {
-    std::vector<sf::Vector2f> points;
-    points.reserve(numPoints + 1);
-
-    for (int i = 0; i <= numPoints; ++i) {
-        float t = static_cast<float>(i) / numPoints;
-        float u = 1.0f - t;
-
-        // Cubic Bezier formula
-        sf::Vector2f point = u * u * u * segment.start +
-            3 * u * u * t * segment.startControl +
-            3 * u * t * t * segment.endControl +
-            t * t * t * segment.end;
-        points.push_back(point);
-    }
-
-    return points;
 }
 
 void Renderer::Shutdown() {

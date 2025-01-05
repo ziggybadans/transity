@@ -253,11 +253,15 @@ bool Map::SelectLine(sf::Vector2f pos) {
     const float CLICK_THRESHOLD = 5.0f; // Adjust as needed
 
     for (auto& line : m_lines) {
-        // Iterate through all segments of the line
-        const std::vector<BezierSegment>& segments = line.GetBezierSegments();
-        for (const auto& segment : segments) {
+        const auto& pathPoints = line.GetPathPoints();
+
+        // Iterate through all straight segments of the line
+        for (size_t i = 0; i < pathPoints.size() - 1; ++i) {
+            sf::Vector2f start = pathPoints[i];
+            sf::Vector2f end = pathPoints[i + 1];
+
             // Calculate distance from click position to the segment
-            float distance = DistancePointToBezier(pos, segment);
+            float distance = DistancePointToSegment(pos, start, end);
             if (distance <= CLICK_THRESHOLD) {
                 SelectLine(&line);
                 return true;
@@ -445,41 +449,6 @@ void Map::Resize(unsigned int newSize) {
     m_size = newSize;
 }
 
-float Map::DistancePointToBezier(sf::Vector2f point, const BezierSegment& segment) const
-{
-    // Sample points along the Bezier curve and find the minimum distance
-    const int NUM_SAMPLES = 100;
-    float minDistance = std::numeric_limits<float>::max();
-
-    for (int i = 0; i <= NUM_SAMPLES; ++i) {
-        float t = static_cast<float>(i) / NUM_SAMPLES;
-        sf::Vector2f bezierPoint = ComputeCubicBezierPoint(segment, t);
-        sf::Vector2f diff = point - bezierPoint;
-        float distance = std::sqrt(diff.x * diff.x + diff.y * diff.y);
-        if (distance < minDistance) {
-            minDistance = distance;
-        }
-    }
-
-    return minDistance;
-}
-
-sf::Vector2f Map::ComputeCubicBezierPoint(const BezierSegment& segment, float t) const
-{
-    float u = 1.0f - t;
-    float tt = t * t;
-    float uu = u * u;
-    float uuu = uu * u;
-    float ttt = tt * t;
-
-    sf::Vector2f point = uuu * segment.start; // first term
-    point += 3 * uu * t * segment.startControl; // second term
-    point += 3 * u * tt * segment.endControl; // third term
-    point += ttt * segment.end; // fourth term
-
-    return point;
-}
-
 City* Map::FindCityAtPosition(sf::Vector2f pos)
 {
     const float CLICK_THRESHOLD = 10.0f; // Adjust as needed
@@ -494,4 +463,19 @@ City* Map::FindCityAtPosition(sf::Vector2f pos)
     }
 
     return nullptr;
+}
+
+float Map::DistancePointToSegment(const sf::Vector2f& point, const sf::Vector2f& segStart, const sf::Vector2f& segEnd) {
+    sf::Vector2f seg = segEnd - segStart;
+    sf::Vector2f pt = point - segStart;
+    float segLengthSquared = seg.x * seg.x + seg.y * seg.y;
+
+    if (segLengthSquared == 0.0f)
+        return std::sqrt(pt.x * pt.x + pt.y * pt.y); // segStart and segEnd are the same point
+
+    float t = (pt.x * seg.x + pt.y * seg.y) / segLengthSquared;
+    t = std::max(0.0f, std::min(1.0f, t));
+    sf::Vector2f projection = segStart + t * seg;
+    sf::Vector2f diff = point - projection;
+    return std::sqrt(diff.x * diff.x + diff.y * diff.y);
 }

@@ -25,7 +25,6 @@ private:
 
     /* World Rendering */
     void RenderMap(sf::RenderWindow& window, Map& map, const Camera& camera) const;
-    std::vector<sf::Vector2f> ComputeCubicBezier(const BezierSegment& segment, int numPoints = 100) const;
 
     sf::Font m_font;
 };
