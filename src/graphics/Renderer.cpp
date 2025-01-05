@@ -1,9 +1,10 @@
+// Renderer.cpp
 #include "Renderer.h"
 #include <iostream>
 #include "../Debug.h"
 #include "../Constants.h"
 
-Renderer::Renderer() 
+Renderer::Renderer()
     : m_isInitialized(false)
 {
 }
@@ -56,13 +57,16 @@ void Renderer::RenderMap(sf::RenderWindow& window, Map& map, const Camera& camer
             if (map.GetTile(x, y) == 1) {
                 tileShape.setFillColor(sf::Color::White);
             }
+            else {
+                tileShape.setFillColor(sf::Color::Transparent); // Assuming 0 is empty
+            }
 
             window.draw(tileShape);
         }
     }
 
     /* Cities */
-    for (City city : map.GetCities()) {
+    for (const City& city : map.GetCities()) {
         sf::CircleShape circleShape(city.GetRadius());
         circleShape.setOrigin(city.GetRadius(), city.GetRadius());
         circleShape.setPosition(city.GetPosition());
@@ -87,91 +91,88 @@ void Renderer::RenderMap(sf::RenderWindow& window, Map& map, const Camera& camer
 
     /* Lines */
     for (const auto& line : map.GetLines()) {
+        // Determine if the line is selected via SelectionManager
+        bool isSelected = (&line) == map.GetSelectionManager().GetSelectedLine();
+
         float thickness = line.GetThickness();
-        sf::Color color = sf::Color::Black;
-        if (line.IsSelected()) {
-            color = sf::Color::Yellow;
-        }
-        else {
-            color = line.GetColor();
-        }
+        sf::Color color = isSelected ? sf::Color::Yellow : line.GetColor();
 
-        for (const auto& line : map.GetLines()) {
-            float thickness = line.GetThickness();
-            sf::Color color = line.IsSelected() ? sf::Color::Yellow : line.GetColor();
+        // Retrieve the path points for the line
+        std::vector<sf::Vector2f> pathPoints = line.GetPathPoints();
 
-            // Retrieve the path points for the line
-            std::vector<sf::Vector2f> pathPoints = line.GetPathPoints();
+        // Iterate through consecutive point pairs to draw straight lines
+        for (size_t i = 0; i < pathPoints.size() - 1; ++i) {
+            sf::Vector2f start = pathPoints[i];
+            sf::Vector2f end = pathPoints[i + 1];
 
-            // Iterate through consecutive point pairs to draw straight lines
-            for (size_t i = 0; i < pathPoints.size() - 1; ++i) {
-                sf::Vector2f start = pathPoints[i];
-                sf::Vector2f end = pathPoints[i + 1];
+            // Calculate the direction and perpendicular for thickness
+            sf::Vector2f direction = end - start;
+            float length = std::sqrt(direction.x * direction.x + direction.y * direction.y);
+            if (length == 0) continue; // Avoid division by zero
+            direction /= length;
+            sf::Vector2f perpendicular(-direction.y, direction.x);
 
-                // Calculate the direction and perpendicular for thickness
-                sf::Vector2f direction = end - start;
-                float length = std::sqrt(direction.x * direction.x + direction.y * direction.y);
-                if (length == 0) continue; // Avoid division by zero
-                direction /= length;
-                sf::Vector2f perpendicular(-direction.y, direction.x);
+            // Number of offset lines based on thickness
+            int lineCount = static_cast<int>(thickness / 2);
+            float halfThickness = thickness / 2.0f;
 
-                // Number of offset lines based on thickness
-                int lineCount = static_cast<int>(thickness / 2);
-                float halfThickness = thickness / 2.0f;
+            // Draw multiple offset lines for thickness
+            for (int offset = -lineCount; offset <= lineCount; ++offset) {
+                if (offset == 0) continue; // Skip the main line to prevent overdrawing
 
-                // Draw multiple offset lines for thickness
-                for (int offset = -lineCount; offset <= lineCount; ++offset) {
-                    if (offset == 0) continue; // Skip the main line to prevent overdrawing
-
-                    sf::VertexArray thickLine(sf::Lines, 2);
-                    sf::Vector2f offsetVec = perpendicular * static_cast<float>(offset);
-                    thickLine[0].position = start + offsetVec;
-                    thickLine[0].color = color;
-                    thickLine[1].position = end + offsetVec;
-                    thickLine[1].color = color;
-                    window.draw(thickLine);
-                }
-
-                // Draw the main line
-                sf::VertexArray mainLine(sf::Lines, 2);
-                mainLine[0].position = start;
-                mainLine[0].color = color;
-                mainLine[1].position = end;
-                mainLine[1].color = color;
-                window.draw(mainLine);
+                sf::VertexArray thickLine(sf::Lines, 2);
+                sf::Vector2f offsetVec = perpendicular * static_cast<float>(offset);
+                thickLine[0].position = start + offsetVec;
+                thickLine[0].color = color;
+                thickLine[1].position = end + offsetVec;
+                thickLine[1].color = color;
+                window.draw(thickLine);
             }
 
-            // Draw handles for all nodes if the line is selected
-            if (line.IsSelected()) {
-                float handleRadius = 8.0f;
-                sf::Color defaultHandleColor = sf::Color::Green;
-                sf::Color selectedHandleColor = sf::Color::Yellow;
-                sf::Color hoverHandleColor = sf::Color::Blue;
+            // Draw the main line
+            sf::VertexArray mainLine(sf::Lines, 2);
+            mainLine[0].position = start;
+            mainLine[0].color = color;
+            mainLine[1].position = end;
+            mainLine[1].color = color;
+            window.draw(mainLine);
+        }
 
-                for (const auto& handle : line.GetHandles()) {
-                    sf::CircleShape handleShape(handleRadius);
-                    handleShape.setOrigin(handleRadius, handleRadius);
-                    sf::Vector2f handlePos = line.GetPointPosition(handle.index);
-                    handleShape.setPosition(handlePos);
-                    sf::Vector2f diff = handlePos - worldPos;
-                    float distanceSquared = diff.x * diff.x + diff.y * diff.y;
-                    if (distanceSquared < boundingBoxSquared) {
-                        handleShape.setFillColor(hoverHandleColor);
-                    }
-                    else {
-                        handleShape.setFillColor(handle.isSelected ? selectedHandleColor : defaultHandleColor);
-                    }
-                    window.draw(handleShape);
+        // Draw handles for all nodes if the line is selected
+        if (isSelected) {
+            float handleRadius = 8.0f;
+            sf::Color defaultHandleColor = sf::Color::Green;
+            sf::Color selectedHandleColor = sf::Color::Yellow;
+            sf::Color hoverHandleColor = sf::Color::Blue;
+
+            for (const auto& handle : line.GetHandles()) {
+                sf::CircleShape handleShape(handleRadius);
+                handleShape.setOrigin(handleRadius, handleRadius);
+                sf::Vector2f handlePos = line.GetPointPosition(handle.index);
+                handleShape.setPosition(handlePos);
+
+                // Determine if the handle is hovered
+                sf::Vector2f diff = handlePos - worldPos;
+                float distanceSquared = diff.x * diff.x + diff.y * diff.y;
+                if (distanceSquared < boundingBoxSquared) {
+                    handleShape.setFillColor(hoverHandleColor);
                 }
+                else {
+                    handleShape.setFillColor(handle.isSelected ? selectedHandleColor : defaultHandleColor);
+                }
+                window.draw(handleShape);
             }
         }
     }
 
     /* Trains */
     for (const auto& train : map.GetTrains()) {
+        // Determine if the train is selected via SelectionManager
+        bool isSelected = (&(*train)) == map.GetSelectionManager().GetSelectedTrain();
+
         sf::CircleShape trainShape(6.f); // small circle for the train
         trainShape.setOrigin(6.f, 6.f);
-        if (train->IsSelected()) {
+        if (isSelected) {
             trainShape.setFillColor(sf::Color::Yellow);
         }
         else {

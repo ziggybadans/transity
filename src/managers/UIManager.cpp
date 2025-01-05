@@ -1,3 +1,4 @@
+// UIManager.cpp
 #include "UIManager.h"
 #include <iostream>
 #include <array>
@@ -15,7 +16,8 @@ UIManager::UIManager()
     , m_gameSettings(nullptr)
     , m_setTimeScale(nullptr)
     , m_getTimeScale(nullptr)
-{}
+{
+}
 
 UIManager::~UIManager() {
     Shutdown();
@@ -34,7 +36,8 @@ bool UIManager::Init() {
         }
         m_initialized = true;
         return true;
-    } catch (const std::exception& e) {
+    }
+    catch (const std::exception& e) {
         DEBUG_ERROR("Exception during ImGui initialization: " + std::string(e.what()));
         return false;
     }
@@ -54,7 +57,8 @@ void UIManager::Update(float deltaTime) {
     try {
         ImGui::SFML::Update(*m_renderWindow, sf::seconds(deltaTime));
         m_fps = deltaTime > 0.0f ? 1.0f / deltaTime : 0.0f;
-    } catch (const std::exception& e) {
+    }
+    catch (const std::exception& e) {
         DEBUG_ERROR("Error updating UI: " + std::string(e.what()));
         Shutdown(); // Safely shutdown on error
     }
@@ -71,11 +75,11 @@ void UIManager::Render() {
         RenderInfoPanel();
         RenderTimeControls();
         RenderGUI();
-        
+
         // Settings button in top-right corner
         ImGui::SetNextWindowPos(ImVec2(static_cast<float>(m_renderWindow->getSize().x) - 110.0f, 10.0f), ImGuiCond_Always);
         ImGui::SetNextWindowSize(ImVec2(98.0f, 48.0f), ImGuiCond_Always);
-        if (ImGui::Begin("Settings Button", nullptr, 
+        if (ImGui::Begin("Settings Button", nullptr,
             ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove)) {
             if (ImGui::Button("Settings", ImVec2(80, 30))) {
                 m_showSettingsPanel = !m_showSettingsPanel;
@@ -88,7 +92,8 @@ void UIManager::Render() {
         }
 
         ImGui::SFML::Render(*m_renderWindow);
-    } catch (const std::exception& e) {
+    }
+    catch (const std::exception& e) {
         DEBUG_ERROR("Error rendering UI: " + std::string(e.what()));
         Shutdown();
     }
@@ -97,7 +102,7 @@ void UIManager::Render() {
 void UIManager::RenderPerformanceOverlay() {
     ImGui::SetNextWindowPos(ImVec2(10.0f, 10.0f), ImGuiCond_Always);
     ImGui::SetNextWindowSize(ImVec2(200.0f, 60.0f), ImGuiCond_Always);
-    ImGui::Begin("Performance", nullptr, 
+    ImGui::Begin("Performance", nullptr,
         ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar);
     ImGui::Text("FPS: %.1f", m_fps);
     if (ImGui::Button(m_showPerformanceWindow ? "Hide Profiler" : "Show Profiler")) {
@@ -146,7 +151,7 @@ void UIManager::RenderSettingsPanel() {
 
 void UIManager::RenderVideoSettings() {
     bool settingsChanged = false;
-    
+
     static const std::array<sf::Vector2u, 4> resolutions = {
         sf::Vector2u(1920, 1080),
         sf::Vector2u(2560, 1440),
@@ -156,7 +161,7 @@ void UIManager::RenderVideoSettings() {
 
     sf::Vector2u currentRes = m_gameSettings->GetValue<sf::Vector2u>(Settings::Names::RESOLUTION);
     int currentItem = -1;
-    
+
     // Find current resolution in the list
     for (size_t i = 0; i < resolutions.size(); i++) {
         if (resolutions[i] == currentRes) {
@@ -230,14 +235,14 @@ void UIManager::RenderPerformanceWindow() {
 
     ImGui::SetNextWindowPos(ImVec2(10.0f, 80.0f), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(ImVec2(300.0f, 400.0f), ImGuiCond_FirstUseEver);
-    
+
     if (ImGui::Begin("Performance Profiler", &m_showPerformanceWindow)) {
         ImGui::Text("FPS: %.1f", m_fps);
         ImGui::Separator();
-        
-        if (ImGui::BeginTable("ProfilerData", 2, 
+
+        if (ImGui::BeginTable("ProfilerData", 2,
             ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY)) {
-            
+
             ImGui::TableSetupColumn("Section", ImGuiTableColumnFlags_WidthStretch);
             ImGui::TableSetupColumn("Time (ms)", ImGuiTableColumnFlags_WidthFixed, 80.0f);
             ImGui::TableHeadersRow();
@@ -250,7 +255,7 @@ void UIManager::RenderPerformanceWindow() {
                 ImGui::TableNextColumn();
                 ImGui::Text("%.3f", profile.duration);
             }
-            
+
             ImGui::EndTable();
         }
     }
@@ -263,10 +268,10 @@ void UIManager::RenderInfoPanel() {
         return;
     }
 
-    Train* selectedTrain = m_map->GetSelectedTrain();
-    Line* selectedLine = m_map->GetSelectedLine();
+    Train* selectedTrain = m_map->GetSelectionManager().GetSelectedTrain();
+    Line* selectedLine = m_map->GetSelectionManager().GetSelectedLine();
     if (!selectedTrain && !selectedLine) {
-        // No train is selected; do not render the panel
+        // No train or line is selected; do not render the panel
         return;
     }
 
@@ -321,7 +326,7 @@ void UIManager::RenderInfoPanel() {
         // Current City and Next City
         if (route) {
             int currentIndex = selectedTrain->GetCurrentPointIndex();
-            const std::vector<City*>& cities = route->GetCities();
+            const std::vector<City*> cities = route->GetCities();
 
             if (currentIndex >= 0 && currentIndex < static_cast<int>(cities.size())) {
                 const City* currentCity = cities[currentIndex];
@@ -373,7 +378,7 @@ void UIManager::RenderInfoPanel() {
         ImGui::Begin("Line Information", nullptr,
             ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
 
-        // Display Train Information
+        // Display Line Information
         ImGui::Text("Line Details");
         ImGui::Separator();
 
@@ -421,7 +426,7 @@ void UIManager::RenderInfoPanel() {
                 for (const auto& train : trains) {
                     ImGui::TableNextRow();
                     ImGui::TableNextColumn();
-                    ImGui::Text("%s", train->GetID().c_str()); // Assuming Train has GetID()
+                    ImGui::Text("%s", train->GetID().c_str());
                     ImGui::TableNextColumn();
                     ImGui::Text("%.2f", train->GetSpeed());
                     ImGui::TableNextColumn();
@@ -546,7 +551,8 @@ void UIManager::Shutdown() {
     if (m_initialized) {
         try {
             ImGui::SFML::Shutdown();
-        } catch (const std::exception& e) {
+        }
+        catch (const std::exception& e) {
             DEBUG_ERROR("Error during ImGui shutdown: " + std::string(e.what()));
         }
         m_initialized = false;
@@ -558,11 +564,11 @@ void UIManager::SetWindow(sf::RenderWindow& window) {
     if (!window.isOpen()) {
         throw std::invalid_argument("Cannot set closed window");
     }
-    
+
     // If we already have an initialized ImGui context, shut it down first
     if (m_initialized) {
         Shutdown();
     }
-    
+
     m_renderWindow = &window;
 }

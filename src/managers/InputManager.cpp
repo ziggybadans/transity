@@ -1,3 +1,4 @@
+// InputManager.cpp
 #include "InputManager.h"
 #include <imgui.h>
 
@@ -26,7 +27,7 @@ PlaceCommand::PlaceCommand(std::shared_ptr<Camera> camera, sf::RenderWindow& win
 void PlaceCommand::execute() {
     sf::Vector2i pixelPos = sf::Mouse::getPosition(m_window);
     sf::Vector2f worldPos = m_window.mapPixelToCoords(pixelPos, m_camera->GetView());
-    DEBUG_DEBUG("PlaceCommand: Attempting to place line at world position ", worldPos.x, ", ", worldPos.y);
+    DEBUG_DEBUG("PlaceCommand: Attempting to place city at world position ", worldPos.x, ", ", worldPos.y);
     m_map->AddCity(worldPos);
 }
 
@@ -37,7 +38,7 @@ DrawCommand::DrawCommand(std::shared_ptr<Camera> camera, sf::RenderWindow& windo
 void DrawCommand::execute() {
     sf::Vector2i pixelPos = sf::Mouse::getPosition(m_window);
     sf::Vector2f worldPos = m_window.mapPixelToCoords(pixelPos, m_camera->GetView());
-    DEBUG_DEBUG("Attempting to use the line tool.");
+    DEBUG_DEBUG("DrawCommand: Attempting to use the line tool at world position ", worldPos.x, ", ", worldPos.y);
     m_map->UseLineMode(worldPos);
 }
 
@@ -47,7 +48,7 @@ SelectCommand::SelectCommand(std::shared_ptr<Camera> camera, sf::RenderWindow& w
 void SelectCommand::execute() {
     sf::Vector2i pixelPos = sf::Mouse::getPosition(m_window);
     sf::Vector2f worldPos = m_window.mapPixelToCoords(pixelPos, m_camera->GetView());
-    DEBUG_DEBUG("Attempting to select object at world position ", worldPos.x, ", ", worldPos.y);
+    DEBUG_DEBUG("SelectCommand: Attempting to select object at world position ", worldPos.x, ", ", worldPos.y);
     m_map->SelectObject(worldPos);
 }
 
@@ -57,7 +58,7 @@ MoveCommand::MoveCommand(std::shared_ptr<Camera> camera, sf::RenderWindow& windo
 void MoveCommand::execute() {
     sf::Vector2i pixelPos = sf::Mouse::getPosition(m_window);
     sf::Vector2f worldPos = m_window.mapPixelToCoords(pixelPos, m_camera->GetView());
-    DEBUG_DEBUG("Attempting to select object at world position ", worldPos.x, ", ", worldPos.y);
+    DEBUG_DEBUG("MoveCommand: Attempting to move handle to world position ", worldPos.x, ", ", worldPos.y);
     m_map->MoveSelectedLineHandle(worldPos);
 }
 
@@ -74,14 +75,14 @@ InputManager::InputManager(std::shared_ptr<EventManager> eventMgr,
     , m_map(map)
     , m_isDragging(false)
     , m_lastMousePos()
-    , m_config {}
+    , m_config{}
 {
     DEBUG_INFO("InputManager: Initializing InputManager");
     m_stateManager->Subscribe("CurrentTool", [this](const std::any& data) {
         if (data.has_value()) {
             auto value = std::any_cast<std::string>(data);
             CheckSubscriptions();
-            DEBUG_DEBUG("Now listening for CurrentTool state change on InputManager");
+            DEBUG_DEBUG("InputManager: Listening for CurrentTool state change.");
         }
         });
     InitializeSubscriptions();
@@ -119,6 +120,8 @@ void InputManager::HandleInput(float deltaTime) {
         if (m_isDragging) {
             ExecuteCommand(InputAction::Move);
         }
+
+        m_lastMousePos = currentMousePos;
     }
 }
 
@@ -143,7 +146,7 @@ const InputConfig& InputManager::GetConfig() const {
 void InputManager::InitializeSubscriptions() {
     // State Manager
     if (m_stateManager->GetState<std::string>("CurrentTool") == std::string("Place")) {
-        DEBUG_DEBUG("Subscribing to PlaceSubscription...");
+        DEBUG_DEBUG("InputManager: Subscribing to PlaceSubscription...");
         placeSubscription = m_eventManager->Subscribe(EventType::MouseButtonPressed,
             [this](const EventData& data) {
                 if (std::holds_alternative<sf::Event>(data)) {
@@ -151,7 +154,7 @@ void InputManager::InitializeSubscriptions() {
 
                     if (event.type == sf::Event::MouseButtonPressed) {
                         if (event.mouseButton.button == sf::Mouse::Right) {
-                            DEBUG_DEBUG("InputManager: Right mouse button clicked.");
+                            DEBUG_DEBUG("InputManager: Right mouse button clicked for Place.");
                             ExecuteCommand(InputAction::Place);
                         }
                     }
@@ -160,8 +163,8 @@ void InputManager::InitializeSubscriptions() {
         );
     }
 
-    if (m_stateManager->GetState<std::string>("CurrentTool") == std::string("Draw")) {
-        DEBUG_DEBUG("Subscribing to DrawSubscription...");
+    if (m_stateManager->GetState<std::string>("CurrentTool") == std::string("Line")) {
+        DEBUG_DEBUG("InputManager: Subscribing to LineSubscription...");
         drawSubscription = m_eventManager->Subscribe(EventType::MouseButtonPressed,
             [this](const EventData& data) {
                 if (std::holds_alternative<sf::Event>(data)) {
@@ -169,7 +172,7 @@ void InputManager::InitializeSubscriptions() {
 
                     if (event.type == sf::Event::MouseButtonPressed) {
                         if (event.mouseButton.button == sf::Mouse::Right) {
-                            DEBUG_DEBUG("InputManager: Right mouse button clicked.");
+                            DEBUG_DEBUG("InputManager: Right mouse button clicked for Line.");
                             ExecuteCommand(InputAction::Draw);
                         }
                     }
@@ -185,20 +188,24 @@ void InputManager::InitializeSubscriptions() {
                 const sf::Event& event = std::get<sf::Event>(data);
                 if (event.mouseButton.button == sf::Mouse::Left) {
                     m_isDragging = false;
+                    DEBUG_DEBUG("InputManager: Left mouse button released. Dragging stopped.");
                 }
             }
         }
     );
 
-    // Modify existing MouseButtonPressed subscription
+    // Modify existing MouseButtonPressed subscription for selection
     m_eventManager->Subscribe(EventType::MouseButtonPressed,
         [this](const EventData& data) {
             if (std::holds_alternative<sf::Event>(data)) {
                 const sf::Event& event = std::get<sf::Event>(data);
-                if (event.mouseButton.button == sf::Mouse::Left) {
-                    ExecuteCommand(InputAction::Select);
-                    m_isDragging = false;
-                    m_lastMousePos = sf::Vector2f(event.mouseButton.x, event.mouseButton.y);
+                if (event.type == sf::Event::MouseButtonPressed) {
+                    if (event.mouseButton.button == sf::Mouse::Left) {
+                        ExecuteCommand(InputAction::Select);
+                        m_isDragging = false;
+                        m_lastMousePos = sf::Vector2f(event.mouseButton.x, event.mouseButton.y);
+                        DEBUG_DEBUG("InputManager: Left mouse button pressed for selection.");
+                    }
                 }
             }
         }
@@ -207,7 +214,7 @@ void InputManager::InitializeSubscriptions() {
 
 void InputManager::CheckSubscriptions() {
     if (m_stateManager->GetState<std::string>("CurrentTool") == std::string("Place")) {
-        DEBUG_DEBUG("Subscribing to PlaceSubscription...");
+        DEBUG_DEBUG("InputManager: Subscribing to PlaceSubscription...");
         placeSubscription = m_eventManager->Subscribe(EventType::MouseButtonPressed,
             [this](const EventData& data) {
                 if (std::holds_alternative<sf::Event>(data)) {
@@ -215,7 +222,7 @@ void InputManager::CheckSubscriptions() {
 
                     if (event.type == sf::Event::MouseButtonPressed) {
                         if (event.mouseButton.button == sf::Mouse::Right) {
-                            DEBUG_DEBUG("InputManager: Right mouse button clicked.");
+                            DEBUG_DEBUG("InputManager: Right mouse button clicked for Place.");
                             ExecuteCommand(InputAction::Place);
                         }
                     }
@@ -224,12 +231,12 @@ void InputManager::CheckSubscriptions() {
         );
     }
     else {
-        DEBUG_DEBUG("Unsubscribing from PlaceSubscription...");
+        DEBUG_DEBUG("InputManager: Unsubscribing from PlaceSubscription...");
         m_eventManager->Unsubscribe(placeSubscription);
     }
 
     if (m_stateManager->GetState<std::string>("CurrentTool") == std::string("Line")) {
-        DEBUG_DEBUG("Subscribing to DrawSubscription...");
+        DEBUG_DEBUG("InputManager: Subscribing to LineSubscription...");
         drawSubscription = m_eventManager->Subscribe(EventType::MouseButtonPressed,
             [this](const EventData& data) {
                 if (std::holds_alternative<sf::Event>(data)) {
@@ -237,7 +244,7 @@ void InputManager::CheckSubscriptions() {
 
                     if (event.type == sf::Event::MouseButtonPressed) {
                         if (event.mouseButton.button == sf::Mouse::Right) {
-                            DEBUG_DEBUG("InputManager: Right mouse button clicked.");
+                            DEBUG_DEBUG("InputManager: Right mouse button clicked for Line.");
                             ExecuteCommand(InputAction::Draw);
                         }
                     }
@@ -246,7 +253,7 @@ void InputManager::CheckSubscriptions() {
         );
     }
     else {
-        DEBUG_DEBUG("Unsubscribing from DrawSubscription...");
+        DEBUG_DEBUG("InputManager: Unsubscribing from LineSubscription...");
         m_eventManager->Unsubscribe(drawSubscription);
     }
 }

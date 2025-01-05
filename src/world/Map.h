@@ -24,6 +24,8 @@ public:
         m_grid(size, std::vector<int>(size, 1)),
         m_minRadius(100) {}
 
+    SelectionManager GetSelectionManager() const { return selectionManager; }
+
     // Selection Handling
     void SelectObject(sf::Vector2f pos);
     void DeselectAll();

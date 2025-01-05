@@ -12,16 +12,12 @@ class Line;
 class Train {
 public:
     // Constructor
-    // route: which line the train will travel on
-    // id: unique identifier for the train
-    // maxSpeed: maximum speed in pixels-per-second
     Train(Line* route, const std::string& id, float maxSpeed = 50.0f);
 
     // Destructor
     ~Train();
 
     // Update train position
-    // dt: delta time from your game loop
     void Update(float dt);
 
     // Getters
@@ -29,8 +25,6 @@ public:
     sf::Vector2f GetPosition() const;
     float GetSpeed() const;
     float GetMaxSpeed() const;
-    bool IsSelected() const;
-    void SetSelected(bool value);
     Line* GetRoute() const;
 
     // Additional getters for detailed information
@@ -38,6 +32,9 @@ public:
     std::string GetDirection() const;
     int GetCurrentPointIndex() const;
     float GetWaitTime() const;
+
+    // Setters
+    void SetSelected(bool value) { m_selected = value; }
 
     // Method to draw the train (optional, for visualization)
     void Draw(sf::RenderWindow& window) const;
@@ -55,7 +52,7 @@ private:
     float m_maxSpeed;               // Maximum speed (pixels per second)
     float m_currentSpeed;           // Current speed
     sf::Vector2f m_position;        // Current position in world space
-    bool m_selected;                // Selection state
+    bool m_selected;
 
     // State management
     bool m_forward;                 // Direction of travel
