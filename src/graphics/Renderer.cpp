@@ -63,23 +63,23 @@ void Renderer::RenderMap(sf::RenderWindow& window, Map& map, const Camera& camer
 
     /* Cities */
     for (City city : map.GetCities()) {
-        sf::CircleShape circleShape(city.radius);
-        circleShape.setOrigin(city.radius, city.radius);
-        circleShape.setPosition(city.position);
+        sf::CircleShape circleShape(city.GetRadius());
+        circleShape.setOrigin(city.GetRadius(), city.GetRadius());
+        circleShape.setPosition(city.GetPosition());
         circleShape.setFillColor(sf::Color::Black);
         window.draw(circleShape);
 
         // Create and configure the text label
         sf::Text text;
         text.setFont(m_font); // Use the loaded font
-        text.setString(city.name);
+        text.setString(city.GetName());
         text.setCharacterSize(14); // Adjust as needed
         text.setFillColor(sf::Color::Black); // Choose a color that contrasts with the map
 
         // Calculate the position: below the city
         sf::FloatRect textBounds = text.getLocalBounds();
-        float textX = city.position.x - textBounds.width / 2;
-        float textY = city.position.y + city.radius + 5.0f; // 5 pixels below the city
+        float textX = city.GetPosition().x - textBounds.width / 2;
+        float textY = city.GetPosition().y + city.GetRadius() + 5.0f; // 5 pixels below the city
 
         text.setPosition(textX, textY);
         window.draw(text);

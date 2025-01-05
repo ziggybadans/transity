@@ -1,4 +1,3 @@
-// Line.h
 #pragma once
 
 #include <string>
@@ -7,10 +6,10 @@
 #include <SFML/Graphics.hpp>
 
 #include "City.h"
+#include "HandleManager.h"
 
 class Train;
 
-// Structure representing a point on the line
 struct LinePoint {
     bool isCity;             // True if it represents a city, false if it's a node
     sf::Vector2f position;   // The world position of the city or node
@@ -20,15 +19,6 @@ struct LinePoint {
         : isCity(cityFlag), position(pos), city(c) {}
 };
 
-// Structure representing a handle for manipulation (e.g., in a UI)
-struct Handle {
-    int index;         // Index of the node in the points vector
-    bool isSelected;   // Selection state
-
-    Handle(int idx = 0, bool selected = false) : index(idx), isSelected(selected) {}
-};
-
-// The Line class represents a railway line connecting cities and nodes
 class Line {
 public:
     // Constructor
@@ -55,11 +45,11 @@ public:
     sf::Vector2f GetEndPosition() const;
     sf::Vector2f GetPointPosition(int index) const;
 
-    // Selection management
+    // Selection management via HandleManager
     void SelectHandle(int index);
     void DeselectHandles();
     int GetSelectedHandleIndex() const;
-    std::vector<Handle> GetHandles() const { return handles; }
+    const std::vector<Handle>& GetHandles() const { return handleManager.GetHandles(); }
 
     // Handle manipulation
     void MoveHandle(int index, sf::Vector2f newPos);
@@ -67,7 +57,7 @@ public:
     // Train management
     void AddTrain(Train* train);
     void RemoveTrain(Train* train);
-    bool HasTrains() const { return trains.empty(); }
+    bool HasTrains() const { return !trains.empty(); }
     const std::vector<Train*>& GetTrains() const { return trains; }
 
     // Property setters and getters
@@ -81,7 +71,7 @@ public:
 private:
     // Member variables
     std::vector<LinePoint> points;      // Points defining the line (cities and nodes)
-    std::vector<Handle> handles;        // Handles for manipulation
+    HandleManager handleManager;        // Manages handles for manipulation
     std::vector<Train*> trains;         // Trains traveling on the line
     std::string name;                   // Name of the line
     sf::Color color;                    // Color of the line

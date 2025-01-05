@@ -1,4 +1,3 @@
-// Map.h
 #pragma once
 
 #include <vector>
@@ -6,9 +5,12 @@
 #include <algorithm>
 #include <stdexcept>
 #include <string>
+#include <memory>
 
 #include "City.h"
 #include "Line.h"
+#include "HandleManager.h"
+#include "SelectionManager.h"
 #include "../Constants.h"
 #include "../Debug.h"
 #include "../entity/Train.h"
@@ -20,10 +22,9 @@ public:
     Map(unsigned int size)
         : m_size(size),
         m_grid(size, std::vector<int>(size, 1)),
-        m_minRadius(100),
-        selectedLine(nullptr),
-        selectedTrain(nullptr) {}
+        m_minRadius(100) {}
 
+    // Selection Handling
     void SelectObject(sf::Vector2f pos);
     void DeselectAll();
 
@@ -35,31 +36,31 @@ public:
     // City management
     void AddCity(sf::Vector2f pos);
     std::list<City>& GetCities() { return m_cities; }
-    void SelectCity(City* city);
+    void SelectCity(City* city) { selectionManager.SelectCity(city); }
     bool SelectCity(sf::Vector2f pos);
-    void DeselectCity();
+    void DeselectCity() { selectionManager.DeselectAll(); }
 
     // Line management
     void UseLineMode(sf::Vector2f pos);
     void CreateLine(sf::Vector2f pos);
     void AddToLineStart(sf::Vector2f pos);
     void AddToLineEnd(sf::Vector2f pos);
-    void SelectLine(Line* line);
+    void SelectLine(Line* line) { selectionManager.SelectLine(line); }
     bool SelectLine(sf::Vector2f pos);
     bool SelectLineHandle(sf::Vector2f pos);
-    void DeselectLine();
+    void DeselectLine() { selectionManager.DeselectAll(); }
     void RemoveLine();
     std::list<Line>& GetLines() { return m_lines; }
-    Line* GetSelectedLine() { return selectedLine; }
+    Line* GetSelectedLine() const { return selectionManager.GetSelectedLine(); }
     void MoveSelectedLineHandle(sf::Vector2f newPos);
 
     // Train management
     void AddTrain();
-    void SelectTrain(Train* train);
+    void SelectTrain(Train* train) { selectionManager.SelectTrain(train); }
     bool SelectTrain(sf::Vector2f pos);
-    void DeselectTrain();
+    void DeselectTrain() { selectionManager.DeselectAll(); }
     void RemoveTrain();
-    Train* GetSelectedTrain() { return selectedTrain; }
+    Train* GetSelectedTrain() const { return selectionManager.GetSelectedTrain(); }
     std::vector<std::unique_ptr<Train>>& GetTrains() { return m_trains; }
 
 private:
@@ -74,11 +75,11 @@ private:
     City* FindCityAtPosition(sf::Vector2f pos);
     float DistancePointToSegment(const sf::Vector2f& point, const sf::Vector2f& segStart, const sf::Vector2f& segEnd);
 
-    // Public members
+    // Collections
     std::list<City> m_cities;
     std::list<Line> m_lines;
     std::vector<std::unique_ptr<Train>> m_trains;
-    City* selectedCity;
-    Line* selectedLine;
-    Train* selectedTrain;
+
+    // Selection Manager
+    SelectionManager selectionManager;
 };

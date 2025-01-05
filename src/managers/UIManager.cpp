@@ -325,13 +325,13 @@ void UIManager::RenderInfoPanel() {
 
             if (currentIndex >= 0 && currentIndex < static_cast<int>(cities.size())) {
                 const City* currentCity = cities[currentIndex];
-                ImGui::Text("Current City: %s", currentCity->name.c_str());
+                ImGui::Text("Current City: %s", currentCity->GetName().c_str());
 
                 // Determine next city based on direction
                 int nextIndex = currentIndex + (selectedTrain->GetDirection() == "Forward" ? 1 : -1);
                 if (nextIndex >= 0 && nextIndex < static_cast<int>(cities.size())) {
                     const City* nextCity = cities[nextIndex];
-                    ImGui::Text("Next City: %s", nextCity->name.c_str());
+                    ImGui::Text("Next City: %s", nextCity->GetName().c_str());
                 }
                 else {
                     ImGui::Text("Next City: N/A");
@@ -394,9 +394,9 @@ void UIManager::RenderInfoPanel() {
             for (const auto& city : cities) {
                 ImGui::TableNextRow();
                 ImGui::TableNextColumn();
-                ImGui::Text("%s", city->name.c_str());
+                ImGui::Text("%s", city->GetName().c_str());
                 ImGui::TableNextColumn();
-                ImGui::Text("%u", city->population);
+                ImGui::Text("%u", city->GetPopulation());
             }
 
             ImGui::EndTable();
