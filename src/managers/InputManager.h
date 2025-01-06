@@ -27,6 +27,8 @@ enum class InputAction {
     Draw,
     Select,
     Move,
+    TrainPlaceLeft,
+    TrainPlaceRight,
     None
 };
 
@@ -69,7 +71,6 @@ public:
     const InputConfig& GetConfig() const { return m_config; }
 
 private:
-    void InitializeSubscriptions();
     void CheckSubscriptions();
     void InitializeCommands();
     void ExecuteCommand(InputAction action);
@@ -89,6 +90,10 @@ private:
 
     EventManager::SubscriptionID placeSubscription;
     EventManager::SubscriptionID drawSubscription;
+    EventManager::SubscriptionID trainPlaceLeftSubscription;
+    EventManager::SubscriptionID trainPlaceRightSubscription;
+    EventManager::SubscriptionID dragPressSubscription;
+    EventManager::SubscriptionID dragReleaseSubscription;
 
     bool m_isDragging;
     sf::Vector2f m_lastMousePos;

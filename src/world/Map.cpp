@@ -378,21 +378,83 @@ void Map::UpdateSharedSegments() {
     }
 }
 
-void Map::AddTrain() {
-    Line* selectedLine = selectionManager.GetSelectedLine();
-    if (selectedLine == nullptr) {
-        DEBUG_DEBUG("No line selected. Cannot add train.");
+void Map::UseTrainPlaceMode(sf::Vector2f pos, bool left) {
+    City* clickedCity = FindCityAtPosition(pos);
+    if (clickedCity) {
+        if (left) {
+            startCityForTrain = clickedCity;
+        }
+        else {
+            endCityForTrain = clickedCity;
+        }
+    }
+
+    if (startCityForTrain != nullptr && endCityForTrain != nullptr) {
+        stateManager.SetState("TrainPlaceVerified", true);
+    }
+}
+
+void Map::AddTrain()
+{
+    if (!isLineSelected())
+    {
+        DEBUG_ERROR("AddTrain: No line selected.");
         return;
     }
 
-    static int trainSuffix = 1;
-    std::string name = "Train" + std::to_string(trainSuffix++);
+    if (startCityForTrain == nullptr || endCityForTrain == nullptr)
+    {
+        DEBUG_ERROR("AddTrain: Start or end city not selected.");
+        return;
+    }
 
-    // Create a new Train object and add it to the vector
-    auto newTrain = std::make_unique<Train>(selectedLine, name, 50.0f);
-    Train* trainPtr = newTrain.get(); // Get raw pointer for Line reference
-    m_trains.emplace_back(std::move(newTrain));
-    selectedLine->AddTrain(trainPtr);
+    Line* selectedLine = GetSelectedLine();
+
+    // Check that both cities are on the selected line
+    std::vector<City*> citiesOnLine = selectedLine->GetCities();
+    if (std::find(citiesOnLine.begin(), citiesOnLine.end(), startCityForTrain) == citiesOnLine.end())
+    {
+        DEBUG_ERROR("AddTrain: Start city is not on the selected line.");
+        return;
+    }
+
+    if (std::find(citiesOnLine.begin(), citiesOnLine.end(), endCityForTrain) == citiesOnLine.end())
+    {
+        DEBUG_ERROR("AddTrain: End city is not on the selected line.");
+        return;
+    }
+
+    // Get indices between start and end cities
+    std::vector<int> cityIndices = selectedLine->GetIndicesBetweenCities(startCityForTrain, endCityForTrain);
+
+    if (cityIndices.empty())
+    {
+        DEBUG_ERROR("AddTrain: Invalid path between selected cities.");
+        return;
+    }
+
+    // Get the path points
+    std::vector<sf::Vector2f> pathPoints;
+    for (int index : cityIndices)
+    {
+        pathPoints.push_back(selectedLine->GetPointPosition(index));
+    }
+
+    // Create a new Train
+    std::string trainID = "Train" + std::to_string(m_trains.size() + 1);
+    std::unique_ptr<Train> newTrain = std::make_unique<Train>(selectedLine, trainID, pathPoints);
+
+    // Add the train to the line
+    selectedLine->AddTrain(newTrain.get());
+
+    // Add to the map's train list
+    m_trains.push_back(std::move(newTrain));
+
+    // Reset the selected start and end cities
+    startCityForTrain = nullptr;
+    endCityForTrain = nullptr;
+
+    DEBUG_DEBUG("Added " + trainID + " to line " + selectedLine->GetName());
 }
 
 bool Map::SelectTrain(sf::Vector2f pos) {

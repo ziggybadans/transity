@@ -12,7 +12,7 @@ class Line;
 class Train {
 public:
     // Constructor
-    Train(Line* route, const std::string& id, float maxSpeed = 50.0f);
+    Train(Line* route, const std::string& id, const std::vector<sf::Vector2f>& pathPoints, float maxSpeed = 50.0f);
 
     // Destructor
     ~Train();
@@ -61,7 +61,6 @@ private:
 
     // Path information
     std::vector<sf::Vector2f> m_pathPoints; // Points along the path
-    std::vector<int> m_cityIndices;         // Indices of cities in the path
     int m_currentPointIndex;                // Current path point index
 
     // Constants
@@ -80,4 +79,5 @@ private:
     // Utility functions
     float Distance(const sf::Vector2f& a, const sf::Vector2f& b) const;
     float Length(const sf::Vector2f& v) const;
+    sf::Vector2f Normalize(const sf::Vector2f& v) const;
 };

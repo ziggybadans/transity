@@ -540,22 +540,26 @@ void UIManager::RenderGUI()
             }
         }
         ImGui::SameLine();
-        if (m_map->isLineSelected()) {
-            if (ImGui::Button(isTrainMode ? "Train Mode ON" : "Train Mode OFF", ImVec2(95, 30))) {
-                isTrainMode = !isTrainMode;
+        if (m_map->GetSelectedLine()) {
+            if (m_map->GetSelectedLine()->HasMultipleCities()) {
+                if (ImGui::Button(isTrainMode ? "Train Mode ON" : "Train Mode OFF", ImVec2(95, 30))) {
+                    isTrainMode = !isTrainMode;
 
-                if (isTrainMode) {
-                    m_stateManager->SetState("CurrentTool", std::string("TrainPlace"));
-                    isLineMode = false;
+                    if (isTrainMode) {
+                        DEBUG_DEBUG("Train mode is currently false. Setting to true...");
+                        m_stateManager->SetState("CurrentTool", std::string("TrainPlace"));
+                        isLineMode = false;
+                    }
+                    else {
+                        DEBUG_DEBUG("Train mode is currently true. Setting to false...");
+                        m_stateManager->SetState("CurrentTool", std::string("Line"));
+                        isLineMode = true;
+                    }
                 }
-                else {
-                    m_stateManager->SetState("CurrentTool", std::string("Line"));
-                    isLineMode = true;
-                }
-            }
-            if (m_stateManager->GetState<bool>("TrainPlaceVerified")) {
-                if (ImGui::Button("Add Train", ImVec2(95, 30))) {
-                    m_map->AddTrain();
+                if (m_stateManager->GetState<bool>("TrainPlaceVerified")) {
+                    if (ImGui::Button("Add Train", ImVec2(95, 30))) {
+                        m_map->AddTrain();
+                    }
                 }
             }
         }

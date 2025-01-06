@@ -13,6 +13,8 @@
 #include "Segment.h"
 #include "HandleManager.h"
 #include "SelectionManager.h"
+#include "../core/StateManager.h"
+#include "../managers/InputManager.h"
 #include "../Constants.h"
 #include "../Debug.h"
 #include "../entity/Train.h"
@@ -23,10 +25,11 @@ class Camera;
 class Map {
 public:
     // Constructor
-    explicit Map(unsigned int size)
+    explicit Map(unsigned int size, StateManager& sm)
         : m_size(size),
         m_grid(size, std::vector<int>(size, 1)),
-        m_minRadius(100) {}
+        m_minRadius(100),
+        stateManager(sm) {}
 
     SelectionManager GetSelectionManager() { return selectionManager; }
     const SelectionManager& GetSelectionManager() const { return selectionManager; }
@@ -69,6 +72,7 @@ public:
     bool isLineSelected() { return selectionManager.GetSelectedLine() == nullptr ? false : true; }
 
     // Train management
+    void UseTrainPlaceMode(sf::Vector2f pos, bool left);
     void AddTrain();
     void SelectTrain(Train* train) { selectionManager.SelectTrain(train); }
     bool SelectTrain(sf::Vector2f pos);
@@ -76,6 +80,8 @@ public:
     void RemoveTrain();
     Train* GetSelectedTrain() const { return selectionManager.GetSelectedTrain(); }
     std::vector<std::unique_ptr<Train>>& GetTrains() { return m_trains; }
+    City* GetStartCityForTrain() const { return startCityForTrain; }
+    City* GetEndCityForTrain() const { return endCityForTrain; }
 
 private:
     // Grid representation
@@ -98,7 +104,10 @@ private:
     std::vector<std::unique_ptr<Train>> m_trains;
 
     std::vector<Segment> sharedSegments; // List of shared segments
+    City* startCityForTrain = nullptr;
+    City* endCityForTrain = nullptr;
 
     // Selection Manager
     SelectionManager selectionManager;
+    StateManager& stateManager;
 };

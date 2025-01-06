@@ -273,3 +273,47 @@ sf::Vector2f Line::GetPerpendicularVector(int segmentIndex) const {
     sf::Vector2f perpendicular(-unitDir.y, unitDir.x);
     return perpendicular;
 }
+
+std::vector<int> Line::GetIndicesBetweenCities(City* cityA, City* cityB) const
+{
+    // 1. Find the indices of cityA and cityB in the 'points' array
+    int indexA = -1;
+    int indexB = -1;
+
+    for (int i = 0; i < static_cast<int>(points.size()); i++) {
+        if (points[i].isCity && points[i].city == cityA) {
+            indexA = i;
+        }
+        if (points[i].isCity && points[i].city == cityB) {
+            indexB = i;
+        }
+    }
+
+    // If either city was not found, return empty
+    if (indexA == -1 || indexB == -1) {
+        return {};
+    }
+
+    // 2. Ensure indexA < indexB for forward slicing
+    bool reverseOrder = false;
+    if (indexA > indexB) {
+        std::swap(indexA, indexB);
+        reverseOrder = true;
+    }
+
+    // 3. Gather all indices from indexA to indexB (inclusive)
+    std::vector<int> routeSegment;
+    routeSegment.reserve(indexB - indexA + 1);
+
+    for (int i = indexA; i <= indexB; i++) {
+        routeSegment.push_back(i);
+    }
+
+    // 4. If the original order was reversed, we reverse the collected segment
+    //    so the path goes from cityA -> cityB in correct order
+    if (reverseOrder) {
+        std::reverse(routeSegment.begin(), routeSegment.end());
+    }
+
+    return routeSegment;
+}

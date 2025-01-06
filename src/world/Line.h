@@ -40,6 +40,7 @@ public:
     void AddCityToEnd(City* city);
     void InsertCityAfter(int index, City* city);
     std::vector<City*> GetCities() const;
+    bool HasMultipleCities() { return GetCities().size() > 1; }
 
     // Node management
     void AddNode(sf::Vector2f pos);
@@ -55,6 +56,7 @@ public:
     sf::Vector2f GetStartPosition() const;
     sf::Vector2f GetEndPosition() const;
     sf::Vector2f GetPointPosition(int index) const;
+    std::vector<int> GetIndicesBetweenCities(City* cityA, City* cityB) const;
 
     // Selection management via HandleManager
     void SelectHandle(int index);

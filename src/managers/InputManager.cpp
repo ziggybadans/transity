@@ -32,17 +32,17 @@ InputManager::InputManager(std::shared_ptr<EventManager> eventMgr,
     , m_map(map)
     , m_isDragging(false)
     , m_lastMousePos()
-    , m_config{}
+    , m_config {}
 {
-    DEBUG_INFO("InputManager: Initializing InputManager");
+    DEBUG_DEBUG("InputManager: Initializing InputManager");
     m_stateManager->Subscribe("CurrentTool", [this](const std::any& data) {
         if (data.has_value()) {
             auto value = std::any_cast<std::string>(data);
             CheckSubscriptions();
             DEBUG_DEBUG("InputManager: Listening for CurrentTool state change.");
         }
-        });
-    InitializeSubscriptions();
+    });
+    CheckSubscriptions();
     InitializeCommands();
 }
 
@@ -63,7 +63,7 @@ void InputManager::HandleInput(float deltaTime) {
     }
 
     // Handle mouse dragging
-    if (sf::Mouse::isButtonPressed(sf::Mouse::Left)) {
+    if (sf::Mouse::isButtonPressed(sf::Mouse::Left) && m_stateManager->GetState<std::string>("CurrentTool") != std::string("TrainPlace")) {
         sf::Vector2f currentMousePos = sf::Vector2f(ImGui::GetIO().MousePos.x, ImGui::GetIO().MousePos.y);
         sf::Vector2f delta = currentMousePos - m_lastMousePos;
         float distanceSquared = delta.x * delta.x + delta.y * delta.y;
@@ -129,46 +129,48 @@ EventManager::SubscriptionID InputManager::AddMouseSubscription(
     return subscription;
 }
 
-void InputManager::InitializeSubscriptions() {
-
-    // An example of the old way
-    if (m_stateManager->GetState<std::string>("CurrentTool") == std::string("Line")) {
-        drawSubscription = AddMouseSubscription(sf::Event::MouseButtonPressed, sf::Mouse::Right, InputAction::Draw);
-    }
-
-    // Example of the new way
-    if (m_stateManager->GetState<std::string>("CurrentTool") == std::string("Place")) {
-        placeSubscription = AddMouseSubscription(sf::Event::MouseButtonPressed, sf::Mouse::Right, InputAction::Place);
-    }
-
-    AddMouseSubscription(sf::Event::MouseButtonReleased, sf::Mouse::Left, InputAction::None,
-        [this](const sf::Event& event) {
-            m_isDragging = false;
-        }
-    );
-
-    AddMouseSubscription(sf::Event::MouseButtonPressed, sf::Mouse::Left, InputAction::Select,
-        [this](const sf::Event& event) {
-            m_isDragging = false;
-            m_lastMousePos = sf::Vector2f(event.mouseButton.x, event.mouseButton.y);
-        });
-}
-
 void InputManager::CheckSubscriptions() {
-    if (m_stateManager->GetState<std::string>("CurrentTool") == std::string("Place")) {
+    DEBUG_DEBUG("Checking subscriptions...");
+
+    m_eventManager->Unsubscribe(placeSubscription);
+    m_eventManager->Unsubscribe(drawSubscription);
+    m_eventManager->Unsubscribe(trainPlaceLeftSubscription);
+    m_eventManager->Unsubscribe(trainPlaceRightSubscription);
+    m_eventManager->Unsubscribe(dragPressSubscription);
+    m_eventManager->Unsubscribe(dragReleaseSubscription);
+
+    std::string currentTool = m_stateManager->GetState<std::string>("CurrentTool");
+
+    if (currentTool == "Place") {
+        DEBUG_DEBUG("Subscribing to Place...");
         placeSubscription = AddMouseSubscription(sf::Event::MouseButtonPressed, sf::Mouse::Right, InputAction::Place);
     }
-    else {
-        DEBUG_DEBUG("InputManager: Unsubscribing from PlaceSubscription...");
-        m_eventManager->Unsubscribe(placeSubscription);
-    }
-
-    if (m_stateManager->GetState<std::string>("CurrentTool") == std::string("Line")) {
+    else if (currentTool == "Line") {
+        DEBUG_DEBUG("Subscribing to Draw...");
         drawSubscription = AddMouseSubscription(sf::Event::MouseButtonPressed, sf::Mouse::Right, InputAction::Draw);
     }
-    else {
-        DEBUG_DEBUG("InputManager: Unsubscribing from LineSubscription...");
-        m_eventManager->Unsubscribe(drawSubscription);
+    else if (currentTool == "TrainPlace") {
+        DEBUG_DEBUG("Subscribing to TrainPlace...");
+        trainPlaceLeftSubscription = AddMouseSubscription(sf::Event::MouseButtonPressed, sf::Mouse::Left, InputAction::TrainPlaceLeft);
+        trainPlaceRightSubscription = AddMouseSubscription(sf::Event::MouseButtonPressed, sf::Mouse::Right, InputAction::TrainPlaceRight);
+    }
+
+
+    if (currentTool == "Place" || currentTool == "Line") {
+        DEBUG_DEBUG("Sunscribing to dragging subscriptions...");
+        dragReleaseSubscription = AddMouseSubscription(sf::Event::MouseButtonReleased, sf::Mouse::Left, InputAction::None,
+            [this](const sf::Event& event) {
+                m_isDragging = false;
+            }
+        );
+
+        dragPressSubscription = AddMouseSubscription(sf::Event::MouseButtonPressed, sf::Mouse::Left, InputAction::Select,
+            [this](const sf::Event& event) {
+                m_isDragging = false;
+                m_lastMousePos = sf::Vector2f(event.mouseButton.x, event.mouseButton.y);
+                DEBUG_DEBUG("Firing select action...");
+            }
+        );
     }
 }
 
@@ -229,6 +231,26 @@ void InputManager::InitializeCommands() {
             map->MoveSelectedLineHandle(worldPos);
         }
     );
+
+    // TrainPlace
+    m_commands[InputAction::TrainPlaceLeft] = std::make_unique<MapInteractionCommand>(
+        m_camera,
+        m_window,
+        m_map,
+        [](std::shared_ptr<Map> map, const sf::Vector2f& worldPos) {
+            DEBUG_DEBUG("MoveCommand: Attempting to use train place mode at ", worldPos.x, ", ", worldPos.y);
+            map->UseTrainPlaceMode(worldPos, true);
+        }
+    );
+    m_commands[InputAction::TrainPlaceRight] = std::make_unique<MapInteractionCommand>(
+        m_camera,
+        m_window,
+        m_map,
+        [](std::shared_ptr<Map> map, const sf::Vector2f& worldPos) {
+            DEBUG_DEBUG("MoveCommand: Attempting to use train place mode at ", worldPos.x, ", ", worldPos.y);
+            map->UseTrainPlaceMode(worldPos, false);
+        }
+    );
     DEBUG_DEBUG("InputManager: Tool commands initialized.");
 
     // Initialize key mappings
@@ -247,6 +269,10 @@ void InputManager::InitializeCommands() {
 
 void InputManager::ExecuteCommand(InputAction action) {
     if (ImGui::GetIO().WantCaptureMouse) {
+        return;
+    }
+
+    if (!m_window.hasFocus()) {
         return;
     }
 

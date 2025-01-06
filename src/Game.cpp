@@ -24,6 +24,10 @@ Game::~Game() {
 
 bool Game::Init() {
     try {
+        Debug::EnableFileLogging("game.log"); // Enable debug logging
+        Debug::SetLevel(DebugLevel::Debug);  // Set default debug level
+        DEBUG_INFO("Initializing game...");
+
         // Stage 1: Utilities and core systems
         m_stateManager = std::make_shared<StateManager>();
         m_stateManager->InitializeCoreStates();
@@ -105,10 +109,6 @@ bool Game::Init() {
         m_stateManager->SetState("Loading", false);
         m_stateManager->SetState("Running", true);
 
-        Debug::EnableFileLogging("game.log"); // Enable debug logging
-        Debug::SetLevel(DebugLevel::Debug);  // Set default debug level
-        DEBUG_INFO("Initializing game...");
-
         return true;
     } catch (const std::exception& e) {
         DEBUG_ERROR("Error during initialization: ", e.what());
@@ -117,7 +117,7 @@ bool Game::Init() {
 }
 
 void Game::InitializeWorld() {
-    m_map = std::make_shared<Map>(Constants::MAP_SIZE);
+    m_map = std::make_shared<Map>(Constants::MAP_SIZE, *m_stateManager);
 
     m_stateManager->RegisterState("CurrentTool");
     m_stateManager->SetState("CurrentTool", std::string("Place"));

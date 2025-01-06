@@ -65,6 +65,9 @@ void Renderer::RenderMap(sf::RenderWindow& window, Map& map, const Camera& camer
         }
     }
 
+    City* startCity = map.GetStartCityForTrain();
+    City* endCity = map.GetEndCityForTrain();
+
     /* Cities */
     for (const City& city : map.GetCities()) {
         sf::CircleShape circleShape(city.GetRadius());
@@ -87,6 +90,30 @@ void Renderer::RenderMap(sf::RenderWindow& window, Map& map, const Camera& camer
 
         text.setPosition(textX, textY);
         window.draw(text);
+
+        // Draw "1" for start city and "2" for end city
+        sf::Text indicatorText;
+        indicatorText.setFont(m_font);
+        indicatorText.setCharacterSize(20); // Larger size for visibility
+        indicatorText.setFillColor(sf::Color::Blue); // Choose a distinct color
+
+        if (&city == startCity) {
+            indicatorText.setString("1");
+        }
+        else if (&city == endCity) {
+            indicatorText.setString("2");
+        }
+        else {
+            continue; // No indicator needed
+        }
+
+        // Position the indicator at the top-right corner of the city
+        sf::FloatRect indicatorBounds = indicatorText.getLocalBounds();
+        float indicatorX = city.GetPosition().x + city.GetRadius() - indicatorBounds.width / 2;
+        float indicatorY = city.GetPosition().y - city.GetRadius() - indicatorBounds.height / 2;
+
+        indicatorText.setPosition(indicatorX, indicatorY);
+        window.draw(indicatorText);
     }
 
     /* Lines */
