@@ -44,50 +44,67 @@ void Train::Update(float dt)
 
 void Train::Move(float dt)
 {
-    if (m_currentPointIndex >= static_cast<int>(m_pathPoints.size()))
-    {
-        // Reached the end of the path, reverse direction
-        m_forward = false;
-        m_currentPointIndex = static_cast<int>(m_pathPoints.size()) - 2;
+    if (m_pathPoints.empty() || m_currentPointIndex < 0 || m_currentPointIndex >= static_cast<int>(m_pathPoints.size()))
         return;
-    }
 
-    sf::Vector2f target = m_pathPoints[m_currentPointIndex];
-    sf::Vector2f direction = target - m_position;
-    float distanceToTarget = Distance(m_position, target);
+    sf::Vector2f targetPos = m_pathPoints[m_currentPointIndex];
+    sf::Vector2f toTarget = targetPos - m_position;
+    float distanceToTarget = Distance(m_position, targetPos);
 
-    if (distanceToTarget < PROXIMITY_THRESHOLD)
+    // Calculate the distance needed to fully decelerate from current speed to 0
+    float stopDistance = (m_currentSpeed * m_currentSpeed) / (2.0f * DECELERATION);
+
+    // Decide whether to accelerate or decelerate
+    if (stopDistance >= distanceToTarget)
     {
-        // Arrived at the point
-        m_position = target;
-        m_state = State::Waiting;
-        m_waitTime = STOP_DURATION;
-        return;
+        // Decelerate
+        m_currentSpeed -= DECELERATION * dt;
+        if (m_currentSpeed < 0.0f)
+            m_currentSpeed = 0.0f;
     }
-
-    // Determine if we need to accelerate
-    if (m_currentSpeed < m_maxSpeed)
+    else
     {
-        m_currentSpeed += ACCELERATION * dt;
-        if (m_currentSpeed > m_maxSpeed)
-            m_currentSpeed = m_maxSpeed;
+        // Accelerate up to max speed
+        if (m_currentSpeed < m_maxSpeed)
+        {
+            m_currentSpeed += ACCELERATION * dt;
+            if (m_currentSpeed > m_maxSpeed)
+                m_currentSpeed = m_maxSpeed;
+        }
     }
 
-    // Calculate movement vector
-    sf::Vector2f unitDirection = Normalize(direction);
-    sf::Vector2f movement = unitDirection * m_currentSpeed * dt;
+    // Calculate potential movement
+    sf::Vector2f direction = Normalize(toTarget);
+    sf::Vector2f movement = direction * m_currentSpeed * dt;
 
-    // If movement would overshoot the target, clamp to target
-    if (Distance(m_position + movement, target) < PROXIMITY_THRESHOLD)
+    // If movement exceeds distance to target, clamp it and set position to target
+    float movementDistance = Length(movement);
+    if (movementDistance >= distanceToTarget)
     {
-        m_position = target;
-        m_state = State::Waiting;
-        m_waitTime = STOP_DURATION;
-        return;
+        m_position = targetPos;
+        ArriveAtCity();
     }
+    else
+    {
+        m_position += movement;
+    }
+}
 
-    // Move the train
-    m_position += movement;
+float Train::Length(const sf::Vector2f& v) const
+{
+    return std::sqrt(v.x * v.x + v.y * v.y);
+}
+
+void Train::ArriveAtCity()
+{
+    m_state = State::Waiting;
+    m_waitTime = STOP_DURATION;
+    m_currentSpeed = 0.0f;
+    // Ensure the train is exactly at the city's position
+    if (m_currentPointIndex >= 0 && m_currentPointIndex < static_cast<int>(m_pathPoints.size()))
+    {
+        m_position = m_pathPoints[m_currentPointIndex];
+    }
 }
 
 void Train::Wait(float dt)
