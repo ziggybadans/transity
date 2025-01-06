@@ -13,6 +13,7 @@
 #include "../world/Map.h"
 #include "../Debug.h"
 #include "../core/StateManager.h"
+#include "../interfaces/InputCommand.h"
 
 // Enumeration for different input actions
 enum class InputAction {
@@ -25,7 +26,8 @@ enum class InputAction {
     Place,
     Draw,
     Select,
-    Move
+    Move,
+    None
 };
 
 // Configuration structure for input settings
@@ -33,13 +35,6 @@ struct InputConfig {
     float zoomSpeed = 1.1f;
     float panSpeed = 500.0f;
     // Add other config parameters here
-};
-
-// Command interface
-class InputCommand {
-public:
-    virtual ~InputCommand() = default;
-    virtual void execute() = 0;
 };
 
 // Concrete command for zooming
@@ -60,44 +55,6 @@ public:
     void execute() override;
 };
 
-// Concrete command for placing objects
-class PlaceCommand : public InputCommand {
-    std::shared_ptr<Camera> m_camera;
-    sf::RenderWindow& m_window;
-    std::shared_ptr<Map> m_map;
-public:
-    PlaceCommand(std::shared_ptr<Camera> camera, sf::RenderWindow& window, std::shared_ptr<Map> map);
-    void execute() override;
-};
-
-// Concrete command for drawing
-class DrawCommand : public InputCommand {
-    std::shared_ptr<Camera> m_camera;
-    sf::RenderWindow& m_window;
-    std::shared_ptr<Map> m_map;
-public:
-    DrawCommand(std::shared_ptr<Camera> camera, sf::RenderWindow& window, std::shared_ptr<Map> map);
-    void execute() override;
-};
-
-class SelectCommand : public InputCommand {
-    std::shared_ptr<Camera> m_camera;
-    sf::RenderWindow& m_window;
-    std::shared_ptr<Map> m_map;
-public:
-    SelectCommand(std::shared_ptr<Camera> camera, sf::RenderWindow& window, std::shared_ptr<Map> map);
-    void execute() override;
-};
-
-class MoveCommand : public InputCommand {
-    std::shared_ptr<Camera> m_camera;
-    sf::RenderWindow& m_window;
-    std::shared_ptr<Map> m_map;
-public:
-    MoveCommand(std::shared_ptr<Camera> camera, sf::RenderWindow& window, std::shared_ptr<Map> map);
-    void execute() override;
-};
-
 // InputManager class declaration
 class InputManager {
 public:
@@ -109,13 +66,16 @@ public:
 
     void HandleInput(float deltaTime);
     void SetConfig(const InputConfig& config);
-    const InputConfig& GetConfig() const;
+    const InputConfig& GetConfig() const { return m_config; }
 
 private:
     void InitializeSubscriptions();
     void CheckSubscriptions();
     void InitializeCommands();
     void ExecuteCommand(InputAction action);
+
+    using MouseEventCallback = std::function<void(const sf::Event&)>;
+    EventManager::SubscriptionID AddMouseSubscription(sf::Event::EventType type, sf::Mouse::Button button, InputAction action, MouseEventCallback callback = nullptr);
 
     std::shared_ptr<EventManager> m_eventManager;
     std::shared_ptr<StateManager> m_stateManager;

@@ -189,6 +189,7 @@
     <ClInclude Include="src\graphics\Camera.h" />
     <ClInclude Include="src\graphics\Renderer.h" />
     <ClInclude Include="src\interfaces\IInitializable.h" />
+    <ClInclude Include="src\interfaces\InputCommand.h" />
     <ClInclude Include="src\managers\EventManager.h" />
     <ClInclude Include="src\managers\InputManager.h" />
     <ClInclude Include="src\managers\ResourceManager.h" />

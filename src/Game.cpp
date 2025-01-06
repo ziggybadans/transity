@@ -121,6 +121,8 @@ void Game::InitializeWorld() {
 
     m_stateManager->RegisterState("CurrentTool");
     m_stateManager->SetState("CurrentTool", std::string("Place"));
+    m_stateManager->RegisterState("TrainPlaceVerified");
+    m_stateManager->SetState("TrainPlaceVerified", false);
 }
 
 void Game::Run()

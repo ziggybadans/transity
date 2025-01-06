@@ -66,6 +66,7 @@ public:
     void MoveSelectedLineHandle(sf::Vector2f newPos);
     void UpdateSharedSegments();
     std::vector<Segment> GetSharedSegments() const { return sharedSegments; }
+    bool isLineSelected() { return selectionManager.GetSelectedLine() == nullptr ? false : true; }
 
     // Train management
     void AddTrain();
