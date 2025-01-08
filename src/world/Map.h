@@ -29,7 +29,8 @@ public:
         : m_size(size),
         m_grid(size, std::vector<int>(size, 1)),
         m_minRadius(100),
-        stateManager(sm) {}
+        stateManager(sm),
+        startCityForTrain(nullptr), endCityForTrain(nullptr) {}
 
     SelectionManager GetSelectionManager() { return selectionManager; }
     const SelectionManager& GetSelectionManager() const { return selectionManager; }
@@ -104,8 +105,8 @@ private:
     std::vector<std::unique_ptr<Train>> m_trains;
 
     std::vector<Segment> sharedSegments; // List of shared segments
-    City* startCityForTrain = nullptr;
-    City* endCityForTrain = nullptr;
+    City* startCityForTrain;
+    City* endCityForTrain;
 
     // Selection Manager
     SelectionManager selectionManager;

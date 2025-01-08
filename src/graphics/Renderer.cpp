@@ -102,9 +102,9 @@ void Renderer::RenderMap(sf::RenderWindow& window, Map& map, const Camera& camer
         sf::Text text;
         text.setFont(m_font); // Use the loaded font
         text.setString(city.GetName());
-        text.setCharacterSize(72); // Adjust as needed
         text.setFillColor(sf::Color::Black); // Choose a color that contrasts with the map
-        text.setScale(sf::Vector2f(0.25, 0.25));
+        text.setCharacterSize(32.0f / camera.GetZoomLevel()); // Adjust as needed
+        text.setScale(sf::Vector2f(camera.GetZoomLevel() / 2, camera.GetZoomLevel() / 2));
 
         // Calculate the position: below the city
         sf::FloatRect textBounds = text.getLocalBounds();
@@ -156,7 +156,8 @@ void Renderer::RenderMap(sf::RenderWindow& window, Map& map, const Camera& camer
         indicatorText.setFont(m_font);
         indicatorText.setCharacterSize(72); // Larger size for visibility
         indicatorText.setFillColor(sf::Color::White); // Choose a distinct color
-        indicatorText.setScale(sf::Vector2f(0.25, 0.25));
+        indicatorText.setCharacterSize(32.0f / camera.GetZoomLevel()); // Adjust as needed
+        indicatorText.setScale(sf::Vector2f(camera.GetZoomLevel() / 2, camera.GetZoomLevel() / 2));
 
         if (&city == startCity) {
             indicatorText.setString("1");
