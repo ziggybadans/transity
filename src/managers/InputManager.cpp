@@ -223,7 +223,7 @@ void InputManager::InitializeCommands() {
         m_map,
         [](std::shared_ptr<Map> map, const sf::Vector2f& worldPos) {
             DEBUG_DEBUG("SelectCommand: Attempting to select object at world position ", worldPos.x, ", ", worldPos.y);
-            map->SelectObject(worldPos);
+            map->GetSelectionManager().SelectObject(worldPos);
         }
     );
 
@@ -234,7 +234,7 @@ void InputManager::InitializeCommands() {
         m_map,
         [](std::shared_ptr<Map> map, const sf::Vector2f& worldPos) {
             DEBUG_DEBUG("MoveCommand: Attempting to move handle to world position ", worldPos.x, ", ", worldPos.y);
-            if (map->isLineSelected() && map->GetSelectedLine()->GetSelectedHandleIndex() != -1) {
+            if (map->isLineSelected() && map->GetSelectionManager().GetSelectedLine()->GetSelectedHandleIndex() != -1) {
                 DEBUG_DEBUG("MoveCommand: Moving line handle to world position ", worldPos.x, ", ", worldPos.y);
                 map->MoveSelectedLineHandle(worldPos);
             }

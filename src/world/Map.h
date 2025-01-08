@@ -30,14 +30,11 @@ public:
         m_grid(size, std::vector<int>(size, 1)),
         m_minRadius(100),
         stateManager(sm),
-        startCityForTrain(nullptr), endCityForTrain(nullptr) {}
+        startCityForTrain(nullptr), endCityForTrain(nullptr),
+        selectionManager(*this) {}
 
     SelectionManager& GetSelectionManager() { return selectionManager; }
     const SelectionManager& GetSelectionManager() const { return selectionManager; }
-
-    // Selection Handling
-    void SelectObject(const sf::Vector2f& pos);
-    void DeselectAll();
 
     // Tile management
     void SetTile(unsigned int x, unsigned int y, int value);
@@ -50,7 +47,6 @@ public:
 
     // Nodes
     void AddGenericNode(sf::Vector2f pos);
-    bool SelectNode(sf::Vector2f& pos);
     void RemoveNode();
     void MoveNode(sf::Vector2f& newPos);
     std::list<Node>& GetNodes() { return m_nodes; }
@@ -58,9 +54,6 @@ public:
     // City management
     void AddCity(const sf::Vector2f pos);
     std::list<City>& GetCities() { return m_cities; }
-    void SelectCity(City* city) { selectionManager.SelectCity(city); }
-    bool SelectCity(sf::Vector2f pos);
-    void DeselectCity() { selectionManager.DeselectAll(); }
     void RemoveCity();
     void MoveCity(sf::Vector2f newPos);
 
@@ -69,13 +62,8 @@ public:
     void CreateLine(sf::Vector2f pos);
     void AddToLineStart(sf::Vector2f pos);
     void AddToLineEnd(sf::Vector2f pos);
-    void SelectLine(Line* line) { selectionManager.SelectLine(line); }
-    bool SelectLine(sf::Vector2f pos);
-    bool SelectLineHandle(sf::Vector2f pos);
-    void DeselectLine() { selectionManager.DeselectAll(); }
     void RemoveLine();
     std::list<Line>& GetLines() { return m_lines; }
-    Line* GetSelectedLine() const { return selectionManager.GetSelectedLine(); }
     void MoveSelectedLineHandle(sf::Vector2f newPos);
     void UpdateSharedSegments();
     std::vector<Segment> GetSharedSegments() const { return sharedSegments; }
@@ -85,14 +73,12 @@ public:
     // Train management
     void UseTrainPlaceMode(sf::Vector2f pos, bool left);
     void AddTrain();
-    void SelectTrain(Train* train) { selectionManager.SelectTrain(train); }
-    bool SelectTrain(sf::Vector2f pos);
-    void DeselectTrain() { selectionManager.DeselectAll(); }
     void RemoveTrain();
-    Train* GetSelectedTrain() const { return selectionManager.GetSelectedTrain(); }
     std::vector<std::unique_ptr<Train>>& GetTrains() { return m_trains; }
     City* GetStartCityForTrain() const { return startCityForTrain; }
     City* GetEndCityForTrain() const { return endCityForTrain; }
+
+    float DistancePointToSegment(const sf::Vector2f& point, const sf::Vector2f& segStart, const sf::Vector2f& segEnd);
 
 private:
     // Grid representation
@@ -104,7 +90,6 @@ private:
     // Helper functions
     void Resize(unsigned int newSize);
     City* FindCityAtPosition(sf::Vector2f pos);
-    float DistancePointToSegment(const sf::Vector2f& point, const sf::Vector2f& segStart, const sf::Vector2f& segEnd);
     std::pair<int, int> NormalizeSegment(int startIndex, int endIndex) const;
     std::string GenerateSegmentKey(const sf::Vector2f& start, const sf::Vector2f& end) const;
     static bool ArePositionsEqual(const sf::Vector2f& pos1, const sf::Vector2f& pos2, float epsilon = 0.1f);

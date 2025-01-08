@@ -6,45 +6,22 @@
 #include "../entity/Train.h"
 #include <SFML/Graphics.hpp>
 
+class Map;
+
 class SelectionManager {
 public:
-    SelectionManager()
-        : selectedCity(nullptr), selectedLine(nullptr), selectedTrain(nullptr), selectedNode(nullptr) {}
+    SelectionManager(Map& map);
 
-    // City Selection
-    void SelectCity(City* city) {
-        DeselectAll();
-        selectedCity = city;
-        if (selectedCity) {
-            selectedCity->SetSelected(true);
-        }
-    }
+    void SelectObject(const sf::Vector2f& pos);
+    bool SelectCity(sf::Vector2f pos);
+    bool SelectLine(sf::Vector2f pos);
+    bool SelectLineHandle(sf::Vector2f pos);
+    bool SelectTrain(sf::Vector2f pos);
 
-    // Line Selection
-    void SelectLine(Line* line) {
-        DeselectAll();
-        selectedLine = line;
-        if (selectedLine) {
-            selectedLine->SetSelected(true);
-        }
-    }
-
-    // Train Selection
-    void SelectTrain(Train* train) {
-        DeselectAll();
-        selectedTrain = train;
-        if (selectedTrain) {
-            selectedTrain->SetSelected(true);
-        }
-    }
-
-    void SelectNode(Node* node) {
-        DeselectAll();
-        selectedNode = node;
-        if (selectedNode) {
-            selectedNode->SetSelected(true);
-        }
-    }
+    void SelectCity(City* city);
+    void SelectLine(Line* line);
+    void SelectTrain(Train* train);
+    void SelectNode(Node* node);
 
     // Deselect All
     void DeselectAll() {
@@ -69,4 +46,6 @@ private:
     Line* selectedLine;
     Train* selectedTrain;
     Node* selectedNode;
+
+    Map& m_map;
 };

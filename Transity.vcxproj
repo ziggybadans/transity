@@ -169,6 +169,7 @@
     <ClCompile Include="src\utility\ThreadPool.cpp" />
     <ClCompile Include="src\world\Line.cpp" />
     <ClCompile Include="src\world\Map.cpp" />
+    <ClCompile Include="src\world\SelectionManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitignore" />

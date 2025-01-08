@@ -2,40 +2,6 @@
 #include "../Debug.h"
 #include <queue>
 
-void Map::SelectObject(const sf::Vector2f& pos) {
-    // Attempt to select a Train first
-    if (SelectTrain(pos)) {
-        DEBUG_DEBUG("Train selected.");
-        return;
-    }
-
-    // Attempt to select a Line handle
-    if (SelectLineHandle(pos)) {
-        DEBUG_DEBUG("Line handle selected.");
-        return;
-    }
-
-    // Attempt to select a Line
-    if (SelectLine(pos)) {
-        DEBUG_DEBUG("Line selected.");
-        return;
-    }
-
-    // Attempt to select a City
-    if (SelectCity(pos)) {
-        DEBUG_DEBUG("City selected.");
-        return;
-    }
-
-    // If no object was selected, deselect any currently selected objects
-    DeselectAll();
-    DEBUG_DEBUG("No object selected. All selections cleared.");
-}
-
-void Map::DeselectAll() {
-    selectionManager.DeselectAll();
-}
-
 void Map::SetTile(unsigned int x, unsigned int y, int value) {
     if (x >= m_size || y >= m_size)
         throw std::out_of_range("Invalid tile coordinates");
@@ -66,23 +32,6 @@ void Map::AddCity(sf::Vector2f pos) {
     unsigned int population = 1000;
 
     m_cities.emplace_back(name, pos, population); // Adds to the list of cities
-}
-
-bool Map::SelectCity(sf::Vector2f pos) {
-    const float CLICK_THRESHOLD = 10.0f; // Adjust as needed
-
-    for (auto& city : m_cities) {
-        sf::Vector2f diff = city.GetPosition() - pos;
-        float distanceSquared = diff.x * diff.x + diff.y * diff.y;
-
-        if (distanceSquared <= (city.GetRadius() + CLICK_THRESHOLD) * (city.GetRadius() + CLICK_THRESHOLD)) {
-            SelectCity(&city);
-            return true;
-        }
-    }
-
-    //DeselectAll();
-    return false;
 }
 
 void Map::UseLineMode(sf::Vector2f pos) {
@@ -183,7 +132,7 @@ void Map::CreateLine(sf::Vector2f pos) {
 
     m_lines.emplace_back(firstCity, name);
     Line* newLine = &m_lines.back();
-    SelectLine(newLine);
+    selectionManager.SelectLine(newLine);
 
     UpdateSharedSegments();
 
@@ -191,7 +140,7 @@ void Map::CreateLine(sf::Vector2f pos) {
 }
 
 void Map::AddToLineStart(sf::Vector2f pos) {
-    DEBUG_DEBUG("Adding city to the start of line " + GetSelectedLine()->GetName() + "...");
+    DEBUG_DEBUG("Adding city to the start of line " + selectionManager.GetSelectedLine()->GetName() + "...");
 
     City* newCity = FindCityAtPosition(pos);
     if (newCity == nullptr) {
@@ -200,7 +149,7 @@ void Map::AddToLineStart(sf::Vector2f pos) {
     }
 
     // Check for parallel conflict before proceeding
-    Line* selectedLine = GetSelectedLine();
+    Line* selectedLine = selectionManager.GetSelectedLine();
     if (!selectedLine) {
         DEBUG_DEBUG("No line selected.");
         return;
@@ -213,19 +162,19 @@ void Map::AddToLineStart(sf::Vector2f pos) {
     }
 
     // Check if the city is already part of the line
-    auto cityList = GetSelectedLine()->GetCities();
+    auto cityList = selectionManager.GetSelectedLine()->GetCities();
     if (std::find(cityList.begin(), cityList.end(), newCity) != cityList.end()) {
         DEBUG_DEBUG("The city is already part of the line.");
         return;
     }
 
-    GetSelectedLine()->AddCityToStart(newCity);
+    selectionManager.GetSelectedLine()->AddCityToStart(newCity);
     UpdateSharedSegments();
-    DEBUG_DEBUG("Added city with name " + newCity->GetName() + " to the start of line " + GetSelectedLine()->GetName());
+    DEBUG_DEBUG("Added city with name " + newCity->GetName() + " to the start of line " + selectionManager.GetSelectedLine()->GetName());
 }
 
 void Map::AddToLineEnd(sf::Vector2f pos) {
-    DEBUG_DEBUG("Adding city to the end of line " + GetSelectedLine()->GetName() + "...");
+    DEBUG_DEBUG("Adding city to the end of line " + selectionManager.GetSelectedLine()->GetName() + "...");
 
     City* newCity = FindCityAtPosition(pos);
     if (newCity == nullptr) {
@@ -234,7 +183,7 @@ void Map::AddToLineEnd(sf::Vector2f pos) {
     }
 
     // Check for parallel conflict before proceeding
-    Line* selectedLine = GetSelectedLine();
+    Line* selectedLine = selectionManager.GetSelectedLine();
     if (!selectedLine) {
         DEBUG_DEBUG("No line selected.");
         return;
@@ -247,72 +196,15 @@ void Map::AddToLineEnd(sf::Vector2f pos) {
     }
 
     // Check if the city is already part of the line
-    auto cityList = GetSelectedLine()->GetCities();
+    auto cityList = selectionManager.GetSelectedLine()->GetCities();
     if (std::find(cityList.begin(), cityList.end(), newCity) != cityList.end()) {
         DEBUG_DEBUG("The city is already part of the line.");
         return;
     }
 
-    GetSelectedLine()->AddCityToEnd(newCity);
+    selectionManager.GetSelectedLine()->AddCityToEnd(newCity);
     UpdateSharedSegments();
-    DEBUG_DEBUG("Added city with name " + newCity->GetName() + " to the end of line " + GetSelectedLine()->GetName());
-}
-
-bool Map::SelectLine(sf::Vector2f pos) {
-    const float CLICK_THRESHOLD = 5.0f; // Adjust as needed
-    float bestDistance = CLICK_THRESHOLD;
-    Line* closestLine = nullptr;
-
-    for (auto& line : m_lines) {
-        // Use the adjusted path points that account for offsets
-        const auto& pathPoints = line.GetAdjustedPathPoints();
-
-        // Iterate through all straight segments of the line
-        for (size_t i = 0; i < pathPoints.size() - 1; ++i) {
-            sf::Vector2f start = pathPoints[i];
-            sf::Vector2f end = pathPoints[i + 1];
-
-            // Calculate distance from click position to the segment
-            float distance = DistancePointToSegment(pos, start, end);
-            // Track the closest line if within threshold
-            if (distance <= bestDistance) {
-                bestDistance = distance;
-                closestLine = &line;
-            }
-        }
-    }
-
-    if (closestLine) {
-        SelectLine(closestLine);
-        return true;
-    }
-
-    //DeselectAll();
-    return false;
-}
-
-bool Map::SelectLineHandle(sf::Vector2f pos) {
-    const float HANDLE_CLICK_THRESHOLD = 10.0f; // Adjust as needed
-
-    Line* selectedLine = selectionManager.GetSelectedLine();
-    if (selectedLine == nullptr)
-        return false;
-
-    // Iterate through all handles
-    for (const auto& handle : selectedLine->GetHandles()) {
-        sf::Vector2f handlePos = selectedLine->GetPointPosition(handle.index);
-        sf::Vector2f diff = handlePos - pos;
-        float distanceSquared = diff.x * diff.x + diff.y * diff.y;
-
-        if (distanceSquared <= HANDLE_CLICK_THRESHOLD * HANDLE_CLICK_THRESHOLD) {
-            selectedLine->SelectHandle(handle.index);
-            return true;
-        }
-    }
-
-    // If no handle was clicked, deselect all handles
-    selectedLine->DeselectHandles();
-    return false;
+    DEBUG_DEBUG("Added city with name " + newCity->GetName() + " to the end of line " + selectionManager.GetSelectedLine()->GetName());
 }
 
 void Map::RemoveLine() {
@@ -571,32 +463,6 @@ void Map::AddTrain() {
     DEBUG_DEBUG("Added " + trainID + " with multi-line route. Station list size: " + std::to_string(allStations.size()));
 }
 
-bool Map::SelectTrain(sf::Vector2f pos) {
-    const float CLICK_THRESHOLD = 10.0f; // Adjust as needed
-    Train* closestTrain = nullptr;
-    float closestDistanceSquared = CLICK_THRESHOLD * CLICK_THRESHOLD;
-
-    for (auto& train : m_trains) {
-        sf::Vector2f trainPos = train->GetPosition();
-        sf::Vector2f diff = trainPos - pos;
-        float distanceSquared = diff.x * diff.x + diff.y * diff.y;
-
-        if (distanceSquared < closestDistanceSquared) {
-            closestDistanceSquared = distanceSquared;
-            closestTrain = train.get();
-        }
-    }
-
-    if (closestTrain != nullptr) {
-        SelectTrain(closestTrain);
-        return true;
-    }
-    else {
-        //DeselectAll();
-        return false;
-    }
-}
-
 void Map::RemoveTrain() {
     Train* selectedTrain = selectionManager.GetSelectedTrain();
     if (!selectedTrain) { return; }
@@ -749,19 +615,6 @@ void Map::AddGenericNode(sf::Vector2f pos) {
     m_nodes.emplace_back(name, pos, radius);
 }
 
-bool Map::SelectNode(sf::Vector2f& pos) {
-    const float CLICK_THRESHOLD = 10.0f;
-    for (auto& node : m_nodes) {
-        sf::Vector2f diff = node.GetPosition() - pos;
-        float distanceSquared = diff.x * diff.x + diff.y * diff.y;
-        if (distanceSquared <= CLICK_THRESHOLD * CLICK_THRESHOLD) {
-            selectionManager.SelectNode(&node);
-            return true;
-        }
-    }
-    return false;
-}
-
 void Map::RemoveNode() {
     Node* selectedNode = selectionManager.GetSelectedNode();
     if (!selectedNode) {
@@ -856,7 +709,7 @@ void Map::CreateBranch(Line* parentLine, int branchHandleIndex, sf::Vector2f pos
     // Create a new branch line starting from the branch point
     m_lines.emplace_back(branchStart, name);
     Line* newLine = &m_lines.back();
-    SelectLine(newLine);
+    selectionManager.SelectLine(newLine);
 
     // Extend the new branch line based on the clicked position
     City* clickedCity = FindCityAtPosition(pos);
