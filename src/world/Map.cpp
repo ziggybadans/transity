@@ -466,7 +466,6 @@ void Map::AddTrain() {
         return;
     }
 
-    // Use the new route-finding method with Node pointers
     std::vector<Node*> routeNodes = FindRouteBetweenNodes(startCityForTrain, endCityForTrain);
     if (routeNodes.empty()) {
         DEBUG_ERROR("AddTrain: No route found between selected cities.");
@@ -475,18 +474,14 @@ void Map::AddTrain() {
 
     std::vector<sf::Vector2f> fullPathPoints;
     Line* firstLine = nullptr;
-
-    // Collect all station positions from each connecting line
     std::vector<sf::Vector2f> allStations;
     allStations.reserve(64);
 
-    // Iterate over consecutive node pairs to build the full path
     for (size_t i = 0; i + 1 < routeNodes.size(); ++i) {
         Node* nodeA = routeNodes[i];
         Node* nodeB = routeNodes[i + 1];
         Line* connectingLine = nullptr;
 
-        // Find a line connecting nodeA and nodeB
         for (auto& line : m_lines) {
             const auto& points = line.GetPoints();
             for (size_t j = 0; j + 1 < points.size(); ++j) {
@@ -504,10 +499,8 @@ void Map::AddTrain() {
             return;
         }
 
-        // Gather partial path from this line
         const auto& linePoints = connectingLine->GetPathPoints();
         const auto& cityIndices = connectingLine->GetCityIndices();
-
         int idxA = -1, idxB = -1;
         for (size_t j = 0; j < linePoints.size(); ++j) {
             if (ArePositionsEqual(linePoints[j], nodeA->GetPosition())) idxA = (int)j;
@@ -520,15 +513,12 @@ void Map::AddTrain() {
 
         int startIdx = std::min(idxA, idxB);
         int endIdx = std::max(idxA, idxB);
-
         for (int k = startIdx; k <= endIdx; ++k) {
             fullPathPoints.push_back(linePoints[k]);
         }
 
-        // Collect city positions on this line for stopping
         for (int cIdx : cityIndices) {
             sf::Vector2f cPos = connectingLine->GetPointPosition(cIdx);
-            // Avoid duplicates via distance check or custom check
             bool alreadyAdded = false;
             for (auto& st : allStations) {
                 float dist = std::hypot(st.x - cPos.x, st.y - cPos.y);
@@ -552,13 +542,24 @@ void Map::AddTrain() {
         return;
     }
 
-    // Create and register the train
+    // Remove consecutive duplicate points from fullPathPoints
+    std::vector<sf::Vector2f> filteredPathPoints;
+    if (!fullPathPoints.empty()) {
+        filteredPathPoints.push_back(fullPathPoints.front());
+        for (size_t i = 1; i < fullPathPoints.size(); ++i) {
+            if (!ArePositionsEqual(fullPathPoints[i], fullPathPoints[i - 1])) {
+                filteredPathPoints.push_back(fullPathPoints[i]);
+            }
+        }
+    }
+    fullPathPoints = filteredPathPoints;
+
     std::string trainID = "Train" + std::to_string(m_trains.size() + 1);
     std::unique_ptr<Train> newTrain = std::make_unique<Train>(
-        firstLine,            // We still register with the first line
+        firstLine,
         trainID,
-        fullPathPoints,       // The entire path across main + branch lines
-        allStations           // All city stations across the route
+        fullPathPoints,
+        allStations
     );
 
     if (firstLine) {
@@ -569,8 +570,7 @@ void Map::AddTrain() {
     startCityForTrain = nullptr;
     endCityForTrain = nullptr;
 
-    DEBUG_DEBUG("Added " + trainID + " with multi-line route. Station list size: "
-        + std::to_string(allStations.size()));
+    DEBUG_DEBUG("Added " + trainID + " with multi-line route. Station list size: " + std::to_string(allStations.size()));
 }
 
 bool Map::SelectTrain(sf::Vector2f pos) {

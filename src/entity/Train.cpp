@@ -116,9 +116,20 @@ float Train::Length(const sf::Vector2f& v) const
 void Train::ArriveAtCity()
 {
     m_state = State::Waiting;
-    m_waitTime = STOP_DURATION;
     m_currentSpeed = 0.0f;
-    // Ensure the train is exactly at the city's position
+    int stationIndex = -1;
+    for (int i = 0; i < static_cast<int>(m_stationPositions.size()); i++) {
+        if (Distance(m_position, m_stationPositions[i]) <= PROXIMITY_THRESHOLD) {
+            stationIndex = i;
+            break;
+        }
+    }
+    if (stationIndex == 0 || stationIndex == static_cast<int>(m_stationPositions.size()) - 1) {
+        m_waitTime = STOP_DURATION * 2.0f;
+    }
+    else {
+        m_waitTime = STOP_DURATION;
+    }
     if (m_currentPointIndex >= 0 && m_currentPointIndex < static_cast<int>(m_pathPoints.size()))
     {
         m_position = m_pathPoints[m_currentPointIndex];
@@ -130,15 +141,12 @@ void Train::Wait(float dt)
     m_waitTime -= dt;
     if (m_waitTime <= 0.0f)
     {
-        // Finish waiting, proceed to next point
         m_state = State::Moving;
-
         if (m_forward)
         {
             m_currentPointIndex++;
             if (m_currentPointIndex >= static_cast<int>(m_pathPoints.size()))
             {
-                // Reached end, reverse direction
                 m_forward = false;
                 m_currentPointIndex = static_cast<int>(m_pathPoints.size()) - 2;
             }
@@ -148,7 +156,6 @@ void Train::Wait(float dt)
             m_currentPointIndex--;
             if (m_currentPointIndex < 0)
             {
-                // Reached start, reverse direction
                 m_forward = true;
                 m_currentPointIndex = 1;
             }
