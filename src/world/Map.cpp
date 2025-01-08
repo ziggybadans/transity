@@ -80,7 +80,7 @@ bool Map::SelectCity(sf::Vector2f pos) {
         }
     }
 
-    DeselectAll();
+    //DeselectAll();
     return false;
 }
 
@@ -234,7 +234,7 @@ bool Map::SelectLine(sf::Vector2f pos) {
         return true;
     }
 
-    DeselectAll();
+    //DeselectAll();
     return false;
 }
 
@@ -484,7 +484,7 @@ bool Map::SelectTrain(sf::Vector2f pos) {
         return true;
     }
     else {
-        DeselectAll();
+        //DeselectAll();
         return false;
     }
 }
