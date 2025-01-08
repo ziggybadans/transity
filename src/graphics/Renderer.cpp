@@ -27,6 +27,7 @@ bool Renderer::InitWithWindow(sf::RenderWindow& window) {
         DEBUG_ERROR("Failed to load font.");
         return false;
     }
+    m_font.setSmooth(true);
 
     m_isInitialized = true;
     DEBUG_INFO("Renderer initialized successfully.");
@@ -68,54 +69,6 @@ void Renderer::RenderMap(sf::RenderWindow& window, Map& map, const Camera& camer
     City* startCity = map.GetStartCityForTrain();
     City* endCity = map.GetEndCityForTrain();
 
-    /* Cities */
-    for (const City& city : map.GetCities()) {
-        sf::CircleShape circleShape(city.GetRadius());
-        circleShape.setOrigin(city.GetRadius(), city.GetRadius());
-        circleShape.setPosition(city.GetPosition());
-        circleShape.setFillColor(sf::Color::Black);
-        window.draw(circleShape);
-
-        // Create and configure the text label
-        sf::Text text;
-        text.setFont(m_font); // Use the loaded font
-        text.setString(city.GetName());
-        text.setCharacterSize(14); // Adjust as needed
-        text.setFillColor(sf::Color::Black); // Choose a color that contrasts with the map
-
-        // Calculate the position: below the city
-        sf::FloatRect textBounds = text.getLocalBounds();
-        float textX = city.GetPosition().x - textBounds.width / 2;
-        float textY = city.GetPosition().y + city.GetRadius() + 5.0f; // 5 pixels below the city
-
-        text.setPosition(textX, textY);
-        window.draw(text);
-
-        // Draw "1" for start city and "2" for end city
-        sf::Text indicatorText;
-        indicatorText.setFont(m_font);
-        indicatorText.setCharacterSize(20); // Larger size for visibility
-        indicatorText.setFillColor(sf::Color::Blue); // Choose a distinct color
-
-        if (&city == startCity) {
-            indicatorText.setString("1");
-        }
-        else if (&city == endCity) {
-            indicatorText.setString("2");
-        }
-        else {
-            continue; // No indicator needed
-        }
-
-        // Position the indicator at the top-right corner of the city
-        sf::FloatRect indicatorBounds = indicatorText.getLocalBounds();
-        float indicatorX = city.GetPosition().x + city.GetRadius() - indicatorBounds.width / 2;
-        float indicatorY = city.GetPosition().y - city.GetRadius() - indicatorBounds.height / 2;
-
-        indicatorText.setPosition(indicatorX, indicatorY);
-        window.draw(indicatorText);
-    }
-
     /* Lines */
     for (const auto& line : map.GetLines()) {
         // Determine if the line is selected via SelectionManager
@@ -135,6 +88,40 @@ void Renderer::RenderMap(sf::RenderWindow& window, Map& map, const Camera& camer
             // Draw thick line using the helper function
             DrawThickLine(window, start, end, thickness, color);
         }
+    }
+
+    /* Cities */
+    for (const City& city : map.GetCities()) {
+        sf::CircleShape circleShape(city.GetRadius());
+        circleShape.setOrigin(city.GetRadius(), city.GetRadius());
+        circleShape.setPosition(city.GetPosition());
+        circleShape.setFillColor(sf::Color::Black);
+        window.draw(circleShape);
+
+        // Create and configure the text label
+        sf::Text text;
+        text.setFont(m_font); // Use the loaded font
+        text.setString(city.GetName());
+        text.setCharacterSize(72); // Adjust as needed
+        text.setFillColor(sf::Color::Black); // Choose a color that contrasts with the map
+        text.setScale(sf::Vector2f(0.25, 0.25));
+
+        // Calculate the position: below the city
+        sf::FloatRect textBounds = text.getLocalBounds();
+        float scaledWidth = textBounds.width * text.getScale().x;
+        float scaledHeight = textBounds.height * text.getScale().y;
+        float textX = city.GetPosition().x - scaledWidth / 2;
+        float textY = city.GetPosition().y + city.GetRadius() + 5.0f; // 5 pixels below the city
+
+        text.setPosition(textX, textY);
+        window.draw(text);
+
+    }
+
+    /* Line Handles */
+    for (const auto& line : map.GetLines()) {
+        // Determine if the line is selected via SelectionManager
+        bool isSelected = (&line) == map.GetSelectionManager().GetSelectedLine();
 
         // Draw handles for all nodes if the line is selected
         if (isSelected) {
@@ -161,6 +148,35 @@ void Renderer::RenderMap(sf::RenderWindow& window, Map& map, const Camera& camer
                 window.draw(handleShape);
             }
         }
+    }
+
+    /* Train Stop Indicators */
+    for (const City& city : map.GetCities()) {
+        sf::Text indicatorText;
+        indicatorText.setFont(m_font);
+        indicatorText.setCharacterSize(72); // Larger size for visibility
+        indicatorText.setFillColor(sf::Color::White); // Choose a distinct color
+        indicatorText.setScale(sf::Vector2f(0.25, 0.25));
+
+        if (&city == startCity) {
+            indicatorText.setString("1");
+        }
+        else if (&city == endCity) {
+            indicatorText.setString("2");
+        }
+        else {
+            continue; // No indicator needed
+        }
+
+        // Position the indicator at the top-right corner of the city
+        sf::FloatRect indicatorBounds = indicatorText.getLocalBounds();
+        float scaledWidth = indicatorBounds.width * indicatorText.getScale().x;
+        float scaledHeight = indicatorBounds.height * indicatorText.getScale().y;
+        float indicatorX = city.GetPosition().x + city.GetRadius() - 11.0f - scaledWidth / 2;
+        float indicatorY = city.GetPosition().y - city.GetRadius() + 5.0f - scaledHeight / 2;
+
+        indicatorText.setPosition(indicatorX, indicatorY);
+        window.draw(indicatorText);
     }
 
     /* Trains */

@@ -207,9 +207,12 @@ void Map::AddToLineEnd(sf::Vector2f pos) {
 
 bool Map::SelectLine(sf::Vector2f pos) {
     const float CLICK_THRESHOLD = 5.0f; // Adjust as needed
+    float bestDistance = CLICK_THRESHOLD;
+    Line* closestLine = nullptr;
 
     for (auto& line : m_lines) {
-        const auto& pathPoints = line.GetPathPoints();
+        // Use the adjusted path points that account for offsets
+        const auto& pathPoints = line.GetAdjustedPathPoints();
 
         // Iterate through all straight segments of the line
         for (size_t i = 0; i < pathPoints.size() - 1; ++i) {
@@ -218,11 +221,17 @@ bool Map::SelectLine(sf::Vector2f pos) {
 
             // Calculate distance from click position to the segment
             float distance = DistancePointToSegment(pos, start, end);
-            if (distance <= CLICK_THRESHOLD) {
-                SelectLine(&line);
-                return true;
+            // Track the closest line if within threshold
+            if (distance <= bestDistance) {
+                bestDistance = distance;
+                closestLine = &line;
             }
         }
+    }
+
+    if (closestLine) {
+        SelectLine(closestLine);
+        return true;
     }
 
     DeselectAll();
@@ -433,24 +442,21 @@ void Map::AddTrain()
         return;
     }
 
-    // Get the path points
+    // Use adjusted points for train path
     std::vector<sf::Vector2f> pathPoints;
+    auto adjustedPoints = selectedLine->GetAdjustedPathPoints();
     for (int index : cityIndices)
     {
-        pathPoints.push_back(selectedLine->GetPointPosition(index));
+        pathPoints.push_back(adjustedPoints[index]);
     }
 
-    // Create a new Train
+    // Create and add the new train
     std::string trainID = "Train" + std::to_string(m_trains.size() + 1);
     std::unique_ptr<Train> newTrain = std::make_unique<Train>(selectedLine, trainID, pathPoints);
 
-    // Add the train to the line
     selectedLine->AddTrain(newTrain.get());
-
-    // Add to the map's train list
     m_trains.push_back(std::move(newTrain));
 
-    // Reset the selected start and end cities
     startCityForTrain = nullptr;
     endCityForTrain = nullptr;
 

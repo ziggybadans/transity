@@ -71,7 +71,9 @@ void Line::CalculateOffsets(const std::vector<Segment>& sharedSegments) {
         // Check if this segment is shared by finding a matching Segment in sharedSegments
         auto it = std::find_if(sharedSegments.begin(), sharedSegments.end(),
             [this, i](const Segment& seg) {
-                return seg.startPointIndex == static_cast<int>(i) && seg.endPointIndex == static_cast<int>(i + 1);
+                return seg.startPointIndex == static_cast<int>(i)
+                    && seg.endPointIndex == static_cast<int>(i + 1)
+                    && std::find(seg.overlappingLines.begin(), seg.overlappingLines.end(), this) != seg.overlappingLines.end();
             });
 
         if (it != sharedSegments.end() && it->overlappingLines.size() > 1) {
