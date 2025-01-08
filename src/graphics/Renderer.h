@@ -4,6 +4,7 @@
 #include <memory>
 #include <mutex>
 #include "Camera.h"
+#include "../core/StateManager.h"
 #include "../interfaces/IInitializable.h"
 #include "../world/Map.h"
 
@@ -15,7 +16,7 @@ public:
     /* Core Renderer Methods */
     bool Init() override;
     bool InitWithWindow(sf::RenderWindow& window);
-    void Render(sf::RenderWindow& window, const Camera& camera, Map& map);
+    void Render(sf::RenderWindow& window, const Camera& camera, Map& map, StateManager& stateManager);
     void Shutdown();
 
 private:
@@ -24,7 +25,7 @@ private:
     std::mutex m_renderMutex;
 
     /* World Rendering */
-    void RenderMap(sf::RenderWindow& window, Map& map, const Camera& camera) const;
+    void RenderMap(sf::RenderWindow& window, Map& map, const Camera& camera, StateManager& stateManager) const;
     void DrawThickLine(sf::RenderWindow& window, const sf::Vector2f& start, const sf::Vector2f& end, float thickness, const sf::Color& color) const;
 
     sf::Font m_font;

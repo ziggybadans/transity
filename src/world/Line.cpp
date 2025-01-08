@@ -13,6 +13,14 @@ Line::Line(City* startCity, const std::string& lineName,
     handleManager.AddHandle(0);
 }
 
+Line::Line(Node* startNode, const std::string& lineName,
+    const sf::Color& lineColor, float lineThickness)
+    : name(lineName), color(lineColor), thickness(lineThickness), selected(false)
+{
+    points.push_back(LinePoint(startNode));
+    handleManager.AddHandle(0);
+}
+
 // Adds a city to the start of the line
 void Line::AddCityToStart(City* city)
 {
@@ -309,4 +317,14 @@ std::vector<int> Line::GetIndicesBetweenCities(City* cityA, City* cityB) const
     }
 
     return routeSegment;
+}
+
+Node* Line::GetNodeAt(int index) const {
+    if (index >= 0 && index < static_cast<int>(points.size()))
+        return points[index].node;
+    return nullptr;
+}
+
+int Line::GetPointCount() const {
+    return static_cast<int>(points.size());
 }

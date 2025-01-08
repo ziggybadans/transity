@@ -200,7 +200,7 @@ void Game::Render() {
     }
 
     if (m_renderer) {
-        m_renderer->Render(m_windowManager->GetWindow(), *m_camera, *m_map);
+        m_renderer->Render(m_windowManager->GetWindow(), *m_camera, *m_map, *m_stateManager);
     }
 
     m_windowManager->GetWindow().setView(m_windowManager->GetWindow().getDefaultView());

@@ -34,16 +34,16 @@ bool Renderer::InitWithWindow(sf::RenderWindow& window) {
     return true;
 }
 
-void Renderer::Render(sf::RenderWindow& window, const Camera& camera, Map& map) {
+void Renderer::Render(sf::RenderWindow& window, const Camera& camera, Map& map, StateManager& stateManager) {
     if (!m_isInitialized) return;
 
-    RenderMap(window, map, camera);
+    RenderMap(window, map, camera, stateManager);
 
     std::lock_guard<std::mutex> lock(m_renderMutex);
     camera.ApplyView(window);
 }
 
-void Renderer::RenderMap(sf::RenderWindow& window, Map& map, const Camera& camera) const {
+void Renderer::RenderMap(sf::RenderWindow& window, Map& map, const Camera& camera, StateManager& stateManager) const {
     sf::Vector2i pixelPos = sf::Mouse::getPosition(window);
     sf::Vector2f worldPos = window.mapPixelToCoords(pixelPos, camera.GetView());
     const float BOUNDING_BOX_RADIUS = 10.0f;
@@ -87,6 +87,37 @@ void Renderer::RenderMap(sf::RenderWindow& window, Map& map, const Camera& camer
 
             // Draw thick line using the helper function
             DrawThickLine(window, start, end, thickness, color);
+        }
+    }
+
+    if (stateManager.GetState<std::string>("CurrentTool") == "TrainPlace"
+        && startCity && endCity) {
+        // Use the new route-finding with nodes from the map
+        std::vector<Node*> routeNodes = map.FindRouteBetweenNodes(startCity, endCity);
+        if (!routeNodes.empty()) {
+            // Draw the route segments in orange
+            sf::Color highlightColor = sf::Color(255, 165, 0); // Orange
+            float highlightThickness = 6.0f; // Thicker than normal lines
+            for (size_t i = 0; i + 1 < routeNodes.size(); ++i) {
+                // For each adjacent pair of nodes, find the connecting line segment
+                Node* nodeA = routeNodes[i];
+                Node* nodeB = routeNodes[i + 1];
+                // Find the adjusted points for visualization
+                for (auto& line : map.GetLines()) {
+                    const auto& points = line.GetPoints();
+                    for (size_t j = 0; j + 1 < points.size(); ++j) {
+                        if ((points[j].node == nodeA && points[j + 1].node == nodeB) ||
+                            (points[j].node == nodeB && points[j + 1].node == nodeA)) {
+                            auto adjustedPoints = line.GetAdjustedPathPoints();
+                            if (j < adjustedPoints.size() && (j + 1) < adjustedPoints.size()) {
+                                sf::Vector2f start = adjustedPoints[j];
+                                sf::Vector2f end = adjustedPoints[j + 1];
+                                DrawThickLine(window, start, end, highlightThickness, highlightColor);
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 

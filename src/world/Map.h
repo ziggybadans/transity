@@ -80,6 +80,7 @@ public:
     void UpdateSharedSegments();
     std::vector<Segment> GetSharedSegments() const { return sharedSegments; }
     bool isLineSelected() { return selectionManager.GetSelectedLine() == nullptr ? false : true; }
+    std::vector<Node*> FindRouteBetweenNodes(Node* start, Node* end);
 
     // Train management
     void UseTrainPlaceMode(sf::Vector2f pos, bool left);
@@ -109,6 +110,7 @@ private:
     static bool ArePositionsEqual(const sf::Vector2f& pos1, const sf::Vector2f& pos2, float epsilon = 0.1f);
     Node* FindGenericNodeAtPosition(sf::Vector2f pos);
     bool WouldCauseParallelConflict(const sf::Vector2f& segStart, const sf::Vector2f& segEnd);
+    void CreateBranch(Line* parentLine, int branchHandleIndex, sf::Vector2f pos);
 
     // Collections
     std::list<City> m_cities;

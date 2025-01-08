@@ -27,6 +27,8 @@ public:
     // Constructor
     Line(City* startCity, const std::string& lineName,
         const sf::Color& lineColor = sf::Color::Blue, float lineThickness = 4.0f);
+    Line(Node* startNode, const std::string& lineName,
+        const sf::Color& lineColor = sf::Color::Blue, float lineThickness = 4.0f);
 
     // Destructor
     ~Line() = default;
@@ -40,6 +42,8 @@ public:
 
     // Node management
     void AddNode(Node* node);
+    Node* GetNodeAt(int index) const;
+    int GetPointCount() const;
 
     // New methods for offset management
     void CalculateOffsets(const std::vector<Segment>& sharedSegments);

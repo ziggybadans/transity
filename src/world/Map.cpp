@@ -1,5 +1,6 @@
 #include "Map.h"
 #include "../Debug.h"
+#include <queue>
 
 void Map::SelectObject(const sf::Vector2f& pos) {
     // Attempt to select a Train first
@@ -99,13 +100,20 @@ void Map::UseLineMode(sf::Vector2f pos) {
             return;
         }
 
+        // Retrieve the index of the selected handle (node)
+        int selectedHandleIndex = selectedLine->GetSelectedHandleIndex();
+
+        if (selectedHandleIndex != -1 &&
+            selectedHandleIndex != 0 &&
+            selectedHandleIndex != selectedLine->GetPointCount() - 1) {
+            CreateBranch(selectedLine, selectedHandleIndex, pos);
+            return;
+        }
+
         // Attempt to find if a city was clicked
         City* clickedCity = FindCityAtPosition(pos);
 
         if (clickedCity) {
-            // Retrieve the index of the selected handle (node)
-            int selectedHandleIndex = selectedLine->GetSelectedHandleIndex();
-
             if (selectedHandleIndex != -1) {
                 // Handle is selected; determine where to add the new city relative to it
                 if (selectedHandleIndex == 0) {
@@ -115,11 +123,6 @@ void Map::UseLineMode(sf::Vector2f pos) {
                 else if (selectedHandleIndex == static_cast<int>(selectedLine->GetPoints().size() - 1)) {
                     // Selected handle is the last node; add the city to the end
                     AddToLineEnd(clickedCity->GetPosition());
-                }
-                else {
-                    // Selected handle is a middle node; insert the city after this handle
-                    selectedLine->InsertCityAfter(selectedHandleIndex, clickedCity);
-                    UpdateSharedSegments();
                 }
             }
             else {
@@ -453,64 +456,90 @@ void Map::UseTrainPlaceMode(sf::Vector2f pos, bool left) {
     }
 }
 
-void Map::AddTrain()
-{
-    if (!isLineSelected())
-    {
+void Map::AddTrain() {
+    if (!isLineSelected()) {
         DEBUG_ERROR("AddTrain: No line selected.");
         return;
     }
-
-    if (startCityForTrain == nullptr || endCityForTrain == nullptr)
-    {
+    if (startCityForTrain == nullptr || endCityForTrain == nullptr) {
         DEBUG_ERROR("AddTrain: Start or end city not selected.");
         return;
     }
 
-    Line* selectedLine = GetSelectedLine();
-
-    // Check that both cities are on the selected line
-    std::vector<City*> citiesOnLine = selectedLine->GetCities();
-    if (std::find(citiesOnLine.begin(), citiesOnLine.end(), startCityForTrain) == citiesOnLine.end())
-    {
-        DEBUG_ERROR("AddTrain: Start city is not on the selected line.");
+    // Use the new route-finding method with Node pointers
+    std::vector<Node*> routeNodes = FindRouteBetweenNodes(startCityForTrain, endCityForTrain);
+    if (routeNodes.empty()) {
+        DEBUG_ERROR("AddTrain: No route found between selected cities.");
         return;
     }
 
-    if (std::find(citiesOnLine.begin(), citiesOnLine.end(), endCityForTrain) == citiesOnLine.end())
-    {
-        DEBUG_ERROR("AddTrain: End city is not on the selected line.");
+    std::vector<sf::Vector2f> fullPathPoints;
+    Line* firstLine = nullptr;
+
+    // Iterate over consecutive node pairs to build the full path
+    for (size_t i = 0; i + 1 < routeNodes.size(); ++i) {
+        Node* nodeA = routeNodes[i];
+        Node* nodeB = routeNodes[i + 1];
+        Line* connectingLine = nullptr;
+
+        // Find a line connecting nodeA and nodeB
+        for (auto& line : m_lines) {
+            const auto& points = line.GetPoints();
+            for (size_t j = 0; j + 1 < points.size(); ++j) {
+                if ((points[j].node == nodeA && points[j + 1].node == nodeB) ||
+                    (points[j].node == nodeB && points[j + 1].node == nodeA)) {
+                    connectingLine = &line;
+                    break;
+                }
+            }
+            if (connectingLine) break;
+        }
+
+        if (!connectingLine) {
+            DEBUG_ERROR("AddTrain: No connecting line found between nodes.");
+            return;
+        }
+
+        // Identify indices of nodeA and nodeB on the connecting line
+        const auto& points = connectingLine->GetPoints();
+        int idxA = -1, idxB = -1;
+        for (size_t j = 0; j < points.size(); ++j) {
+            if (points[j].node == nodeA) idxA = static_cast<int>(j);
+            if (points[j].node == nodeB) { idxB = static_cast<int>(j); break; }
+        }
+        if (idxA == -1 || idxB == -1) continue; // Skip if not found
+
+        int startIndex = std::min(idxA, idxB);
+        int endIndex = std::max(idxA, idxB);
+
+        auto adjustedPoints = connectingLine->GetAdjustedPathPoints();
+        for (int k = startIndex; k <= endIndex && k < static_cast<int>(adjustedPoints.size()); ++k) {
+            fullPathPoints.push_back(adjustedPoints[k]);
+        }
+
+        // Save the first connecting line for train registration
+        if (i == 0) {
+            firstLine = connectingLine;
+        }
+    }
+
+    if (fullPathPoints.empty()) {
+        DEBUG_ERROR("AddTrain: Constructed path is empty.");
         return;
     }
 
-    // Get indices between start and end cities
-    std::vector<int> cityIndices = selectedLine->GetIndicesBetweenCities(startCityForTrain, endCityForTrain);
-
-    if (cityIndices.empty())
-    {
-        DEBUG_ERROR("AddTrain: Invalid path between selected cities.");
-        return;
-    }
-
-    // Use adjusted points for train path
-    std::vector<sf::Vector2f> pathPoints;
-    auto adjustedPoints = selectedLine->GetAdjustedPathPoints();
-    for (int index : cityIndices)
-    {
-        pathPoints.push_back(adjustedPoints[index]);
-    }
-
-    // Create and add the new train
     std::string trainID = "Train" + std::to_string(m_trains.size() + 1);
-    std::unique_ptr<Train> newTrain = std::make_unique<Train>(selectedLine, trainID, pathPoints);
+    std::unique_ptr<Train> newTrain = std::make_unique<Train>(firstLine, trainID, fullPathPoints);
 
-    selectedLine->AddTrain(newTrain.get());
+    if (firstLine) {
+        firstLine->AddTrain(newTrain.get());
+    }
     m_trains.push_back(std::move(newTrain));
 
     startCityForTrain = nullptr;
     endCityForTrain = nullptr;
 
-    DEBUG_DEBUG("Added " + trainID + " to line " + selectedLine->GetName());
+    DEBUG_DEBUG("Added " + trainID + " with multi-line route.");
 }
 
 bool Map::SelectTrain(sf::Vector2f pos) {
@@ -781,4 +810,100 @@ bool Map::WouldCauseParallelConflict(const sf::Vector2f& segStart, const sf::Vec
         }
     }
     return false;
+}
+
+void Map::CreateBranch(Line* parentLine, int branchHandleIndex, sf::Vector2f pos) {
+    if (!parentLine) return;
+
+    Node* branchStart = parentLine->GetNodeAt(branchHandleIndex);
+    if (!branchStart) {
+        DEBUG_DEBUG("CreateBranch: Invalid branch start node.");
+        return;
+    }
+
+    static int lineSuffix = 1;
+    std::string name = "Line" + std::to_string(lineSuffix++);
+
+    // Create a new branch line starting from the branch point
+    m_lines.emplace_back(branchStart, name);
+    Line* newLine = &m_lines.back();
+    SelectLine(newLine);
+
+    // Extend the new branch line based on the clicked position
+    City* clickedCity = FindCityAtPosition(pos);
+    if (clickedCity) {
+        AddToLineEnd(clickedCity->GetPosition());
+    }
+    else {
+        Node* genericNode = FindGenericNodeAtPosition(pos);
+        if (genericNode) {
+            Line* selectedLine = selectionManager.GetSelectedLine();
+            if (!selectedLine) {
+                DEBUG_DEBUG("CreateBranch: No selected line after branch creation.");
+                return;
+            }
+            sf::Vector2f currentEnd = selectedLine->GetEndPosition();
+            sf::Vector2f newNodePos = genericNode->GetPosition();
+            if (WouldCauseParallelConflict(currentEnd, newNodePos)) {
+                DEBUG_DEBUG("Cannot add node to branch. New segment would run parallel to an existing line with active trains.");
+                return;
+            }
+            selectedLine->AddNode(genericNode);
+            UpdateSharedSegments();
+        }
+        else {
+            DEBUG_DEBUG("No valid city or generic node found at the clicked position for branch extension.");
+        }
+    }
+
+    UpdateSharedSegments();
+}
+
+std::vector<Node*> Map::FindRouteBetweenNodes(Node* start, Node* end) {
+    if (!start || !end) return {};
+
+    // Build graph: node -> adjacent nodes
+    std::unordered_map<Node*, std::vector<Node*>> graph;
+    for (auto& line : m_lines) {
+        const auto& points = line.GetPoints(); // Get all points (cities/nodes) on the line
+        for (size_t i = 0; i + 1 < points.size(); ++i) {
+            Node* A = points[i].node;
+            Node* B = points[i + 1].node;
+            graph[A].push_back(B);
+            graph[B].push_back(A);
+        }
+    }
+
+    // BFS setup
+    std::queue<Node*> frontier;
+    std::unordered_map<Node*, Node*> cameFrom;
+    frontier.push(start);
+    cameFrom[start] = nullptr;
+
+    while (!frontier.empty()) {
+        Node* current = frontier.front();
+        frontier.pop();
+
+        if (current == end) break;
+
+        for (Node* next : graph[current]) {
+            if (cameFrom.find(next) == cameFrom.end()) {
+                frontier.push(next);
+                cameFrom[next] = current;
+            }
+        }
+    }
+
+    // If end wasn't reached, return empty
+    if (cameFrom.find(end) == cameFrom.end()) {
+        return {};
+    }
+
+    // Reconstruct path from start to end
+    std::vector<Node*> path;
+    for (Node* at = end; at != nullptr; at = cameFrom[at]) {
+        path.push_back(at);
+    }
+    std::reverse(path.begin(), path.end());
+    return path;
 }

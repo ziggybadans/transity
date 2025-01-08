@@ -53,19 +53,25 @@ void Train::Update(float dt)
 
 void Train::Move(float dt)
 {
-    if (m_pathPoints.empty() || m_currentPointIndex < 0 || m_currentPointIndex >= static_cast<int>(m_pathPoints.size()))
+    if (m_pathPoints.empty() || m_currentPointIndex < 0 ||
+        m_currentPointIndex >= static_cast<int>(m_pathPoints.size()))
+    {
         return;
+    }
 
     sf::Vector2f targetPos = m_pathPoints[m_currentPointIndex];
     sf::Vector2f toTarget = targetPos - m_position;
     float distanceToTarget = Distance(m_position, targetPos);
 
+    // Determine if the next point is actually a city
     bool nextIsCity = IsCityIndex(m_currentPointIndex);
 
     if (nextIsCity)
     {
+        // Calculate stop distance based on deceleration
         float stopDistance = (m_currentSpeed * m_currentSpeed) / (2.0f * DECELERATION);
 
+        // Decelerate if within stopping distance
         if (stopDistance >= distanceToTarget)
         {
             m_currentSpeed -= DECELERATION * dt;
@@ -74,6 +80,7 @@ void Train::Move(float dt)
         }
         else
         {
+            // Accelerate up to max speed if not decelerating
             if (m_currentSpeed < m_maxSpeed)
             {
                 m_currentSpeed += ACCELERATION * dt;
@@ -84,6 +91,7 @@ void Train::Move(float dt)
     }
     else
     {
+        // For non-city points, just accelerate normally up to max speed
         if (m_currentSpeed < m_maxSpeed)
         {
             m_currentSpeed += ACCELERATION * dt;
@@ -92,13 +100,16 @@ void Train::Move(float dt)
         }
     }
 
+    // Move the train
     sf::Vector2f direction = Normalize(toTarget);
     sf::Vector2f movement = direction * m_currentSpeed * dt;
     float movementDistance = Length(movement);
 
+    // If we would overshoot the target, clamp to the exact position
     if (movementDistance >= distanceToTarget)
     {
         m_position = targetPos;
+
         if (nextIsCity)
         {
             ArriveAtCity();
@@ -262,8 +273,22 @@ int Train::AdvanceIndex(bool forward)
 
 bool Train::IsCityIndex(int index) const
 {
-    if (!m_route)
+    if (!m_route || index < 0 || index >= static_cast<int>(m_pathPoints.size()))
         return false;
+
+    // Current path point coordinates
+    sf::Vector2f pointPos = m_pathPoints[index];
+
+    // Check each city on the route by position
     auto cityIndices = m_route->GetCityIndices();
-    return std::find(cityIndices.begin(), cityIndices.end(), index) != cityIndices.end();
+    for (auto cIndex : cityIndices)
+    {
+        sf::Vector2f cityPos = m_route->GetPointPosition(cIndex);
+        // Use a small threshold to decide it's the same city location
+        if (Distance(pointPos, cityPos) <= PROXIMITY_THRESHOLD)
+        {
+            return true;
+        }
+    }
+    return false;
 }
