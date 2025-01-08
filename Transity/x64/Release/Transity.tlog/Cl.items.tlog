@@ -23,3 +23,5 @@ C:\Users\Ziggy\Documents\Transity\Transity\src\utility\Profiler.cpp;C:\Users\Zig
 C:\Users\Ziggy\Documents\Transity\Transity\src\utility\Sandbox.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Release\Sandbox.obj
 C:\Users\Ziggy\Documents\Transity\Transity\src\utility\ThreadManager.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Release\ThreadManager.obj
 C:\Users\Ziggy\Documents\Transity\Transity\src\utility\ThreadPool.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Release\ThreadPool.obj
+C:\Users\Ziggy\Documents\Transity\Transity\src\world\Line.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Release\Line.obj
+C:\Users\Ziggy\Documents\Transity\Transity\src\world\Map.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Release\Map.obj

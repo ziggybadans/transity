@@ -108,7 +108,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>C:\Users\Ziggy\Documents\Transity\Transity\include;C:\Tools\SFML-2.6.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
@@ -126,7 +126,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>C:\Users\Ziggy\Documents\Transity\Transity\include;C:\Tools\SFML-2.6.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
@@ -149,6 +149,7 @@
     <ClCompile Include="src\core\ErrorHandler.cpp" />
     <ClCompile Include="src\core\StateManager.cpp" />
     <ClCompile Include="src\Debug.cpp" />
+    <ClCompile Include="src\entity\Train.cpp" />
     <ClCompile Include="src\Game.cpp" />
     <ClCompile Include="src\graphics\Camera.cpp" />
     <ClCompile Include="src\graphics\Renderer.cpp" />
@@ -171,6 +172,9 @@
     <ClCompile Include="src\utility\Sandbox.cpp" />
     <ClCompile Include="src\utility\ThreadManager.cpp" />
     <ClCompile Include="src\utility\ThreadPool.cpp" />
+    <ClCompile Include="src\world\Line.cpp" />
+    <ClCompile Include="src\world\Map.cpp" />
+    <ClCompile Include="src\world\SelectionManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitignore" />
@@ -186,12 +190,13 @@
     <ClInclude Include="src\core\ErrorHandler.h" />
     <ClInclude Include="src\core\StateManager.h" />
     <ClInclude Include="src\Debug.h" />
+    <ClInclude Include="src\entity\Train.h" />
     <ClInclude Include="src\Game.h" />
     <ClInclude Include="src\graphics\Camera.h" />
     <ClInclude Include="src\graphics\Renderer.h" />
     <ClInclude Include="src\interfaces\IInitializable.h" />
+    <ClInclude Include="src\interfaces\InputCommand.h" />
     <ClInclude Include="src\managers\EventManager.h" />
-    <ClInclude Include="src\managers\InitializationManager.h" />
     <ClInclude Include="src\managers\InputManager.h" />
     <ClInclude Include="src\managers\ResourceManager.h" />
     <ClInclude Include="src\managers\SaveManager.h" />
@@ -208,7 +213,6 @@
     <ClInclude Include="src\modding\Plugin.h" />
     <ClInclude Include="src\modding\PluginLoader.h" />
     <ClInclude Include="src\modding\PluginManager.h" />
-    <ClInclude Include="src\registry\ActionRegistrar.h" />
     <ClInclude Include="src\settings\GameSettings.h" />
     <ClInclude Include="src\settings\SettingsDefinitions.h" />
     <ClInclude Include="src\settings\SettingsRegistry.h" />
@@ -218,6 +222,13 @@
     <ClInclude Include="src\utility\Task.h" />
     <ClInclude Include="src\utility\ThreadManager.h" />
     <ClInclude Include="src\utility\ThreadPool.h" />
+    <ClInclude Include="src\world\City.h" />
+    <ClInclude Include="src\world\HandleManager.h" />
+    <ClInclude Include="src\world\Line.h" />
+    <ClInclude Include="src\world\Map.h" />
+    <ClInclude Include="src\world\Node.h" />
+    <ClInclude Include="src\world\Segment.h" />
+    <ClInclude Include="src\world\SelectionManager.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

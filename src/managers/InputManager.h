@@ -5,9 +5,17 @@
 #include <functional>
 #include <vector>
 #include <utility>
+#include <unordered_map>
+#include <string>
+#include <any>
 #include "EventManager.h"
 #include "../graphics/Camera.h"
+#include "../world/Map.h"
+#include "../Debug.h"
+#include "../core/StateManager.h"
+#include "../interfaces/InputCommand.h"
 
+// Enumeration for different input actions
 enum class InputAction {
     ZoomIn,
     ZoomOut,
@@ -15,35 +23,79 @@ enum class InputAction {
     PanRight,
     PanUp,
     PanDown,
-    Select
+    Place,
+    Draw,
+    Select,
+    Move,
+    TrainPlaceLeft,
+    TrainPlaceRight,
+    None
 };
 
+// Configuration structure for input settings
+struct InputConfig {
+    float zoomSpeed = 1.1f;
+    float panSpeed = 500.0f;
+    // Add other config parameters here
+};
+
+// Concrete command for zooming
+class ZoomCommand : public InputCommand {
+    std::shared_ptr<Camera> m_camera;
+    float m_factor;
+public:
+    ZoomCommand(std::shared_ptr<Camera> camera, float factor);
+    void execute() override;
+};
+
+// Concrete command for panning
+class PanCommand : public InputCommand {
+    std::shared_ptr<Camera> m_camera;
+    sf::Vector2f m_direction;
+public:
+    PanCommand(std::shared_ptr<Camera> camera, sf::Vector2f direction);
+    void execute() override;
+};
+
+// InputManager class declaration
 class InputManager {
 public:
-    InputManager(std::shared_ptr<EventManager> eventMgr, sf::RenderWindow& win);
-    ~InputManager();
+    InputManager(std::shared_ptr<EventManager> eventMgr,
+        std::shared_ptr<StateManager> stateMgr,
+        sf::RenderWindow& win,
+        std::shared_ptr<Camera> camera,
+        std::shared_ptr<Map> map);
 
-    /* Input Processing */
     void HandleInput(float deltaTime);
-    void RegisterActionCallback(InputAction action, std::function<void()> callback);
-
-    /* Setters */
-    void SetZoomSpeed(float speed);
-    void SetPanSpeed(float speed);
-
-    /* Getters */
-    float GetPanSpeed() const { return m_panSpeed; }
-    float GetZoomSpeed() const { return m_zoomSpeed; }
+    void SetConfig(const InputConfig& config);
+    const InputConfig& GetConfig() const { return m_config; }
 
 private:
-    void EmitAction(InputAction action);
+    void CheckSubscriptions();
+    void InitializeCommands();
+    void ExecuteCommand(InputAction action, bool keyboard);
 
-    /* Core Components */
+    using MouseEventCallback = std::function<void(const sf::Event&)>;
+    EventManager::SubscriptionID AddMouseSubscription(sf::Event::EventType type, sf::Mouse::Button button, InputAction action, MouseEventCallback callback = nullptr);
+
     std::shared_ptr<EventManager> m_eventManager;
+    std::shared_ptr<StateManager> m_stateManager;
     sf::RenderWindow& m_window;
+    std::shared_ptr<Camera> m_camera;
+    std::shared_ptr<Map> m_map;
+    InputConfig m_config;
 
-    /* Input Configuration */
-    float m_zoomSpeed;
-    float m_panSpeed;
-    std::vector<std::pair<InputAction, std::function<void()>>> m_actionCallbacks;
+    std::unordered_map<InputAction, std::unique_ptr<InputCommand>> m_commands;
+    std::vector<std::pair<sf::Keyboard::Key, InputAction>> m_keyMappings;
+
+    EventManager::SubscriptionID placeSubscription;
+    EventManager::SubscriptionID drawSubscription;
+    EventManager::SubscriptionID trainPlaceLeftSubscription;
+    EventManager::SubscriptionID trainPlaceRightSubscription;
+    EventManager::SubscriptionID dragPressSubscription;
+    EventManager::SubscriptionID dragReleaseSubscription;
+
+    bool m_isDragging;
+    sf::Vector2f m_lastMousePos;
+    float m_dragThreshold = 5.0f;
 };
