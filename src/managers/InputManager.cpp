@@ -228,7 +228,18 @@ void InputManager::InitializeCommands() {
         m_map,
         [](std::shared_ptr<Map> map, const sf::Vector2f& worldPos) {
             DEBUG_DEBUG("MoveCommand: Attempting to move handle to world position ", worldPos.x, ", ", worldPos.y);
-            map->MoveSelectedLineHandle(worldPos);
+            if (map->isLineSelected() && map->GetSelectedLine()->GetSelectedHandleIndex() != -1) {
+                DEBUG_DEBUG("MoveCommand: Moving line handle to world position ", worldPos.x, ", ", worldPos.y);
+                map->MoveSelectedLineHandle(worldPos);
+            }
+            // Otherwise, if a city is selected, attempt to move the city
+            else {
+                City* selectedCity = map->GetSelectionManager().GetSelectedCity();
+                if (selectedCity) {
+                    DEBUG_DEBUG("MoveCommand: Moving city to world position ", worldPos.x, ", ", worldPos.y);
+                    map->MoveCity(worldPos);
+                }
+            }
         }
     );
 

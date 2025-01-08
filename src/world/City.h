@@ -22,6 +22,7 @@ public:
     sf::Vector2f GetPosition() const { return position; }
     unsigned int GetPopulation() const { return population; }
     float GetRadius() const { return radius; }
+    bool IsSelected() const { return selected; }
 
     // Setters
     void SetPosition(const sf::Vector2f& pos) { position = pos; }

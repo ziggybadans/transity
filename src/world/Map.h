@@ -54,6 +54,8 @@ public:
     void SelectCity(City* city) { selectionManager.SelectCity(city); }
     bool SelectCity(sf::Vector2f pos);
     void DeselectCity() { selectionManager.DeselectAll(); }
+    void RemoveCity();
+    void MoveCity(sf::Vector2f newPos);
 
     // Line management
     void UseLineMode(sf::Vector2f pos);

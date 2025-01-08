@@ -95,7 +95,9 @@ void Renderer::RenderMap(sf::RenderWindow& window, Map& map, const Camera& camer
         sf::CircleShape circleShape(city.GetRadius());
         circleShape.setOrigin(city.GetRadius(), city.GetRadius());
         circleShape.setPosition(city.GetPosition());
-        circleShape.setFillColor(sf::Color::Black);
+        circleShape.setFillColor(city.IsSelected() ? sf::Color::Yellow : sf::Color::Black);
+        circleShape.setOutlineColor(sf::Color::Black);
+        circleShape.setOutlineThickness(2.0f);
         window.draw(circleShape);
 
         // Create and configure the text label

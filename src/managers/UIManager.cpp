@@ -270,7 +270,8 @@ void UIManager::RenderInfoPanel() {
 
     Train* selectedTrain = m_map->GetSelectionManager().GetSelectedTrain();
     Line* selectedLine = m_map->GetSelectionManager().GetSelectedLine();
-    if (!selectedTrain && !selectedLine) {
+    City* selectedCity = m_map->GetSelectionManager().GetSelectedCity();
+    if (!selectedTrain && !selectedLine && !selectedCity) {
         // No train or line is selected; do not render the panel
         return;
     }
@@ -441,6 +442,31 @@ void UIManager::RenderInfoPanel() {
 
         if (ImGui::Button("Remove", ImVec2(70, 30))) {
             m_map->RemoveLine();
+        }
+
+        ImGui::End();
+    }
+
+    if (selectedCity) {
+        // Define panel size
+        const float panelWidth = 300.0f;
+        const float panelHeight = 200.0f; // Adjust as needed
+
+        // Set the window position to bottom-right corner with padding
+        ImGui::SetNextWindowPos(ImVec2(
+            static_cast<float>(m_renderWindow->getSize().x) - panelWidth - 10.0f, // 10 pixels padding from right
+            static_cast<float>(m_renderWindow->getSize().y) - panelHeight - 10.0f  // 10 pixels padding from bottom
+        ), ImGuiCond_Always);
+
+        // Optionally set the window size
+        ImGui::SetNextWindowSize(ImVec2(panelWidth, panelHeight), ImGuiCond_Always);
+
+        ImGui::Begin("City Information", nullptr,
+            ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
+        ImGui::Text("City: %s", selectedCity->GetName().c_str());
+
+        if (ImGui::Button("Remove", ImVec2(70, 30))) {
+            m_map->RemoveCity();
         }
 
         ImGui::End();

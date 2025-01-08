@@ -581,3 +581,54 @@ std::string Map::GenerateSegmentKey(const sf::Vector2f& start, const sf::Vector2
 bool Map::ArePositionsEqual(const sf::Vector2f& pos1, const sf::Vector2f& pos2, float epsilon) {
     return (std::abs(pos1.x - pos2.x) <= epsilon) && (std::abs(pos1.y - pos2.y) <= epsilon);
 }
+
+void Map::RemoveCity() {
+    City* selectedCity = selectionManager.GetSelectedCity();
+    if (!selectedCity) {
+        DEBUG_DEBUG("No city selected.");
+        return;
+    }
+
+    // Check if the selected city is part of any line
+    for (auto& line : m_lines) {
+        auto lineCities = line.GetCities();
+        if (std::find(lineCities.begin(), lineCities.end(), selectedCity) != lineCities.end()) {
+            DEBUG_DEBUG("City " + selectedCity->GetName() + " has lines running through it; cannot delete.");
+            return;
+        }
+    }
+
+    // Capture city name before deletion for logging purposes
+    std::string cityName = selectedCity->GetName();
+
+    // Clear selection before removing city to avoid dangling pointer issues
+    selectionManager.DeselectAll();
+
+    // Remove the city from the list
+    m_cities.remove_if([selectedCity](const City& city) {
+        return &city == selectedCity;
+        });
+
+    DEBUG_DEBUG("City " + cityName + " removed.");
+}
+
+void Map::MoveCity(sf::Vector2f newPos) {
+    City* selectedCity = selectionManager.GetSelectedCity();
+    if (!selectedCity) {
+        DEBUG_DEBUG("No city selected.");
+        return;
+    }
+
+    // Check if the city is part of any line
+    for (auto& line : m_lines) {
+        auto lineCities = line.GetCities();
+        if (std::find(lineCities.begin(), lineCities.end(), selectedCity) != lineCities.end()) {
+            DEBUG_DEBUG("City " + selectedCity->GetName() + " has lines running through it; cannot move.");
+            return;
+        }
+    }
+
+    // Update the city's position
+    selectedCity->SetPosition(newPos);
+    DEBUG_DEBUG("City " + selectedCity->GetName() + " moved to new position.");
+}
