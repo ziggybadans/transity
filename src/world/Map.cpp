@@ -476,6 +476,10 @@ void Map::AddTrain() {
     std::vector<sf::Vector2f> fullPathPoints;
     Line* firstLine = nullptr;
 
+    // Collect all station positions from each connecting line
+    std::vector<sf::Vector2f> allStations;
+    allStations.reserve(64);
+
     // Iterate over consecutive node pairs to build the full path
     for (size_t i = 0; i + 1 < routeNodes.size(); ++i) {
         Node* nodeA = routeNodes[i];
@@ -500,24 +504,44 @@ void Map::AddTrain() {
             return;
         }
 
-        // Identify indices of nodeA and nodeB on the connecting line
-        const auto& points = connectingLine->GetPoints();
+        // Gather partial path from this line
+        const auto& linePoints = connectingLine->GetPathPoints();
+        const auto& cityIndices = connectingLine->GetCityIndices();
+
         int idxA = -1, idxB = -1;
-        for (size_t j = 0; j < points.size(); ++j) {
-            if (points[j].node == nodeA) idxA = static_cast<int>(j);
-            if (points[j].node == nodeB) { idxB = static_cast<int>(j); break; }
+        for (size_t j = 0; j < linePoints.size(); ++j) {
+            if (ArePositionsEqual(linePoints[j], nodeA->GetPosition())) idxA = (int)j;
+            if (ArePositionsEqual(linePoints[j], nodeB->GetPosition())) idxB = (int)j;
         }
-        if (idxA == -1 || idxB == -1) continue; // Skip if not found
-
-        int startIndex = std::min(idxA, idxB);
-        int endIndex = std::max(idxA, idxB);
-
-        auto adjustedPoints = connectingLine->GetAdjustedPathPoints();
-        for (int k = startIndex; k <= endIndex && k < static_cast<int>(adjustedPoints.size()); ++k) {
-            fullPathPoints.push_back(adjustedPoints[k]);
+        if (idxA == -1 || idxB == -1) {
+            DEBUG_ERROR("AddTrain: Could not locate segment in connecting line.");
+            return;
         }
 
-        // Save the first connecting line for train registration
+        int startIdx = std::min(idxA, idxB);
+        int endIdx = std::max(idxA, idxB);
+
+        for (int k = startIdx; k <= endIdx; ++k) {
+            fullPathPoints.push_back(linePoints[k]);
+        }
+
+        // Collect city positions on this line for stopping
+        for (int cIdx : cityIndices) {
+            sf::Vector2f cPos = connectingLine->GetPointPosition(cIdx);
+            // Avoid duplicates via distance check or custom check
+            bool alreadyAdded = false;
+            for (auto& st : allStations) {
+                float dist = std::hypot(st.x - cPos.x, st.y - cPos.y);
+                if (dist < 0.1f) {
+                    alreadyAdded = true;
+                    break;
+                }
+            }
+            if (!alreadyAdded) {
+                allStations.push_back(cPos);
+            }
+        }
+
         if (i == 0) {
             firstLine = connectingLine;
         }
@@ -528,8 +552,14 @@ void Map::AddTrain() {
         return;
     }
 
+    // Create and register the train
     std::string trainID = "Train" + std::to_string(m_trains.size() + 1);
-    std::unique_ptr<Train> newTrain = std::make_unique<Train>(firstLine, trainID, fullPathPoints);
+    std::unique_ptr<Train> newTrain = std::make_unique<Train>(
+        firstLine,            // We still register with the first line
+        trainID,
+        fullPathPoints,       // The entire path across main + branch lines
+        allStations           // All city stations across the route
+    );
 
     if (firstLine) {
         firstLine->AddTrain(newTrain.get());
@@ -539,7 +569,8 @@ void Map::AddTrain() {
     startCityForTrain = nullptr;
     endCityForTrain = nullptr;
 
-    DEBUG_DEBUG("Added " + trainID + " with multi-line route.");
+    DEBUG_DEBUG("Added " + trainID + " with multi-line route. Station list size: "
+        + std::to_string(allStations.size()));
 }
 
 bool Map::SelectTrain(sf::Vector2f pos) {
