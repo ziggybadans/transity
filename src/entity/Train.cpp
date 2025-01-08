@@ -6,14 +6,23 @@
 
 // Constructor
 Train::Train(Line* route, const std::string& id, const std::vector<sf::Vector2f>& pathPoints, float maxSpeed)
-    : m_route(route), m_id(id), m_maxSpeed(maxSpeed), m_currentSpeed(0.0f),
-    m_selected(false), m_forward(true), m_state(State::Moving), m_waitTime(0.0f),
-    m_pathPoints(pathPoints), m_currentPointIndex(1) // Start moving towards the second point
+    : m_route(route),
+    m_id(id),
+    m_maxSpeed(maxSpeed),
+    m_currentSpeed(0.0f),
+    m_selected(false),
+    m_forward(true),
+    m_state(State::Moving),
+    m_waitTime(0.0f),
+    m_pathPoints(pathPoints),
+    m_currentPointIndex(1)
 {
-    if (!m_pathPoints.empty()) {
-        m_position = m_pathPoints[0]; // Start at the first point
+    if (!m_pathPoints.empty())
+    {
+        m_position = m_pathPoints[0];
     }
-    else {
+    else
+    {
         m_position = sf::Vector2f(0.f, 0.f);
         DEBUG_ERROR("Train constructed with empty path points.");
     }
@@ -51,20 +60,30 @@ void Train::Move(float dt)
     sf::Vector2f toTarget = targetPos - m_position;
     float distanceToTarget = Distance(m_position, targetPos);
 
-    // Calculate the distance needed to fully decelerate from current speed to 0
-    float stopDistance = (m_currentSpeed * m_currentSpeed) / (2.0f * DECELERATION);
+    bool nextIsCity = IsCityIndex(m_currentPointIndex);
 
-    // Decide whether to accelerate or decelerate
-    if (stopDistance >= distanceToTarget)
+    if (nextIsCity)
     {
-        // Decelerate
-        m_currentSpeed -= DECELERATION * dt;
-        if (m_currentSpeed < 0.0f)
-            m_currentSpeed = 0.0f;
+        float stopDistance = (m_currentSpeed * m_currentSpeed) / (2.0f * DECELERATION);
+
+        if (stopDistance >= distanceToTarget)
+        {
+            m_currentSpeed -= DECELERATION * dt;
+            if (m_currentSpeed < 0.0f)
+                m_currentSpeed = 0.0f;
+        }
+        else
+        {
+            if (m_currentSpeed < m_maxSpeed)
+            {
+                m_currentSpeed += ACCELERATION * dt;
+                if (m_currentSpeed > m_maxSpeed)
+                    m_currentSpeed = m_maxSpeed;
+            }
+        }
     }
     else
     {
-        // Accelerate up to max speed
         if (m_currentSpeed < m_maxSpeed)
         {
             m_currentSpeed += ACCELERATION * dt;
@@ -73,16 +92,22 @@ void Train::Move(float dt)
         }
     }
 
-    // Calculate potential movement
     sf::Vector2f direction = Normalize(toTarget);
     sf::Vector2f movement = direction * m_currentSpeed * dt;
-
-    // If movement exceeds distance to target, clamp it and set position to target
     float movementDistance = Length(movement);
+
     if (movementDistance >= distanceToTarget)
     {
         m_position = targetPos;
-        ArriveAtCity();
+        if (nextIsCity)
+        {
+            ArriveAtCity();
+        }
+        else
+        {
+            m_currentPointIndex = AdvanceIndex(m_forward);
+            m_position = targetPos;
+        }
     }
     else
     {
@@ -208,4 +233,37 @@ sf::Vector2f Train::Normalize(const sf::Vector2f& v) const
         return v / length;
     else
         return sf::Vector2f(0.f, 0.f);
+}
+
+int Train::AdvanceIndex(bool forward)
+{
+    int newIndex = m_currentPointIndex;
+
+    if (forward)
+    {
+        newIndex++;
+        if (newIndex >= static_cast<int>(m_pathPoints.size()))
+        {
+            m_forward = false;
+            newIndex = static_cast<int>(m_pathPoints.size()) - 2;
+        }
+    }
+    else
+    {
+        newIndex--;
+        if (newIndex < 0)
+        {
+            m_forward = true;
+            newIndex = 1;
+        }
+    }
+    return newIndex;
+}
+
+bool Train::IsCityIndex(int index) const
+{
+    if (!m_route)
+        return false;
+    auto cityIndices = m_route->GetCityIndices();
+    return std::find(cityIndices.begin(), cityIndices.end(), index) != cityIndices.end();
 }

@@ -75,6 +75,7 @@ private:
     void ArriveAtCity();
     int FindNextCityIndex() const;
     bool IsCityIndex(int index) const;
+    int AdvanceIndex(bool forward);
 
     // Utility functions
     float Distance(const sf::Vector2f& a, const sf::Vector2f& b) const;
