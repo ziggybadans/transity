@@ -51,14 +51,14 @@ void InputManager::HandleInput(float deltaTime) {
     float mouseWheel = ImGui::GetIO().MouseWheel;
     if (mouseWheel != 0.0f) {
         DEBUG_VERBOSE("InputManager: Mouse wheel event detected: ", mouseWheel);
-        ExecuteCommand(mouseWheel > 0.0f ? InputAction::ZoomOut : InputAction::ZoomIn);
+        ExecuteCommand(mouseWheel > 0.0f ? InputAction::ZoomOut : InputAction::ZoomIn, true);
     }
 
     // Handle movement
     for (const auto& [key, action] : m_keyMappings) {
         if (sf::Keyboard::isKeyPressed(key)) {
             DEBUG_VERBOSE("InputManager: Key pressed: ", key);
-            ExecuteCommand(action);
+            ExecuteCommand(action, true);
         }
     }
 
@@ -75,7 +75,7 @@ void InputManager::HandleInput(float deltaTime) {
         }
 
         if (m_isDragging) {
-            ExecuteCommand(InputAction::Move);
+            ExecuteCommand(InputAction::Move, false);
         }
 
         m_lastMousePos = currentMousePos;
@@ -114,7 +114,7 @@ EventManager::SubscriptionID InputManager::AddMouseSubscription(
                 {
                     if (action != InputAction::None) {
                         // Call default "ExecuteCommand"
-                        ExecuteCommand(action);
+                        ExecuteCommand(action, false);
                     }
 
                     // Allow the user-provided callback to do whatever else is needed
@@ -284,8 +284,8 @@ void InputManager::InitializeCommands() {
     DEBUG_DEBUG("InputManager: Key mappings initialized.");
 }
 
-void InputManager::ExecuteCommand(InputAction action) {
-    if (ImGui::GetIO().WantCaptureMouse) {
+void InputManager::ExecuteCommand(InputAction action, bool keyboard) {
+    if (ImGui::GetIO().WantCaptureMouse && !keyboard) {
         return;
     }
 

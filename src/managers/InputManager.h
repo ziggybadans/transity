@@ -73,7 +73,7 @@ public:
 private:
     void CheckSubscriptions();
     void InitializeCommands();
-    void ExecuteCommand(InputAction action);
+    void ExecuteCommand(InputAction action, bool keyboard);
 
     using MouseEventCallback = std::function<void(const sf::Event&)>;
     EventManager::SubscriptionID AddMouseSubscription(sf::Event::EventType type, sf::Mouse::Button button, InputAction action, MouseEventCallback callback = nullptr);

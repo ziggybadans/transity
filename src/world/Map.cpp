@@ -457,10 +457,7 @@ void Map::UseTrainPlaceMode(sf::Vector2f pos, bool left) {
 }
 
 void Map::AddTrain() {
-    if (!isLineSelected()) {
-        DEBUG_ERROR("AddTrain: No line selected.");
-        return;
-    }
+    // Removed check for a selected line since multi-line functionality no longer requires it.
     if (startCityForTrain == nullptr || endCityForTrain == nullptr) {
         DEBUG_ERROR("AddTrain: Start or end city not selected.");
         return;
@@ -477,6 +474,7 @@ void Map::AddTrain() {
     std::vector<sf::Vector2f> allStations;
     allStations.reserve(64);
 
+    // Compute the multi-line path and station list
     for (size_t i = 0; i + 1 < routeNodes.size(); ++i) {
         Node* nodeA = routeNodes[i];
         Node* nodeB = routeNodes[i + 1];
