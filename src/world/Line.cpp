@@ -8,11 +8,8 @@ Line::Line(City* startCity, const std::string& lineName,
     const sf::Color& lineColor, float lineThickness)
     : name(lineName), color(lineColor), thickness(lineThickness), selected(false) 
 {
-    // Initialize with the starting city
-    LinePoint p(true, startCity->GetPosition(), startCity);
-    points.push_back(p);
-
-    // Initialize the handle manager with the first handle
+    // Initialize with the starting city as a Node
+    points.push_back(LinePoint(startCity));
     handleManager.AddHandle(0);
 }
 
@@ -23,8 +20,7 @@ void Line::AddCityToStart(City* city)
         DEBUG_ERROR("AddCityToStart: nullptr city provided.");
         return;
     }
-    LinePoint p(true, city->GetPosition(), city);
-    points.insert(points.begin(), p);
+    points.insert(points.begin(), LinePoint(city));
     handleManager.InsertHandle(0, 0);
 }
 
@@ -35,7 +31,7 @@ void Line::AddCityToEnd(City* city)
         DEBUG_ERROR("AddCityToEnd: nullptr city provided.");
         return;
     }
-    points.emplace_back(true, city->GetPosition(), city);
+    points.emplace_back(city);
     handleManager.AddHandle(static_cast<int>(points.size() - 1));
 }
 
@@ -51,15 +47,13 @@ void Line::InsertCityAfter(int index, City* city)
         return;
     }
 
-    LinePoint newPoint(true, city->GetPosition(), city);
-    points.emplace(points.begin() + index + 1, newPoint);
+    points.emplace(points.begin() + index + 1, LinePoint(city));
     handleManager.InsertHandle(index + 1, index + 1);
 }
 
 // Adds a non-city node to the line
-void Line::AddNode(sf::Vector2f pos) {
-    LinePoint p(false, pos, nullptr);
-    points.emplace_back(p);
+void Line::AddNode(Node* node) {
+    points.emplace_back(LinePoint(node));
     handleManager.AddHandle(static_cast<int>(points.size() - 1));
 }
 
@@ -92,7 +86,7 @@ void Line::CalculateOffsets(const std::vector<Segment>& sharedSegments) {
                 float offsetMagnitude = (static_cast<float>(lineIndex) - halfTotal) * offsetStep;
 
                 // Calculate the perpendicular vector
-                sf::Vector2f direction = points[i + 1].position - points[i].position;
+                sf::Vector2f direction = points[i + 1].node->GetPosition() - points[i].node->GetPosition();
                 float length = std::sqrt(direction.x * direction.x + direction.y * direction.y);
                 if (length == 0) {
                     offsetInfos.emplace_back(OffsetInfo{ sf::Vector2f(0.f, 0.f), 0.f });
@@ -127,7 +121,7 @@ std::vector<sf::Vector2f> Line::GetAdjustedPathPoints() const {
     for (size_t i = 0; i < points.size(); ++i) {
         if (i == 0 || i == points.size() - 1) {
             // Start and end points are always unoffset
-            adjustedPoints.emplace_back(points[i].position);
+            adjustedPoints.emplace_back(points[i].node->GetPosition());
             continue;
         }
 
@@ -139,26 +133,24 @@ std::vector<sf::Vector2f> Line::GetAdjustedPathPoints() const {
         sf::Vector2f averageOffset = (offsetPrev + offsetNext) / 2.0f;
 
         // Apply the average offset
-        adjustedPoints.emplace_back(points[i].position + averageOffset);
+        adjustedPoints.emplace_back(points[i].node->GetPosition() + averageOffset);
     }
 
     // Adjust the start and end points with the first and last segments' offsets
     if (!points.empty() && !adjustedPoints.empty()) {
-        adjustedPoints[0] = points[0].position + ((offsetInfos.empty()) ? sf::Vector2f(0.f, 0.f) : offsetInfos[0].offsetVector);
-        adjustedPoints.back() = points.back().position + ((offsetInfos.empty()) ? sf::Vector2f(0.f, 0.f) : offsetInfos.back().offsetVector);
+        adjustedPoints[0] = points[0].node->GetPosition() + ((offsetInfos.empty()) ? sf::Vector2f(0.f, 0.f) : offsetInfos[0].offsetVector);
+        adjustedPoints.back() = points.back().node->GetPosition() + ((offsetInfos.empty()) ? sf::Vector2f(0.f, 0.f) : offsetInfos.back().offsetVector);
     }
 
     return adjustedPoints;
 }
 
 // Retrieves all cities on the line
-std::vector<City*> Line::GetCities() const
-{
+std::vector<City*> Line::GetCities() const {
     std::vector<City*> cityList;
-    cityList.reserve(points.size()); // Reserve maximum possible size to optimize allocations
     for (const auto& point : points) {
-        if (point.isCity && point.city != nullptr) {
-            cityList.emplace_back(point.city);
+        if (City* city = dynamic_cast<City*>(point.node)) {
+            cityList.push_back(city);
         }
     }
     return cityList;
@@ -170,7 +162,7 @@ std::vector<sf::Vector2f> Line::GetPathPoints() const {
     path.reserve(points.size());
 
     for (const auto& point : points) {
-        path.emplace_back(point.position);
+        path.emplace_back(point.node->GetPosition());
     }
 
     return path;
@@ -182,7 +174,7 @@ std::vector<int> Line::GetCityIndices() const
     std::vector<int> cityIndices;
     cityIndices.reserve(points.size());
     for (size_t i = 0; i < points.size(); ++i) {
-        if (points[i].isCity) {
+        if (City* city = dynamic_cast<City*>(points[i].node)) {
             cityIndices.emplace_back(static_cast<int>(i));
         }
     }
@@ -192,19 +184,19 @@ std::vector<int> Line::GetCityIndices() const
 // Retrieves the starting position of the line
 sf::Vector2f Line::GetStartPosition() const {
     if (points.empty()) return sf::Vector2f(0.f, 0.f);
-    return points.front().position;
+    return points.front().node->GetPosition();
 }
 
 // Retrieves the ending position of the line
 sf::Vector2f Line::GetEndPosition() const {
     if (points.empty()) return sf::Vector2f(0.f, 0.f);
-    return points.back().position;
+    return points.back().node->GetPosition();
 }
 
 // Retrieves the position of a specific point by index
 sf::Vector2f Line::GetPointPosition(int index) const {
     if (index >= 0 && index < static_cast<int>(points.size())) {
-        return points[index].position;
+        return points[index].node->GetPosition();
     }
     DEBUG_ERROR("GetPointPosition: Index out of range.");
     return sf::Vector2f(0.f, 0.f);
@@ -232,13 +224,8 @@ void Line::MoveHandle(int index, sf::Vector2f newPos) {
         return;
     }
 
-    // If this point is a city, move the city as well
-    if (points[index].isCity && points[index].city != nullptr) {
-        points[index].city->SetPosition(newPos);
-    }
-
-    // Always move the line point
-    points[index].position = newPos;
+    // Update the node’s position using SetPosition, regardless of its type
+    points[index].node->SetPosition(newPos);
 }
 
 // Adds a train to the line
@@ -266,7 +253,7 @@ sf::Vector2f Line::GetPerpendicularVector(int segmentIndex) const {
     if (segmentIndex < 0 || segmentIndex >= static_cast<int>(points.size() - 1))
         return sf::Vector2f(0.f, 0.f);
 
-    sf::Vector2f direction = points[segmentIndex + 1].position - points[segmentIndex].position;
+    sf::Vector2f direction = points[segmentIndex + 1].node->GetPosition() - points[segmentIndex].node->GetPosition();
     float length = std::sqrt(direction.x * direction.x + direction.y * direction.y);
     if (length == 0)
         return sf::Vector2f(0.f, 0.f);
@@ -283,11 +270,15 @@ std::vector<int> Line::GetIndicesBetweenCities(City* cityA, City* cityB) const
     int indexB = -1;
 
     for (int i = 0; i < static_cast<int>(points.size()); i++) {
-        if (points[i].isCity && points[i].city == cityA) {
-            indexA = i;
+        if (City* city = dynamic_cast<City*>(points[i].node)) {
+            if (points[i].node == cityA) {
+                indexA = i;
+            }
         }
-        if (points[i].isCity && points[i].city == cityB) {
-            indexB = i;
+        if (City* city = dynamic_cast<City*>(points[i].node)) {
+            if (points[i].node == cityB) {
+                indexB = i;
+            }
         }
     }
 

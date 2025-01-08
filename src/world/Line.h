@@ -12,12 +12,8 @@
 class Train;
 
 struct LinePoint {
-    bool isCity;             // True if it represents a city, false if it's a node
-    sf::Vector2f position;   // The world position of the city or node
-    City* city;              // Pointer to a City if isCity == true, otherwise nullptr
-
-    LinePoint(bool cityFlag = false, sf::Vector2f pos = sf::Vector2f(0.f, 0.f), City* c = nullptr)
-        : isCity(cityFlag), position(pos), city(c) {}
+    Node* node;
+    LinePoint(Node* n = nullptr) : node(n) {}
 };
 
 // Offset information per segment
@@ -43,7 +39,7 @@ public:
     bool HasMultipleCities() { return GetCities().size() > 1; }
 
     // Node management
-    void AddNode(sf::Vector2f pos);
+    void AddNode(Node* node);
 
     // New methods for offset management
     void CalculateOffsets(const std::vector<Segment>& sharedSegments);

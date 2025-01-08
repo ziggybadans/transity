@@ -9,7 +9,7 @@
 class SelectionManager {
 public:
     SelectionManager()
-        : selectedCity(nullptr), selectedLine(nullptr), selectedTrain(nullptr) {}
+        : selectedCity(nullptr), selectedLine(nullptr), selectedTrain(nullptr), selectedNode(nullptr) {}
 
     // City Selection
     void SelectCity(City* city) {
@@ -38,29 +38,35 @@ public:
         }
     }
 
+    void SelectNode(Node* node) {
+        DeselectAll();
+        selectedNode = node;
+        if (selectedNode) {
+            selectedNode->SetSelected(true);
+        }
+    }
+
     // Deselect All
     void DeselectAll() {
-        if (selectedCity) {
-            selectedCity->SetSelected(false);
-        }
-        if (selectedLine) {
-            selectedLine->SetSelected(false);
-        }
-        if (selectedTrain) {
-            selectedTrain->SetSelected(false);
-        }
+        if (selectedCity) { selectedCity->SetSelected(false); }
+        if (selectedLine) { selectedLine->SetSelected(false); }
+        if (selectedTrain) { selectedTrain->SetSelected(false); }
+        if (selectedNode) { selectedNode->SetSelected(false); }
         selectedCity = nullptr;
         selectedLine = nullptr;
         selectedTrain = nullptr;
+        selectedNode = nullptr;
     }
 
     // Getters
     City* GetSelectedCity() const { return selectedCity; }
     Line* GetSelectedLine() const { return selectedLine; }
     Train* GetSelectedTrain() const { return selectedTrain; }
+    Node* GetSelectedNode() const { return selectedNode; }
 
 private:
     City* selectedCity;
     Line* selectedLine;
     Train* selectedTrain;
+    Node* selectedNode;
 };

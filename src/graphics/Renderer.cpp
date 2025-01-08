@@ -120,6 +120,14 @@ void Renderer::RenderMap(sf::RenderWindow& window, Map& map, const Camera& camer
 
     }
 
+    for (const Node& node : map.GetNodes()) {
+        sf::CircleShape circleShape(node.GetRadius());
+        circleShape.setOrigin(node.GetRadius(), node.GetRadius());
+        circleShape.setPosition(node.GetPosition());
+        circleShape.setFillColor(node.IsSelected() ? sf::Color::Yellow : sf::Color::Black);
+        window.draw(circleShape);
+    }
+
     /* Line Handles */
     for (const auto& line : map.GetLines()) {
         // Determine if the line is selected via SelectionManager

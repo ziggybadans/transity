@@ -128,9 +128,33 @@ void Map::UseLineMode(sf::Vector2f pos) {
             }
         }
         else {
-            // No city was clicked; add a generic node at the clicked position
-            selectedLine->AddNode(pos);
-            UpdateSharedSegments();
+            Node* genericNode = FindGenericNodeAtPosition(pos);
+            if (genericNode) {
+                // Retrieve the currently selected line
+                Line* line = selectionManager.GetSelectedLine();
+                if (!line) {
+                    DEBUG_DEBUG("No line selected.");
+                    return;
+                }
+
+                // Determine the starting point of the new segment: the last point on the line
+                sf::Vector2f currentEnd = line->GetEndPosition();
+                sf::Vector2f newNodePos = genericNode->GetPosition();
+
+                // Check for parallel conflict with existing train lines
+                if (WouldCauseParallelConflict(currentEnd, newNodePos)) {
+                    DEBUG_DEBUG("Cannot add node. New segment would run parallel to an existing line with active trains.");
+                    return;
+                }
+
+                // If no conflict, add the node to the line
+                line->AddNode(genericNode);
+                UpdateSharedSegments();
+            }
+
+            else {
+                DEBUG_DEBUG("No valid city or generic node found at the clicked position.");
+            }
         }
     }
 }
@@ -172,6 +196,19 @@ void Map::AddToLineStart(sf::Vector2f pos) {
         return;
     }
 
+    // Check for parallel conflict before proceeding
+    Line* selectedLine = GetSelectedLine();
+    if (!selectedLine) {
+        DEBUG_DEBUG("No line selected.");
+        return;
+    }
+
+    sf::Vector2f currentStart = selectedLine->GetStartPosition();
+    if (WouldCauseParallelConflict(newCity->GetPosition(), currentStart)) {
+        DEBUG_DEBUG("Cannot add city. New segment would run parallel to an existing line with active trains.");
+        return;
+    }
+
     // Check if the city is already part of the line
     auto cityList = GetSelectedLine()->GetCities();
     if (std::find(cityList.begin(), cityList.end(), newCity) != cityList.end()) {
@@ -190,6 +227,19 @@ void Map::AddToLineEnd(sf::Vector2f pos) {
     City* newCity = FindCityAtPosition(pos);
     if (newCity == nullptr) {
         DEBUG_DEBUG("No valid city found at the clicked position to add to the line.");
+        return;
+    }
+
+    // Check for parallel conflict before proceeding
+    Line* selectedLine = GetSelectedLine();
+    if (!selectedLine) {
+        DEBUG_DEBUG("No line selected.");
+        return;
+    }
+
+    sf::Vector2f currentEnd = selectedLine->GetEndPosition();
+    if (WouldCauseParallelConflict(currentEnd, newCity->GetPosition())) {
+        DEBUG_DEBUG("Cannot add city. New segment would run parallel to an existing line with active trains.");
         return;
     }
 
@@ -631,4 +681,104 @@ void Map::MoveCity(sf::Vector2f newPos) {
     // Update the city's position
     selectedCity->SetPosition(newPos);
     DEBUG_DEBUG("City " + selectedCity->GetName() + " moved to new position.");
+}
+
+void Map::AddGenericNode(sf::Vector2f pos) {
+    // Create a generic node with a unique name
+    static int nodeSuffix = 1;
+    std::string name = "Node" + std::to_string(nodeSuffix++);
+    float radius = 5.0f;  // or any default radius for generic nodes
+    m_nodes.emplace_back(name, pos, radius);
+}
+
+bool Map::SelectNode(sf::Vector2f& pos) {
+    const float CLICK_THRESHOLD = 10.0f;
+    for (auto& node : m_nodes) {
+        sf::Vector2f diff = node.GetPosition() - pos;
+        float distanceSquared = diff.x * diff.x + diff.y * diff.y;
+        if (distanceSquared <= CLICK_THRESHOLD * CLICK_THRESHOLD) {
+            selectionManager.SelectNode(&node);
+            return true;
+        }
+    }
+    return false;
+}
+
+void Map::RemoveNode() {
+    Node* selectedNode = selectionManager.GetSelectedNode();
+    if (!selectedNode) {
+        DEBUG_DEBUG("No node selected.");
+        return;
+    }
+    // Remove from list
+    m_nodes.remove_if([selectedNode](const Node& node) {
+        return &node == selectedNode;
+        });
+    selectionManager.DeselectAll();
+    DEBUG_DEBUG("Generic node removed.");
+}
+
+void Map::MoveNode(sf::Vector2f& newPos) {
+    Node* selectedNode = selectionManager.GetSelectedNode();
+    if (!selectedNode) {
+        DEBUG_DEBUG("No node selected.");
+        return;
+    }
+    selectedNode->SetPosition(newPos);
+    DEBUG_DEBUG("Generic node moved to new position.");
+}
+
+Node* Map::FindGenericNodeAtPosition(sf::Vector2f pos) {
+    const float CLICK_THRESHOLD = 10.0f;
+    for (auto& node : m_nodes) {
+        sf::Vector2f diff = node.GetPosition() - pos;
+        if ((diff.x * diff.x + diff.y * diff.y) <= (CLICK_THRESHOLD * CLICK_THRESHOLD)) {
+            return &node;
+        }
+    }
+    return nullptr;
+}
+
+bool Map::WouldCauseParallelConflict(const sf::Vector2f& segStart, const sf::Vector2f& segEnd) {
+    // Tolerance values: adjust angleTolerance and distanceThreshold as needed.
+    const float angleTolerance = std::cos(5 * 3.14159265f / 180.0f); // 5 degrees tolerance
+    const float distanceThreshold = 10.0f; // distance threshold in pixels
+
+    for (auto& line : m_lines) {
+        if (!line.HasTrains()) continue;  // Only consider lines with active trains
+
+        auto points = line.GetPathPoints();
+        for (size_t i = 0; i < points.size() - 1; ++i) {
+            sf::Vector2f a = segStart;
+            sf::Vector2f b = segEnd;
+            sf::Vector2f c = points[i];
+            sf::Vector2f d = points[i + 1];
+
+            // Calculate direction vectors for both segments
+            sf::Vector2f v1 = b - a;
+            sf::Vector2f v2 = d - c;
+            float len1 = std::sqrt(v1.x * v1.x + v1.y * v1.y);
+            float len2 = std::sqrt(v2.x * v2.x + v2.y * v2.y);
+            if (len1 == 0 || len2 == 0) continue;
+
+            // Normalize direction vectors
+            sf::Vector2f norm1 = v1 / len1;
+            sf::Vector2f norm2 = v2 / len2;
+            float dotVal = norm1.x * norm2.x + norm1.y * norm2.y;
+
+            // Check if directions are nearly parallel
+            if (std::abs(dotVal) < angleTolerance) continue;
+
+            // Use distance calculations from endpoints to segments to assess proximity
+            float distA = DistancePointToSegment(a, c, d);
+            float distB = DistancePointToSegment(b, c, d);
+            float distC = DistancePointToSegment(c, a, b);
+            float distD = DistancePointToSegment(d, a, b);
+            float minDist = std::min({ distA, distB, distC, distD });
+
+            // If segments are close enough and nearly parallel, conflict detected
+            if (minDist < distanceThreshold) return true;
+        }
+    }
+    return false;
 }

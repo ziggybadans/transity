@@ -32,7 +32,7 @@ public:
         stateManager(sm),
         startCityForTrain(nullptr), endCityForTrain(nullptr) {}
 
-    SelectionManager GetSelectionManager() { return selectionManager; }
+    SelectionManager& GetSelectionManager() { return selectionManager; }
     const SelectionManager& GetSelectionManager() const { return selectionManager; }
 
     // Selection Handling
@@ -47,6 +47,13 @@ public:
             throw std::out_of_range("GetTile: Invalid tile coordinates");
         return m_grid[x][y];
     }
+
+    // Nodes
+    void AddGenericNode(sf::Vector2f pos);
+    bool SelectNode(sf::Vector2f& pos);
+    void RemoveNode();
+    void MoveNode(sf::Vector2f& newPos);
+    std::list<Node>& GetNodes() { return m_nodes; }
 
     // City management
     void AddCity(const sf::Vector2f pos);
@@ -100,11 +107,14 @@ private:
     std::pair<int, int> NormalizeSegment(int startIndex, int endIndex) const;
     std::string GenerateSegmentKey(const sf::Vector2f& start, const sf::Vector2f& end) const;
     static bool ArePositionsEqual(const sf::Vector2f& pos1, const sf::Vector2f& pos2, float epsilon = 0.1f);
+    Node* FindGenericNodeAtPosition(sf::Vector2f pos);
+    bool WouldCauseParallelConflict(const sf::Vector2f& segStart, const sf::Vector2f& segEnd);
 
     // Collections
     std::list<City> m_cities;
     std::list<Line> m_lines;
     std::vector<std::unique_ptr<Train>> m_trains;
+    std::list<Node> m_nodes;
 
     std::vector<Segment> sharedSegments; // List of shared segments
     City* startCityForTrain;

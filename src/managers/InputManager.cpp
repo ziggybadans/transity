@@ -194,8 +194,14 @@ void InputManager::InitializeCommands() {
         m_window,
         m_map,
         [](std::shared_ptr<Map> map, const sf::Vector2f& worldPos) {
-            DEBUG_DEBUG("PlaceCommand: Attempting to place city at world position ", worldPos.x, ", ", worldPos.y);
-            map->AddCity(worldPos);
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::LShift)) {
+                DEBUG_DEBUG("PlaceCommand: Attempting to place node at world position ", worldPos.x, ", ", worldPos.y);
+                map->AddGenericNode(worldPos);
+            }
+            else {
+                DEBUG_DEBUG("PlaceCommand: Attempting to place city at world position ", worldPos.x, ", ", worldPos.y);
+                map->AddCity(worldPos);
+            }
         }
     );
 

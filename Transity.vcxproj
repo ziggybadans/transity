@@ -212,6 +212,7 @@
     <ClInclude Include="src\world\HandleManager.h" />
     <ClInclude Include="src\world\Line.h" />
     <ClInclude Include="src\world\Map.h" />
+    <ClInclude Include="src\world\Node.h" />
     <ClInclude Include="src\world\Segment.h" />
     <ClInclude Include="src\world\SelectionManager.h" />
   </ItemGroup>
