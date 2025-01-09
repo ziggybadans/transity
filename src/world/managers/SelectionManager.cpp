@@ -54,7 +54,7 @@ bool SelectionManager::SelectCity(sf::Vector2f pos) {
 bool SelectionManager::SelectLineHandle(sf::Vector2f pos) {
     const float HANDLE_CLICK_THRESHOLD = 10.0f; // Adjust as needed
 
-    Line* selectedLine = m_map.GetSelectionManager().GetSelectedLine();
+    Line* selectedLine = m_map.GetSelectedLine();
     if (selectedLine == nullptr)
         return false;
 

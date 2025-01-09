@@ -72,7 +72,7 @@ void Renderer::RenderMap(sf::RenderWindow& window, Map& map, const Camera& camer
     /* Lines */
     for (const auto& line : map.GetLines()) {
         // Determine if the line is selected via SelectionManager
-        bool isSelected = (&line) == map.GetSelectionManager().GetSelectedLine();
+        bool isSelected = (&line) == map.GetSelectedLine();
 
         float thickness = line.GetThickness();
         sf::Color color = isSelected ? sf::Color::Yellow : line.GetColor();
@@ -94,7 +94,7 @@ void Renderer::RenderMap(sf::RenderWindow& window, Map& map, const Camera& camer
     if (stateManager.GetState<std::string>("CurrentTool") == "TrainPlace"
         && startCity && endCity) {
         // Use the new route-finding with nodes from the map
-        std::vector<Node*> routeNodes = map.GetLineManager().FindRouteBetweenNodes(startCity, endCity);
+        std::vector<Node*> routeNodes = map.FindRouteBetweenNodes(startCity, endCity);
         if (!routeNodes.empty()) {
             // Draw the route segments in orange
             sf::Color highlightColor = sf::Color(255, 165, 0); // Orange
@@ -163,7 +163,7 @@ void Renderer::RenderMap(sf::RenderWindow& window, Map& map, const Camera& camer
     /* Line Handles */
     for (const auto& line : map.GetLines()) {
         // Determine if the line is selected via SelectionManager
-        bool isSelected = (&line) == map.GetSelectionManager().GetSelectedLine();
+        bool isSelected = (&line) == map.GetSelectedLine();
 
         // Draw handles for all nodes if the line is selected
         if (isSelected) {
@@ -225,7 +225,7 @@ void Renderer::RenderMap(sf::RenderWindow& window, Map& map, const Camera& camer
     /* Trains */
     for (const auto& trainPtr : map.GetTrains()) {
         Train* train = trainPtr.get();
-        bool isSelected = (train) == map.GetSelectionManager().GetSelectedTrain();
+        bool isSelected = (train) == map.GetSelectedTrain();
 
         sf::Vector2f position = train->GetPosition();
 

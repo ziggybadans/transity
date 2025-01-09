@@ -268,9 +268,9 @@ void UIManager::RenderInfoPanel() {
         return;
     }
 
-    Train* selectedTrain = m_map->GetSelectionManager().GetSelectedTrain();
-    Line* selectedLine = m_map->GetSelectionManager().GetSelectedLine();
-    City* selectedCity = m_map->GetSelectionManager().GetSelectedCity();
+    Train* selectedTrain = m_map->GetSelectedTrain();
+    Line* selectedLine = m_map->GetSelectedLine();
+    City* selectedCity = m_map->GetSelectedCity();
     if (!selectedTrain && !selectedLine && !selectedCity) {
         // No train or line is selected; do not render the panel
         return;
@@ -356,7 +356,7 @@ void UIManager::RenderInfoPanel() {
         }
 
         if (ImGui::Button("Remove", ImVec2(70, 30))) {
-            m_map->GetTrainManager().RemoveTrain();
+            m_map->RemoveTrain();
         }
 
         ImGui::End();
@@ -441,7 +441,7 @@ void UIManager::RenderInfoPanel() {
         ImGui::Separator();
 
         if (ImGui::Button("Remove", ImVec2(70, 30))) {
-            m_map->GetLineManager().RemoveLine();
+            m_map->RemoveLine();
         }
 
         ImGui::End();
@@ -466,7 +466,7 @@ void UIManager::RenderInfoPanel() {
         ImGui::Text("City: %s", selectedCity->GetName().c_str());
 
         if (ImGui::Button("Remove", ImVec2(70, 30))) {
-            m_map->GetCityManager().RemoveCity(selectedCity);
+            m_map->RemoveCity(selectedCity);
         }
 
         ImGui::End();
@@ -551,7 +551,7 @@ void UIManager::RenderGUI()
     static bool isLineMode = false;
     static bool isTrainMode = false;
 
-    ImGui::SetNextWindowPos(ImVec2(static_cast<float>(m_renderWindow->getSize().x) / 2, (m_renderWindow->getSize().y) - 100.0f), ImGuiCond_Always);
+    ImGui::SetNextWindowPos(ImVec2(static_cast<float>(m_renderWindow->getSize().x) / 2 - 100.0f, (m_renderWindow->getSize().y) - 100.0f), ImGuiCond_Always);
 
     if (ImGui::Begin("Tools", nullptr,
         ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_AlwaysAutoResize)) {
@@ -581,13 +581,13 @@ void UIManager::RenderGUI()
                     m_stateManager->SetState("CurrentTool", std::string("Place"));
                 }
 
-                m_map->GetSelectionManager().DeselectAll();
+                m_map->DeselectAll();
             }
         ImGui::EndDisabled();
         ImGui::SameLine();
         ImGui::BeginDisabled(!m_stateManager->GetState<bool>("TrainPlaceVerified"));
             if (ImGui::Button("Add Train", ImVec2(95, 30))) {
-                m_map->GetTrainManager().AddTrain();
+                m_map->AddTrain();
                 m_stateManager->SetState("TrainPlaceVerified", false);
             }
         ImGui::EndDisabled();

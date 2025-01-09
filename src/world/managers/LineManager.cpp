@@ -10,7 +10,7 @@
 void LineManager::UseLineMode(const sf::Vector2f& pos) {
     DEBUG_DEBUG("Choosing to either create a new line or modify an existing line.");
 
-    Line* selectedLine = m_map.GetSelectionManager().GetSelectedLine();
+    Line* selectedLine = m_map.GetSelectedLine();
 
     if (selectedLine == nullptr) {
         // No line is currently selected; create a new line starting at 'pos'
@@ -56,7 +56,7 @@ void LineManager::UseLineMode(const sf::Vector2f& pos) {
             Node* genericNode = m_map.FindGenericNodeAtPosition(pos);
             if (genericNode) {
                 // Retrieve the currently selected line
-                Line* line = m_map.GetSelectionManager().GetSelectedLine();
+                Line* line = m_map.GetSelectedLine();
                 if (!line) {
                     DEBUG_DEBUG("No line selected.");
                     return;
@@ -105,7 +105,7 @@ void LineManager::CreateLine(const sf::Vector2f& pos) {
 
     m_lines.emplace_back(firstCity, name);
     Line* newLine = &m_lines.back();
-    m_map.GetSelectionManager().SelectLine(newLine);
+    m_map.SelectLine(newLine);
 
     UpdateSharedSegments();
 
@@ -113,7 +113,7 @@ void LineManager::CreateLine(const sf::Vector2f& pos) {
 }
 
 void LineManager::AddToLineStart(const sf::Vector2f& pos) {
-    DEBUG_DEBUG("Adding city to the start of line " + m_map.GetSelectionManager().GetSelectedLine()->GetName() + "...");
+    DEBUG_DEBUG("Adding city to the start of line " + m_map.GetSelectedLine()->GetName() + "...");
 
     City* newCity = m_map.FindCityAtPosition(pos);
     if (newCity == nullptr) {
@@ -122,7 +122,7 @@ void LineManager::AddToLineStart(const sf::Vector2f& pos) {
     }
 
     // Check for parallel conflict before proceeding
-    Line* selectedLine = m_map.GetSelectionManager().GetSelectedLine();
+    Line* selectedLine = m_map.GetSelectedLine();
     if (!selectedLine) {
         DEBUG_DEBUG("No line selected.");
         return;
@@ -135,20 +135,20 @@ void LineManager::AddToLineStart(const sf::Vector2f& pos) {
     }
 
     // Check if the city is already part of the line
-    auto cityList = m_map.GetSelectionManager().GetSelectedLine()->GetCities();
+    auto cityList = m_map.GetSelectedLine()->GetCities();
     if (std::find(cityList.begin(), cityList.end(), newCity) != cityList.end()) {
         DEBUG_DEBUG("The city is already part of the line.");
         return;
     }
 
-    m_map.GetSelectionManager().GetSelectedLine()->AddCityToStart(newCity);
+    m_map.GetSelectedLine()->AddCityToStart(newCity);
     UpdateSharedSegments();
-    DEBUG_DEBUG("Added city with name " + newCity->GetName() + " to the start of line " + m_map.GetSelectionManager().GetSelectedLine()->GetName());
+    DEBUG_DEBUG("Added city with name " + newCity->GetName() + " to the start of line " + m_map.GetSelectedLine()->GetName());
 
 }
 
 void LineManager::AddToLineEnd(const sf::Vector2f& pos) {
-    DEBUG_DEBUG("Adding city to the end of line " + m_map.GetSelectionManager().GetSelectedLine()->GetName() + "...");
+    DEBUG_DEBUG("Adding city to the end of line " + m_map.GetSelectedLine()->GetName() + "...");
 
     City* newCity = m_map.FindCityAtPosition(pos);
     if (newCity == nullptr) {
@@ -157,7 +157,7 @@ void LineManager::AddToLineEnd(const sf::Vector2f& pos) {
     }
 
     // Check for parallel conflict before proceeding
-    Line* selectedLine = m_map.GetSelectionManager().GetSelectedLine();
+    Line* selectedLine = m_map.GetSelectedLine();
     if (!selectedLine) {
         DEBUG_DEBUG("No line selected.");
         return;
@@ -170,20 +170,20 @@ void LineManager::AddToLineEnd(const sf::Vector2f& pos) {
     }
 
     // Check if the city is already part of the line
-    auto cityList = m_map.GetSelectionManager().GetSelectedLine()->GetCities();
+    auto cityList = m_map.GetSelectedLine()->GetCities();
     if (std::find(cityList.begin(), cityList.end(), newCity) != cityList.end()) {
         DEBUG_DEBUG("The city is already part of the line.");
         return;
     }
 
-    m_map.GetSelectionManager().GetSelectedLine()->AddCityToEnd(newCity);
+    m_map.GetSelectedLine()->AddCityToEnd(newCity);
     UpdateSharedSegments();
-    DEBUG_DEBUG("Added city with name " + newCity->GetName() + " to the end of line " + m_map.GetSelectionManager().GetSelectedLine()->GetName());
+    DEBUG_DEBUG("Added city with name " + newCity->GetName() + " to the end of line " + m_map.GetSelectedLine()->GetName());
 
 }
 
 void LineManager::RemoveLine() {
-    Line* selectedLine = m_map.GetSelectionManager().GetSelectedLine();
+    Line* selectedLine = m_map.GetSelectedLine();
     if (selectedLine == nullptr) {
         DEBUG_DEBUG("No line selected. Cannot remove line.");
         return;
@@ -201,7 +201,7 @@ void LineManager::RemoveLine() {
     if (it != m_lines.end()) {
         DEBUG_DEBUG("Removing line: " + it->GetName());
         m_lines.erase(it);
-        m_map.GetSelectionManager().DeselectAll();
+        m_map.DeselectAll();
         DEBUG_DEBUG("Line removed successfully.");
     }
     else {
@@ -211,7 +211,7 @@ void LineManager::RemoveLine() {
 }
 
 void LineManager::MoveSelectedLineHandle(const sf::Vector2f& newPos) {
-    Line* selectedLine = m_map.GetSelectionManager().GetSelectedLine();
+    Line* selectedLine = m_map.GetSelectedLine();
     if (selectedLine == nullptr) {
         DEBUG_DEBUG("MoveSelectedLineHandle: No line selected.");
         return;
@@ -375,7 +375,7 @@ void LineManager::CreateBranch(Line* parentLine, int branchHandleIndex, sf::Vect
     // Create a new branch line starting from the branch point
     m_lines.emplace_back(branchStart, name);
     Line* newLine = &m_lines.back();
-    m_map.GetSelectionManager().SelectLine(newLine);
+    m_map.SelectLine(newLine);
 
     // Extend the new branch line based on the clicked position
     City* clickedCity = m_map.FindCityAtPosition(pos);
@@ -385,7 +385,7 @@ void LineManager::CreateBranch(Line* parentLine, int branchHandleIndex, sf::Vect
     else {
         Node* genericNode = m_map.FindGenericNodeAtPosition(pos);
         if (genericNode) {
-            Line* selectedLine = m_map.GetSelectionManager().GetSelectedLine();
+            Line* selectedLine = m_map.GetSelectedLine();
             if (!selectedLine) {
                 DEBUG_DEBUG("CreateBranch: No selected line after branch creation.");
                 return;

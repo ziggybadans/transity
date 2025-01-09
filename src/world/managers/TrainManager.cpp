@@ -28,7 +28,7 @@ void TrainManager::AddTrain() {
         return;
     }
 
-    std::vector<Node*> routeNodes = m_map.GetLineManager().FindRouteBetweenNodes(startCityForTrain, endCityForTrain);
+    std::vector<Node*> routeNodes = m_map.FindRouteBetweenNodes(startCityForTrain, endCityForTrain);
     if (routeNodes.empty()) {
         DEBUG_ERROR("AddTrain: No route found between selected cities.");
         return;
@@ -138,7 +138,7 @@ void TrainManager::AddTrain() {
 }
 
 void TrainManager::RemoveTrain() {
-    Train* selectedTrain = m_map.GetSelectionManager().GetSelectedTrain();
+    Train* selectedTrain = m_map.GetSelectedTrain();
     if (!selectedTrain) { return; }
 
     // Remove train from the line
@@ -158,5 +158,5 @@ void TrainManager::RemoveTrain() {
     );
 
     // Deselect train
-    m_map.GetSelectionManager().DeselectAll();
+    m_map.DeselectAll();
 }

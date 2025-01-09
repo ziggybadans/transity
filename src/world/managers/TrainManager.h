@@ -20,10 +20,11 @@ public:
     void RemoveTrain();
     std::vector<std::unique_ptr<Train>>& GetTrains() { return m_trains; }
 
-private:
-    std::vector<std::unique_ptr<Train>> m_trains;
     City* startCityForTrain;
     City* endCityForTrain;
+
+private:
+    std::vector<std::unique_ptr<Train>> m_trains;
     Map& m_map;
     StateManager& stateManager;
 };

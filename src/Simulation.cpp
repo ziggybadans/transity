@@ -12,7 +12,7 @@ void Simulation::Update(float scaledDt) {
     }
 
     // Update passengers on the map.
-    m_map->GetCityManager().UpdatePassengers(scaledDt);
+    m_map->UpdatePassengers(scaledDt);
 
     // Handle periodic passenger spawning.
     m_passengerSpawnTimer += scaledDt;
@@ -27,7 +27,7 @@ void Simulation::Update(float scaledDt) {
             City* destination = &(*it);
 
             // Spawn a passenger between two cities.
-            m_map->GetCityManager().SpawnPassenger(origin, destination);
+            m_map->SpawnPassenger(origin, destination);
         }
     }
 }

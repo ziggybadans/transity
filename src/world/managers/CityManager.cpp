@@ -33,7 +33,7 @@ void CityManager::AddCity(const sf::Vector2f& pos) {
 }
 
 void CityManager::RemoveCity(City* city) {
-    City* selectedCity = m_map.GetSelectionManager().GetSelectedCity();
+    City* selectedCity = m_map.GetSelectedCity();
     if (!selectedCity) {
         DEBUG_DEBUG("No city selected.");
         return;
@@ -52,7 +52,7 @@ void CityManager::RemoveCity(City* city) {
     std::string cityName = selectedCity->GetName();
 
     // Clear selection before removing city to avoid dangling pointer issues
-    m_map.GetSelectionManager().DeselectAll();
+    m_map.DeselectAll();
 
     // Remove the city from the list
     m_cities.remove_if([selectedCity](const City& city) {
@@ -64,7 +64,7 @@ void CityManager::RemoveCity(City* city) {
 }
 
 void CityManager::MoveCity(const sf::Vector2f& newPos) {
-    City* selectedCity = m_map.GetSelectionManager().GetSelectedCity();
+    City* selectedCity = m_map.GetSelectedCity();
     if (!selectedCity) {
         DEBUG_DEBUG("No city selected.");
         return;
@@ -88,7 +88,7 @@ void CityManager::MoveCity(const sf::Vector2f& newPos) {
 void CityManager::SpawnPassenger(City* origin, City* destination) {
     if (!origin || !destination || origin == destination) return;
 
-    auto routeNodes = m_map.GetLineManager().FindRouteBetweenNodes(origin, destination);
+    auto routeNodes = m_map.FindRouteBetweenNodes(origin, destination);
     if (routeNodes.empty()) return;
 
     std::vector<City*> routeCities;
