@@ -222,20 +222,62 @@ void Renderer::RenderMap(sf::RenderWindow& window, Map& map, const Camera& camer
     }
 
     /* Trains */
-    for (const auto& train : map.GetTrains()) {
-        // Determine if the train is selected via SelectionManager
-        bool isSelected = (&(*train)) == map.GetSelectionManager().GetSelectedTrain();
+    for (const auto& trainPtr : map.GetTrains()) {
+        Train* train = trainPtr.get();
+        bool isSelected = (train) == map.GetSelectionManager().GetSelectedTrain();
 
-        sf::CircleShape trainShape(6.f); // small circle for the train
-        trainShape.setOrigin(6.f, 6.f);
-        if (isSelected) {
-            trainShape.setFillColor(sf::Color::Yellow);
+        sf::Vector2f position = train->GetPosition();
+
+        // Compute direction for orientation
+        sf::Vector2f nextPoint = position;
+        const auto& pathPoints = train->GetPathPoints();
+        int nextIdx = train->GetCurrentPointIndex() + (train->GetDirection() == "Forward" ? 1 : -1);
+        if (!pathPoints.empty() && nextIdx >= 0 && nextIdx < static_cast<int>(pathPoints.size())) {
+            nextPoint = pathPoints[nextIdx];
         }
-        else {
-            trainShape.setFillColor(sf::Color::Red);
-        }
-        trainShape.setPosition(train->GetPosition());
+        sf::Vector2f dir = nextPoint - position;
+        float angle = std::atan2(dir.y, dir.x) * 180.0f / 3.14159265f;
+
+        sf::ConvexShape trainShape;
+        trainShape.setPointCount(5);
+        float length = 30.f;
+        float width = 10.f;
+        trainShape.setPoint(0, sf::Vector2f(-length / 2, -width / 2));
+        trainShape.setPoint(1, sf::Vector2f(-length / 2, width / 2));
+        trainShape.setPoint(2, sf::Vector2f(length / 4, width / 2));
+        trainShape.setPoint(3, sf::Vector2f(length / 2, 0.f));
+        trainShape.setPoint(4, sf::Vector2f(length / 4, -width / 2));
+
+        trainShape.setFillColor(isSelected ? sf::Color::Yellow : sf::Color::Red);
+        sf::FloatRect bounds = trainShape.getLocalBounds();
+        trainShape.setOrigin(bounds.width / 2, bounds.height / 2);
+        trainShape.setPosition(position);
+        trainShape.setRotation(angle);
         window.draw(trainShape);
+
+        // Draw passenger count inside the train shape
+        sf::Text countText;
+        countText.setFont(m_font);
+        countText.setString(std::to_string(train->GetPassengerCount()));
+        countText.setFillColor(sf::Color::Black);
+        countText.setCharacterSize(14);
+        sf::FloatRect textBounds = countText.getLocalBounds();
+        countText.setOrigin(textBounds.width / 2, textBounds.height / 2);
+        countText.setPosition(position);
+        window.draw(countText);
+    }
+
+    for (const City& city : map.GetCities()) {
+        const auto& waiting = city.GetWaitingPassengers();
+        for (size_t i = 0; i < waiting.size(); ++i) {
+            sf::RectangleShape passengerShape(sf::Vector2f(5.f, 5.f));
+            passengerShape.setFillColor(sf::Color::Blue);
+            float offsetX = (i % 5) * 6.0f - 15.f;
+            float offsetY = (i / 5) * 6.0f - 15.f;
+            passengerShape.setPosition(city.GetPosition().x + offsetX,
+                city.GetPosition().y + offsetY);
+            window.draw(passengerShape);
+        }
     }
 }
 

@@ -1,4 +1,5 @@
 #include "Map.h"
+#include "../entity/Passenger.h"
 #include "../Debug.h"
 #include <queue>
 
@@ -788,4 +789,93 @@ std::vector<Node*> Map::FindRouteBetweenNodes(Node* start, Node* end) {
     }
     std::reverse(path.begin(), path.end());
     return path;
+}
+
+void Map::SpawnPassenger(City* origin, City* destination) {
+    if (!origin || !destination || origin == destination) return;
+
+    auto routeNodes = FindRouteBetweenNodes(origin, destination);
+    if (routeNodes.empty()) return;
+
+    std::vector<City*> routeCities;
+    for (auto node : routeNodes) {
+        // Filter only city nodes
+        for (auto& city : m_cities) {
+            if (&city == node) {
+                routeCities.push_back(&city);
+                break;
+            }
+        }
+    }
+    if (routeCities.size() < 2) return;
+
+    // Create a passenger; the Passenger constructor handles adding to city's waiting list
+    new Passenger(origin, destination, routeCities);
+}
+
+void Map::UpdatePassengers(float dt) {
+    for (auto& train_ptr : m_trains) {
+        Train* train = train_ptr.get();
+        if (train->GetState() != "Waiting") continue;
+
+        sf::Vector2f trainPos = train->GetPosition();
+        City* currentCity = nullptr;
+        for (auto& city : m_cities) {
+            float dx = city.GetPosition().x - trainPos.x;
+            float dy = city.GetPosition().y - trainPos.y;
+            float dist = std::sqrt(dx * dx + dy * dy);
+            if (dist <= city.GetRadius() + 5.0f) {  // proximity threshold
+                currentCity = &city;
+                break;
+            }
+        }
+        if (!currentCity) continue;
+
+        std::vector<Passenger*> alightList;
+        auto& passengersOnTrain = train->GetPassengers();
+        for (auto p : passengersOnTrain) {
+            if (p->GetDestination() == currentCity) {
+                p->Arrive();
+                alightList.push_back(p);
+                m_score++;
+            }
+            else if (p->GetNextCity() == currentCity) {
+                p->AlightAtCity(currentCity);
+                alightList.push_back(p);
+            }
+        }
+        for (auto p : alightList) {
+            train->RemovePassenger(p);
+            if (p->GetState() == PassengerState::Arrived) {
+                delete p;
+            }
+        }
+
+        std::vector<Passenger*> waitingList = currentCity->GetWaitingPassengers();
+        for (auto p : waitingList) {
+            if (!train->HasCapacity()) break;
+            if (p->GetState() == PassengerState::Waiting && p->GetCurrentCity() == currentCity) {
+                bool goesToNext = false;
+                const auto& stationPositions = train->GetStationPositions();
+                float threshold = 5.0f;
+                int indexCurrent = -1;
+                int indexNext = -1;
+                for (int i = 0; i < stationPositions.size(); ++i) {
+                    float dcurr = std::hypot(stationPositions[i].x - currentCity->GetPosition().x,
+                        stationPositions[i].y - currentCity->GetPosition().y);
+                    float dnext = std::hypot(stationPositions[i].x - p->GetNextCity()->GetPosition().x,
+                        stationPositions[i].y - p->GetNextCity()->GetPosition().y);
+                    if (dcurr < threshold) indexCurrent = i;
+                    if (dnext < threshold) indexNext = i;
+                }
+                if (indexCurrent != -1 && indexNext != -1 && indexNext > indexCurrent) {
+                    goesToNext = true;
+                }
+                if (goesToNext) {
+                    p->BoardTrain(train);
+                    train->AddPassenger(p);
+                }
+            }
+        }
+    }
 }

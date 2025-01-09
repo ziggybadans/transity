@@ -78,6 +78,12 @@ public:
     City* GetStartCityForTrain() const { return startCityForTrain; }
     City* GetEndCityForTrain() const { return endCityForTrain; }
 
+    // Passenger management
+    int GetScore() const { return m_score; }
+    void UpdatePassengers(float dt);
+    void SpawnPassenger(City* origin, City* destination);
+
+    // Helper methods
     float DistancePointToSegment(const sf::Vector2f& point, const sf::Vector2f& segStart, const sf::Vector2f& segEnd);
 
 private:
@@ -86,6 +92,7 @@ private:
     unsigned int m_size;
 
     unsigned int m_minRadius;
+    int m_score = 0;
 
     // Helper functions
     void Resize(unsigned int newSize);

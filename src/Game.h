@@ -21,6 +21,7 @@
 #include "managers/SaveManager.h"
 #include "core/StateManager.h"
 #include "world/Map.h"
+#include "Simulation.h"
 
 class IInitializable;
 
@@ -47,7 +48,6 @@ private:
     /* Game Loop Methods */
     void ProcessEvents();
     void UpdateNonSimulation(float dt); // Updates things like the camera, UI and inputs
-    void UpdateSimulation(float scaledDt);
     void Render();
 
     /* Managers */
@@ -66,6 +66,7 @@ private:
 
     /* Core Systems */
     std::shared_ptr<Map> m_map;
+    std::unique_ptr<Simulation> m_simulation;
 
     /* Game State */
     mutable std::mutex m_gameMutex;

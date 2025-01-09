@@ -5,7 +5,8 @@
 #include <cmath>
 
 // Constructor
-Train::Train(Line* route, const std::string& id, const std::vector<sf::Vector2f>& pathPoints, const std::vector<sf::Vector2f>& stationPositions, float maxSpeed)
+Train::Train(Line* route, const std::string& id, const std::vector<sf::Vector2f>& pathPoints,
+    const std::vector<sf::Vector2f>& stationPositions, float maxSpeed)
     : m_route(route),
     m_id(id),
     m_maxSpeed(maxSpeed),
@@ -16,14 +17,13 @@ Train::Train(Line* route, const std::string& id, const std::vector<sf::Vector2f>
     m_waitTime(0.0f),
     m_pathPoints(pathPoints),
     m_stationPositions(stationPositions),
-    m_currentPointIndex(1)
+    m_currentPointIndex(1),
+    m_capacity(50)  // Default capacity set here
 {
-    if (!m_pathPoints.empty())
-    {
+    if (!m_pathPoints.empty()) {
         m_position = m_pathPoints[0];
     }
-    else
-    {
+    else {
         m_position = sf::Vector2f(0.f, 0.f);
         DEBUG_ERROR("Train constructed with empty path points.");
     }

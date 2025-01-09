@@ -82,6 +82,7 @@ bool Game::Init() {
 
         // Stage 3: World
         InitializeWorld();
+        m_simulation = std::make_unique<Simulation>(m_map);
 
         // Stage 4: Inputs
         m_inputManager = std::make_shared<InputManager>(m_eventManager, m_stateManager, m_windowManager->GetWindow(), m_camera, m_map);
@@ -157,7 +158,7 @@ void Game::Run()
             float scaledDt = dt * currentTimeScale;
             {
                 PROFILE_SCOPE("Simulation Update");
-                UpdateSimulation(scaledDt);
+                m_simulation->Update(scaledDt);
             }
         }
 
@@ -184,12 +185,6 @@ void Game::UpdateNonSimulation(float dt) {
     if (m_uiManager) { m_uiManager->Update(dt); }
     if (m_inputManager) { m_inputManager->HandleInput(dt); }
     if (m_pluginManager) { m_pluginManager->UpdatePlugins(dt); }
-}
-
-void Game::UpdateSimulation(float scaledDt) {
-    for (auto& train : m_map->GetTrains()) {
-        train->Update(scaledDt);
-    }
 }
 
 void Game::Render() {
