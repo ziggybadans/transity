@@ -325,30 +325,6 @@ void UIManager::RenderInfoPanel() {
         ImGui::Text("Capacity: %d", selectedTrain->GetCapacity());
         ImGui::Text("Passengers: %d", selectedTrain->GetPassengerCount());
 
-        // Current City and Next City (if route available)
-        if (route) {
-            int currentIndex = selectedTrain->GetCurrentPointIndex();
-            const std::vector<City*> cities = route->GetCities();
-
-            if (currentIndex >= 0 && currentIndex < static_cast<int>(cities.size())) {
-                const City* currentCity = cities[currentIndex];
-                ImGui::Text("Current City: %s", currentCity->GetName().c_str());
-
-                int nextIndex = currentIndex + (direction == "Forward" ? 1 : -1);
-                if (nextIndex >= 0 && nextIndex < static_cast<int>(cities.size())) {
-                    const City* nextCity = cities[nextIndex];
-                    ImGui::Text("Next City: %s", nextCity->GetName().c_str());
-                }
-                else {
-                    ImGui::Text("Next City: N/A");
-                }
-            }
-            else {
-                ImGui::Text("Current City: N/A");
-                ImGui::Text("Next City: N/A");
-            }
-        }
-
         // Wait Time if applicable
         if (state == "Waiting") {
             float waitTime = selectedTrain->GetWaitTime();
