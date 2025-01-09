@@ -5,16 +5,15 @@
 #include <mutex>
 #include "Camera.h"
 #include "../core/StateManager.h"
-#include "../interfaces/IInitializable.h"
 #include "../world/Map.h"
 
-class Renderer : public IInitializable {
+class Renderer {
 public:
     Renderer();
     ~Renderer();
 
     /* Core Renderer Methods */
-    bool Init() override;
+    bool Init();
     bool InitWithWindow(sf::RenderWindow& window);
     void Render(sf::RenderWindow& window, const Camera& camera, Map& map, StateManager& stateManager);
     void Shutdown();

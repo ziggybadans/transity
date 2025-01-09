@@ -42,18 +42,6 @@
     <ClCompile Include="src\graphics\Renderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\managers\UIManager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\managers\WindowManager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\utility\ThreadPool.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\managers\ResourceManager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\core\ErrorHandler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -61,9 +49,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\Debug.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\managers\SaveManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\modding\PluginLoader.cpp">
@@ -81,34 +66,55 @@
     <ClCompile Include="src\utility\Profiler.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\utility\Sandbox.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\utility\ThreadManager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\managers\InputManager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\world\Map.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\world\Line.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\map\MapLoader.cpp">
+    <ClCompile Include="src\entity\Passenger.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\map\OSMDataStore.cpp">
+    <ClCompile Include="src\entity\Train.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\map\PBFParser.cpp">
+    <ClCompile Include="src\core\InputManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\map\ProgressTracker.cpp">
+    <ClCompile Include="src\resource\ResourceManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\map\SpatialIndex.cpp">
+    <ClCompile Include="src\resource\SaveManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ui\UIManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ui\WindowManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Simulation.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\modding\Sandbox.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\core\ThreadManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\core\ThreadPool.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\world\managers\SelectionManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\world\managers\CityManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\world\managers\LineManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\world\managers\TrainManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -140,34 +146,10 @@
     <ClInclude Include="src\graphics\Renderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\managers\EventManager.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\managers\InputManager.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\managers\UIManager.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\managers\WindowManager.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\utility\FastNoiseLite.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\utility\Task.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\utility\ThreadPool.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\mapbox\earcut.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\managers\ResourceManager.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\registry\ActionRegistrar.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\core\ErrorHandler.h">
@@ -177,12 +159,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\Debug.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\interfaces\IInitializable.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\managers\SaveManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\modding\Plugin.h">
@@ -204,12 +180,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\utility\Profiler.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\utility\Sandbox.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\utility\ThreadManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\world\Map.h">
@@ -224,16 +194,7 @@
     <ClInclude Include="src\entity\Train.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\world\HandleManager.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\world\SelectionManager.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\world\Segment.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\interfaces\InputCommand.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\managers\SaveManager.h">
@@ -266,28 +227,61 @@
     <ClInclude Include="src\utility\ThreadManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\map\MapLoader.h">
+    <ClInclude Include="src\entity\Passenger.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\map\OSMDataStore.h">
+    <ClInclude Include="src\core\InputCommand.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\map\OSMNode.h">
+    <ClInclude Include="src\core\EventManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\map\OSMRelation.h">
+    <ClInclude Include="src\core\InputManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\map\OSMWay.h">
+    <ClInclude Include="src\resource\ResourceManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\map\PBFParser.h">
+    <ClInclude Include="src\resource\SaveManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\map\ProgressTracker.h">
+    <ClInclude Include="src\ui\UIManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\map\SpatialIndex.h">
+    <ClInclude Include="src\ui\WindowManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Simulation.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\modding\Sandbox.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\Task.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\ThreadManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\core\ThreadPool.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\world\managers\CityManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\world\managers\HandleManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\world\Node.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\world\managers\SelectionManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\world\managers\LineManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\world\managers\TrainManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

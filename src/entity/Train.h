@@ -1,4 +1,3 @@
-// Train.h
 #pragma once
 
 #include <SFML/Graphics.hpp>
@@ -7,6 +6,7 @@
 
 // Forward declaration of Line class
 class Line;
+class Passenger;
 
 // A simple Train class that travels along a Line's cities sequentially.
 class Train {
@@ -39,6 +39,23 @@ public:
     // Method to draw the train (optional, for visualization)
     void Draw(sf::RenderWindow& window) const;
 
+    void SetCapacity(int capacity) { m_capacity = capacity; }
+    int GetCapacity() const { return m_capacity; }
+    int GetPassengerCount() const { return static_cast<int>(m_passengers.size()); }
+    const std::vector<Passenger*>& GetPassengers() const { return m_passengers; }
+    bool HasCapacity() const { return GetPassengerCount() < m_capacity; }
+    void AddPassenger(Passenger* p) {
+        if (HasCapacity()) m_passengers.push_back(p);
+    }
+    void RemovePassenger(Passenger* p) {
+        auto it = std::remove(m_passengers.begin(), m_passengers.end(), p);
+        if (it != m_passengers.end()) m_passengers.erase(it, m_passengers.end());
+    }
+
+    const std::vector<sf::Vector2f>& GetPathPoints() const { return m_pathPoints; }
+    const std::vector<sf::Vector2f>& GetStationPositions() const { return m_stationPositions; }
+    float GetOrientationAngle() const { return std::atan2(m_direction.y, m_direction.x) * 180.0f / 3.14159265f; }
+
 private:
     // Enumeration for train states
     enum class State {
@@ -53,6 +70,9 @@ private:
     float m_currentSpeed;           // Current speed
     sf::Vector2f m_position;        // Current position in world space
     bool m_selected;
+    int m_capacity;
+    std::vector<Passenger*> m_passengers;
+    sf::Vector2f m_direction;
 
     // State management
     bool m_forward;                 // Direction of travel

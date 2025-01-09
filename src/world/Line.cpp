@@ -1,6 +1,8 @@
 #include "Line.h"
 #include "../entity/Train.h" // Ensure that Train.h is included if needed
 #include "../Debug.h" // Assuming Debug.h provides debugging utilities
+#include "City.h"
+#include "Node.h"
 #include <cmath>
 
 // Constructor
@@ -327,4 +329,10 @@ Node* Line::GetNodeAt(int index) const {
 
 int Line::GetPointCount() const {
     return static_cast<int>(points.size());
+}
+
+bool Line::HasCity(City* city) const
+{
+    const std::vector<City*>& cities = GetCities();
+    return std::find(cities.begin(), cities.end(), city) != cities.end();
 }

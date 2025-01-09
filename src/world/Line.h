@@ -5,11 +5,12 @@
 #include <algorithm>
 #include <SFML/Graphics.hpp>
 
-#include "City.h"
-#include "HandleManager.h"
+#include "managers/HandleManager.h"
 #include "Segment.h"
 
 class Train;
+class City;
+class Node;
 
 struct LinePoint {
     Node* node;
@@ -39,6 +40,7 @@ public:
     void InsertCityAfter(int index, City* city);
     std::vector<City*> GetCities() const;
     bool HasMultipleCities() { return GetCities().size() > 1; }
+    bool HasCity(City* city) const;
 
     // Node management
     void AddNode(Node* node);
