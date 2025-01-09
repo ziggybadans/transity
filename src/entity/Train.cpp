@@ -1,6 +1,8 @@
 #include "Train.h"
 #include "../world/Line.h" // Ensure Line.h is included
 #include "../Debug.h" // Assuming Debug.h provides debugging utilities
+#include "../world/City.h"
+#include "Passenger.h"
 #include <cmath>
 
 // Constructor
@@ -139,6 +141,41 @@ void Train::ArriveAtCity()
     if (m_currentPointIndex >= 0 && m_currentPointIndex < static_cast<int>(m_pathPoints.size()))
     {
         m_position = m_pathPoints[m_currentPointIndex];
+    }
+
+    // Retrieve the current city based on stationIndex
+    City* currentCity = nullptr;
+    if (m_route) {
+        const std::vector<City*>& citiesOnRoute = m_route->GetCities();
+        if (stationIndex >= 0 && stationIndex < static_cast<int>(citiesOnRoute.size())) {
+            currentCity = citiesOnRoute[stationIndex];
+        }
+    }
+
+    if (currentCity) {
+        // 1. Alight passengers whose destination is the current city
+        std::vector<Passenger*> passengersToAlight;
+        for (Passenger* p : m_passengers) {
+            if (p->GetDestination() == currentCity) {
+                passengersToAlight.push_back(p);
+            }
+        }
+        for (Passenger* p : passengersToAlight) {
+            p->AlightAtCity(currentCity);
+            RemovePassenger(p);
+        }
+
+        // 2. Board waiting passengers whose destination is on the train's route
+        std::vector<Passenger*> waitingPassengers = currentCity->GetWaitingPassengers();
+        for (Passenger* p : waitingPassengers) {
+            // Check if passenger's destination is on the train's route
+            if (m_route->HasCity(p->GetDestination())) {
+                if (HasCapacity()) {
+                    p->BoardTrain(this);
+                    AddPassenger(p);
+                }
+            }
+        }
     }
 }
 

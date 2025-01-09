@@ -16,9 +16,16 @@ public:
         return GetName() == other.GetName() && GetPosition() == other.GetPosition();
     }
 
-    void AddWaitingPassenger(Passenger* p) { waitingPassengers.push_back(p); }
+    void AddWaitingPassenger(Passenger* p) { 
+        if (p && std::find(waitingPassengers.begin(), waitingPassengers.end(), p) == waitingPassengers.end()) {
+            waitingPassengers.push_back(p);
+        }
+    }
     void RemoveWaitingPassenger(Passenger* p) {
-        waitingPassengers.erase(std::remove(waitingPassengers.begin(), waitingPassengers.end(), p), waitingPassengers.end());
+        auto it = std::remove(waitingPassengers.begin(), waitingPassengers.end(), p);
+        if (it != waitingPassengers.end()) {
+            waitingPassengers.erase(it, waitingPassengers.end());
+        }
     }
     const std::vector<Passenger*>& GetWaitingPassengers() const { return waitingPassengers; }
 

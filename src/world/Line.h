@@ -40,6 +40,7 @@ public:
     void InsertCityAfter(int index, City* city);
     std::vector<City*> GetCities() const;
     bool HasMultipleCities() { return GetCities().size() > 1; }
+    bool HasCity(City* city) const;
 
     // Node management
     void AddNode(Node* node);

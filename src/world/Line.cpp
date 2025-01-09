@@ -330,3 +330,9 @@ Node* Line::GetNodeAt(int index) const {
 int Line::GetPointCount() const {
     return static_cast<int>(points.size());
 }
+
+bool Line::HasCity(City* city) const
+{
+    const std::vector<City*>& cities = GetCities();
+    return std::find(cities.begin(), cities.end(), city) != cities.end();
+}
