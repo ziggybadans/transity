@@ -5,11 +5,12 @@
 #include <algorithm>
 #include <SFML/Graphics.hpp>
 
-#include "City.h"
 #include "managers/HandleManager.h"
 #include "Segment.h"
 
 class Train;
+class City;
+class Node;
 
 struct LinePoint {
     Node* node;

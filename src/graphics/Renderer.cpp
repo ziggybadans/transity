@@ -90,10 +90,11 @@ void Renderer::RenderMap(sf::RenderWindow& window, Map& map, const Camera& camer
         }
     }
 
+    // Route
     if (stateManager.GetState<std::string>("CurrentTool") == "TrainPlace"
         && startCity && endCity) {
         // Use the new route-finding with nodes from the map
-        std::vector<Node*> routeNodes = map.FindRouteBetweenNodes(startCity, endCity);
+        std::vector<Node*> routeNodes = map.GetLineManager().FindRouteBetweenNodes(startCity, endCity);
         if (!routeNodes.empty()) {
             // Draw the route segments in orange
             sf::Color highlightColor = sf::Color(255, 165, 0); // Orange

@@ -1,6 +1,8 @@
 #include "Line.h"
 #include "../entity/Train.h" // Ensure that Train.h is included if needed
 #include "../Debug.h" // Assuming Debug.h provides debugging utilities
+#include "City.h"
+#include "Node.h"
 #include <cmath>
 
 // Constructor

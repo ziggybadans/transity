@@ -356,7 +356,7 @@ void UIManager::RenderInfoPanel() {
         }
 
         if (ImGui::Button("Remove", ImVec2(70, 30))) {
-            m_map->RemoveTrain();
+            m_map->GetTrainManager().RemoveTrain();
         }
 
         ImGui::End();
@@ -441,7 +441,7 @@ void UIManager::RenderInfoPanel() {
         ImGui::Separator();
 
         if (ImGui::Button("Remove", ImVec2(70, 30))) {
-            m_map->RemoveLine();
+            m_map->GetLineManager().RemoveLine();
         }
 
         ImGui::End();
@@ -466,7 +466,7 @@ void UIManager::RenderInfoPanel() {
         ImGui::Text("City: %s", selectedCity->GetName().c_str());
 
         if (ImGui::Button("Remove", ImVec2(70, 30))) {
-            m_map->RemoveCity();
+            m_map->GetCityManager().RemoveCity(selectedCity);
         }
 
         ImGui::End();
@@ -587,7 +587,7 @@ void UIManager::RenderGUI()
         ImGui::SameLine();
         ImGui::BeginDisabled(!m_stateManager->GetState<bool>("TrainPlaceVerified"));
             if (ImGui::Button("Add Train", ImVec2(95, 30))) {
-                m_map->AddTrain();
+                m_map->GetTrainManager().AddTrain();
                 m_stateManager->SetState("TrainPlaceVerified", false);
             }
         ImGui::EndDisabled();

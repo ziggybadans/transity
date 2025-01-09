@@ -170,6 +170,9 @@
     <ClCompile Include="src\core\ThreadManager.cpp" />
     <ClCompile Include="src\core\ThreadPool.cpp" />
     <ClCompile Include="src\world\Line.cpp" />
+    <ClCompile Include="src\world\managers\CityManager.cpp" />
+    <ClCompile Include="src\world\managers\LineManager.cpp" />
+    <ClCompile Include="src\world\managers\TrainManager.cpp" />
     <ClCompile Include="src\world\Map.cpp" />
     <ClCompile Include="src\world\managers\SelectionManager.cpp" />
   </ItemGroup>
@@ -213,8 +216,11 @@
     <ClInclude Include="src\core\ThreadManager.h" />
     <ClInclude Include="src\core\ThreadPool.h" />
     <ClInclude Include="src\world\City.h" />
+    <ClInclude Include="src\world\managers\CityManager.h" />
     <ClInclude Include="src\world\managers\HandleManager.h" />
     <ClInclude Include="src\world\Line.h" />
+    <ClInclude Include="src\world\managers\LineManager.h" />
+    <ClInclude Include="src\world\managers\TrainManager.h" />
     <ClInclude Include="src\world\Map.h" />
     <ClInclude Include="src\world\Node.h" />
     <ClInclude Include="src\world\Segment.h" />

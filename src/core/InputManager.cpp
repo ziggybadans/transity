@@ -200,7 +200,7 @@ void InputManager::InitializeCommands() {
             }
             else {
                 DEBUG_DEBUG("PlaceCommand: Attempting to place city at world position ", worldPos.x, ", ", worldPos.y);
-                map->AddCity(worldPos);
+                map->GetCityManager().AddCity(worldPos);
             }
         }
     );
@@ -212,7 +212,7 @@ void InputManager::InitializeCommands() {
         m_map,
         [](std::shared_ptr<Map> map, const sf::Vector2f& worldPos) {
             DEBUG_DEBUG("DrawCommand: Attempting to use line tool at world position ", worldPos.x, ", ", worldPos.y);
-            map->UseLineMode(worldPos);
+            map->GetLineManager().UseLineMode(worldPos);
         }
     );
 
@@ -236,14 +236,14 @@ void InputManager::InitializeCommands() {
             DEBUG_DEBUG("MoveCommand: Attempting to move handle to world position ", worldPos.x, ", ", worldPos.y);
             if (map->isLineSelected() && map->GetSelectionManager().GetSelectedLine()->GetSelectedHandleIndex() != -1) {
                 DEBUG_DEBUG("MoveCommand: Moving line handle to world position ", worldPos.x, ", ", worldPos.y);
-                map->MoveSelectedLineHandle(worldPos);
+                map->GetLineManager().MoveSelectedLineHandle(worldPos);
             }
             // Otherwise, if a city is selected, attempt to move the city
             else {
                 City* selectedCity = map->GetSelectionManager().GetSelectedCity();
                 if (selectedCity) {
                     DEBUG_DEBUG("MoveCommand: Moving city to world position ", worldPos.x, ", ", worldPos.y);
-                    map->MoveCity(worldPos);
+                    map->GetCityManager().MoveCity(worldPos);
                 }
             }
         }
@@ -256,7 +256,7 @@ void InputManager::InitializeCommands() {
         m_map,
         [](std::shared_ptr<Map> map, const sf::Vector2f& worldPos) {
             DEBUG_DEBUG("MoveCommand: Attempting to use train place mode at ", worldPos.x, ", ", worldPos.y);
-            map->UseTrainPlaceMode(worldPos, true);
+            map->GetTrainManager().UseTrainPlaceMode(worldPos, true);
         }
     );
     m_commands[InputAction::TrainPlaceRight] = std::make_unique<MapInteractionCommand>(
@@ -265,7 +265,7 @@ void InputManager::InitializeCommands() {
         m_map,
         [](std::shared_ptr<Map> map, const sf::Vector2f& worldPos) {
             DEBUG_DEBUG("MoveCommand: Attempting to use train place mode at ", worldPos.x, ", ", worldPos.y);
-            map->UseTrainPlaceMode(worldPos, false);
+            map->GetTrainManager().UseTrainPlaceMode(worldPos, false);
         }
     );
     DEBUG_DEBUG("InputManager: Tool commands initialized.");
