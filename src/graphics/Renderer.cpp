@@ -229,6 +229,9 @@ void Renderer::RenderMap(sf::RenderWindow& window, Map& map, const Camera& camer
 
         sf::Vector2f position = train->GetPosition();
 
+        // Use stored orientation angle
+        float angle = train->GetOrientationAngle();
+
         // Compute direction for orientation
         sf::Vector2f nextPoint = position;
         const auto& pathPoints = train->GetPathPoints();
@@ -237,7 +240,6 @@ void Renderer::RenderMap(sf::RenderWindow& window, Map& map, const Camera& camer
             nextPoint = pathPoints[nextIdx];
         }
         sf::Vector2f dir = nextPoint - position;
-        float angle = std::atan2(dir.y, dir.x) * 180.0f / 3.14159265f;
 
         sf::ConvexShape trainShape;
         trainShape.setPointCount(5);
@@ -250,8 +252,7 @@ void Renderer::RenderMap(sf::RenderWindow& window, Map& map, const Camera& camer
         trainShape.setPoint(4, sf::Vector2f(length / 4, -width / 2));
 
         trainShape.setFillColor(isSelected ? sf::Color::Yellow : sf::Color::Red);
-        sf::FloatRect bounds = trainShape.getLocalBounds();
-        trainShape.setOrigin(bounds.width / 2, bounds.height / 2);
+        trainShape.setOrigin(0.f, 0.f);
         trainShape.setPosition(position);
         trainShape.setRotation(angle);
         window.draw(trainShape);

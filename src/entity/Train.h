@@ -54,6 +54,7 @@ public:
 
     const std::vector<sf::Vector2f>& GetPathPoints() const { return m_pathPoints; }
     const std::vector<sf::Vector2f>& GetStationPositions() const { return m_stationPositions; }
+    float GetOrientationAngle() const { return std::atan2(m_direction.y, m_direction.x) * 180.0f / 3.14159265f; }
 
 private:
     // Enumeration for train states
@@ -71,6 +72,7 @@ private:
     bool m_selected;
     int m_capacity;
     std::vector<Passenger*> m_passengers;
+    sf::Vector2f m_direction;
 
     // State management
     bool m_forward;                 // Direction of travel

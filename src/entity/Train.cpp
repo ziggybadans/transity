@@ -17,7 +17,8 @@ Train::Train(Line* route, const std::string& id, const std::vector<sf::Vector2f>
     m_pathPoints(pathPoints),
     m_stationPositions(stationPositions),
     m_currentPointIndex(1),
-    m_capacity(50)  // Default capacity set here
+    m_capacity(50),
+    m_direction(1.f, 0.f)// Default capacity set here
 {
     if (!m_pathPoints.empty()) {
         m_position = m_pathPoints[0];
@@ -89,6 +90,12 @@ void Train::Move(float dt)
     }
 
     sf::Vector2f direction = Normalize(toTarget);
+
+    // Update the train's stored direction if valid
+    if (Length(direction) > 0.0001f) {
+        m_direction = direction;
+    }
+
     sf::Vector2f movement = direction * m_currentSpeed * dt;
     float movementDistance = Length(movement);
 
