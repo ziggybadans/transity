@@ -1,9 +1,8 @@
-// SelectionManager.h
 #pragma once
 
-#include "City.h"
-#include "Line.h"
-#include "../entity/Train.h"
+#include "../City.h"
+#include "../Line.h"
+#include "../../entity/Train.h"
 #include <SFML/Graphics.hpp>
 
 class Map;

@@ -13,7 +13,7 @@
 #include "../world/Map.h"
 #include "../Debug.h"
 #include "../core/StateManager.h"
-#include "../interfaces/InputCommand.h"
+#include "InputCommand.h"
 
 // Enumeration for different input actions
 enum class InputAction {

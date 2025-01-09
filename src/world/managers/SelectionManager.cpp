@@ -1,6 +1,6 @@
 #include "SelectionManager.h"
-#include "../Debug.h"
-#include "Map.h"
+#include "../../Debug.h"
+#include "../Map.h"
 
 SelectionManager::SelectionManager(Map& map)
     : selectedCity(nullptr), selectedLine(nullptr), selectedTrain(nullptr), selectedNode(nullptr), m_map(map) {}

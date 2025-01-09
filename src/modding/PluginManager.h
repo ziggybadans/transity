@@ -2,7 +2,7 @@
 
 #include "Plugin.h"
 #include "PluginLoader.h"
-#include "../utility/Sandbox.h"
+#include "Sandbox.h"
 #include <unordered_map>
 #include <filesystem>
 #include <memory>

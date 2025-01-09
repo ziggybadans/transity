@@ -8,7 +8,7 @@
 #include "Constants.h"
 #include "Debug.h"
 #include "utility/Profiler.h"
-#include "utility/ThreadManager.h"
+#include "core/ThreadManager.h"
 #include "settings/SettingsDefinitions.h"
 #include "settings/SettingsRegistry.h"
 

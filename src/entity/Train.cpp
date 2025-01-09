@@ -1,4 +1,3 @@
-// Train.cpp
 #include "Train.h"
 #include "../world/Line.h" // Ensure Line.h is included
 #include "../Debug.h" // Assuming Debug.h provides debugging utilities

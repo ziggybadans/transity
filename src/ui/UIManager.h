@@ -8,18 +8,17 @@
 #include <memory>
 #include <functional>
 #include "../settings/GameSettings.h"
-#include "../interfaces/IInitializable.h"
-#include "../managers/WindowManager.h"
-#include "../managers/InputManager.h"
+#include "WindowManager.h"
+#include "../core/InputManager.h"
 #include "../core/StateManager.h"
 
-class UIManager : public IInitializable {
+class UIManager {
 public:
     UIManager();
     ~UIManager();
 
     /* Core UI Methods */
-    bool Init() override;
+    bool Init();
     void ProcessEvent(const sf::Event& event);
     void Update(float deltaTime);
     void Render();

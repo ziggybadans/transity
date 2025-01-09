@@ -7,7 +7,7 @@
 #include <unordered_map>
 #include <iostream>
 #include <SFML/Graphics.hpp>
-#include "../utility/ThreadManager.h"
+#include "../core/ThreadManager.h"
 
 class ResourceManager {
 public:

@@ -4,15 +4,12 @@
 #include <memory>
 #include <string>
 
-#include "../interfaces/IInitializable.h"
-
-class WindowManager : public IInitializable {
+class WindowManager {
 public:
     WindowManager();
     ~WindowManager();
 
-    /* Virtual Methods */
-    bool Init() override;
+    bool Init();
 
     /* Window Operations */
     bool PollEvent(sf::Event& event);
