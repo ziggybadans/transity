@@ -14,6 +14,7 @@ public:
     ~Passenger();
 
     City* GetCurrentCity() const;
+    City* GetOrigin() const { return m_origin; }
     City* GetDestination() const;
     PassengerState GetState() const;
     const std::vector<City*>& GetRoute() const;

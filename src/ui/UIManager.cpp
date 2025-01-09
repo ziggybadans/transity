@@ -6,6 +6,7 @@
 #include "../utility/Profiler.h"
 #include "../settings/SettingsDefinitions.h"
 #include "../world/Map.h"
+#include "../entity/Passenger.h"
 
 UIManager::UIManager()
     : m_initialized(false)
@@ -279,22 +280,18 @@ void UIManager::RenderInfoPanel() {
     if (selectedTrain) {
         // Define panel size
         const float panelWidth = 300.0f;
-        const float panelHeight = 200.0f; // Adjust as needed
+        const float panelHeight = 220.0f; // Increased height to accommodate extra info
 
-        // Set the window position to bottom-right corner with padding
+        // Position window at bottom-right corner with padding
         ImGui::SetNextWindowPos(ImVec2(
-            static_cast<float>(m_renderWindow->getSize().x) - panelWidth - 10.0f, // 10 pixels padding from right
-            static_cast<float>(m_renderWindow->getSize().y) - panelHeight - 10.0f  // 10 pixels padding from bottom
+            static_cast<float>(m_renderWindow->getSize().x) - panelWidth - 10.0f,
+            static_cast<float>(m_renderWindow->getSize().y) - panelHeight - 10.0f
         ), ImGuiCond_Always);
 
-        // Optionally set the window size
         ImGui::SetNextWindowSize(ImVec2(panelWidth, panelHeight), ImGuiCond_Always);
-
-        // Begin ImGui window
         ImGui::Begin("Train Information", nullptr,
             ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 
-        // Display Train Information
         ImGui::Text("Train Details");
         ImGui::Separator();
 
@@ -324,7 +321,11 @@ void UIManager::RenderInfoPanel() {
         std::string direction = selectedTrain->GetDirection();
         ImGui::Text("Direction: %s", direction.c_str());
 
-        // Current City and Next City
+        // Capacity and Passengers
+        ImGui::Text("Capacity: %d", selectedTrain->GetCapacity());
+        ImGui::Text("Passengers: %d", selectedTrain->GetPassengerCount());
+
+        // Current City and Next City (if route available)
         if (route) {
             int currentIndex = selectedTrain->GetCurrentPointIndex();
             const std::vector<City*> cities = route->GetCities();
@@ -333,8 +334,7 @@ void UIManager::RenderInfoPanel() {
                 const City* currentCity = cities[currentIndex];
                 ImGui::Text("Current City: %s", currentCity->GetName().c_str());
 
-                // Determine next city based on direction
-                int nextIndex = currentIndex + (selectedTrain->GetDirection() == "Forward" ? 1 : -1);
+                int nextIndex = currentIndex + (direction == "Forward" ? 1 : -1);
                 if (nextIndex >= 0 && nextIndex < static_cast<int>(cities.size())) {
                     const City* nextCity = cities[nextIndex];
                     ImGui::Text("Next City: %s", nextCity->GetName().c_str());
@@ -349,53 +349,84 @@ void UIManager::RenderInfoPanel() {
             }
         }
 
-        // Wait Time (if in Waiting state)
+        // Wait Time if applicable
         if (state == "Waiting") {
             float waitTime = selectedTrain->GetWaitTime();
             ImGui::Text("Wait Time: %.2f s", waitTime);
         }
 
+        // New Passenger Table
+        const auto& passengers = selectedTrain->GetPassengers();
+        if (!passengers.empty()) {
+            ImGui::Separator();
+            ImGui::Text("Current Passengers:");
+            if (ImGui::BeginTable("PassengerTable", 3,
+                ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable)) {
+                ImGui::TableSetupColumn("#", ImGuiTableColumnFlags_WidthFixed, 30.0f);
+                ImGui::TableSetupColumn("Origin", ImGuiTableColumnFlags_WidthStretch);
+                ImGui::TableSetupColumn("Destination", ImGuiTableColumnFlags_WidthStretch);
+                ImGui::TableHeadersRow();
+
+                for (size_t i = 0; i < passengers.size(); ++i) {
+                    Passenger* p = passengers[i];
+                    ImGui::TableNextRow();
+                    ImGui::TableNextColumn();
+                    ImGui::Text("%zu", i + 1);
+
+                    ImGui::TableNextColumn();
+                    // Assuming GetOrigin() returns a pointer to the origin city
+                    City* origin = p->GetOrigin();
+                    ImGui::Text("%s", origin ? origin->GetName().c_str() : "Unknown");
+
+                    ImGui::TableNextColumn();
+                    // Assuming GetDestination() returns a pointer to the destination city
+                    City* destination = p->GetDestination();
+                    ImGui::Text("%s", destination ? destination->GetName().c_str() : "Unknown");
+                }
+                ImGui::EndTable();
+            }
+        }
+
+        // Remove train button
         if (ImGui::Button("Remove", ImVec2(70, 30))) {
             m_map->RemoveTrain();
         }
 
         ImGui::End();
     }
+
     if (selectedLine) {
         // Define panel size
         const float panelWidth = 300.0f;
-        const float panelHeight = 200.0f; // Adjust as needed
+        const float panelHeight = 260.0f; // Increased height for extra info
 
-        // Set the window position to bottom-right corner with padding
+        // Position window at bottom-right corner with padding
         ImGui::SetNextWindowPos(ImVec2(
-            static_cast<float>(m_renderWindow->getSize().x) - panelWidth - 10.0f, // 10 pixels padding from right
-            static_cast<float>(m_renderWindow->getSize().y) - panelHeight - 10.0f  // 10 pixels padding from bottom
+            static_cast<float>(m_renderWindow->getSize().x) - panelWidth - 10.0f,
+            static_cast<float>(m_renderWindow->getSize().y) - panelHeight - 10.0f
         ), ImGuiCond_Always);
 
-        // Optionally set the window size
         ImGui::SetNextWindowSize(ImVec2(panelWidth, panelHeight), ImGuiCond_Always);
-
-        // Begin ImGui window
         ImGui::Begin("Line Information", nullptr,
             ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
 
-        // Display Line Information
         ImGui::Text("Line Details");
         ImGui::Separator();
 
-        // Route Name
+        // Display basic line properties
         ImGui::Text("Route: %s", selectedLine->GetName().c_str());
+        sf::Color color = selectedLine->GetColor();
+        ImGui::Text("Color: (%d, %d, %d)", color.r, color.g, color.b);
+        ImGui::Text("Thickness: %.2f", selectedLine->GetThickness());
         ImGui::Separator();
 
-        // --- Cities Table ---
+        // Cities Table
         ImGui::Text("Cities on Line:");
         if (ImGui::BeginTable("CitiesTable", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable)) {
-            // Define table columns
             ImGui::TableSetupColumn("City Name", ImGuiTableColumnFlags_WidthStretch);
             ImGui::TableSetupColumn("Population", ImGuiTableColumnFlags_WidthFixed, 100.0f);
             ImGui::TableHeadersRow();
 
-            // Populate table with cities
             const std::vector<City*> cities = selectedLine->GetCities();
             for (const auto& city : cities) {
                 ImGui::TableNextRow();
@@ -404,12 +435,11 @@ void UIManager::RenderInfoPanel() {
                 ImGui::TableNextColumn();
                 ImGui::Text("%u", city->GetPopulation());
             }
-
             ImGui::EndTable();
         }
         ImGui::Separator();
 
-        // --- Trains Table ---
+        // Trains Table
         ImGui::Text("Trains on Line:");
         const std::vector<Train*> trains = selectedLine->GetTrains();
         if (trains.empty()) {
@@ -417,13 +447,11 @@ void UIManager::RenderInfoPanel() {
         }
         else {
             if (ImGui::BeginTable("TrainsTable", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable)) {
-                // Define table columns
                 ImGui::TableSetupColumn("Train ID", ImGuiTableColumnFlags_WidthFixed, 100.0f);
                 ImGui::TableSetupColumn("Speed (px/s)", ImGuiTableColumnFlags_WidthFixed, 120.0f);
                 ImGui::TableSetupColumn("State", ImGuiTableColumnFlags_WidthStretch);
                 ImGui::TableHeadersRow();
 
-                // Populate table with trains
                 for (const auto& train : trains) {
                     ImGui::TableNextRow();
                     ImGui::TableNextColumn();
@@ -437,7 +465,6 @@ void UIManager::RenderInfoPanel() {
                 ImGui::EndTable();
             }
         }
-
         ImGui::Separator();
 
         if (ImGui::Button("Remove", ImVec2(70, 30))) {
@@ -448,22 +475,48 @@ void UIManager::RenderInfoPanel() {
     }
 
     if (selectedCity) {
-        // Define panel size
+        // Increase panel height to accommodate the passenger table
         const float panelWidth = 300.0f;
-        const float panelHeight = 200.0f; // Adjust as needed
+        const float panelHeight = 300.0f;
 
-        // Set the window position to bottom-right corner with padding
         ImGui::SetNextWindowPos(ImVec2(
-            static_cast<float>(m_renderWindow->getSize().x) - panelWidth - 10.0f, // 10 pixels padding from right
-            static_cast<float>(m_renderWindow->getSize().y) - panelHeight - 10.0f  // 10 pixels padding from bottom
+            static_cast<float>(m_renderWindow->getSize().x) - panelWidth - 10.0f,
+            static_cast<float>(m_renderWindow->getSize().y) - panelHeight - 10.0f
         ), ImGuiCond_Always);
 
-        // Optionally set the window size
         ImGui::SetNextWindowSize(ImVec2(panelWidth, panelHeight), ImGuiCond_Always);
 
         ImGui::Begin("City Information", nullptr,
             ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
+
         ImGui::Text("City: %s", selectedCity->GetName().c_str());
+
+        // New Passenger Table for Waiting Passengers at the City
+        const auto& waitingPassengers = selectedCity->GetWaitingPassengers();
+        if (!waitingPassengers.empty()) {
+            ImGui::Separator();
+            ImGui::Text("Waiting Passengers:");
+            if (ImGui::BeginTable("CityPassengerTable", 2,
+                ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable)) {
+                ImGui::TableSetupColumn("#", ImGuiTableColumnFlags_WidthFixed, 30.0f);
+                ImGui::TableSetupColumn("Destination", ImGuiTableColumnFlags_WidthStretch);
+                ImGui::TableHeadersRow();
+
+                for (size_t i = 0; i < waitingPassengers.size(); ++i) {
+                    Passenger* p = waitingPassengers[i];
+                    City* destination = p->GetDestination();
+
+                    ImGui::TableNextRow();
+                    ImGui::TableNextColumn();
+                    ImGui::Text("%zu", i + 1);
+
+                    ImGui::TableNextColumn();
+                    ImGui::Text("%s", destination ? destination->GetName().c_str() : "Unknown");
+                }
+
+                ImGui::EndTable();
+            }
+        }
 
         if (ImGui::Button("Remove", ImVec2(70, 30))) {
             m_map->RemoveCity(selectedCity);
@@ -471,6 +524,7 @@ void UIManager::RenderInfoPanel() {
 
         ImGui::End();
     }
+
 }
 
 void UIManager::RenderTimeControls()

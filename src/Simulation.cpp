@@ -21,12 +21,29 @@ void Simulation::Update(float scaledDt) {
 
         auto& cities = m_map->GetCities();
         if (cities.size() >= 2) {
-            auto it = cities.begin();
-            City* origin = &(*it);
-            std::advance(it, 1);
-            City* destination = &(*it);
+            // Convert list to vector for easier random access
+            std::vector<City*> cityPtrs;
+            for (City& city : cities) {
+                cityPtrs.push_back(&city);
+            }
 
-            // Spawn a passenger between two cities.
+            // Set up random number generation
+            std::random_device rd;
+            std::mt19937 gen(rd());
+            std::uniform_int_distribution<> distrib(0, static_cast<int>(cityPtrs.size() - 1));
+
+            // Select a random origin
+            int originIndex = distrib(gen);
+            City* origin = cityPtrs[originIndex];
+
+            // Select a random destination ensuring it's not the same as origin
+            City* destination = nullptr;
+            do {
+                int destIndex = distrib(gen);
+                destination = cityPtrs[destIndex];
+            } while (destination == origin);
+
+            // Spawn a passenger between the randomly chosen cities.
             m_map->SpawnPassenger(origin, destination);
         }
     }

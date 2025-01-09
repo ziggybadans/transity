@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <random>
 #include "world/Map.h"
 
 class Simulation {
