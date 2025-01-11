@@ -1,0 +1,43 @@
+{
+    "settings": {
+        "autosaveInterval": 5,
+        "cameraPanSpeed": 500.0,
+        "cameraZoomSpeed": 1.100000023841858,
+        "frameRateLimit": 240,
+        "fullscreen": true,
+        "masterVolume": 1.0,
+        "musicVolume": 0.800000011920929,
+        "resolution": [
+            3440,
+            1440
+        ],
+        "sfxVolume": 0.800000011920929,
+        "vsync": true
+    },
+    "world": {
+        "cities": [
+            {
+                "name": "City1",
+                "population": 1000,
+                "position": [
+                    164.99996948242188,
+                    63.999996185302734
+                ],
+                "radius": 10.0,
+                "selected": false,
+                "waitingPassengers": []
+            },
+            {
+                "name": "City2",
+                "population": 1000,
+                "position": [
+                    428.0000305175781,
+                    382.0000305175781
+                ],
+                "radius": 10.0,
+                "selected": false,
+                "waitingPassengers": []
+            }
+        ]
+    }
+}

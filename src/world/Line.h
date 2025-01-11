@@ -4,6 +4,7 @@
 #include <vector>
 #include <algorithm>
 #include <SFML/Graphics.hpp>
+#include <nlohmann/json.hpp>
 
 #include "managers/HandleManager.h"
 #include "Segment.h"
@@ -33,6 +34,9 @@ public:
 
     // Destructor
     ~Line() = default;
+
+    nlohmann::json Serialize() const;
+    void Deserialize(const nlohmann::json& j);
 
     // City management
     void AddCityToStart(City* city);

@@ -11,6 +11,7 @@
 #include "WindowManager.h"
 #include "../core/InputManager.h"
 #include "../core/StateManager.h"
+#include "../resource/SaveManager.h"
 
 class UIManager {
 public:
@@ -31,6 +32,7 @@ public:
     void SetInputManager(std::shared_ptr<InputManager> inputManager) { m_inputManager = inputManager; }
     void SetStateManager(std::shared_ptr<StateManager> stateManager) { m_stateManager = stateManager; }
     void SetMap(std::shared_ptr<Map> map) { m_map = map; }
+    void SetSaveManager(std::shared_ptr<SaveManager> saveManager) { m_saveManager = saveManager; }
 
     /* Time Scale Callbacks */
     void SetTimeScaleCallback(std::function<void(float)> setCallback, std::function<float()> getCallback) {
@@ -62,6 +64,7 @@ private:
     std::shared_ptr<InputManager> m_inputManager;
     std::shared_ptr<StateManager> m_stateManager;
     std::shared_ptr<Map> m_map;
+    std::shared_ptr<SaveManager> m_saveManager;
 
     /* Time Scale Management */
     std::function<void(float)> m_setTimeScale;

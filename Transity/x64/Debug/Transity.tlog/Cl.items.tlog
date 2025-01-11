@@ -26,6 +26,7 @@ C:\Users\Ziggy\Documents\Transity\Transity\src\utility\Profiler.cpp;C:\Users\Zig
 C:\Users\Ziggy\Documents\Transity\Transity\src\modding\Sandbox.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Debug\Sandbox.obj
 C:\Users\Ziggy\Documents\Transity\Transity\src\core\ThreadManager.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Debug\ThreadManager.obj
 C:\Users\Ziggy\Documents\Transity\Transity\src\core\ThreadPool.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Debug\ThreadPool.obj
+C:\Users\Ziggy\Documents\Transity\Transity\src\world\City.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Debug\City.obj
 C:\Users\Ziggy\Documents\Transity\Transity\src\world\Line.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Debug\Line.obj
 C:\Users\Ziggy\Documents\Transity\Transity\src\world\managers\CityManager.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Debug\CityManager.obj
 C:\Users\Ziggy\Documents\Transity\Transity\src\world\managers\LineManager.cpp;C:\Users\Ziggy\Documents\Transity\Transity\Transity\x64\Debug\LineManager.obj

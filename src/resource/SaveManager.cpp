@@ -124,6 +124,12 @@ bool SaveManager::SerializeGameState(nlohmann::json& j) const {
             {"autosaveInterval", m_gameSettings->GetValue<unsigned int>(Settings::Names::AUTOSAVE_INTERVAL)}
         };
 
+        if (m_world) {
+            nlohmann::json worldJson;
+            // Assuming Map has a Serialize() method:
+            worldJson = m_world->Serialize();
+            j["world"] = worldJson;
+        }
         return true;
     }
     catch (const std::exception& e) {
@@ -152,6 +158,9 @@ bool SaveManager::DeserializeGameState(const nlohmann::json& j) {
         m_gameSettings->SetValue(Settings::Names::CAMERA_PAN_SPEED, settings["cameraPanSpeed"]);
         m_gameSettings->SetValue(Settings::Names::AUTOSAVE_INTERVAL, settings["autosaveInterval"]);
 
+        if (j.contains("world") && m_world) {
+            m_world->Deserialize(j["world"]);
+        }
         return true;
     }
     catch (const std::exception& e) {

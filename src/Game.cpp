@@ -51,9 +51,6 @@ bool Game::Init() {
 
         m_pluginManager = std::make_unique<PluginManager>();
 
-        m_saveManager = std::make_unique<SaveManager>();
-        m_saveManager->SetGameSettings(m_gameSettings);
-
         // Stage 2: Graphics
         auto windowMgr = std::make_shared<WindowManager>();
         windowMgr->SetVideoMode(sf::VideoMode(m_videoMode));
@@ -83,6 +80,9 @@ bool Game::Init() {
         // Stage 3: World
         InitializeWorld();
         m_simulation = std::make_unique<Simulation>(m_map);
+        m_saveManager = std::make_shared<SaveManager>();
+        m_saveManager->SetGameSettings(m_gameSettings);
+        m_saveManager->SetWorld(m_map);
 
         // Stage 4: Inputs
         m_inputManager = std::make_shared<InputManager>(m_eventManager, m_stateManager, m_windowManager->GetWindow(), m_camera, m_map);
@@ -94,6 +94,7 @@ bool Game::Init() {
         m_uiManager->SetInputManager(m_inputManager);
         m_uiManager->SetStateManager(m_stateManager);
         m_uiManager->SetMap(m_map);
+        m_uiManager->SetSaveManager(m_saveManager);
 
         // Set time scale callbacks
         m_uiManager->SetTimeScaleCallback(

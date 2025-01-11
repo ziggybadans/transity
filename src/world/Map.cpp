@@ -164,3 +164,25 @@ bool Map::WouldCauseParallelConflict(const sf::Vector2f& segStart, const sf::Vec
     }
     return false;
 }
+
+nlohmann::json Map::Serialize() {
+    nlohmann::json j;
+    // Example for cities:
+    j["cities"] = nlohmann::json::array();
+    for (const City& city : GetCities()) {
+        j["cities"].push_back(city.Serialize());
+    }
+    // Similarly serialize lines, trains, etc.
+    return j;
+}
+
+void Map::Deserialize(const nlohmann::json& j) {
+    // Clear current world state if needed
+    // Deserialize cities:
+    for (auto& cityJson : j["cities"]) {
+        City city("", sf::Vector2f(0.0f, 0.0f), 0);
+        city.Deserialize(cityJson);
+        // Add city to the map (using your existing AddCity logic)
+    }
+    // Similarly deserialize lines, trains, etc.
+}

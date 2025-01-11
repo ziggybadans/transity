@@ -336,3 +336,41 @@ bool Line::HasCity(City* city) const
     const std::vector<City*>& cities = GetCities();
     return std::find(cities.begin(), cities.end(), city) != cities.end();
 }
+
+nlohmann::json Line::Serialize() const {
+    nlohmann::json j;
+    j["name"] = name;
+    j["color"] = { color.r, color.g, color.b, color.a };
+    j["thickness"] = thickness;
+    j["selected"] = selected;
+    // Serialize points as a list of node names (assuming unique names)
+    j["points"] = nlohmann::json::array();
+    for (const auto& point : points) {
+        if (point.node) {
+            j["points"].push_back(point.node->GetName());
+        }
+        else {
+            j["points"].push_back(nullptr);
+        }
+    }
+    // Optionally serialize trains on this line if needed
+    // j["trains"] = ...
+    return j;
+}
+
+void Line::Deserialize(const nlohmann::json& j) {
+    name = j["name"].get<std::string>();
+    auto col = j["color"];
+    color = sf::Color(col[0], col[1], col[2], col[3]);
+    thickness = j["thickness"].get<float>();
+    selected = j["selected"].get<bool>();
+    // Deserialize points: store node names for later resolution
+    auto pointNames = j["points"];
+    points.clear();
+    for (const auto& nodeName : pointNames) {
+        // For now, store nullptr or a placeholder.
+        // Actual pointer resolution should happen once all nodes are loaded.
+        points.push_back(LinePoint(nullptr));
+    }
+    // Handle resolution of pointers after all lines, nodes, and cities are deserialized.
+}

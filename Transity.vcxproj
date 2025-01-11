@@ -169,6 +169,7 @@
     <ClCompile Include="src\modding\Sandbox.cpp" />
     <ClCompile Include="src\core\ThreadManager.cpp" />
     <ClCompile Include="src\core\ThreadPool.cpp" />
+    <ClCompile Include="src\world\City.cpp" />
     <ClCompile Include="src\world\Line.cpp" />
     <ClCompile Include="src\world\managers\CityManager.cpp" />
     <ClCompile Include="src\world\managers\LineManager.cpp" />

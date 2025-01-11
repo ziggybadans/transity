@@ -61,7 +61,7 @@ private:
     std::shared_ptr<ResourceManager> m_resourceManager;
     std::unique_ptr<PluginManager> m_pluginManager;
     std::shared_ptr<GameSettings> m_gameSettings;
-    std::unique_ptr<SaveManager> m_saveManager;
+    std::shared_ptr<SaveManager> m_saveManager;
 
     /* Core Systems */
     std::shared_ptr<Map> m_map;

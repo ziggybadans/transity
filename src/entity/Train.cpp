@@ -311,3 +311,56 @@ bool Train::IsCityIndex(int index) const
     }
     return false;
 }
+
+nlohmann::json Train::Serialize() const {
+    nlohmann::json j;
+    j["id"] = m_id;
+    // Reference route by name
+    j["route"] = m_route ? m_route->GetName() : "";
+    j["maxSpeed"] = m_maxSpeed;
+    j["currentSpeed"] = m_currentSpeed;
+    j["position"] = { m_position.x, m_position.y };
+    j["selected"] = m_selected;
+    j["capacity"] = m_capacity;
+    // Serialize passengers if needed; here we skip detailed passenger serialization
+    // Serialize path points
+    j["pathPoints"] = nlohmann::json::array();
+    for (const auto& pt : m_pathPoints) {
+        j["pathPoints"].push_back({ pt.x, pt.y });
+    }
+    j["stationPositions"] = nlohmann::json::array();
+    for (const auto& sp : m_stationPositions) {
+        j["stationPositions"].push_back({ sp.x, sp.y });
+    }
+    j["currentPointIndex"] = m_currentPointIndex;
+    j["state"] = static_cast<int>(m_state);
+    j["waitTime"] = m_waitTime;
+    j["forward"] = m_forward;
+    return j;
+}
+
+void Train::Deserialize(const nlohmann::json& j) {
+    m_id = j["id"].get<std::string>();
+    std::string routeName = j["route"].get<std::string>();
+    // m_route to be resolved later using routeName
+    m_maxSpeed = j["maxSpeed"].get<float>();
+    m_currentSpeed = j["currentSpeed"].get<float>();
+    auto pos = j["position"];
+    m_position = sf::Vector2f(pos[0], pos[1]);
+    m_selected = j["selected"].get<bool>();
+    m_capacity = j["capacity"].get<int>();
+    // Deserialize path points
+    m_pathPoints.clear();
+    for (auto& pt : j["pathPoints"]) {
+        m_pathPoints.push_back(sf::Vector2f(pt[0], pt[1]));
+    }
+    m_stationPositions.clear();
+    for (auto& sp : j["stationPositions"]) {
+        m_stationPositions.push_back(sf::Vector2f(sp[0], sp[1]));
+    }
+    m_currentPointIndex = j["currentPointIndex"].get<int>();
+    m_state = static_cast<State>(j["state"].get<int>());
+    m_waitTime = j["waitTime"].get<float>();
+    m_forward = j["forward"].get<bool>();
+    // Passengers and m_route will be resolved in a linking phase
+}

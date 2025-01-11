@@ -3,6 +3,7 @@
 #include <SFML/Graphics.hpp>
 #include <string>
 #include <vector>
+#include <nlohmann/json.hpp>
 
 // Forward declaration of Line class
 class Line;
@@ -16,6 +17,9 @@ public:
 
     // Destructor
     ~Train();
+
+    nlohmann::json Serialize() const;
+    void Deserialize(const nlohmann::json& j);
 
     // Update train position
     void Update(float dt);

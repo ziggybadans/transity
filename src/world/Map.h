@@ -22,6 +22,7 @@
 #include "../Debug.h"
 #include "../entity/Train.h"
 #include <SFML/Graphics.hpp> // Assuming sf::Vector2f is from SFML
+#include <nlohmann/json.hpp>
 
 class Camera;
 
@@ -34,11 +35,8 @@ public:
         m_minRadius(100),
         stateManager(sm), selectionManager(*this), cityManager(m_minRadius, *this), lineManager(*this), trainManager(*this, stateManager) {}
 
-    //SelectionManager& GetSelectionManager() { return selectionManager; }
-    //CityManager& GetCityManager() { return cityManager; }
-    //LineManager& GetLineManager() { return lineManager; }
-    //TrainManager& GetTrainManager() { return trainManager; }
-    //const SelectionManager& GetSelectionManager() const { return selectionManager; }
+    nlohmann::json Serialize();
+    void Deserialize(const nlohmann::json& j);
 
     // Tile management
     void SetTile(unsigned int x, unsigned int y, int value);

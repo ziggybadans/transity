@@ -92,6 +92,27 @@ void UIManager::Render() {
             RenderSettingsPanel();
         }
 
+        ImGui::SameLine();
+        ImGui::SetNextWindowPos(ImVec2(static_cast<float>(m_renderWindow->getSize().x) - 210.0f, 10.0f), ImGuiCond_Always);
+        ImGui::SetNextWindowSize(ImVec2(98.0f, 48.0f), ImGuiCond_Always);
+        if (ImGui::Begin("Save Button", nullptr,
+            ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove)) {
+            if (ImGui::Button("Save", ImVec2(80, 30))) {
+                m_saveManager->SaveGame("player_save");
+            }
+        }
+        ImGui::End();
+        ImGui::SameLine();
+        ImGui::SetNextWindowPos(ImVec2(static_cast<float>(m_renderWindow->getSize().x) - 310.0f, 10.0f), ImGuiCond_Always);
+        ImGui::SetNextWindowSize(ImVec2(98.0f, 48.0f), ImGuiCond_Always);
+        if (ImGui::Begin("Load Button", nullptr,
+            ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove)) {
+            if (ImGui::Button("Load", ImVec2(80, 30))) {
+                m_saveManager->LoadGame("player_save");
+            }
+        }
+        ImGui::End();
+
         ImGui::SFML::Render(*m_renderWindow);
     }
     catch (const std::exception& e) {
