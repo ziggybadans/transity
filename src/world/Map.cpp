@@ -167,22 +167,108 @@ bool Map::WouldCauseParallelConflict(const sf::Vector2f& segStart, const sf::Vec
 
 nlohmann::json Map::Serialize() {
     nlohmann::json j;
-    // Example for cities:
+
+    // Serialize cities
     j["cities"] = nlohmann::json::array();
     for (const City& city : GetCities()) {
         j["cities"].push_back(city.Serialize());
     }
-    // Similarly serialize lines, trains, etc.
+
+    // Serialize nodes
+    j["nodes"] = nlohmann::json::array();
+    for (const Node& node : m_nodes) {
+        j["nodes"].push_back(node.Serialize());
+    }
+
+    j["lines"] = nlohmann::json::array();
+    for (const Line& line : GetLines()) {
+        j["lines"].push_back(line.Serialize());
+    }
+
     return j;
 }
 
 void Map::Deserialize(const nlohmann::json& j) {
-    // Clear current world state if needed
-    // Deserialize cities:
-    for (auto& cityJson : j["cities"]) {
-        City city("", sf::Vector2f(0.0f, 0.0f), 0);
-        city.Deserialize(cityJson);
-        // Add city to the map (using your existing AddCity logic)
+    // Clear current cities from the manager
+    auto& cities = cityManager.GetCities();
+    cities.clear();
+
+    // Deserialize cities
+    if (j.contains("cities") && j["cities"].is_array()) {
+        for (const auto& cityJson : j["cities"]) {
+            City city("", sf::Vector2f(0.0f, 0.0f), 0);
+            city.Deserialize(cityJson);
+            cities.push_back(city);
+        }
     }
-    // Similarly deserialize lines, trains, etc.
+
+    // Deserialize nodes
+    m_nodes.clear();
+    if (j.contains("nodes") && j["nodes"].is_array()) {
+        for (const auto& nodeJson : j["nodes"]) {
+            // Initialize with dummy/default values; will be overwritten by Deserialize
+            Node node("", sf::Vector2f(0.0f, 0.0f));
+            node.Deserialize(nodeJson);
+            m_nodes.push_back(node);
+        }
+    }
+
+    auto& lines = lineManager.GetLines();
+    lines.clear();
+    if (j.contains("lines") && j["lines"].is_array()) {
+        for (const auto& lineJson : j["lines"]) {
+            // Create a blank line with dummy name & color; 
+            // it will be overridden by Deserialize
+            Line line(static_cast<City*>(nullptr), "tmp");
+
+            // 1) Just read the JSON into the line's member variables & unresolvedPoints
+            line.Deserialize(lineJson);
+
+            // 2) Now fix up each point by finding the actual city or node
+            for (auto& up : line.unresolvedPoints) {
+                if (up.type == "city") {
+                    // find city in 'cities' by name
+                    City* cityPtr = nullptr;
+                    for (auto& c : cities) {
+                        if (c.GetName() == up.name) {
+                            cityPtr = &c;
+                            break;
+                        }
+                    }
+                    if (cityPtr) {
+                        // Add it as a city point
+                        line.AddCityToEnd(cityPtr);
+                    }
+                    else {
+                        // handle error: city not found
+                    }
+                }
+                else if (up.type == "node") {
+                    // find node in 'm_nodes' by name
+                    Node* nodePtr = nullptr;
+                    for (auto& n : m_nodes) {
+                        if (n.GetName() == up.name) {
+                            nodePtr = &n;
+                            break;
+                        }
+                    }
+                    if (nodePtr) {
+                        line.AddNode(nodePtr);
+                    }
+                    else {
+                        // handle error: node not found
+                    }
+                }
+            }
+
+            // 3) Clear the unresolved points
+            line.unresolvedPoints.clear();
+
+            // 4) Finally add this line to the lines container
+            lines.push_back(line);
+        }
+    }
+
+
+    // TODO: Similarly, handle deserialization for lines, trains, etc., as needed.
 }

@@ -146,17 +146,20 @@ bool SaveManager::DeserializeGameState(const nlohmann::json& j) {
     try {
         // Deserialize settings
         auto& settings = j["settings"];
-        m_gameSettings->SetValue(Settings::Names::RESOLUTION, 
-            sf::Vector2u(settings["resolution"][0], settings["resolution"][1]));
-        m_gameSettings->SetValue(Settings::Names::FULLSCREEN, settings["fullscreen"]);
-        m_gameSettings->SetValue(Settings::Names::VSYNC, settings["vsync"]);
-        m_gameSettings->SetValue(Settings::Names::FRAME_RATE_LIMIT, settings["frameRateLimit"]);
-        m_gameSettings->SetValue(Settings::Names::MASTER_VOLUME, settings["masterVolume"]);
-        m_gameSettings->SetValue(Settings::Names::MUSIC_VOLUME, settings["musicVolume"]);
-        m_gameSettings->SetValue(Settings::Names::SFX_VOLUME, settings["sfxVolume"]);
-        m_gameSettings->SetValue(Settings::Names::CAMERA_ZOOM_SPEED, settings["cameraZoomSpeed"]);
-        m_gameSettings->SetValue(Settings::Names::CAMERA_PAN_SPEED, settings["cameraPanSpeed"]);
-        m_gameSettings->SetValue(Settings::Names::AUTOSAVE_INTERVAL, settings["autosaveInterval"]);
+
+        // Use .get<T>() to convert JSON to the expected native types
+        m_gameSettings->SetValue(Settings::Names::RESOLUTION,
+            sf::Vector2u(settings["resolution"][0].get<unsigned int>(),
+                settings["resolution"][1].get<unsigned int>()));
+        m_gameSettings->SetValue(Settings::Names::FULLSCREEN, settings["fullscreen"].get<bool>());
+        m_gameSettings->SetValue(Settings::Names::VSYNC, settings["vsync"].get<bool>());
+        m_gameSettings->SetValue(Settings::Names::FRAME_RATE_LIMIT, settings["frameRateLimit"].get<unsigned int>());
+        m_gameSettings->SetValue(Settings::Names::MASTER_VOLUME, settings["masterVolume"].get<float>());
+        m_gameSettings->SetValue(Settings::Names::MUSIC_VOLUME, settings["musicVolume"].get<float>());
+        m_gameSettings->SetValue(Settings::Names::SFX_VOLUME, settings["sfxVolume"].get<float>());
+        m_gameSettings->SetValue(Settings::Names::CAMERA_ZOOM_SPEED, settings["cameraZoomSpeed"].get<float>());
+        m_gameSettings->SetValue(Settings::Names::CAMERA_PAN_SPEED, settings["cameraPanSpeed"].get<float>());
+        m_gameSettings->SetValue(Settings::Names::AUTOSAVE_INTERVAL, settings["autosaveInterval"].get<unsigned int>());
 
         if (j.contains("world") && m_world) {
             m_world->Deserialize(j["world"]);

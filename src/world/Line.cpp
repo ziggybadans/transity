@@ -343,18 +343,29 @@ nlohmann::json Line::Serialize() const {
     j["color"] = { color.r, color.g, color.b, color.a };
     j["thickness"] = thickness;
     j["selected"] = selected;
-    // Serialize points as a list of node names (assuming unique names)
+
+    // --- NEW: serialize each point
     j["points"] = nlohmann::json::array();
-    for (const auto& point : points) {
-        if (point.node) {
-            j["points"].push_back(point.node->GetName());
+    for (const auto& linePoint : points) {
+        nlohmann::json pointJson;
+        if (!linePoint.node) {
+            // If there's ever a null, skip or handle it as needed
+            continue;
+        }
+
+        // Figure out if it's a City or a generic Node by dynamic_cast
+        if (auto cityPtr = dynamic_cast<City*>(linePoint.node)) {
+            pointJson["type"] = "city";
+            pointJson["name"] = cityPtr->GetName();
         }
         else {
-            j["points"].push_back(nullptr);
+            // It's a generic Node
+            pointJson["type"] = "node";
+            pointJson["name"] = linePoint.node->GetName();
         }
+        j["points"].push_back(pointJson);
     }
-    // Optionally serialize trains on this line if needed
-    // j["trains"] = ...
+
     return j;
 }
 
@@ -364,13 +375,17 @@ void Line::Deserialize(const nlohmann::json& j) {
     color = sf::Color(col[0], col[1], col[2], col[3]);
     thickness = j["thickness"].get<float>();
     selected = j["selected"].get<bool>();
-    // Deserialize points: store node names for later resolution
-    auto pointNames = j["points"];
+
+    // CLEAR existing points before reading new data
     points.clear();
-    for (const auto& nodeName : pointNames) {
-        // For now, store nullptr or a placeholder.
-        // Actual pointer resolution should happen once all nodes are loaded.
-        points.push_back(LinePoint(nullptr));
+    unresolvedPoints.clear(); // <-- We'll declare a new member to store these
+
+    if (j.contains("points") && j["points"].is_array()) {
+        for (const auto& pointJson : j["points"]) {
+            std::string typeStr = pointJson["type"].get<std::string>();
+            std::string nameStr = pointJson["name"].get<std::string>();
+
+            unresolvedPoints.push_back({ typeStr, nameStr });
+        }
     }
-    // Handle resolution of pointers after all lines, nodes, and cities are deserialized.
 }

@@ -24,6 +24,11 @@ struct OffsetInfo {
     float transitionLength;    // Length over which to transition into/out of the offset
 };
 
+struct UnresolvedPoint {
+    std::string type;  // "city" or "node"
+    std::string name;  // e.g. city name or node name
+};
+
 class Line {
 public:
     // Constructor
@@ -86,6 +91,8 @@ public:
     sf::Color GetColor() const { return color; }
     float GetThickness() const { return thickness; }
     bool IsSelected() const { return selected; }
+
+    std::vector<UnresolvedPoint> unresolvedPoints;
 
 private:
     // Member variables

@@ -20,8 +20,8 @@
                 "name": "City1",
                 "population": 1000,
                 "position": [
-                    164.99996948242188,
-                    63.999996185302734
+                    205.00003051757813,
+                    166.47373962402344
                 ],
                 "radius": 10.0,
                 "selected": false,
@@ -31,12 +31,89 @@
                 "name": "City2",
                 "population": 1000,
                 "position": [
-                    428.0000305175781,
-                    382.0000305175781
+                    626.9999389648438,
+                    664.8905029296875
                 ],
                 "radius": 10.0,
                 "selected": false,
                 "waitingPassengers": []
+            },
+            {
+                "name": "City3",
+                "population": 1000,
+                "position": [
+                    734.0000610351563,
+                    465.5714416503906
+                ],
+                "radius": 10.0,
+                "selected": false,
+                "waitingPassengers": []
+            },
+            {
+                "name": "City4",
+                "population": 1000,
+                "position": [
+                    207.99996948242188,
+                    465.9837341308594
+                ],
+                "radius": 10.0,
+                "selected": false,
+                "waitingPassengers": []
+            }
+        ],
+        "lines": [
+            {
+                "color": [
+                    0,
+                    0,
+                    255,
+                    255
+                ],
+                "name": "Line1",
+                "points": [
+                    {
+                        "name": "City1",
+                        "type": "city"
+                    },
+                    {
+                        "name": "Node1",
+                        "type": "node"
+                    },
+                    {
+                        "name": "Node2",
+                        "type": "node"
+                    },
+                    {
+                        "name": "City2",
+                        "type": "city"
+                    },
+                    {
+                        "name": "City3",
+                        "type": "city"
+                    }
+                ],
+                "selected": false,
+                "thickness": 4.0
+            }
+        ],
+        "nodes": [
+            {
+                "name": "Node1",
+                "position": [
+                    401.99993896484375,
+                    395.2235107421875
+                ],
+                "radius": 5.0,
+                "selected": false
+            },
+            {
+                "name": "Node2",
+                "position": [
+                    431.99993896484375,
+                    581.7520751953125
+                ],
+                "radius": 5.0,
+                "selected": false
             }
         ]
     }
