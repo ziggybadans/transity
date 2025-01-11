@@ -185,6 +185,12 @@ nlohmann::json Map::Serialize() {
         j["lines"].push_back(line.Serialize());
     }
 
+    // Serialize trains
+    j["trains"] = nlohmann::json::array();
+    for (const auto& trainPtr : trainManager.GetTrains()) {
+        j["trains"].push_back(trainPtr->Serialize());
+    }
+
     return j;
 }
 
@@ -269,6 +275,68 @@ void Map::Deserialize(const nlohmann::json& j) {
         }
     }
 
+    // After lines are deserialized:
+    // Create a lookup for lines by name to resolve route pointers.
+    std::unordered_map<std::string, Line*> linesByName;
+    for (Line& line : lineManager.GetLines()) {
+        linesByName[line.GetName()] = &line;
+    }
 
-    // TODO: Similarly, handle deserialization for lines, trains, etc., as needed.
+    // Deserialize trains
+    auto& trains = trainManager.GetTrains();
+    for (auto& trainPtr : trains) {
+        Line* route = trainPtr->GetRoute();
+        if (route) {
+            route->RemoveTrain(trainPtr.get());
+            trainPtr->SetRoute(nullptr);  // Clear route to avoid double removal
+        }
+    }
+    trains.clear();  // Now safe to clear without triggering route removal in destructors
+    if (j.contains("trains") && j["trains"].is_array()) {
+        for (const auto& trainJson : j["trains"]) {
+            // Create a temporary Train with placeholder values.
+            std::vector<sf::Vector2f> dummyPathPoints;
+            std::vector<sf::Vector2f> dummyStationPositions;
+            auto newTrain = std::make_unique<Train>(
+                nullptr,               // Temporary route pointer
+                "",                    // Temporary ID
+                dummyPathPoints,
+                dummyStationPositions
+            );
+
+            // Deserialize train data from JSON.
+            newTrain->Deserialize(trainJson);
+
+            // Resolve and set the route using the stored route name.
+            std::string routeName = trainJson["route"].get<std::string>();
+            if (linesByName.find(routeName) != linesByName.end()) {
+                newTrain->SetRoute(linesByName[routeName]);
+                linesByName[routeName]->AddTrain(newTrain.get());
+            }
+            else {
+                // Handle missing route scenario if necessary
+            }
+
+            // Add train to the manager's list.
+            trains.push_back(std::move(newTrain));
+        }
+    }
+
+    // Build a lookup table for cities by name
+    std::unordered_map<std::string, City*> cityLookup;
+    for (City& city : GetCities()) {
+        cityLookup[city.GetName()] = &city;
+    }
+
+    // Resolve passenger pointers for passengers onboard each train
+    for (auto& trainPtr : trainManager.GetTrains()) {
+        for (Passenger* p : trainPtr->GetPassengers()) {
+            p->ResolvePointers(cityLookup);
+            // If passenger state is Waiting, add to city's waiting list
+            if (p->GetState() == PassengerState::Waiting && p->GetCurrentCity()) {
+                p->GetCurrentCity()->AddWaitingPassenger(p);
+            }
+            // For passengers still OnTrain, additional integration can be done if needed
+        }
+    }
 }

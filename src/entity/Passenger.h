@@ -31,6 +31,8 @@ public:
     void AlightAtCity(City* city);
     void Arrive();
 
+    void ResolvePointers(const std::unordered_map<std::string, City*>& cityLookup);
+
 private:
     static size_t s_nextId;  // Static counter for generating unique IDs
     std::string m_id;        // Unique identifier for this passenger
@@ -42,4 +44,9 @@ private:
     PassengerState m_state;
     std::vector<City*> m_route;
     size_t m_nextCityIndex;
+
+    std::string m_originName;
+    std::string m_destinationName;
+    std::string m_currentCityName;
+    std::vector<std::string> m_routeNames;
 };

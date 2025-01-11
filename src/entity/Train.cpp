@@ -336,6 +336,11 @@ nlohmann::json Train::Serialize() const {
     j["state"] = static_cast<int>(m_state);
     j["waitTime"] = m_waitTime;
     j["forward"] = m_forward;
+    // Serialize passengers onboard
+    j["passengers"] = nlohmann::json::array();
+    for (Passenger* p : m_passengers) {
+        j["passengers"].push_back(p->Serialize());
+    }
     return j;
 }
 
@@ -349,6 +354,15 @@ void Train::Deserialize(const nlohmann::json& j) {
     m_position = sf::Vector2f(pos[0], pos[1]);
     m_selected = j["selected"].get<bool>();
     m_capacity = j["capacity"].get<int>();
+    m_passengers.clear();
+    // Deserialize passengers onboard
+    if (j.contains("passengers")) {
+        for (const auto& passJson : j["passengers"]) {
+            Passenger* p = new Passenger(nullptr, nullptr, {});
+            p->Deserialize(passJson);
+            m_passengers.push_back(p);
+        }
+    }
     // Deserialize path points
     m_pathPoints.clear();
     for (auto& pt : j["pathPoints"]) {

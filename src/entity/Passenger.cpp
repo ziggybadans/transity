@@ -81,17 +81,37 @@ nlohmann::json Passenger::Serialize() const {
 }
 
 void Passenger::Deserialize(const nlohmann::json& j) {
-    m_id = j["id"].get<std::string>();  // Read unique ID during deserialization
-    std::string originName = j["origin"].get<std::string>();
-    std::string destinationName = j["destination"].get<std::string>();
-    std::string currentCityName = j["currentCity"].get<std::string>();
+    m_id = j["id"].get<std::string>();
+    m_originName = j["origin"].get<std::string>();
+    m_destinationName = j["destination"].get<std::string>();
+    m_currentCityName = j["currentCity"].get<std::string>();
     m_state = static_cast<PassengerState>(j["state"].get<int>());
-    m_route.clear();
+    m_routeNames.clear();
     for (auto& cityName : j["route"]) {
-        // Resolve city pointers using cityName later in linking phase
+        m_routeNames.push_back(cityName.get<std::string>());
     }
     m_nextCityIndex = j["nextCityIndex"].get<size_t>();
+}
 
-    // Optionally, update the static counter if necessary. For example:
-    // Parse numeric part of m_id to update s_nextId, ensuring future IDs are unique.
+void Passenger::ResolvePointers(const std::unordered_map<std::string, City*>& cityLookup) {
+    if (cityLookup.find(m_originName) != cityLookup.end()) {
+        m_origin = cityLookup.at(m_originName);
+    }
+    if (cityLookup.find(m_destinationName) != cityLookup.end()) {
+        m_destination = cityLookup.at(m_destinationName);
+    }
+    if (!m_currentCityName.empty() && cityLookup.find(m_currentCityName) != cityLookup.end()) {
+        m_currentCity = cityLookup.at(m_currentCityName);
+    }
+    m_route.clear();
+    for (auto& name : m_routeNames) {
+        if (cityLookup.find(name) != cityLookup.end()) {
+            m_route.push_back(cityLookup.at(name));
+        }
+    }
+    // Clear temporary name storage if no longer needed
+    m_originName.clear();
+    m_destinationName.clear();
+    m_currentCityName.clear();
+    m_routeNames.clear();
 }

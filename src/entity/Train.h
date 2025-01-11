@@ -39,6 +39,7 @@ public:
 
     // Setters
     void SetSelected(bool value) { m_selected = value; }
+    void SetRoute(Line* route) { m_route = route; }
 
     // Method to draw the train (optional, for visualization)
     void Draw(sf::RenderWindow& window) const;

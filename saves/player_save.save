@@ -20,8 +20,8 @@
                 "name": "City1",
                 "population": 1000,
                 "position": [
-                    205.00003051757813,
-                    166.47373962402344
+                    149.0,
+                    150.14285278320313
                 ],
                 "radius": 10.0,
                 "selected": false,
@@ -31,8 +31,8 @@
                 "name": "City2",
                 "population": 1000,
                 "position": [
-                    626.9999389648438,
-                    664.8905029296875
+                    603.9999389648438,
+                    615.0747680664063
                 ],
                 "radius": 10.0,
                 "selected": false,
@@ -42,23 +42,15 @@
                 "name": "City3",
                 "population": 1000,
                 "position": [
-                    734.0000610351563,
-                    465.5714416503906
+                    155.0,
+                    629.9970703125
                 ],
                 "radius": 10.0,
                 "selected": false,
-                "waitingPassengers": []
-            },
-            {
-                "name": "City4",
-                "population": 1000,
-                "position": [
-                    207.99996948242188,
-                    465.9837341308594
-                ],
-                "radius": 10.0,
-                "selected": false,
-                "waitingPassengers": []
+                "waitingPassengers": [
+                    "passenger_2",
+                    "passenger_4"
+                ]
             }
         ],
         "lines": [
@@ -86,6 +78,27 @@
                     {
                         "name": "City2",
                         "type": "city"
+                    }
+                ],
+                "selected": false,
+                "thickness": 4.0
+            },
+            {
+                "color": [
+                    0,
+                    0,
+                    255,
+                    255
+                ],
+                "name": "Line1",
+                "points": [
+                    {
+                        "name": "Node2",
+                        "type": "node"
+                    },
+                    {
+                        "name": "Node3",
+                        "type": "node"
                     },
                     {
                         "name": "City3",
@@ -100,8 +113,8 @@
             {
                 "name": "Node1",
                 "position": [
-                    401.99993896484375,
-                    395.2235107421875
+                    290.00006103515625,
+                    315.5632629394531
                 ],
                 "radius": 5.0,
                 "selected": false
@@ -109,11 +122,145 @@
             {
                 "name": "Node2",
                 "position": [
-                    431.99993896484375,
-                    581.7520751953125
+                    346.99993896484375,
+                    469.049560546875
                 ],
                 "radius": 5.0,
                 "selected": false
+            },
+            {
+                "name": "Node3",
+                "position": [
+                    191.99998474121094,
+                    513.8164672851563
+                ],
+                "radius": 5.0,
+                "selected": false
+            }
+        ],
+        "trains": [
+            {
+                "capacity": 50,
+                "currentPointIndex": 1,
+                "currentSpeed": 44.92542266845703,
+                "forward": true,
+                "id": "Train1",
+                "maxSpeed": 50.0,
+                "passengers": [
+                    {
+                        "currentCity": "",
+                        "destination": "City2",
+                        "id": "passenger_3",
+                        "nextCityIndex": 1,
+                        "origin": "City1",
+                        "route": [
+                            "City1",
+                            "City2"
+                        ],
+                        "state": 1
+                    },
+                    {
+                        "currentCity": "",
+                        "destination": "City3",
+                        "id": "passenger_1",
+                        "nextCityIndex": 1,
+                        "origin": "City1",
+                        "route": [
+                            "City1",
+                            "City3"
+                        ],
+                        "state": 1
+                    }
+                ],
+                "pathPoints": [
+                    [
+                        149.0,
+                        150.14285278320313
+                    ],
+                    [
+                        290.00006103515625,
+                        315.5632629394531
+                    ],
+                    [
+                        346.99993896484375,
+                        469.049560546875
+                    ],
+                    [
+                        191.99998474121094,
+                        513.8164672851563
+                    ],
+                    [
+                        155.0,
+                        629.9970703125
+                    ]
+                ],
+                "position": [
+                    181.78897094726563,
+                    188.61062622070313
+                ],
+                "route": "Line1",
+                "selected": false,
+                "state": 0,
+                "stationPositions": [
+                    [
+                        149.0,
+                        150.14285278320313
+                    ],
+                    [
+                        603.9999389648438,
+                        615.0747680664063
+                    ],
+                    [
+                        155.0,
+                        629.9970703125
+                    ]
+                ],
+                "waitTime": -0.0029398202896118164
+            },
+            {
+                "capacity": 50,
+                "currentPointIndex": 0,
+                "currentSpeed": 0.0,
+                "forward": false,
+                "id": "Train2",
+                "maxSpeed": 50.0,
+                "passengers": [],
+                "pathPoints": [
+                    [
+                        149.0,
+                        150.14285278320313
+                    ],
+                    [
+                        290.00006103515625,
+                        315.5632629394531
+                    ],
+                    [
+                        346.99993896484375,
+                        469.049560546875
+                    ],
+                    [
+                        603.9999389648438,
+                        615.0747680664063
+                    ]
+                ],
+                "position": [
+                    149.0,
+                    150.14285278320313
+                ],
+                "route": "Line1",
+                "selected": false,
+                "state": 1,
+                "stationPositions": [
+                    [
+                        149.0,
+                        150.14285278320313
+                    ],
+                    [
+                        603.9999389648438,
+                        615.0747680664063
+                    ]
+                ],
+                "waitTime": 1.1629022359848022
             }
         ]
     }
