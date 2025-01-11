@@ -83,6 +83,8 @@ private:
     bool m_forward;                 // Direction of travel
     State m_state;                  // Current state (Moving or Waiting)
     float m_waitTime;               // Time left to wait at a city
+    bool m_atEndStation;
+    bool m_waitingForBoarding;
 
     // Path information
     std::vector<sf::Vector2f> m_pathPoints; // Points along the path
