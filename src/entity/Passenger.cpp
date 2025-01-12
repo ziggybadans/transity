@@ -32,43 +32,6 @@ City* Passenger::GetNextCity() const {
     return nullptr;
 }
 
-void Passenger::BoardTrain(Train* train) {
-    if (m_state != PassengerState::Waiting) return;
-    m_currentTrain = train;
-    m_state = PassengerState::OnTrain;
-    if (m_currentCity) {
-        m_currentCity->RemoveWaitingPassenger(this);
-        m_currentCity = nullptr;
-    }
-}
-
-void Passenger::AlightAtCity(City* city) {
-    if (m_state != PassengerState::OnTrain) return;
-    m_currentTrain = nullptr;
-    m_currentCity = city;
-    m_state = PassengerState::Waiting;
-    if (city) city->AddWaitingPassenger(this);
-
-    // Advance to next leg of journey if possible
-    if (m_nextCityIndex + 1 < m_route.size())
-        ++m_nextCityIndex;
-}
-
-void Passenger::Arrive() {
-    m_state = PassengerState::Arrived;   // Mark as done
-    if (m_currentTrain) {
-        m_currentTrain = nullptr;        // No longer on a train
-    }
-    if (m_currentCity) {
-        // This ensures the passenger is removed from the waiting list, if any
-        m_currentCity->RemoveWaitingPassenger(this);
-        m_currentCity = nullptr;
-    }
-    // At this point, you could also delete the passenger object 
-    // if you manage them with new, or mark them for removal in 
-    // a manager, etc.
-}
-
 nlohmann::json Passenger::Serialize() const {
     nlohmann::json j;
     j["id"] = m_id;  // Include unique ID in serialization

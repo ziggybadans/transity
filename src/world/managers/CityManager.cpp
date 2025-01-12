@@ -130,12 +130,10 @@ void CityManager::UpdatePassengers(float dt) {
         auto& passengersOnTrain = train->GetPassengers();
         for (auto p : passengersOnTrain) {
             if (p->GetDestination() == currentCity) {
-                p->Arrive();
                 alightList.push_back(p);
                 m_map.SetScore(m_map.GetScore() + 1);
             }
             else if (p->GetNextCity() == currentCity) {
-                p->AlightAtCity(currentCity);
                 alightList.push_back(p);
             }
         }
@@ -167,7 +165,6 @@ void CityManager::UpdatePassengers(float dt) {
                     goesToNext = true;
                 }
                 if (goesToNext) {
-                    p->BoardTrain(train);
                     train->AddPassenger(p);
                 }
             }

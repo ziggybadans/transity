@@ -27,10 +27,6 @@ public:
     size_t GetNextCityIndex() const;
     City* GetNextCity() const;
 
-    void BoardTrain(Train* train);
-    void AlightAtCity(City* city);
-    void Arrive();
-
     void ResolvePointers(const std::unordered_map<std::string, City*>& cityLookup);
 
 private:
