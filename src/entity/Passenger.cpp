@@ -55,14 +55,18 @@ void Passenger::AlightAtCity(City* city) {
 }
 
 void Passenger::Arrive() {
-    m_state = PassengerState::Arrived;
+    m_state = PassengerState::Arrived;   // Mark as done
     if (m_currentTrain) {
-        m_currentTrain = nullptr;
+        m_currentTrain = nullptr;        // No longer on a train
     }
     if (m_currentCity) {
+        // This ensures the passenger is removed from the waiting list, if any
         m_currentCity->RemoveWaitingPassenger(this);
         m_currentCity = nullptr;
     }
+    // At this point, you could also delete the passenger object 
+    // if you manage them with new, or mark them for removal in 
+    // a manager, etc.
 }
 
 nlohmann::json Passenger::Serialize() const {

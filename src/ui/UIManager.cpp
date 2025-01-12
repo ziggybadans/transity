@@ -311,7 +311,7 @@ void UIManager::RenderInfoPanel() {
 
         ImGui::SetNextWindowSize(ImVec2(panelWidth, panelHeight), ImGuiCond_Always);
         ImGui::Begin("Train Information", nullptr,
-            ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+            ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
 
         ImGui::Text("Train Details");
         ImGui::Separator();

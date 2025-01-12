@@ -70,14 +70,17 @@ void Train::Move(float dt)
     float distanceToTarget = Distance(m_position, targetPos);
     bool nextIsCity = IsCityIndex(m_currentPointIndex);
 
+    // Simple acceleration/deceleration logic
     if (nextIsCity) {
         float stopDistance = (m_currentSpeed * m_currentSpeed) / (2.0f * DECELERATION);
         if (stopDistance >= distanceToTarget) {
+            // Begin decelerating so we can stop exactly at the city
             m_currentSpeed -= DECELERATION * dt;
             if (m_currentSpeed < 0.0f)
                 m_currentSpeed = 0.0f;
         }
         else {
+            // Accelerate if not at max speed
             if (m_currentSpeed < m_maxSpeed) {
                 m_currentSpeed += ACCELERATION * dt;
                 if (m_currentSpeed > m_maxSpeed)
@@ -86,6 +89,7 @@ void Train::Move(float dt)
         }
     }
     else {
+        // Just travel at max possible speed between cities
         if (m_currentSpeed < m_maxSpeed) {
             m_currentSpeed += ACCELERATION * dt;
             if (m_currentSpeed > m_maxSpeed)
@@ -100,15 +104,19 @@ void Train::Move(float dt)
         m_direction = direction;
     }
 
+    // Move the train forward
     sf::Vector2f movement = direction * m_currentSpeed * dt;
     float movementDistance = Length(movement);
 
     if (movementDistance >= distanceToTarget) {
+        // We overshoot, so clamp to the city position
         m_position = targetPos;
+
         if (nextIsCity) {
             ArriveAtCity();
         }
         else {
+            // Advance to next point
             m_currentPointIndex = AdvanceIndex(m_forward);
             m_position = targetPos;
         }
@@ -123,10 +131,25 @@ float Train::Length(const sf::Vector2f& v) const
     return std::sqrt(v.x * v.x + v.y * v.y);
 }
 
+/**
+ * ArriveAtCity
+ *
+ * Called when the train’s position exactly matches a city/station point.
+ *
+ * 1) The train stops and transitions to Waiting state.
+ * 2) Passengers who have reached either their final city or their next transfer city alight.
+ *    - Final-destination passengers call Arrive() and despawn.
+ *    - Transfer passengers remain in the city as Waiting (so they can catch another train).
+ * 3) If not an end station, we also board new passengers right away.
+ * 4) If it's an end station, we only do the *first* half-wait now (letting people off).
+ *    We'll do the second half (boarding) in the Wait() method below, once we've swapped direction.
+ */
 void Train::ArriveAtCity()
 {
     m_state = State::Waiting;
     m_currentSpeed = 0.0f;
+
+    // Figure out if we're at an end station
     int stationIndex = -1;
     for (int i = 0; i < static_cast<int>(m_stationPositions.size()); i++) {
         if (Distance(m_position, m_stationPositions[i]) <= PROXIMITY_THRESHOLD) {
@@ -134,81 +157,97 @@ void Train::ArriveAtCity()
             break;
         }
     }
+
+    // If first or last station in the stationPositions array, we consider it an end station
     if (stationIndex == 0 || stationIndex == static_cast<int>(m_stationPositions.size()) - 1) {
-        m_waitTime = STOP_DURATION;
+        m_waitTime = STOP_DURATION;       // Let passengers off
         m_atEndStation = true;
-        m_waitingForBoarding = false;
+        m_waitingForBoarding = false;     // We'll do boarding next time
     }
     else {
-        m_waitTime = STOP_DURATION;
+        m_waitTime = STOP_DURATION;       // Regular station: do a single-phase stop
         m_atEndStation = false;
-        m_waitingForBoarding = false;
+        m_waitingForBoarding = false;     // Not relevant for a mid-route city
     }
+
+    // Snap position for cleanliness
     if (m_currentPointIndex >= 0 && m_currentPointIndex < static_cast<int>(m_pathPoints.size()))
     {
         m_position = m_pathPoints[m_currentPointIndex];
     }
 
-    // Retrieve the current city based on stationIndex
+    // Identify which city we have arrived at
     City* currentCity = nullptr;
     if (m_route) {
+        // The line's city list is in the same order as stationPositions
         const std::vector<City*>& citiesOnRoute = m_route->GetCities();
         if (stationIndex >= 0 && stationIndex < static_cast<int>(citiesOnRoute.size())) {
             currentCity = citiesOnRoute[stationIndex];
         }
     }
 
+    // ------------------------------
+    // 1) Let passengers off
+    // ------------------------------
     if (currentCity) {
-        // 1. Alight passengers who have reached their destination or an intermediate transfer point
         std::vector<Passenger*> passengersToAlight;
         for (Passenger* p : m_passengers) {
-            // Alight if at final destination or at the next transfer city in their route
-            if (p->GetDestination() == currentCity || p->GetNextCity() == currentCity) {
+            // If final destination is here, or if p->GetNextCity() is here, they must alight.
+            if (p->GetDestination() == currentCity) {
+                // They are done traveling
+                passengersToAlight.push_back(p);
+            }
+            else if (p->GetNextCity() == currentCity) {
+                // They are transferring
                 passengersToAlight.push_back(p);
             }
         }
 
+        // Actually remove them from the train
         for (Passenger* p : passengersToAlight) {
-            p->AlightAtCity(currentCity);
-            RemovePassenger(p);
+            if (p->GetDestination() == currentCity) {
+                // Final-destination passengers despawn
+                p->Arrive();
+                RemovePassenger(p);
+            }
+            else {
+                // Transfer passengers remain in the city as waiting
+                p->AlightAtCity(currentCity);
+                RemovePassenger(p);
+            }
         }
 
-        // 2. Board waiting passengers whose destination is along the train's current travel direction
-        std::vector<Passenger*> waitingPassengers = currentCity->GetWaitingPassengers();
+        // ---------------------------------------------
+        // 2) Board new passengers if NOT an end station
+        // ---------------------------------------------
+        // If it's an end station, we'll do that in Wait() after direction swap.
+        if (!m_atEndStation) {
+            std::vector<Passenger*> waitingPassengers = currentCity->GetWaitingPassengers();
+            const std::vector<City*>& citiesOnRoute = m_route->GetCities();
+            auto itCurrent = std::find(citiesOnRoute.begin(), citiesOnRoute.end(), currentCity);
+            if (itCurrent != citiesOnRoute.end()) {
+                int currentCityIndex = static_cast<int>(std::distance(citiesOnRoute.begin(), itCurrent));
 
-        // Retrieve the list of cities along the route
-        const std::vector<City*>& citiesOnRoute = m_route->GetCities();
+                for (Passenger* p : waitingPassengers) {
+                    City* nextCity = p->GetNextCity();
+                    if (!nextCity) continue;
+                    auto itNext = std::find(citiesOnRoute.begin(), citiesOnRoute.end(), nextCity);
+                    if (itNext == citiesOnRoute.end()) continue;
+                    int nextCityIndex = static_cast<int>(std::distance(citiesOnRoute.begin(), itNext));
 
-        // Find the index of the current city on the route
-        auto itCurrent = std::find(citiesOnRoute.begin(), citiesOnRoute.end(), currentCity);
-        if (itCurrent == citiesOnRoute.end()) {
-            // Should not happen, but safety first
-            return;
-        }
-        int currentCityIndex = std::distance(citiesOnRoute.begin(), itCurrent);
+                    bool goesToNext = false;
+                    if (m_forward && nextCityIndex > currentCityIndex) {
+                        goesToNext = true;
+                    }
+                    else if (!m_forward && nextCityIndex < currentCityIndex) {
+                        goesToNext = true;
+                    }
 
-        for (Passenger* p : waitingPassengers) {
-            // Find destination index on the route
-            auto itDest = std::find(citiesOnRoute.begin(), citiesOnRoute.end(), p->GetDestination());
-            if (itDest == citiesOnRoute.end()) {
-                // Passenger destination not on this route
-                continue;
-            }
-            int destIndex = std::distance(citiesOnRoute.begin(), itDest);
-
-            // Check if destination lies ahead in the current direction
-            bool destinationAhead = false;
-            if (m_forward && destIndex > currentCityIndex) {
-                destinationAhead = true;
-            }
-            else if (!m_forward && destIndex < currentCityIndex) {
-                destinationAhead = true;
-            }
-
-            // Board passenger only if destination is ahead and there's capacity
-            if (destinationAhead && HasCapacity()) {
-                p->BoardTrain(this);
-                AddPassenger(p);
+                    if (goesToNext && HasCapacity()) {
+                        p->BoardTrain(this);
+                        AddPassenger(p);
+                    }
+                }
             }
         }
     }
@@ -220,17 +259,65 @@ void Train::Wait(float dt)
     if (m_waitTime <= 0.0f)
     {
         if (m_atEndStation && !m_waitingForBoarding) {
-            // First wait phase complete at end station: swap direction and begin boarding phase
+            // Finished first wait phase at end station (letting passengers off).
+            // Swap direction and start second wait phase for boarding.
             m_forward = !m_forward;
             m_waitTime = STOP_DURATION;
             m_waitingForBoarding = true;
-            // Remain in Waiting state to allow boarding passengers during the second phase
+
+            // Perform boarding during this new wait phase.
+            // Identify current city at end station.
+            int stationIndex = -1;
+            for (int i = 0; i < static_cast<int>(m_stationPositions.size()); i++) {
+                if (Distance(m_position, m_stationPositions[i]) <= PROXIMITY_THRESHOLD) {
+                    stationIndex = i;
+                    break;
+                }
+            }
+            City* currentCity = nullptr;
+            if (stationIndex != -1 && m_route) {
+                const std::vector<City*>& citiesOnRoute = m_route->GetCities();
+                if (stationIndex < static_cast<int>(citiesOnRoute.size())) {
+                    currentCity = citiesOnRoute[stationIndex];
+                }
+            }
+
+            if (currentCity) {
+                std::vector<Passenger*> waitingPassengers = currentCity->GetWaitingPassengers();
+                const std::vector<City*>& citiesOnRoute = m_route->GetCities();
+                auto itCurrent = std::find(citiesOnRoute.begin(), citiesOnRoute.end(), currentCity);
+                if (itCurrent != citiesOnRoute.end()) {
+                    int currentCityIndex = static_cast<int>(std::distance(citiesOnRoute.begin(), itCurrent));
+
+                    for (Passenger* p : waitingPassengers) {
+                        City* nextCity = p->GetNextCity();
+                        if (!nextCity) continue;
+                        auto itNext = std::find(citiesOnRoute.begin(), citiesOnRoute.end(), nextCity);
+                        if (itNext == citiesOnRoute.end()) continue;
+                        int nextCityIndex = static_cast<int>(std::distance(citiesOnRoute.begin(), itNext));
+
+                        bool goesToNext = false;
+                        if (m_forward && nextCityIndex > currentCityIndex) {
+                            goesToNext = true;
+                        }
+                        else if (!m_forward && nextCityIndex < currentCityIndex) {
+                            goesToNext = true;
+                        }
+
+                        if (goesToNext && HasCapacity()) {
+                            p->BoardTrain(this);
+                            AddPassenger(p);
+                        }
+                    }
+                }
+            }
         }
         else {
-            // Either not at end station, or boarding phase complete – proceed to Moving state
+            // Either not an end station or finished boarding at end station.
             m_state = State::Moving;
             m_atEndStation = false;
             m_waitingForBoarding = false;
+
             if (m_forward)
             {
                 m_currentPointIndex++;
