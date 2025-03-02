@@ -1,10 +1,21 @@
 {
     "cmake.configureOnOpen": true,
     "cmake.buildDirectory": "${workspaceFolder}/build",
-    "cmake.sourceDirectory": "${workspaceFolder}",
+    "cmake.installPrefix": "${workspaceFolder}/install",
+    "cmake.generator": "Ninja",
+    "cmake.parallelJobs": 4,
+    "cmake.exportCompileCommandsFile": true,
+    "cmake.configureSettings": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+    },
+    "editor.formatOnSave": true,
+    "editor.formatOnType": true,
+    "editor.rulers": [100],
     "files.associations": {
         "*.h": "cpp",
         "*.cpp": "cpp",
+        "*.inl": "cpp",
+        "CMakeLists.txt": "cmake",
         "memory": "cpp",
         "algorithm": "cpp",
         "any": "cpp",
@@ -99,6 +110,25 @@
         "xtree": "cpp",
         "xutility": "cpp"
     },
-    "editor.formatOnSave": true,
-    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools"
+    "files.exclude": {
+        "**/.git": true,
+        "**/.DS_Store": true,
+        "**/build": false,
+        "**/bin": false,
+        "**/lib": false
+    },
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+    "C_Cpp.clang_format_style": "file",
+    "C_Cpp.clang_format_fallbackStyle": "Google",
+    "C_Cpp.formatting": "clangFormat",
+    "C_Cpp.intelliSenseEngine": "default",
+    "C_Cpp.enhancedColorization": "enabled",
+    "C_Cpp.suggestSnippets": true,
+    "C_Cpp.vcpkg.enabled": false,
+    "[cpp]": {
+        "editor.defaultFormatter": "ms-vscode.cpptools"
+    },
+    "[cmake]": {
+        "editor.defaultFormatter": "ms-vscode.cmake-tools"
+    }
 }

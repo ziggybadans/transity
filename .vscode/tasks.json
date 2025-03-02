@@ -2,35 +2,88 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "CMake: configure",
+            "label": "CMake Configure",
             "type": "shell",
-            "command": "cmake -B build -S .",
-            "problemMatcher": [],
-            "group": {
-                "kind": "build",
-                "isDefault": false
-            }
+            "command": "cmake",
+            "args": [
+                "-B",
+                "build",
+                "-S",
+                ".",
+                "-DCMAKE_BUILD_TYPE=${input:buildType}"
+            ],
+            "group": "build",
+            "problemMatcher": []
         },
         {
-            "label": "CMake: build",
+            "label": "CMake Build",
             "type": "shell",
-            "command": "cmake --build build",
-            "problemMatcher": ["$gcc"],
+            "command": "cmake",
+            "args": [
+                "--build",
+                "build",
+                "--config",
+                "${input:buildType}",
+                "-j",
+                "${input:jobs}"
+            ],
             "group": {
                 "kind": "build",
                 "isDefault": true
             },
-            "dependsOn": ["CMake: configure"]
+            "dependsOn": [
+                "CMake Configure"
+            ],
+            "problemMatcher": "$gcc"
         },
         {
-            "label": "CMake: clean",
+            "label": "CMake Clean",
             "type": "shell",
-            "command": "cmake --build build --target clean",
-            "problemMatcher": [],
+            "command": "cmake",
+            "args": [
+                "--build",
+                "build",
+                "--target",
+                "clean"
+            ],
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "label": "Run",
+            "type": "shell",
+            "command": "${workspaceFolder}/build/bin/Transity",
+            "windows": {
+                "command": "${workspaceFolder}\\build\\bin\\${input:buildType}\\Transity.exe"
+            },
             "group": {
-                "kind": "build",
-                "isDefault": false
-            }
+                "kind": "test",
+                "isDefault": true
+            },
+            "dependsOn": [
+                "CMake Build"
+            ],
+            "problemMatcher": []
+        }
+    ],
+    "inputs": [
+        {
+            "id": "buildType",
+            "type": "pickString",
+            "description": "Select build type",
+            "options": [
+                "Debug",
+                "Release",
+                "RelWithDebInfo",
+                "MinSizeRel"
+            ],
+            "default": "Debug"
+        },
+        {
+            "id": "jobs",
+            "type": "promptString",
+            "description": "Number of parallel jobs",
+            "default": "4"
         }
     ]
 } 

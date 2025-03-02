@@ -2,20 +2,120 @@
 /build/
 /Debug/
 /Release/
+/RelWithDebInfo/
+/MinSizeRel/
+/install/
+/out/
+/cmake-build-*/
 
 # Visual Studio files
 *.sdf
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
 *.vcxproj.user
+*.vcxproj.filters
+*.pdb
+*.ilk
+*.aps
+*.ncb
+*.opendb
+*.opensdf
+*.sdf
+*.cachefile
+*.VC.db
+*.VC.VC.opendb
+.vs/
+
+# Visual Studio Code
+.vscode/*
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/settings.json
+!.vscode/c_cpp_properties.json
+!.vscode/extensions.json
+
+# Xcode
+*.xcodeproj
+*.xcworkspace
+xcuserdata/
+*.xcscmblueprint
+*.xccheckout
+DerivedData/
+*.moved-aside
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+Icon?
+ehthumbs.db
+Thumbs.db
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
 
 # SFML DLLs
 /lib/bin/
 
+# CMake
+CMakeCache.txt
+CMakeFiles
+CMakeScripts
+Testing
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+
 # Other
 *.log
-/.vs/Transity/FileContentIndex/*
-*.vsidx
+*.tlog
+*.lastbuildstate
+*.idb
 *.ipch
-/.vs/Transity/v17/*
+*.db
+*.opendb
+*.sqlite
+*.sqlite3
+
+# Project-specific
 /assets/
 /include/gdal-3.9.3
 /include/mapbox/earcut.hpp

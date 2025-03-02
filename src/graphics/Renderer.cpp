@@ -1,13 +1,12 @@
 // Renderer.cpp
 #include "Renderer.h"
-#include <iostream>
-#include "../Debug.h"
-#include "../Constants.h"
 
-Renderer::Renderer()
-    : m_isInitialized(false)
-{
-}
+#include <iostream>
+
+#include "../Constants.h"
+#include "../Debug.h"
+
+Renderer::Renderer() : m_isInitialized(false) {}
 
 Renderer::~Renderer() {
     Shutdown();
@@ -20,10 +19,11 @@ bool Renderer::Init() {
 }
 
 bool Renderer::InitWithWindow(sf::RenderWindow& window) {
-    if (m_isInitialized) return true;
+    if (m_isInitialized)
+        return true;
 
     // Load the font
-    if (!m_font.loadFromFile("data/PTSans-Regular.ttf")) { // Ensure the path is correct
+    if (!m_font.loadFromFile("assets/fonts/PTSans-Regular.ttf")) {  // Ensure the path is correct
         DEBUG_ERROR("Failed to load font.");
         return false;
     }
@@ -34,8 +34,10 @@ bool Renderer::InitWithWindow(sf::RenderWindow& window) {
     return true;
 }
 
-void Renderer::Render(sf::RenderWindow& window, const Camera& camera, Map& map, StateManager& stateManager) {
-    if (!m_isInitialized) return;
+void Renderer::Render(sf::RenderWindow& window, const Camera& camera, Map& map,
+                      StateManager& stateManager) {
+    if (!m_isInitialized)
+        return;
 
     RenderMap(window, map, camera, stateManager);
 
@@ -43,7 +45,8 @@ void Renderer::Render(sf::RenderWindow& window, const Camera& camera, Map& map, 
     camera.ApplyView(window);
 }
 
-void Renderer::RenderMap(sf::RenderWindow& window, Map& map, const Camera& camera, StateManager& stateManager) const {
+void Renderer::RenderMap(sf::RenderWindow& window, Map& map, const Camera& camera,
+                         StateManager& stateManager) const {
     sf::Vector2i pixelPos = sf::Mouse::getPosition(window);
     sf::Vector2f worldPos = window.mapPixelToCoords(pixelPos, camera.GetView());
     const float BOUNDING_BOX_RADIUS = 10.0f;
@@ -57,9 +60,8 @@ void Renderer::RenderMap(sf::RenderWindow& window, Map& map, const Camera& camer
 
             if (map.GetTile(x, y) == 1) {
                 tileShape.setFillColor(sf::Color::White);
-            }
-            else {
-                tileShape.setFillColor(sf::Color::Transparent); // Assuming 0 is empty
+            } else {
+                tileShape.setFillColor(sf::Color::Transparent);  // Assuming 0 is empty
             }
 
             window.draw(tileShape);
@@ -91,14 +93,13 @@ void Renderer::RenderMap(sf::RenderWindow& window, Map& map, const Camera& camer
     }
 
     // Route
-    if (stateManager.GetState<std::string>("CurrentTool") == "TrainPlace"
-        && startCity && endCity) {
+    if (stateManager.GetState<std::string>("CurrentTool") == "TrainPlace" && startCity && endCity) {
         // Use the new route-finding with nodes from the map
         std::vector<Node*> routeNodes = map.FindRouteBetweenNodes(startCity, endCity);
         if (!routeNodes.empty()) {
             // Draw the route segments in orange
-            sf::Color highlightColor = sf::Color(255, 165, 0); // Orange
-            float highlightThickness = 6.0f; // Thicker than normal lines
+            sf::Color highlightColor = sf::Color(255, 165, 0);  // Orange
+            float highlightThickness = 6.0f;                    // Thicker than normal lines
             for (size_t i = 0; i + 1 < routeNodes.size(); ++i) {
                 // For each adjacent pair of nodes, find the connecting line segment
                 Node* nodeA = routeNodes[i];
@@ -113,7 +114,8 @@ void Renderer::RenderMap(sf::RenderWindow& window, Map& map, const Camera& camer
                             if (j < adjustedPoints.size() && (j + 1) < adjustedPoints.size()) {
                                 sf::Vector2f start = adjustedPoints[j];
                                 sf::Vector2f end = adjustedPoints[j + 1];
-                                DrawThickLine(window, start, end, highlightThickness, highlightColor);
+                                DrawThickLine(window, start, end, highlightThickness,
+                                              highlightColor);
                             }
                         }
                     }
@@ -134,10 +136,10 @@ void Renderer::RenderMap(sf::RenderWindow& window, Map& map, const Camera& camer
 
         // Create and configure the text label
         sf::Text text;
-        text.setFont(m_font); // Use the loaded font
+        text.setFont(m_font);  // Use the loaded font
         text.setString(city.GetName());
-        text.setFillColor(sf::Color::Black); // Choose a color that contrasts with the map
-        text.setCharacterSize(32.0f / camera.GetZoomLevel()); // Adjust as needed
+        text.setFillColor(sf::Color::Black);  // Choose a color that contrasts with the map
+        text.setCharacterSize(32.0f / camera.GetZoomLevel());  // Adjust as needed
         text.setScale(sf::Vector2f(camera.GetZoomLevel() / 2, camera.GetZoomLevel() / 2));
 
         // Calculate the position: below the city
@@ -145,11 +147,10 @@ void Renderer::RenderMap(sf::RenderWindow& window, Map& map, const Camera& camer
         float scaledWidth = textBounds.width * text.getScale().x;
         float scaledHeight = textBounds.height * text.getScale().y;
         float textX = city.GetPosition().x - scaledWidth / 2;
-        float textY = city.GetPosition().y + city.GetRadius() + 5.0f; // 5 pixels below the city
+        float textY = city.GetPosition().y + city.GetRadius() + 5.0f;  // 5 pixels below the city
 
         text.setPosition(textX, textY);
         window.draw(text);
-
     }
 
     for (const Node& node : map.GetNodes()) {
@@ -183,9 +184,9 @@ void Renderer::RenderMap(sf::RenderWindow& window, Map& map, const Camera& camer
                 float distanceSquared = diff.x * diff.x + diff.y * diff.y;
                 if (distanceSquared < boundingBoxSquared) {
                     handleShape.setFillColor(hoverHandleColor);
-                }
-                else {
-                    handleShape.setFillColor(handle.isSelected ? selectedHandleColor : defaultHandleColor);
+                } else {
+                    handleShape.setFillColor(handle.isSelected ? selectedHandleColor
+                                                               : defaultHandleColor);
                 }
                 window.draw(handleShape);
             }
@@ -196,19 +197,17 @@ void Renderer::RenderMap(sf::RenderWindow& window, Map& map, const Camera& camer
     for (const City& city : map.GetCities()) {
         sf::Text indicatorText;
         indicatorText.setFont(m_font);
-        indicatorText.setCharacterSize(72); // Larger size for visibility
-        indicatorText.setFillColor(sf::Color::White); // Choose a distinct color
-        indicatorText.setCharacterSize(32.0f / camera.GetZoomLevel()); // Adjust as needed
+        indicatorText.setCharacterSize(72);            // Larger size for visibility
+        indicatorText.setFillColor(sf::Color::White);  // Choose a distinct color
+        indicatorText.setCharacterSize(32.0f / camera.GetZoomLevel());  // Adjust as needed
         indicatorText.setScale(sf::Vector2f(camera.GetZoomLevel() / 2, camera.GetZoomLevel() / 2));
 
         if (&city == startCity) {
             indicatorText.setString("1");
-        }
-        else if (&city == endCity) {
+        } else if (&city == endCity) {
             indicatorText.setString("2");
-        }
-        else {
-            continue; // No indicator needed
+        } else {
+            continue;  // No indicator needed
         }
 
         // Position the indicator at the top-right corner of the city
@@ -277,7 +276,7 @@ void Renderer::RenderMap(sf::RenderWindow& window, Map& map, const Camera& camer
             float offsetX = (i % 5) * 6.0f - 15.f;
             float offsetY = (i / 5) * 6.0f - 15.f;
             passengerShape.setPosition(city.GetPosition().x + offsetX,
-                city.GetPosition().y + offsetY);
+                                       city.GetPosition().y + offsetY);
             window.draw(passengerShape);
         }
     }
@@ -287,10 +286,13 @@ void Renderer::Shutdown() {
     m_isInitialized = false;
 }
 
-void Renderer::DrawThickLine(sf::RenderWindow& window, const sf::Vector2f& start, const sf::Vector2f& end, float thickness, const sf::Color& color) const {
+void Renderer::DrawThickLine(sf::RenderWindow& window, const sf::Vector2f& start,
+                             const sf::Vector2f& end, float thickness,
+                             const sf::Color& color) const {
     sf::Vector2f direction = end - start;
     float length = std::sqrt(direction.x * direction.x + direction.y * direction.y);
-    if (length == 0) return;
+    if (length == 0)
+        return;
 
     // Calculate the angle of the line in degrees
     float angle = std::atan2(direction.y, direction.x) * 180.0f / 3.14159265f;
@@ -299,7 +301,7 @@ void Renderer::DrawThickLine(sf::RenderWindow& window, const sf::Vector2f& start
     sf::RectangleShape rectangle;
     rectangle.setSize(sf::Vector2f(length, thickness));
     rectangle.setFillColor(color);
-    rectangle.setOrigin(0, thickness / 2); // Center vertically
+    rectangle.setOrigin(0, thickness / 2);  // Center vertically
     rectangle.setPosition(start);
     rectangle.setRotation(angle);
     window.draw(rectangle);
