@@ -1,24 +1,21 @@
 {
     "configurations": [
         {
-            "name": "Win32",
+            "name": "Mac",
             "includePath": [
                 "${workspaceFolder}/**",
-                "C:\\Users\\Ziggy\\Documents\\Transity\\Transity\\include\\**",
-                "C:\\Users\\Ziggy\\Downloads\\**",
-                "C:\\Tools\\SFML-2.6.1\\**",
-                "C:\\Users\\Ziggy\\Documents\\Transity\\Transity\\src\\**"
+                "${workspaceFolder}/include/**",
+                "${workspaceFolder}/src/**"
             ],
-            "defines": [
-                "_DEBUG",
-                "UNICODE",
-                "_UNICODE"
+            "defines": [],
+            "macFrameworkPath": [
+                "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks"
             ],
-            "windowsSdkVersion": "10.0.22621.0",
-            "compilerPath": "cl.exe",
-            "cStandard": "c17",
+            "compilerPath": "/usr/bin/clang++",
+            "cStandard": "c11",
             "cppStandard": "c++17",
-            "intelliSenseMode": "windows-msvc-x64"
+            "intelliSenseMode": "clang-x64",
+            "configurationProvider": "ms-vscode.cmake-tools"
         }
     ],
     "version": 4

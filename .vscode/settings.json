@@ -1,5 +1,10 @@
 {
+    "cmake.configureOnOpen": true,
+    "cmake.buildDirectory": "${workspaceFolder}/build",
+    "cmake.sourceDirectory": "${workspaceFolder}",
     "files.associations": {
+        "*.h": "cpp",
+        "*.cpp": "cpp",
         "memory": "cpp",
         "algorithm": "cpp",
         "any": "cpp",
@@ -93,5 +98,7 @@
         "xtr1common": "cpp",
         "xtree": "cpp",
         "xutility": "cpp"
-    }
+    },
+    "editor.formatOnSave": true,
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools"
 }
