@@ -1,5 +1,3 @@
-#pragma once
-
 #include "PluginManager.h"
 #include <iostream>
 #include <stdexcept>

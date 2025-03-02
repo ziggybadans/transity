@@ -1,89 +1,88 @@
 {
-    "version": "2.0.0",
-    "tasks": [
-        {
-            "label": "CMake Configure",
-            "type": "shell",
-            "command": "cmake",
-            "args": [
-                "-B",
-                "build",
-                "-S",
-                ".",
-                "-DCMAKE_BUILD_TYPE=${input:buildType}"
-            ],
-            "group": "build",
-            "problemMatcher": []
-        },
-        {
-            "label": "CMake Build",
-            "type": "shell",
-            "command": "cmake",
-            "args": [
-                "--build",
-                "build",
-                "--config",
-                "${input:buildType}",
-                "-j",
-                "${input:jobs}"
-            ],
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
-            "dependsOn": [
-                "CMake Configure"
-            ],
-            "problemMatcher": "$gcc"
-        },
-        {
-            "label": "CMake Clean",
-            "type": "shell",
-            "command": "cmake",
-            "args": [
-                "--build",
-                "build",
-                "--target",
-                "clean"
-            ],
-            "group": "build",
-            "problemMatcher": []
-        },
-        {
-            "label": "Run",
-            "type": "shell",
-            "command": "${workspaceFolder}/build/bin/Transity",
-            "windows": {
-                "command": "${workspaceFolder}\\build\\bin\\${input:buildType}\\Transity.exe"
-            },
-            "group": {
-                "kind": "test",
-                "isDefault": true
-            },
-            "dependsOn": [
-                "CMake Build"
-            ],
-            "problemMatcher": []
-        }
-    ],
-    "inputs": [
-        {
-            "id": "buildType",
-            "type": "pickString",
-            "description": "Select build type",
-            "options": [
-                "Debug",
-                "Release",
-                "RelWithDebInfo",
-                "MinSizeRel"
-            ],
-            "default": "Debug"
-        },
-        {
-            "id": "jobs",
-            "type": "promptString",
-            "description": "Number of parallel jobs",
-            "default": "4"
-        }
-    ]
-} 
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Clean Build Directory",
+      "type": "shell",
+      "command": "rm",
+      "args": ["-rf", "${workspaceFolder}/build"],
+      "problemMatcher": [],
+      "windows": {
+        "command": "if exist build rmdir /s /q build"
+      }
+    },
+    {
+      "label": "CMake Configure (Windows)",
+      "type": "shell",
+      "command": "cmake",
+      "args": ["--preset", "windows-x64"],
+      "group": "build",
+      "problemMatcher": [],
+      "dependsOn": ["Clean Build Directory"]
+    },
+    {
+      "label": "CMake Configure (macOS ARM)",
+      "type": "shell",
+      "command": "cmake",
+      "args": ["--preset", "macos-arm64"],
+      "group": "build",
+      "problemMatcher": [],
+      "dependsOn": ["Clean Build Directory"]
+    },
+    {
+      "label": "CMake Build (Windows)",
+      "type": "shell",
+      "command": "cmake",
+      "args": [
+        "--build",
+        "build",
+        "--preset",
+        "windows-x64-${input:buildType}"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "dependsOn": ["CMake Configure (Windows)"],
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "CMake Build (macOS ARM)",
+      "type": "shell",
+      "command": "cmake",
+      "args": ["--build", "build", "--preset", "macos-arm64"],
+      "group": "build",
+      "dependsOn": ["CMake Configure (macOS ARM)"],
+      "problemMatcher": "$gcc"
+    },
+    {
+      "label": "Run (Windows)",
+      "type": "shell",
+      "command": "${workspaceFolder}\\build\\bin\\${input:buildType}\\Transity.exe",
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
+      "dependsOn": ["CMake Build (Windows)"],
+      "problemMatcher": []
+    },
+    {
+      "label": "Run (macOS ARM)",
+      "type": "shell",
+      "command": "open",
+      "args": ["${workspaceFolder}/build/bin/Transity.app"],
+      "group": "test",
+      "dependsOn": ["CMake Build (macOS ARM)"],
+      "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    {
+      "id": "buildType",
+      "type": "pickString",
+      "description": "Select build type",
+      "options": ["debug", "release"],
+      "default": "debug"
+    }
+  ]
+}

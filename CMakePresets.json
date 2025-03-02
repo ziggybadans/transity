@@ -7,20 +7,9 @@
   },
   "configurePresets": [
     {
-      "name": "default",
-      "displayName": "Default Config",
-      "description": "Default build using Ninja generator",
-      "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
-      }
-    },
-    {
-      "name": "windows-msvc",
-      "displayName": "Windows MSVC",
-      "description": "Windows build using Visual Studio generator",
+      "name": "windows-x64",
+      "displayName": "Windows x64",
+      "description": "Windows 64-bit build using Visual Studio generator",
       "generator": "Visual Studio 17 2022",
       "binaryDir": "${sourceDir}/build",
       "architecture": {
@@ -29,7 +18,8 @@
       },
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "BUILD_TESTS": "ON"
       },
       "condition": {
         "type": "equals",
@@ -38,15 +28,18 @@
       }
     },
     {
-      "name": "macos",
-      "displayName": "macOS",
-      "description": "macOS build using Ninja generator",
+      "name": "macos-arm64",
+      "displayName": "macOS (Apple Silicon)",
+      "description": "macOS build for Apple Silicon using Ninja generator",
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-        "CMAKE_OSX_ARCHITECTURES": "arm64;x86_64"
+        "CMAKE_OSX_ARCHITECTURES": "arm64",
+        "CMAKE_PREFIX_PATH": "/opt/homebrew/opt/sfml@2",
+        "SFML_DIR": "/opt/homebrew/Cellar/sfml@2/2.6.2_1/lib/cmake/SFML",
+        "BUILD_TESTS": "ON"
       },
       "condition": {
         "type": "equals",
@@ -57,18 +50,18 @@
   ],
   "buildPresets": [
     {
-      "name": "default",
-      "configurePreset": "default",
-      "jobs": 4
-    },
-    {
-      "name": "windows-msvc",
-      "configurePreset": "windows-msvc",
+      "name": "windows-x64-debug",
+      "configurePreset": "windows-x64",
       "configuration": "Debug"
     },
     {
-      "name": "macos",
-      "configurePreset": "macos",
+      "name": "windows-x64-release",
+      "configurePreset": "windows-x64",
+      "configuration": "Release"
+    },
+    {
+      "name": "macos-arm64",
+      "configurePreset": "macos-arm64",
       "jobs": 4
     }
   ]

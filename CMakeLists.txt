@@ -106,6 +106,13 @@ elseif(APPLE)
     set_target_properties(${PROJECT_NAME} PROPERTIES
         MACOSX_BUNDLE TRUE
         MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/config/Info.plist.in
+        MACOSX_BUNDLE_BUNDLE_NAME "Transity"
+        MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
+        MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION}
+        MACOSX_BUNDLE_LONG_VERSION_STRING "${PROJECT_VERSION}"
+        MACOSX_BUNDLE_GUI_IDENTIFIER "com.transity.game"
+        MACOSX_BUNDLE_COPYRIGHT "Copyright © 2024"
+        MACOSX_BUNDLE_INFO_STRING "Transity - Transportation Simulation Game"
     )
     
     # Set RPATH for macOS
@@ -115,6 +122,13 @@ elseif(APPLE)
     
     # Silence OpenGL deprecation warnings on macOS
     target_compile_definitions(${PROJECT_NAME} PRIVATE GL_SILENCE_DEPRECATION)
+    
+    # Copy assets to the bundle
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/assets
+        $<TARGET_FILE_DIR:${PROJECT_NAME}>/../Resources/assets
+    )
 endif()
 
 # Install targets

@@ -1,55 +1,30 @@
 {
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "name": "Debug (macOS)",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build/bin/Transity",
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
-            "environment": [],
-            "externalConsole": false,
-            "MIMode": "lldb",
-            "preLaunchTask": "CMake Build"
-        },
-        {
-            "name": "Debug (Windows)",
-            "type": "cppvsdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build/bin/Debug/Transity.exe",
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
-            "environment": [],
-            "console": "externalTerminal",
-            "preLaunchTask": "CMake Build"
-        },
-        {
-            "name": "Release (macOS)",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build/bin/Transity",
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
-            "environment": [],
-            "externalConsole": false,
-            "MIMode": "lldb",
-            "preLaunchTask": "CMake Build"
-        },
-        {
-            "name": "Release (Windows)",
-            "type": "cppvsdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build/bin/Release/Transity.exe",
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
-            "environment": [],
-            "console": "externalTerminal",
-            "preLaunchTask": "CMake Build"
-        }
-    ]
-} 
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug (Windows x64)",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/bin/Debug/Transity.exe",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}",
+      "environment": [],
+      "console": "externalTerminal",
+      "preLaunchTask": "CMake Build (Windows)"
+    },
+    {
+      "name": "Debug (macOS ARM)",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/bin/Transity.app/Contents/MacOS/Transity",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}",
+      "environment": [],
+      "externalConsole": false,
+      "MIMode": "lldb",
+      "preLaunchTask": "CMake Build (macOS ARM)"
+    }
+  ]
+}
