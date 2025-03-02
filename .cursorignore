@@ -3,13 +3,5 @@
 assets
 build
 include
-Transity
-x64
-.gitattributes
-.gitignore
 game.log
-imgui.ini
-LICENSE.txt
-README.md
 src/.vscode
-src/utility/FastNoiseLite.h
