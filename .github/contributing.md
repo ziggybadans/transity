@@ -1,6 +1,6 @@
-# D&D Character Builder - Development Guidelines
+# Transity - Development Guidelines
 
-This document outlines the development practices and guidelines for the D&D Character Builder project. While this is currently a solo project, these guidelines ensure consistent code quality and maintainable development practices.
+This document outlines the development practices and guidelines for the Transity project. While this is currently a solo project, these guidelines ensure consistent code quality and maintainable development practices.
 
 ## Branch Strategy
 
@@ -12,10 +12,10 @@ The project uses a multi-branch workflow:
 
 ### Branch Naming Convention
 
+- Releases: `release/version-number`
 - Features: `feature/feature-name`
 - Bug fixes: `fix/bug-name`
 - Documentation: `docs/change-description`
-- Releases: `release/version-number`
 - Chores: `chore/chore-name`
 
 ## Development Workflow
@@ -66,10 +66,9 @@ Types:
 Example:
 
 ```
-feat: Add character creation wizard
+feat: Add new train type
 
-Implement step-by-step character creation process with validation.
-Includes race, class, and background selection.
+Implement new train type with assets and logic.
 
 Closes #123
 ```
