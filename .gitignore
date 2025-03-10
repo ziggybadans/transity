@@ -21,3 +21,9 @@
 /include/mapbox/earcut.hpp
 /include
 /data
+Transity
+x64
+Transity.sln
+Transity.vcxproj
+Transity.vcxproj.filters
+Transity.vcxproj.user
