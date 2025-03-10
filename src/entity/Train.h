@@ -3,6 +3,7 @@
 #include <SFML/Graphics.hpp>
 #include <string>
 #include <vector>
+#include <nlohmann/json.hpp>
 
 // Forward declaration of Line class
 class Line;
@@ -16,6 +17,9 @@ public:
 
     // Destructor
     ~Train();
+
+    nlohmann::json Serialize() const;
+    void Deserialize(const nlohmann::json& j);
 
     // Update train position
     void Update(float dt);
@@ -35,6 +39,7 @@ public:
 
     // Setters
     void SetSelected(bool value) { m_selected = value; }
+    void SetRoute(Line* route) { m_route = route; }
 
     // Method to draw the train (optional, for visualization)
     void Draw(sf::RenderWindow& window) const;
@@ -92,8 +97,6 @@ private:
 
     // Helper methods
     void Move(float dt);
-    void Wait(float dt);
-    void ArriveAtCity();
     bool IsCityIndex(int index) const;
     int AdvanceIndex(bool forward);
 

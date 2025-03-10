@@ -145,6 +145,7 @@ void TrainManager::RemoveTrain() {
     Line* route = selectedTrain->GetRoute();
     if (route) {
         route->RemoveTrain(selectedTrain);
+        selectedTrain->SetRoute(nullptr);  // Prevent double removal in destructor
     }
 
     // Erase from the vector

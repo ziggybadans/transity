@@ -164,3 +164,179 @@ bool Map::WouldCauseParallelConflict(const sf::Vector2f& segStart, const sf::Vec
     }
     return false;
 }
+
+nlohmann::json Map::Serialize() {
+    nlohmann::json j;
+
+    // Serialize cities
+    j["cities"] = nlohmann::json::array();
+    for (const City& city : GetCities()) {
+        j["cities"].push_back(city.Serialize());
+    }
+
+    // Serialize nodes
+    j["nodes"] = nlohmann::json::array();
+    for (const Node& node : m_nodes) {
+        j["nodes"].push_back(node.Serialize());
+    }
+
+    j["lines"] = nlohmann::json::array();
+    for (const Line& line : GetLines()) {
+        j["lines"].push_back(line.Serialize());
+    }
+
+    // Serialize trains
+    j["trains"] = nlohmann::json::array();
+    for (const auto& trainPtr : trainManager.GetTrains()) {
+        j["trains"].push_back(trainPtr->Serialize());
+    }
+
+    return j;
+}
+
+void Map::Deserialize(const nlohmann::json& j) {
+    // Clear current cities from the manager
+    auto& cities = cityManager.GetCities();
+    cities.clear();
+
+    // Deserialize cities
+    if (j.contains("cities") && j["cities"].is_array()) {
+        for (const auto& cityJson : j["cities"]) {
+            City city("", sf::Vector2f(0.0f, 0.0f), 0);
+            city.Deserialize(cityJson);
+            cities.push_back(city);
+        }
+    }
+
+    // Deserialize nodes
+    m_nodes.clear();
+    if (j.contains("nodes") && j["nodes"].is_array()) {
+        for (const auto& nodeJson : j["nodes"]) {
+            // Initialize with dummy/default values; will be overwritten by Deserialize
+            Node node("", sf::Vector2f(0.0f, 0.0f));
+            node.Deserialize(nodeJson);
+            m_nodes.push_back(node);
+        }
+    }
+
+    auto& lines = lineManager.GetLines();
+    lines.clear();
+    if (j.contains("lines") && j["lines"].is_array()) {
+        for (const auto& lineJson : j["lines"]) {
+            // Create a blank line with dummy name & color; 
+            // it will be overridden by Deserialize
+            Line line(static_cast<City*>(nullptr), "tmp");
+
+            // 1) Just read the JSON into the line's member variables & unresolvedPoints
+            line.Deserialize(lineJson);
+
+            // 2) Now fix up each point by finding the actual city or node
+            for (auto& up : line.unresolvedPoints) {
+                if (up.type == "city") {
+                    // find city in 'cities' by name
+                    City* cityPtr = nullptr;
+                    for (auto& c : cities) {
+                        if (c.GetName() == up.name) {
+                            cityPtr = &c;
+                            break;
+                        }
+                    }
+                    if (cityPtr) {
+                        // Add it as a city point
+                        line.AddCityToEnd(cityPtr);
+                    }
+                    else {
+                        // handle error: city not found
+                    }
+                }
+                else if (up.type == "node") {
+                    // find node in 'm_nodes' by name
+                    Node* nodePtr = nullptr;
+                    for (auto& n : m_nodes) {
+                        if (n.GetName() == up.name) {
+                            nodePtr = &n;
+                            break;
+                        }
+                    }
+                    if (nodePtr) {
+                        line.AddNode(nodePtr);
+                    }
+                    else {
+                        // handle error: node not found
+                    }
+                }
+            }
+
+            // 3) Clear the unresolved points
+            line.unresolvedPoints.clear();
+
+            // 4) Finally add this line to the lines container
+            lines.push_back(line);
+        }
+    }
+
+    // After lines are deserialized:
+    // Create a lookup for lines by name to resolve route pointers.
+    std::unordered_map<std::string, Line*> linesByName;
+    for (Line& line : lineManager.GetLines()) {
+        linesByName[line.GetName()] = &line;
+    }
+
+    // Deserialize trains
+    auto& trains = trainManager.GetTrains();
+    for (auto& trainPtr : trains) {
+        Line* route = trainPtr->GetRoute();
+        if (route) {
+            route->RemoveTrain(trainPtr.get());
+            trainPtr->SetRoute(nullptr);  // Clear route to avoid double removal
+        }
+    }
+    trains.clear();  // Now safe to clear without triggering route removal in destructors
+    if (j.contains("trains") && j["trains"].is_array()) {
+        for (const auto& trainJson : j["trains"]) {
+            // Create a temporary Train with placeholder values.
+            std::vector<sf::Vector2f> dummyPathPoints;
+            std::vector<sf::Vector2f> dummyStationPositions;
+            auto newTrain = std::make_unique<Train>(
+                nullptr,               // Temporary route pointer
+                "",                    // Temporary ID
+                dummyPathPoints,
+                dummyStationPositions
+            );
+
+            // Deserialize train data from JSON.
+            newTrain->Deserialize(trainJson);
+
+            // Resolve and set the route using the stored route name.
+            std::string routeName = trainJson["route"].get<std::string>();
+            if (linesByName.find(routeName) != linesByName.end()) {
+                newTrain->SetRoute(linesByName[routeName]);
+                linesByName[routeName]->AddTrain(newTrain.get());
+            }
+            else {
+                // Handle missing route scenario if necessary
+            }
+
+            // Add train to the manager's list.
+            trains.push_back(std::move(newTrain));
+        }
+    }
+
+    // Build a lookup table for cities by name
+    std::unordered_map<std::string, City*> cityLookup;
+    for (City& city : GetCities()) {
+        cityLookup[city.GetName()] = &city;
+    }
+
+    // Resolve passenger pointers for passengers onboard each train
+    for (auto& trainPtr : trainManager.GetTrains()) {
+        for (Passenger* p : trainPtr->GetPassengers()) {
+            p->ResolvePointers(cityLookup);
+            // If passenger state is Waiting, add to city's waiting list
+            if (p->GetState() == PassengerState::Waiting && p->GetCurrentCity()) {
+                p->GetCurrentCity()->AddWaitingPassenger(p);
+            }
+            // For passengers still OnTrain, additional integration can be done if needed
+        }
+    }
+}

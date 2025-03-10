@@ -4,6 +4,7 @@
 #include <vector>
 #include <algorithm>
 #include <SFML/Graphics.hpp>
+#include <nlohmann/json.hpp>
 
 #include "managers/HandleManager.h"
 #include "Segment.h"
@@ -23,6 +24,11 @@ struct OffsetInfo {
     float transitionLength;    // Length over which to transition into/out of the offset
 };
 
+struct UnresolvedPoint {
+    std::string type;  // "city" or "node"
+    std::string name;  // e.g. city name or node name
+};
+
 class Line {
 public:
     // Constructor
@@ -33,6 +39,9 @@ public:
 
     // Destructor
     ~Line() = default;
+
+    nlohmann::json Serialize() const;
+    void Deserialize(const nlohmann::json& j);
 
     // City management
     void AddCityToStart(City* city);
@@ -82,6 +91,8 @@ public:
     sf::Color GetColor() const { return color; }
     float GetThickness() const { return thickness; }
     bool IsSelected() const { return selected; }
+
+    std::vector<UnresolvedPoint> unresolvedPoints;
 
 private:
     // Member variables

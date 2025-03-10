@@ -20,7 +20,7 @@ Train::Train(Line* route, const std::string& id, const std::vector<sf::Vector2f>
     m_stationPositions(stationPositions),
     m_currentPointIndex(1),
     m_capacity(50),
-    m_direction(1.f, 0.f)// Default capacity set here
+    m_direction(1.f, 0.f)
 {
     if (!m_pathPoints.empty()) {
         m_position = m_pathPoints[0];
@@ -49,7 +49,7 @@ void Train::Update(float dt)
         Move(dt);
         break;
     case State::Waiting:
-        Wait(dt);
+        
         break;
     }
 }
@@ -68,14 +68,17 @@ void Train::Move(float dt)
     float distanceToTarget = Distance(m_position, targetPos);
     bool nextIsCity = IsCityIndex(m_currentPointIndex);
 
+    // Simple acceleration/deceleration logic
     if (nextIsCity) {
         float stopDistance = (m_currentSpeed * m_currentSpeed) / (2.0f * DECELERATION);
         if (stopDistance >= distanceToTarget) {
+            // Begin decelerating so we can stop exactly at the city
             m_currentSpeed -= DECELERATION * dt;
             if (m_currentSpeed < 0.0f)
                 m_currentSpeed = 0.0f;
         }
         else {
+            // Accelerate if not at max speed
             if (m_currentSpeed < m_maxSpeed) {
                 m_currentSpeed += ACCELERATION * dt;
                 if (m_currentSpeed > m_maxSpeed)
@@ -84,6 +87,7 @@ void Train::Move(float dt)
         }
     }
     else {
+        // Just travel at max possible speed between cities
         if (m_currentSpeed < m_maxSpeed) {
             m_currentSpeed += ACCELERATION * dt;
             if (m_currentSpeed > m_maxSpeed)
@@ -98,15 +102,19 @@ void Train::Move(float dt)
         m_direction = direction;
     }
 
+    // Move the train forward
     sf::Vector2f movement = direction * m_currentSpeed * dt;
     float movementDistance = Length(movement);
 
     if (movementDistance >= distanceToTarget) {
+        // We overshoot, so clamp to the city position
         m_position = targetPos;
+
         if (nextIsCity) {
-            ArriveAtCity();
+            
         }
         else {
+            // Advance to next point
             m_currentPointIndex = AdvanceIndex(m_forward);
             m_position = targetPos;
         }
@@ -119,91 +127,6 @@ void Train::Move(float dt)
 float Train::Length(const sf::Vector2f& v) const
 {
     return std::sqrt(v.x * v.x + v.y * v.y);
-}
-
-void Train::ArriveAtCity()
-{
-    m_state = State::Waiting;
-    m_currentSpeed = 0.0f;
-    int stationIndex = -1;
-    for (int i = 0; i < static_cast<int>(m_stationPositions.size()); i++) {
-        if (Distance(m_position, m_stationPositions[i]) <= PROXIMITY_THRESHOLD) {
-            stationIndex = i;
-            break;
-        }
-    }
-    if (stationIndex == 0 || stationIndex == static_cast<int>(m_stationPositions.size()) - 1) {
-        m_waitTime = STOP_DURATION * 2.0f;
-    }
-    else {
-        m_waitTime = STOP_DURATION;
-    }
-    if (m_currentPointIndex >= 0 && m_currentPointIndex < static_cast<int>(m_pathPoints.size()))
-    {
-        m_position = m_pathPoints[m_currentPointIndex];
-    }
-
-    // Retrieve the current city based on stationIndex
-    City* currentCity = nullptr;
-    if (m_route) {
-        const std::vector<City*>& citiesOnRoute = m_route->GetCities();
-        if (stationIndex >= 0 && stationIndex < static_cast<int>(citiesOnRoute.size())) {
-            currentCity = citiesOnRoute[stationIndex];
-        }
-    }
-
-    if (currentCity) {
-        // 1. Alight passengers whose destination is the current city
-        std::vector<Passenger*> passengersToAlight;
-        for (Passenger* p : m_passengers) {
-            if (p->GetDestination() == currentCity) {
-                passengersToAlight.push_back(p);
-            }
-        }
-        for (Passenger* p : passengersToAlight) {
-            p->AlightAtCity(currentCity);
-            RemovePassenger(p);
-        }
-
-        // 2. Board waiting passengers whose destination is on the train's route
-        std::vector<Passenger*> waitingPassengers = currentCity->GetWaitingPassengers();
-        for (Passenger* p : waitingPassengers) {
-            // Check if passenger's destination is on the train's route
-            if (m_route->HasCity(p->GetDestination())) {
-                if (HasCapacity()) {
-                    p->BoardTrain(this);
-                    AddPassenger(p);
-                }
-            }
-        }
-    }
-}
-
-void Train::Wait(float dt)
-{
-    m_waitTime -= dt;
-    if (m_waitTime <= 0.0f)
-    {
-        m_state = State::Moving;
-        if (m_forward)
-        {
-            m_currentPointIndex++;
-            if (m_currentPointIndex >= static_cast<int>(m_pathPoints.size()))
-            {
-                m_forward = false;
-                m_currentPointIndex = static_cast<int>(m_pathPoints.size()) - 2;
-            }
-        }
-        else
-        {
-            m_currentPointIndex--;
-            if (m_currentPointIndex < 0)
-            {
-                m_forward = true;
-                m_currentPointIndex = 1;
-            }
-        }
-    }
 }
 
 // Getters
@@ -310,4 +233,71 @@ bool Train::IsCityIndex(int index) const
         }
     }
     return false;
+}
+
+nlohmann::json Train::Serialize() const {
+    nlohmann::json j;
+    j["id"] = m_id;
+    // Reference route by name
+    j["route"] = m_route ? m_route->GetName() : "";
+    j["maxSpeed"] = m_maxSpeed;
+    j["currentSpeed"] = m_currentSpeed;
+    j["position"] = { m_position.x, m_position.y };
+    j["selected"] = m_selected;
+    j["capacity"] = m_capacity;
+    // Serialize passengers if needed; here we skip detailed passenger serialization
+    // Serialize path points
+    j["pathPoints"] = nlohmann::json::array();
+    for (const auto& pt : m_pathPoints) {
+        j["pathPoints"].push_back({ pt.x, pt.y });
+    }
+    j["stationPositions"] = nlohmann::json::array();
+    for (const auto& sp : m_stationPositions) {
+        j["stationPositions"].push_back({ sp.x, sp.y });
+    }
+    j["currentPointIndex"] = m_currentPointIndex;
+    j["state"] = static_cast<int>(m_state);
+    j["waitTime"] = m_waitTime;
+    j["forward"] = m_forward;
+    // Serialize passengers onboard
+    j["passengers"] = nlohmann::json::array();
+    for (Passenger* p : m_passengers) {
+        j["passengers"].push_back(p->Serialize());
+    }
+    return j;
+}
+
+void Train::Deserialize(const nlohmann::json& j) {
+    m_id = j["id"].get<std::string>();
+    std::string routeName = j["route"].get<std::string>();
+    // m_route to be resolved later using routeName
+    m_maxSpeed = j["maxSpeed"].get<float>();
+    m_currentSpeed = j["currentSpeed"].get<float>();
+    auto pos = j["position"];
+    m_position = sf::Vector2f(pos[0], pos[1]);
+    m_selected = j["selected"].get<bool>();
+    m_capacity = j["capacity"].get<int>();
+    m_passengers.clear();
+    // Deserialize passengers onboard
+    if (j.contains("passengers")) {
+        for (const auto& passJson : j["passengers"]) {
+            Passenger* p = new Passenger(nullptr, nullptr, {});
+            p->Deserialize(passJson);
+            m_passengers.push_back(p);
+        }
+    }
+    // Deserialize path points
+    m_pathPoints.clear();
+    for (auto& pt : j["pathPoints"]) {
+        m_pathPoints.push_back(sf::Vector2f(pt[0], pt[1]));
+    }
+    m_stationPositions.clear();
+    for (auto& sp : j["stationPositions"]) {
+        m_stationPositions.push_back(sf::Vector2f(sp[0], sp[1]));
+    }
+    m_currentPointIndex = j["currentPointIndex"].get<int>();
+    m_state = static_cast<State>(j["state"].get<int>());
+    m_waitTime = j["waitTime"].get<float>();
+    m_forward = j["forward"].get<bool>();
+    // Passengers and m_route will be resolved in a linking phase
 }

@@ -336,3 +336,56 @@ bool Line::HasCity(City* city) const
     const std::vector<City*>& cities = GetCities();
     return std::find(cities.begin(), cities.end(), city) != cities.end();
 }
+
+nlohmann::json Line::Serialize() const {
+    nlohmann::json j;
+    j["name"] = name;
+    j["color"] = { color.r, color.g, color.b, color.a };
+    j["thickness"] = thickness;
+    j["selected"] = selected;
+
+    // --- NEW: serialize each point
+    j["points"] = nlohmann::json::array();
+    for (const auto& linePoint : points) {
+        nlohmann::json pointJson;
+        if (!linePoint.node) {
+            // If there's ever a null, skip or handle it as needed
+            continue;
+        }
+
+        // Figure out if it's a City or a generic Node by dynamic_cast
+        if (auto cityPtr = dynamic_cast<City*>(linePoint.node)) {
+            pointJson["type"] = "city";
+            pointJson["name"] = cityPtr->GetName();
+        }
+        else {
+            // It's a generic Node
+            pointJson["type"] = "node";
+            pointJson["name"] = linePoint.node->GetName();
+        }
+        j["points"].push_back(pointJson);
+    }
+
+    return j;
+}
+
+void Line::Deserialize(const nlohmann::json& j) {
+    name = j["name"].get<std::string>();
+    auto col = j["color"];
+    color = sf::Color(col[0], col[1], col[2], col[3]);
+    thickness = j["thickness"].get<float>();
+    selected = j["selected"].get<bool>();
+
+    // CLEAR existing points before reading new data
+    points.clear();
+    unresolvedPoints.clear(); // <-- We'll declare a new member to store these
+
+    if (j.contains("points") && j["points"].is_array()) {
+        for (const auto& pointJson : j["points"]) {
+            std::string typeStr = pointJson["type"].get<std::string>();
+            std::string nameStr = pointJson["name"].get<std::string>();
+
+            unresolvedPoints.push_back({ typeStr, nameStr });
+        }
+    }
+}

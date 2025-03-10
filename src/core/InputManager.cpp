@@ -51,7 +51,7 @@ void InputManager::HandleInput(float deltaTime) {
     float mouseWheel = ImGui::GetIO().MouseWheel;
     if (mouseWheel != 0.0f) {
         DEBUG_VERBOSE("InputManager: Mouse wheel event detected: ", mouseWheel);
-        ExecuteCommand(mouseWheel > 0.0f ? InputAction::ZoomOut : InputAction::ZoomIn, true);
+        ExecuteCommand(mouseWheel > 0.0f ? InputAction::ZoomOut : InputAction::ZoomIn, false);
     }
 
     // Handle movement

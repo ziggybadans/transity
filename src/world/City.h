@@ -1,6 +1,7 @@
 #pragma once
 #include "Node.h"
 #include <vector>
+#include <nlohmann/json.hpp>
 
 class Passenger;  // Forward declaration
 
@@ -9,6 +10,9 @@ public:
     City(const std::string& cityName, const sf::Vector2f& cityPosition,
         unsigned int cityPopulation, float cityRadius = 10.0f)
         : Node(cityName, cityPosition, cityRadius), population(cityPopulation) {}
+
+    nlohmann::json Serialize() const;
+    void Deserialize(const nlohmann::json& j);
 
     unsigned int GetPopulation() const { return population; }
 

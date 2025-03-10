@@ -5,6 +5,7 @@
 #include <chrono>
 #include <nlohmann/json.hpp>
 #include "../settings/GameSettings.h"
+#include "../world/Map.h"
 
 class SaveManager {
 public:
@@ -29,6 +30,7 @@ public:
 
     /* Game State Access */
     void SetGameSettings(std::shared_ptr<GameSettings> settings) { m_gameSettings = settings; }
+    void SetWorld(std::shared_ptr<Map> world) { m_world = world; }
 
 private:
     /* Helper Methods */
@@ -40,6 +42,7 @@ private:
 
     /* Core Components */
     std::shared_ptr<GameSettings> m_gameSettings;
+    std::shared_ptr<Map> m_world;  // Pointer to the game world
 
     /* Save Settings */
     std::filesystem::path m_savesDirectory;
