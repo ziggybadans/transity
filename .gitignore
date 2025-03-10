@@ -2,27 +2,74 @@
 /build/
 /Debug/
 /Release/
+/x64/
+/**/Debug/
+/**/Release/
+/**/x64/
 
 # Visual Studio files
 *.sdf
 *.vcxproj.user
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.userprefs
+*.pdb
+*.ipdb
+*.pgc
+*.pgd
+*.rsp
+*.sbr
+*.tlb
+*.tli
+*.tlh
+*.tmp
+*.tmp_proj
+*.log
+*.vspscc
+*.vssscc
+*.pidb
+*.svclog
+*.scc
+*.aps
+*.ncb
+*.opendb
+*.opensdf
+*.cachefile
+*.VC.db
+*.VC.VC.opendb
+
+# Visual Studio build artifacts
+*.obj
+*.exe
+*.dll
+*.lib
+*.exp
+*.ilk
+*.meta
+*.iobj
+*.pch
+*.ipch
+*.tlog
+*.lastbuildstate
+
+# Visual Studio directory
+.vs/
+ipch/
+[Bb]in/
+[Oo]bj/
 
 # SFML DLLs
 /lib/bin/
 
-# Other
-*.log
-/.vs/Transity/FileContentIndex/*
-*.vsidx
-*.ipch
-/.vs/Transity/v17/*
+# Project specific
 /assets/
 /include/gdal-3.9.3
 /include/mapbox/earcut.hpp
 /include
 /data
 Transity
-x64
 Transity.sln
 Transity.vcxproj
 Transity.vcxproj.filters
