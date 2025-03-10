@@ -2,75 +2,123 @@
 /build/
 /Debug/
 /Release/
-/x64/
-/**/Debug/
-/**/Release/
-/**/x64/
+/RelWithDebInfo/
+/MinSizeRel/
+/install/
+/out/
+/cmake-build-*/
 
 # Visual Studio files
 *.sdf
-*.vcxproj.user
 *.suo
 *.user
 *.userosscache
 *.sln.docstates
-*.userprefs
+*.vcxproj.user
+*.vcxproj.filters
 *.pdb
-*.ipdb
-*.pgc
-*.pgd
-*.rsp
-*.sbr
-*.tlb
-*.tli
-*.tlh
-*.tmp
-*.tmp_proj
-*.log
-*.vspscc
-*.vssscc
-*.pidb
-*.svclog
-*.scc
+*.ilk
 *.aps
 *.ncb
 *.opendb
 *.opensdf
+*.sdf
 *.cachefile
 *.VC.db
 *.VC.VC.opendb
-
-# Visual Studio build artifacts
-*.obj
-*.exe
-*.dll
-*.lib
-*.exp
-*.ilk
-*.meta
-*.iobj
-*.pch
-*.ipch
-*.tlog
-*.lastbuildstate
-
-# Visual Studio directory
 .vs/
-ipch/
-[Bb]in/
-[Oo]bj/
+
+# Visual Studio Code
+.vscode/*
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/settings.json
+!.vscode/c_cpp_properties.json
+!.vscode/extensions.json
+
+# Xcode
+*.xcodeproj
+*.xcworkspace
+xcuserdata/
+*.xcscmblueprint
+*.xccheckout
+DerivedData/
+*.moved-aside
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+Icon?
+ehthumbs.db
+Thumbs.db
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
 
 # SFML DLLs
 /lib/bin/
 
-# Project specific
+# CMake
+CMakeCache.txt
+CMakeFiles
+CMakeScripts
+Testing
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+
+# Other
+*.log
+*.tlog
+*.lastbuildstate
+*.idb
+*.ipch
+*.db
+*.opendb
+*.sqlite
+*.sqlite3
+
+# Project-specific
 /assets/
 /include/gdal-3.9.3
 /include/mapbox/earcut.hpp
 /include
-/data
-Transity
-Transity.sln
-Transity.vcxproj
-Transity.vcxproj.filters
-Transity.vcxproj.user
+/data.DS_Store
+.DS_Store
