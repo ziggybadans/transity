@@ -1,6 +1,9 @@
 # Tests configuration
 include(CTest)
 
+# Configure Google Test to use dynamic runtime
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+
 # Find Google Test
 include(FetchContent)
 FetchContent_Declare(
