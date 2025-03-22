@@ -60,6 +60,8 @@ transity/
 
 ##### Step 1.2.1: Engine Core Implementation
 
+Each task should be implemented in order, and every task should have tasks written and run before moving to the next task. Documentation should be added as each component is completed.
+
 1. Application Class Foundation
    - Create Application.hpp/cpp base files
    - Implement singleton pattern for global access
@@ -116,8 +118,6 @@ transity/
    - Implement performance benchmarks
    - Add stress testing scenarios
    - Create system mock interfaces
-
-Each task should be implemented in order, with unit tests written alongside the implementation. Documentation should be added as each component is completed.
 
 Example commit message for initial implementation:
 "feat: Implement core engine architecture and basic systems

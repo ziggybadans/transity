@@ -42,6 +42,12 @@ public:
     void shutdown();
 
     /**
+     * @brief Run the main application loop
+     * @throws ApplicationError if application is not initialized
+     */
+    void run();
+
+    /**
      * @brief Check if the application is initialized
      * @return true if initialized, false otherwise
      */

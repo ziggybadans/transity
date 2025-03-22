@@ -57,7 +57,12 @@ void Application::shutdown() {
 }
 
 void Application::run() {
+    if (!m_initialized) {
+        throw ApplicationError("Cannot run application before initialization");
+    }
+
     // TODO: Implement application loop
+    std::cout << "Application '" << m_appName << "' is running" << std::endl;
 }
 
 } // namespace core
