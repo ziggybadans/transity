@@ -12,7 +12,6 @@ A transport management simulator with elements of a city builder, featuring a si
 - SFML 2.5 or higher
 - ImGui
 - nlohmann_json 3.11.2 or higher
-- spdlog
 - EnTT
 - Catch2 v3 (for testing)
 

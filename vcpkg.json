@@ -6,7 +6,6 @@
     "imgui",
     "imgui-sfml",
     "nlohmann-json",
-    "spdlog",
     "entt",
     "catch2"
   ],

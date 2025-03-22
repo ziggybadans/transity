@@ -4,6 +4,7 @@ add_library(transity_core
     core/input_manager.cpp
     core/time_manager.cpp
     core/system_manager.cpp
+    core/debug_manager.cpp
 )
 
 target_link_libraries(transity_core
@@ -14,7 +15,6 @@ target_link_libraries(transity_core
         imgui::imgui
         ImGui-SFML::ImGui-SFML
         nlohmann_json::nlohmann_json
-        spdlog::spdlog
         EnTT::EnTT
 )
 
