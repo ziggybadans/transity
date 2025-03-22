@@ -4,6 +4,7 @@ add_executable(unit_tests
     unit/core/input_manager_test.cpp
     unit/core/time_manager_test.cpp
     unit/core/system_manager_test.cpp
+    unit/core/debug_manager_test.cpp
 )
 
 target_link_libraries(unit_tests
