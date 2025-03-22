@@ -22,9 +22,20 @@ void InputManager::processEvent(const sf::Event& event) {
         case sf::Event::MouseButtonReleased:
             currentMouseStates[event.mouseButton.button] = false;
             break;
-        case sf::Event::MouseMoved:
-            currentMousePos = {event.mouseMove.x, event.mouseMove.y};
+        case sf::Event::MouseMoved: {
+            sf::Vector2i newPos = {event.mouseMove.x, event.mouseMove.y};
+            if (currentMousePos.x == 0 && currentMousePos.y == 0) {
+                // First mouse movement
+                mouseDelta = sf::Vector2i(0, 0);
+            } else {
+                mouseDelta = {
+                    newPos.x - currentMousePos.x,
+                    newPos.y - currentMousePos.y
+                };
+            }
+            currentMousePos = newPos;
             break;
+        }
         case sf::Event::MouseWheelScrolled:
             mouseWheelDelta = event.mouseWheelScroll.delta;
             break;
@@ -34,12 +45,6 @@ void InputManager::processEvent(const sf::Event& event) {
 }
 
 void InputManager::update() {
-    // Update mouse delta
-    mouseDelta = {
-        currentMousePos.x - previousMousePos.x,
-        currentMousePos.y - previousMousePos.y
-    };
-
     // Store previous states
     previousKeyStates = currentKeyStates;
     previousMouseStates = currentMouseStates;
@@ -48,6 +53,9 @@ void InputManager::update() {
 
 void InputManager::clear() {
     mouseWheelDelta = 0.0f;
+    mouseDelta = sf::Vector2i(0, 0);
+    currentMousePos = sf::Vector2i(0, 0);
+    previousMousePos = sf::Vector2i(0, 0);
 }
 
 bool InputManager::isKeyPressed(sf::Keyboard::Key key) const {
