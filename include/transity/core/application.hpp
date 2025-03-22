@@ -59,6 +59,48 @@ public:
      */
     const std::string& getAppName() const { return m_appName; }
 
+    /**
+     * @brief Game states enum
+     */
+    enum class GameState {
+        Running,    ///< Game is running normally
+        Paused,     ///< Game is paused
+        Stopped     ///< Game is stopped
+    };
+
+    /**
+     * @brief Get current game state
+     * @return Current GameState
+     */
+    GameState getGameState() const { return m_gameState; }
+
+    /**
+     * @brief Pause the game
+     */
+    void pause();
+
+    /**
+     * @brief Resume the game
+     */
+    void resume();
+
+    /**
+     * @brief Stop the game
+     */
+    void stop();
+
+    /**
+     * @brief Set target FPS for the game loop
+     * @param fps Target frames per second (0 for unlimited)
+     */
+    void setTargetFPS(unsigned int fps) { m_targetFPS = fps; }
+
+    /**
+     * @brief Get current FPS
+     * @return Current frames per second
+     */
+    float getCurrentFPS() const { return m_currentFPS; }
+
     // Delete copy constructor and assignment operator
     Application(const Application&) = delete;
     Application& operator=(const Application&) = delete;
@@ -69,6 +111,23 @@ private:
 
     bool m_initialized;
     std::string m_appName;
+
+    /**
+     * @brief Update game logic with fixed timestep
+     * @param deltaTime Time since last update in seconds
+     */
+    void update(float deltaTime);
+
+    /**
+     * @brief Render game state
+     */
+    void render();
+
+    GameState m_gameState;
+    unsigned int m_targetFPS;
+    float m_currentFPS;
+    float m_accumulatedTime;
+    static constexpr float FIXED_TIMESTEP = 1.0f / 60.0f; // 60 updates per second
 };
 
 } // namespace core
