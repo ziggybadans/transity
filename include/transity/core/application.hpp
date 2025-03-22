@@ -3,7 +3,13 @@
 #include <memory>
 #include <string>
 #include <stdexcept>
+#include <SFML/System/Clock.hpp>
+#include <SFML/System/Time.hpp>
+#include <SFML/System/Sleep.hpp>
+#include <SFML/Window/Event.hpp>
+#include <SFML/Window/Keyboard.hpp>
 #include "transity/core/input_manager.hpp"
+#include "transity/core/system_manager.hpp"
 
 namespace transity {
 namespace core {
@@ -108,6 +114,12 @@ public:
      */
     void processEvent(const sf::Event& event);
 
+    /**
+     * @brief Get the system manager instance
+     * @return Reference to the SystemManager
+     */
+    SystemManager& getSystemManager() { return m_systemManager; }
+
     // Delete copy constructor and assignment operator
     Application(const Application&) = delete;
     Application& operator=(const Application&) = delete;
@@ -118,6 +130,9 @@ private:
 
     bool m_initialized;
     std::string m_appName;
+    SystemManager m_systemManager;
+    sf::Clock m_clock;        // SFML clock for timing
+    sf::Clock m_fpsTimer;     // Separate clock for FPS calculation
 
     /**
      * @brief Update game logic with fixed timestep

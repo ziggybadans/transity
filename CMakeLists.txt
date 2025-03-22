@@ -1,10 +1,14 @@
 cmake_minimum_required(VERSION 3.20)
 
-# Enable vcpkg integration
+# Enable vcpkg integration and manifest mode
 if(DEFINED ENV{VCPKG_ROOT} AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
     set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
         CACHE STRING "")
 endif()
+
+# Enable vcpkg manifest mode
+set(VCPKG_MANIFEST_MODE ON)
+set(VCPKG_MANIFEST_INSTALL ON)
 
 project(Transity VERSION 0.1.0 LANGUAGES CXX)
 
@@ -69,4 +73,9 @@ add_subdirectory(src)
 add_subdirectory(tests)
 
 # Install targets
-install(DIRECTORY ${CMAKE_SOURCE_DIR}/assets DESTINATION share/transity) 
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/assets DESTINATION share/transity)
+
+# Add preprocessor definitions for SFML
+if(WIN32)
+    add_definitions(-DSFML_STATIC)
+endif() 

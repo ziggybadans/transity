@@ -3,6 +3,7 @@ add_library(transity_core
     core/window.cpp
     core/input_manager.cpp
     core/time_manager.cpp
+    core/system_manager.cpp
 )
 
 target_link_libraries(transity_core

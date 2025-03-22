@@ -3,6 +3,9 @@
 #include <stdexcept>
 #include <SFML/System/Clock.hpp>
 #include <SFML/System/Sleep.hpp>
+#include <SFML/System/Time.hpp>
+#include <SFML/Window/Event.hpp>
+#include <SFML/Window/Keyboard.hpp>
 
 namespace transity::core {
 
@@ -36,7 +39,10 @@ void Application::initialize(const std::string& appName) {
         m_appName = appName;
         m_gameState = GameState::Running;
         
-        // TODO: Initialize subsystems here
+        // Initialize all systems
+        if (!m_systemManager.initialize()) {
+            throw ApplicationError("Failed to initialize systems");
+        }
         
         m_initialized = true;
         std::cout << "Application '" << m_appName << "' initialized successfully" << std::endl;
@@ -52,7 +58,8 @@ void Application::shutdown() {
     }
 
     try {
-        // TODO: Shutdown subsystems here in reverse order
+        // Shutdown all systems
+        m_systemManager.shutdown();
         
         m_initialized = false;
         std::cout << "Application '" << m_appName << "' shut down successfully" << std::endl;
@@ -68,12 +75,10 @@ void Application::run() {
         throw ApplicationError("Cannot run application before initialization");
     }
 
-    sf::Clock clock;
-    sf::Clock fpsTimer;
     unsigned int frameCount = 0;
 
     while (m_gameState != GameState::Stopped) {
-        float deltaTime = clock.restart().asSeconds();
+        float deltaTime = m_clock.restart().asSeconds();
         m_accumulatedTime += deltaTime;
 
         // Update game logic with fixed timestep
@@ -89,16 +94,16 @@ void Application::run() {
         frameCount++;
 
         // Calculate FPS every second
-        if (fpsTimer.getElapsedTime().asSeconds() >= 1.0f) {
+        if (m_fpsTimer.getElapsedTime().asSeconds() >= 1.0f) {
             m_currentFPS = static_cast<float>(frameCount);
             frameCount = 0;
-            fpsTimer.restart();
+            m_fpsTimer.restart();
         }
 
         // Frame rate limiting
         if (m_targetFPS > 0) {
             float targetFrameTime = 1.0f / static_cast<float>(m_targetFPS);
-            float elapsedTime = clock.getElapsedTime().asSeconds();
+            float elapsedTime = m_clock.getElapsedTime().asSeconds();
             if (elapsedTime < targetFrameTime) {
                 sf::sleep(sf::seconds(targetFrameTime - elapsedTime));
             }
@@ -132,7 +137,9 @@ void Application::processInput() {
 
 void Application::update(float deltaTime) {
     processInput();
-    // TODO: Update other game systems
+    
+    // Update all systems
+    m_systemManager.update(deltaTime);
 }
 
 void Application::render() {
