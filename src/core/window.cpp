@@ -32,13 +32,14 @@ void Window::create() {
 bool Window::processEvents() {
     sf::Event event;
     while (m_window->pollEvent(event)) {
+        sf::FloatRect visibleArea;
         switch (event.type) {
             case sf::Event::Closed:
                 m_window->close();
                 return false;
             case sf::Event::Resized:
                 // Update the view to match the new window size
-                sf::FloatRect visibleArea(0, 0, event.size.width, event.size.height);
+                visibleArea = sf::FloatRect(0, 0, event.size.width, event.size.height);
                 m_window->setView(sf::View(visibleArea));
                 break;
             default:

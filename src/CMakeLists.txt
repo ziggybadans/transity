@@ -1,5 +1,7 @@
 add_library(transity_core
     core/application.cpp
+    core/window.cpp
+    core/input_manager.cpp
 )
 
 target_link_libraries(transity_core

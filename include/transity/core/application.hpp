@@ -3,6 +3,7 @@
 #include <memory>
 #include <string>
 #include <stdexcept>
+#include "transity/core/input_manager.hpp"
 
 namespace transity {
 namespace core {
@@ -101,6 +102,12 @@ public:
      */
     float getCurrentFPS() const { return m_currentFPS; }
 
+    /**
+     * @brief Process an SFML event
+     * @param event The event to process
+     */
+    void processEvent(const sf::Event& event);
+
     // Delete copy constructor and assignment operator
     Application(const Application&) = delete;
     Application& operator=(const Application&) = delete;
@@ -128,6 +135,8 @@ private:
     float m_currentFPS;
     float m_accumulatedTime;
     static constexpr float FIXED_TIMESTEP = 1.0f / 60.0f; // 60 updates per second
+
+    void processInput();  // New method for input processing
 };
 
 } // namespace core

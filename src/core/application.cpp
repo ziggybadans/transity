@@ -1,10 +1,10 @@
 #include "transity/core/application.hpp"
 #include <iostream>
+#include <stdexcept>
 #include <SFML/System/Clock.hpp>
 #include <SFML/System/Sleep.hpp>
 
-namespace transity {
-namespace core {
+namespace transity::core {
 
 Application::Application()
     : m_initialized(false)
@@ -106,12 +106,40 @@ void Application::run() {
     }
 }
 
+void Application::processEvent(const sf::Event& event) {
+    // Let the input manager process the event
+    InputManager::getInstance().processEvent(event);
+
+    // Handle application-specific events
+    if (event.type == sf::Event::Closed) {
+        stop();
+    }
+}
+
+void Application::processInput() {
+    // Update input manager state
+    InputManager::getInstance().update();
+
+    // Handle any input-based game logic here
+    if (InputManager::getInstance().isKeyJustPressed(sf::Keyboard::Escape)) {
+        if (m_gameState == GameState::Running) {
+            pause();
+        } else if (m_gameState == GameState::Paused) {
+            resume();
+        }
+    }
+}
+
 void Application::update(float deltaTime) {
-    // TODO: Update game systems
+    processInput();
+    // TODO: Update other game systems
 }
 
 void Application::render() {
     // TODO: Render game state
+    
+    // Clear input states for next frame
+    InputManager::getInstance().clear();
 }
 
 void Application::pause() {
@@ -133,5 +161,4 @@ void Application::stop() {
     std::cout << "Game stopped" << std::endl;
 }
 
-} // namespace core
-} // namespace transity 
+} // namespace transity::core 
