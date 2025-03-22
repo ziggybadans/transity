@@ -12,7 +12,7 @@
     },
     {
       "name": "imgui-sfml",
-      "version>=": "2.6"
+      "version>=": "3.0"
     },
     {
       "name": "nlohmann-json",
