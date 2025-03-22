@@ -4,9 +4,9 @@ add_library(transity_core
 
 target_link_libraries(transity_core
     PUBLIC
-        SFML::System
-        SFML::Window
-        SFML::Graphics
+        sfml-system
+        sfml-window
+        sfml-graphics
         imgui::imgui
         ImGui-SFML::ImGui-SFML
         nlohmann_json::nlohmann_json

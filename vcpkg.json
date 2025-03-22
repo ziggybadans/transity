@@ -2,34 +2,18 @@
   "name": "transity",
   "version": "0.1.0",
   "dependencies": [
-    {
-      "name": "sfml",
-      "version>=": "2.5.1#16"
-    },
-    {
-      "name": "imgui",
-      "version>=": "1.91.9"
-    },
-    {
-      "name": "imgui-sfml",
-      "version>=": "2.6"
-    },
-    {
-      "name": "nlohmann-json",
-      "version>=": "3.11.2"
-    },
-    {
-      "name": "spdlog",
-      "version>=": "1.12.0"
-    },
-    {
-      "name": "entt",
-      "version>=": "3.12.2"
-    },
-    {
-      "name": "catch2",
-      "version>=": "3.4.0"
-    }
+    "sfml",
+    "imgui",
+    "imgui-sfml",
+    "nlohmann-json",
+    "spdlog",
+    "entt",
+    "catch2"
+  ],
+  "overrides": [
+    { "name": "sfml", "version": "2.6.1" },
+    { "name": "imgui", "version": "1.90.7" },
+    { "name": "imgui-sfml", "version": "2.6" }
   ],
   "builtin-baseline": "670f6dddaafc59c5dfe0587a130d59a35c48ea38"
 } 
