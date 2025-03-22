@@ -53,21 +53,81 @@ transity/
 ├── tests/               # Test files
 │   ├── unit/            # Unit tests
 │   └── integration/     # Integration tests
-├── third_party/         # Third-party dependencies
 └── tools/               # Development and build tools
 ```
 
 #### Stage 1.2: Core Systems Implementation
 
-##### Step 1.2.1: Engine Core
-- Implement application class
-  - Game loop architecture
-  - Window management
-  - Input handling system
-  - Time management (fixed timestep for simulation)
-- Create modular subsystem architecture
-  - System registration and dependency resolution
-  - System update order management
+##### Step 1.2.1: Engine Core Implementation
+
+1. Application Class Foundation
+   - Create Application.hpp/cpp base files
+   - Implement singleton pattern for global access
+   - Add initialization and shutdown sequences
+   - Create basic error handling structure
+
+2. Window Management
+   - Create Window class wrapper around SFML window
+   - Implement window configuration (resolution, fullscreen, etc.)
+   - Add window event handling (resize, focus, close)
+   - Create window settings serialization
+
+3. Game Loop Architecture
+   - Implement main loop structure with fixed timestep
+   - Create separate update and render loops
+   - Add frame time calculation and FPS limiting
+   - Implement pause/resume functionality
+   - Add game state management (running, paused, etc.)
+
+4. Input System
+   - Create InputManager class
+   - Implement keyboard input handling
+   - Add mouse input support (position, buttons, wheel)
+   - Create input mapping system for configurable controls
+   - Implement input event queue
+   - Add support for input state queries
+
+5. Time Management
+   - Create TimeManager class
+   - Implement fixed timestep calculation
+   - Add delta time tracking
+   - Create time scale control (slow-motion, fast-forward)
+   - Implement game tick system for simulation
+   - Add time-based event scheduling
+
+6. Subsystem Architecture
+   - Create ISystem interface for all subsystems
+   - Implement SystemManager class
+   - Add subsystem registration mechanism
+   - Create dependency resolution system
+   - Implement update order management
+   - Add subsystem enable/disable functionality
+   - Create system lifecycle hooks (init, update, shutdown)
+
+7. Debug Infrastructure
+   - Add logging integration for core systems
+   - Implement performance metrics tracking
+   - Create debug overlay system
+   - Add system state visualization
+   - Implement debug commands interface
+
+8. Testing Framework Integration
+   - Create unit tests for core systems
+   - Implement performance benchmarks
+   - Add stress testing scenarios
+   - Create system mock interfaces
+
+Each task should be implemented in order, with unit tests written alongside the implementation. Documentation should be added as each component is completed.
+
+Example commit message for initial implementation:
+"feat: Implement core engine architecture and basic systems
+
+- Add Application class with game loop
+- Implement window management system
+- Create input handling infrastructure
+- Add time management with fixed timestep
+- Set up basic subsystem architecture
+- Include initial unit tests and documentation"
 
 ##### Step 1.2.2: Entity Component System
 - Implement or integrate ECS framework
