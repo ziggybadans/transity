@@ -59,6 +59,81 @@ By participating in this project, you are expected to uphold our Code of Conduct
    - Link any related issues
    - Request reviews from maintainers
 
+## Commit Message Guidelines
+
+We follow the [Conventional Commits](https://www.conventionalcommits.org/) specification for commit messages. This leads to more readable messages that are easy to follow when looking through the project history.
+
+### Commit Message Format
+```
+<type>(<scope>): <subject>
+
+<body>
+
+<footer>
+```
+
+### Types
+- `feat`: A new feature
+- `fix`: A bug fix
+- `docs`: Documentation only changes
+- `style`: Changes that do not affect the meaning of the code (white-space, formatting, etc)
+- `refactor`: A code change that neither fixes a bug nor adds a feature
+- `perf`: A code change that improves performance
+- `test`: Adding missing tests or correcting existing tests
+- `chore`: Changes to the build process or auxiliary tools and libraries
+- `ci`: Changes to CI configuration files and scripts
+
+### Scope
+The scope should be the name of the component affected (e.g., `core`, `simulation`, `gui`, `docs`, etc.)
+
+### Subject
+- Use the imperative, present tense: "change" not "changed" nor "changes"
+- Don't capitalize first letter
+- No dot (.) at the end
+- Maximum 72 characters
+
+### Body
+- Use the imperative, present tense
+- Include motivation for the change and contrasts with previous behavior
+- Wrap at 72 characters
+
+### Footer
+- Reference issues and pull requests that this commit closes
+- Breaking changes should start with `BREAKING CHANGE:`
+
+### Examples
+```
+feat(simulation): add passenger routing algorithm
+
+Implement A* pathfinding for passenger route calculation.
+- Add priority queue implementation
+- Add path reconstruction
+- Add distance heuristic function
+
+Closes #123
+```
+
+```
+fix(core): prevent crash when loading invalid map file
+
+Add proper error handling and validation for map file format.
+Previously the application would crash when encountering
+malformed JSON.
+
+Fixes #456
+```
+
+```
+BREAKING CHANGE: change map file format to support new features
+
+The map file format has been updated to version 2.0 to support
+multi-level transportation networks. Old map files need to be
+migrated using the provided conversion tool.
+
+Migration guide: docs/migration-guide-v2.md
+Closes #789
+```
+
 ## Coding Standards
 
 ### C++ Coding Standards
