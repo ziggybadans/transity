@@ -1,4 +1,11 @@
 cmake_minimum_required(VERSION 3.20)
+
+# Enable vcpkg integration
+if(DEFINED ENV{VCPKG_ROOT} AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
+    set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+        CACHE STRING "")
+endif()
+
 project(Transity VERSION 0.1.0 LANGUAGES CXX)
 
 # Set C++ standard
@@ -23,12 +30,27 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 # Dependencies
-find_package(SFML 2.5 COMPONENTS system window graphics REQUIRED)
-find_package(ImGui REQUIRED)
-find_package(nlohmann_json 3.11.2 REQUIRED)
-find_package(spdlog REQUIRED)
-find_package(EnTT REQUIRED)
-find_package(Catch2 3 REQUIRED)
+find_package(SFML CONFIG REQUIRED COMPONENTS System Window Graphics)
+find_package(imgui CONFIG REQUIRED)
+find_package(ImGui-SFML CONFIG REQUIRED)
+find_package(nlohmann_json CONFIG REQUIRED)
+find_package(spdlog CONFIG REQUIRED)
+find_package(EnTT CONFIG REQUIRED)
+find_package(Catch2 3 CONFIG REQUIRED)
+
+# Define dependency interface library
+add_library(transity_dependencies INTERFACE)
+target_link_libraries(transity_dependencies INTERFACE
+    SFML::System
+    SFML::Window
+    SFML::Graphics
+    imgui::imgui
+    ImGui-SFML::ImGui-SFML
+    nlohmann_json::nlohmann_json
+    spdlog::spdlog
+    EnTT::EnTT
+    Catch2::Catch2
+)
 
 # Include directories
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
