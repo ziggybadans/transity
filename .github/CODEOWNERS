@@ -1,0 +1,35 @@
+# These owners will be the default owners for everything in the repo
+* @repository-owner
+
+# Core engine files
+/src/core/ @engine-team
+
+# Entity Component System
+/src/ecs/ @engine-team
+
+# GUI and ImGui integration
+/src/gui/ @ui-team
+
+# Rendering systems
+/src/rendering/ @graphics-team
+
+# Simulation systems
+/src/simulation/ @simulation-team
+
+# Utility functions and classes
+/src/util/ @engine-team
+
+# Build system
+/cmake/ @build-team
+
+# Documentation
+/docs/ @docs-team
+
+# CI/CD configuration
+/.github/workflows/ @devops-team
+
+# Testing
+/tests/ @qa-team
+
+# Note: Replace the placeholder team/user names with actual GitHub teams or usernames
+# when setting up the repository. 

@@ -1,0 +1,124 @@
+name: Transity CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows MSVC
+            os: windows-latest
+            compiler: msvc
+            build-type: Release
+          - name: Windows MSVC Debug
+            os: windows-latest
+            compiler: msvc
+            build-type: Debug
+          - name: Ubuntu GCC
+            os: ubuntu-latest
+            compiler: gcc
+            build-type: Release
+          - name: Ubuntu GCC Debug
+            os: ubuntu-latest
+            compiler: gcc
+            build-type: Debug
+          - name: macOS Clang
+            os: macos-latest
+            compiler: clang
+            build-type: Release
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+
+    - name: Install Linux Dependencies
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y g++ cmake libsfml-dev libfreetype6-dev libopenal-dev libvorbis-dev libflac-dev
+
+    - name: Install macOS Dependencies
+      if: runner.os == 'macOS'
+      run: |
+        brew update
+        brew install cmake sfml
+
+    - name: Configure CMake (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        cmake -B build -DCMAKE_BUILD_TYPE=${{ matrix.build-type }}
+
+    - name: Configure CMake (Unix)
+      if: runner.os != 'Windows'
+      run: |
+        cmake -B build -DCMAKE_BUILD_TYPE=${{ matrix.build-type }}
+
+    - name: Build
+      run: |
+        cmake --build build --config ${{ matrix.build-type }} --parallel
+
+    - name: Run Tests
+      working-directory: ${{ github.workspace }}/build
+      run: |
+        ctest -C ${{ matrix.build-type }} --output-on-failure
+
+    - name: Run Static Analysis
+      if: matrix.build-type == 'Release' && runner.os == 'Linux'
+      run: |
+        # Add static analysis commands here once codebase has them configured
+        echo "Static analysis step will be implemented in the future"
+
+    - name: Check Format
+      if: runner.os == 'Linux'
+      run: |
+        # Add format checking commands here once codebase has clang-format configured
+        echo "Format checking will be implemented in the future"
+        
+  code-coverage:
+    needs: build
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+        
+    - name: Install Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y g++ cmake lcov libsfml-dev
+        
+    - name: Configure CMake with Coverage
+      run: |
+        cmake -B build -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=ON
+        
+    - name: Build
+      run: |
+        cmake --build build --config Debug --parallel
+        
+    - name: Run Tests with Coverage
+      working-directory: ${{ github.workspace }}/build
+      run: |
+        ctest -C Debug --output-on-failure
+        
+    - name: Generate Coverage Report
+      run: |
+        lcov --directory build --capture --output-file coverage.info
+        lcov --remove coverage.info '/usr/*' --output-file coverage.info
+        lcov --list coverage.info
+        
+    - name: Upload Coverage to Codecov
+      uses: codecov/codecov-action@v2
+      with:
+        files: ./coverage.info
+        fail_ci_if_error: false 

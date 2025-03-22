@@ -1,0 +1,62 @@
+# Build directories
+build/
+out/
+Debug/
+Release/
+x64/
+x86/
+
+# CMake files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+install_manifest.txt
+
+# IDE files
+.vs/
+.vscode/
+.idea/
+*.swp
+*.swo
+*.user
+*.suo
+*.sdf
+*.opensdf
+*.VC.db
+*.VC.VC.opendb
+
+# Compiled files
+*.o
+*.obj
+*.exe
+*.dll
+*.so
+*.dylib
+*.lib
+*.a
+*.app
+
+# SFML specific
+*.pdb
+
+# Dependency directories
+vcpkg/
+third_party/
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Code coverage
+*.gcno
+*.gcda
+*.gcov
+coverage.info
+
+# Debug logs
+*.log
+*.tlog
+
+# Project specific
+*.save
+*.dat 
