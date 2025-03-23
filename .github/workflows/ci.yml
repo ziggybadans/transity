@@ -45,7 +45,9 @@ jobs:
       if: runner.os == 'Linux'
       run: |
         sudo apt-get update
-        sudo apt-get install -y g++ cmake ninja-build curl zip unzip tar pkg-config
+        sudo apt-get install -y g++ cmake ninja-build curl zip unzip tar pkg-config \
+          libx11-dev libxrandr-dev libxcursor-dev libxi-dev libudev-dev \
+          libgl1-mesa-dev xorg-dev
 
     - name: Install macOS Dependencies
       if: runner.os == 'macOS'
