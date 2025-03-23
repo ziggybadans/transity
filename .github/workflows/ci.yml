@@ -89,19 +89,29 @@ jobs:
       run: |
         cmake --build build --config ${{ matrix.build-type }} --parallel
 
-    - name: Run Tests
+    - name: Run Tests (Linux)
+      if: runner.os == 'Linux'
       working-directory: ${{ github.workspace }}/build
       env:
         CI: true
         CTEST_OUTPUT_ON_FAILURE: 1
-      run: |
-        if [ "${{ runner.os }}" == "Linux" ]; then
-          xvfb-run --auto-servernum --server-args="-screen 0 800x600x24" ctest -V -C ${{ matrix.build-type }}
-        elif [ "${{ runner.os }}" == "Windows" ]; then
-          ctest -V -C ${{ matrix.build-type }}
-        else
-          ctest -V -C ${{ matrix.build-type }}
-        fi
+      run: xvfb-run --auto-servernum --server-args="-screen 0 800x600x24" ctest -V -C ${{ matrix.build-type }}
+
+    - name: Run Tests (Windows)
+      if: runner.os == 'Windows'
+      working-directory: ${{ github.workspace }}/build
+      env:
+        CI: true
+        CTEST_OUTPUT_ON_FAILURE: 1
+      run: ctest -V -C ${{ matrix.build-type }}
+
+    - name: Run Tests (macOS)
+      if: runner.os == 'macOS'
+      working-directory: ${{ github.workspace }}/build
+      env:
+        CI: true
+        CTEST_OUTPUT_ON_FAILURE: 1
+      run: ctest -V -C ${{ matrix.build-type }}
 
     - name: Run Static Analysis
       if: matrix.build-type == 'Release' && runner.os == 'Linux'
