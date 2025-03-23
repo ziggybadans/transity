@@ -56,7 +56,8 @@ jobs:
     - name: Setup vcpkg
       uses: lukka/run-vcpkg@v11
       with:
-        vcpkgGitCommitId: '670f6dddaafc59c5dfe0587a130d59a35c48ea38'
+        vcpkgJsonGlob: '**/vcpkg.json'
+        appendedCacheKey: ${{ hashFiles( '**/vcpkg.json' ) }}
 
     - name: Configure CMake (Windows)
       if: runner.os == 'Windows'
@@ -101,7 +102,8 @@ jobs:
     - name: Setup vcpkg
       uses: lukka/run-vcpkg@v11
       with:
-        vcpkgGitCommitId: '670f6dddaafc59c5dfe0587a130d59a35c48ea38'
+        vcpkgJsonGlob: '**/vcpkg.json'
+        appendedCacheKey: ${{ hashFiles( '**/vcpkg.json' ) }}
         
     - name: Install Dependencies
       run: |
