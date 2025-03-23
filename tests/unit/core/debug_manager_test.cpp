@@ -262,4 +262,62 @@ TEST_CASE("DebugManager event replay system", "[debug]") {
         });
         REQUIRE(eventLoaded);
     }
+}
+
+TEST_CASE("Debug Overlay", "[debug]") {
+    auto& debug = DebugManager::getInstance();
+    
+    SECTION("Debug overlay visibility") {
+        REQUIRE_FALSE(debug.isDebugOverlayEnabled());
+        
+        debug.setDebugOverlayEnabled(true);
+        REQUIRE(debug.isDebugOverlayEnabled());
+        
+        debug.setDebugOverlayEnabled(false);
+        REQUIRE_FALSE(debug.isDebugOverlayEnabled());
+    }
+    
+    SECTION("Debug overlay content") {
+        debug.setDebugOverlayEnabled(true);
+        
+        // Add metrics
+        debug.addMetric("FPS", []() { return "60"; });
+        debug.addMetric("Memory", []() { return "100MB"; });
+        
+        // Get overlay content
+        auto content = debug.getDebugOverlayContent();
+        REQUIRE(content.find("FPS: 60") != std::string::npos);
+        REQUIRE(content.find("Memory: 100MB") != std::string::npos);
+        
+        // Remove metric
+        debug.removeMetric("FPS");
+        content = debug.getDebugOverlayContent();
+        REQUIRE(content.find("FPS: 60") == std::string::npos);
+        REQUIRE(content.find("Memory: 100MB") != std::string::npos);
+    }
+    
+    SECTION("Debug sections") {
+        debug.setDebugOverlayEnabled(true);
+        
+        // Add a collapsible section
+        debug.beginSection("Performance");
+        debug.addMetric("CPU Usage", []() { return "25%"; });
+        debug.endSection();
+        
+        auto content = debug.getDebugOverlayContent();
+        REQUIRE(content.find("Performance") != std::string::npos);
+        REQUIRE(content.find("CPU Usage: 25%") != std::string::npos);
+    }
+    
+    SECTION("Debug overlay update") {
+        debug.setDebugOverlayEnabled(true);
+        
+        int counter = 0;
+        debug.addMetric("Counter", [&counter]() { return std::to_string(counter++); });
+        
+        auto content1 = debug.getDebugOverlayContent();
+        auto content2 = debug.getDebugOverlayContent();
+        
+        REQUIRE(content1 != content2); // Counter should have incremented
+    }
 } 

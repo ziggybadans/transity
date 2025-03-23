@@ -71,4 +71,64 @@ TEST_CASE("Window event processing", "[window]") {
     SECTION("Initial event processing") {
         REQUIRE(window.processEvents());
     }
+}
+
+TEST_CASE("Window resize events", "[window]") {
+    Window window;
+    bool resizeEventReceived = false;
+    int newWidth = 0, newHeight = 0;
+    
+    window.setResizeCallback([&](int width, int height) {
+        resizeEventReceived = true;
+        newWidth = width;
+        newHeight = height;
+    });
+    
+    SECTION("Window resize event processing") {
+        sf::Event resizeEvent;
+        resizeEvent.type = sf::Event::Resized;
+        resizeEvent.size.width = 1024;
+        resizeEvent.size.height = 768;
+        
+        window.processEvent(resizeEvent);
+        
+        REQUIRE(resizeEventReceived);
+        REQUIRE(newWidth == 1024);
+        REQUIRE(newHeight == 768);
+        
+        const auto& config = window.getConfig();
+        REQUIRE(config.width == 1024);
+        REQUIRE(config.height == 768);
+    }
+}
+
+TEST_CASE("Window focus events", "[window]") {
+    Window window;
+    bool focusEventReceived = false;
+    bool hasFocus = false;
+    
+    window.setFocusCallback([&](bool focused) {
+        focusEventReceived = true;
+        hasFocus = focused;
+    });
+    
+    SECTION("Window focus gained") {
+        sf::Event focusEvent;
+        focusEvent.type = sf::Event::GainedFocus;
+        
+        window.processEvent(focusEvent);
+        
+        REQUIRE(focusEventReceived);
+        REQUIRE(hasFocus);
+    }
+    
+    SECTION("Window focus lost") {
+        sf::Event focusEvent;
+        focusEvent.type = sf::Event::LostFocus;
+        
+        window.processEvent(focusEvent);
+        
+        REQUIRE(focusEventReceived);
+        REQUIRE_FALSE(hasFocus);
+    }
 } 

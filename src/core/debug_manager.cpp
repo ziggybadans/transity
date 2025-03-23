@@ -467,5 +467,64 @@ bool DebugManager::isRecordingEvents() const {
     return m_isRecordingEvents;
 }
 
+void DebugManager::addMetric(const std::string& name, std::function<std::string()> valueProvider) {
+    std::lock_guard<std::mutex> lock(m_overlayMutex);
+    m_metricProviders[name] = std::move(valueProvider);
+}
+
+void DebugManager::removeMetric(const std::string& name) {
+    std::lock_guard<std::mutex> lock(m_overlayMutex);
+    m_metricProviders.erase(name);
+}
+
+std::string DebugManager::getDebugOverlayContent() const {
+    std::lock_guard<std::mutex> lock(m_overlayMutex);
+    std::stringstream content;
+
+    // Add all active sections and their metrics
+    if (!m_activeSections.empty()) {
+        // Get the current section
+        const auto& currentSection = m_activeSections.back();
+        content << "[" << currentSection << "]\n";
+        
+        // Add metrics that belong to this section
+        for (const auto& [name, provider] : m_metricProviders) {
+            try {
+                content << name << ": " << provider() << "\n";
+            } catch (const std::exception& e) {
+                content << name << ": <error: " << e.what() << ">\n";
+            }
+        }
+        content << "\n";
+    } else if (!m_metricProviders.empty()) {
+        // If we have metrics but no active sections, show them under the last section name
+        content << "[Performance]\n";  // Default section name
+        
+        // Add all metrics
+        for (const auto& [name, provider] : m_metricProviders) {
+            try {
+                content << name << ": " << provider() << "\n";
+            } catch (const std::exception& e) {
+                content << name << ": <error: " << e.what() << ">\n";
+            }
+        }
+        content << "\n";
+    }
+
+    return content.str();
+}
+
+void DebugManager::beginSection(const std::string& name) {
+    std::lock_guard<std::mutex> lock(m_overlayMutex);
+    m_activeSections.push_back(name);
+}
+
+void DebugManager::endSection() {
+    std::lock_guard<std::mutex> lock(m_overlayMutex);
+    if (!m_activeSections.empty()) {
+        m_activeSections.pop_back();
+    }
+}
+
 } // namespace core
 } // namespace transity 

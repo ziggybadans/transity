@@ -92,6 +92,13 @@ public:
     void addDebugInfoToSection(const std::string& section, const std::string& key, const std::string& value);
     const std::map<std::string, std::string>& getDebugSection(const std::string& name) const;
 
+    // New debug overlay methods
+    void addMetric(const std::string& name, std::function<std::string()> valueProvider);
+    void removeMetric(const std::string& name);
+    std::string getDebugOverlayContent() const;
+    void beginSection(const std::string& name);
+    void endSection();
+
     // Debug commands
     using DebugCommand = std::function<void(const std::vector<std::string>&)>;
     void registerCommand(const std::string& name, DebugCommand command, const std::string& description);
@@ -174,6 +181,11 @@ private:
     size_t m_peakMemoryUsage{0};
     mutable std::mutex m_profilingMutex;
     mutable std::mutex m_eventMutex;
+
+    // New private members for debug overlay
+    std::map<std::string, std::function<std::string()>> m_metricProviders;
+    std::vector<std::string> m_activeSections;
+    mutable std::mutex m_overlayMutex;
 
     static constexpr size_t MAX_LOG_HISTORY = 1000;
     static constexpr size_t MAX_METRICS_HISTORY = 1000;
