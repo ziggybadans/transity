@@ -66,11 +66,16 @@ jobs:
           vcpkg-${{ runner.os }}-
 
     - name: Bootstrap vcpkg
-      shell: bash
+      shell: ${{ runner.os == 'Windows' && 'pwsh' || 'bash' }}
       run: |
         git clone https://github.com/Microsoft/vcpkg.git
-        ./vcpkg/bootstrap-vcpkg.sh
-        ./vcpkg/vcpkg integrate install
+        if ("${{ runner.os }}" -eq "Windows") {
+          ./vcpkg/bootstrap-vcpkg.bat
+          ./vcpkg/vcpkg integrate install
+        } else {
+          ./vcpkg/bootstrap-vcpkg.sh
+          ./vcpkg/vcpkg integrate install
+        }
 
     - name: Configure CMake (Windows)
       if: runner.os == 'Windows'
@@ -90,11 +95,13 @@ jobs:
       working-directory: ${{ github.workspace }}/build
       env:
         CI: true
+        CTEST_OUTPUT_ON_FAILURE: 1
+      shell: bash
       run: |
         if [ "${{ runner.os }}" == "Linux" ]; then
-          xvfb-run --auto-servernum --server-args="-screen 0 800x600x24" ctest -C ${{ matrix.build-type }} --output-on-failure
+          xvfb-run --auto-servernum --server-args="-screen 0 800x600x24" ctest -V -C ${{ matrix.build-type }}
         else
-          ctest -C ${{ matrix.build-type }} --output-on-failure
+          ctest -V -C ${{ matrix.build-type }}
         fi
 
     - name: Run Static Analysis
