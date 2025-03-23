@@ -1,0 +1,10 @@
+{
+    "events": [
+        {
+            "data": {
+                "key": "value"
+            },
+            "type": "test_event"
+        }
+    ]
+}

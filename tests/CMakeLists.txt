@@ -1,6 +1,12 @@
 add_executable(unit_tests
     unit/main.cpp
     unit/core/application_test.cpp
+    unit/core/input_manager_test.cpp
+    unit/core/time_manager_test.cpp
+    unit/core/system_manager_test.cpp
+    unit/core/debug_manager_test.cpp
+    unit/core/performance_test.cpp
+    unit/core/performance_regression_test.cpp
 )
 
 target_link_libraries(unit_tests
@@ -12,6 +18,7 @@ target_link_libraries(unit_tests
 add_executable(integration_tests
     integration/main.cpp
     integration/simulation_test.cpp
+    integration/core_systems_integration_test.cpp
 )
 
 target_link_libraries(integration_tests

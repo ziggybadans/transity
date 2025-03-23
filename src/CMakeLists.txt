@@ -1,16 +1,23 @@
 add_library(transity_core
     core/application.cpp
+    core/window.cpp
+    core/window_manager.cpp
+    core/input_manager.cpp
+    core/time_manager.cpp
+    core/system_manager.cpp
+    core/debug_manager.cpp
+    core/configuration_manager.cpp
+    core/event_manager.cpp
 )
 
 target_link_libraries(transity_core
     PUBLIC
-        SFML::System
-        SFML::Window
-        SFML::Graphics
+        sfml-system
+        sfml-window
+        sfml-graphics
         imgui::imgui
         ImGui-SFML::ImGui-SFML
         nlohmann_json::nlohmann_json
-        spdlog::spdlog
         EnTT::EnTT
 )
 
