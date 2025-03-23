@@ -17,6 +17,14 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# Set compiler-specific options
+if(MSVC)
+    # Add UTF-8 support for MSVC
+    add_compile_options(/utf-8)
+    # Disable warnings about unsafe CRT functions
+    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+endif()
+
 # Set vcpkg toolchain file if not already set
 if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
     set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake"

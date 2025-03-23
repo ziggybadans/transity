@@ -1,6 +1,14 @@
 #include "transity/core/system_manager.hpp"
+#include <spdlog/spdlog.h>
 
 namespace transity::core {
     // Most of the implementation is in the header file since it's template-based
-    // This file exists to provide a compilation unit for any future non-template methods
+    
+    // Future non-template methods will be implemented here
+    // For now, we ensure that there's a compiled version of the class
+    
+    // This is a dummy function to ensure the compiler generates code for the class
+    void SystemManager::ensureCompilation() {
+        spdlog::info("SystemManager compilation check");
+    }
 } 
