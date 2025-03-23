@@ -197,27 +197,6 @@ void Application::run() {
     m_accumulatedTime = 0.0f;
 
     try {
-        // In CI environment, use a simplified loop
-        if (std::getenv("CI") != nullptr) {
-            while (getGameState() != GameState::Stopped) {
-                // Process window events (already handled for CI in Window class)
-                auto& windowManager = WindowManager::getInstance();
-                if (!windowManager.processEvents()) {
-                    stop();
-                    break;
-                }
-
-                // Simple update with fixed timestep
-                float deltaTime = 1.0f / 60.0f; // Fixed 60 FPS in CI
-                update(deltaTime);
-
-                // Sleep to simulate frame time
-                sf::sleep(sf::seconds(deltaTime));
-            }
-            return;
-        }
-
-        // Normal run loop for non-CI environments
         while (getGameState() != GameState::Stopped) {
             // Process window events first
             auto& windowManager = WindowManager::getInstance();
@@ -339,11 +318,6 @@ void Application::update(float deltaTime) {
 }
 
 void Application::render() {
-    // Skip rendering in CI environment
-    if (std::getenv("CI") != nullptr) {
-        return;
-    }
-
     auto& windowManager = WindowManager::getInstance();
     windowManager.beginFrame();
 
