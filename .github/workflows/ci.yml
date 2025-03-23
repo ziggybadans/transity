@@ -47,7 +47,7 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y g++ cmake ninja-build curl zip unzip tar pkg-config \
           libx11-dev libxrandr-dev libxcursor-dev libxi-dev libudev-dev \
-          libgl1-mesa-dev xorg-dev
+          libgl1-mesa-dev xorg-dev xvfb
 
     - name: Install macOS Dependencies
       if: runner.os == 'macOS'
@@ -89,7 +89,11 @@ jobs:
     - name: Run Tests
       working-directory: ${{ github.workspace }}/build
       run: |
-        ctest -C ${{ matrix.build-type }} --output-on-failure
+        if [ "${{ runner.os }}" == "Linux" ]; then
+          xvfb-run --auto-servernum --server-args="-screen 0 1280x1024x24" ctest -C ${{ matrix.build-type }} --output-on-failure
+        else
+          ctest -C ${{ matrix.build-type }} --output-on-failure
+        fi
 
     - name: Run Static Analysis
       if: matrix.build-type == 'Release' && runner.os == 'Linux'
@@ -145,7 +149,7 @@ jobs:
     - name: Run Tests with Coverage
       working-directory: ${{ github.workspace }}/build
       run: |
-        ctest -C Debug --output-on-failure
+        xvfb-run --auto-servernum --server-args="-screen 0 1280x1024x24" ctest -C Debug --output-on-failure
         
     - name: Generate Coverage Report
       run: |
