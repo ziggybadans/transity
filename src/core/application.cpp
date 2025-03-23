@@ -6,6 +6,7 @@
 #include <SFML/System/Time.hpp>
 #include <SFML/Window/Event.hpp>
 #include <SFML/Window/Keyboard.hpp>
+#include <SFML/Graphics/CircleShape.hpp>
 
 namespace transity::core {
 
@@ -167,7 +168,13 @@ void Application::update(float deltaTime) {
 }
 
 void Application::render() {
-    // TODO: Render game state
+    if (!m_window) return;
+
+    // Draw a simple shape for testing
+    sf::CircleShape shape(50.f);
+    shape.setFillColor(sf::Color::Green);
+    shape.setPosition(100.f, 100.f);
+    m_window->getWindow().draw(shape);
     
     // Clear input states for next frame
     InputManager::getInstance().clear();
