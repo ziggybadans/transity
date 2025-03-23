@@ -45,13 +45,13 @@ jobs:
       if: runner.os == 'Linux'
       run: |
         sudo apt-get update
-        sudo apt-get install -y g++ cmake ninja-build
+        sudo apt-get install -y g++ cmake ninja-build curl zip unzip tar pkg-config
 
     - name: Install macOS Dependencies
       if: runner.os == 'macOS'
       run: |
         brew update
-        brew install cmake ninja
+        brew install cmake ninja curl pkg-config
 
     - name: Cache vcpkg
       uses: actions/cache@v3
@@ -63,10 +63,12 @@ jobs:
         restore-keys: |
           vcpkg-${{ runner.os }}-
 
-    - name: Setup vcpkg
-      uses: lukka/run-vcpkg@v11
-      with:
-        vcpkgJsonGlob: '**/vcpkg.json'
+    - name: Bootstrap vcpkg
+      shell: bash
+      run: |
+        git clone https://github.com/Microsoft/vcpkg.git
+        ./vcpkg/bootstrap-vcpkg.sh
+        ./vcpkg/vcpkg integrate install
 
     - name: Configure CMake (Windows)
       if: runner.os == 'Windows'
@@ -117,16 +119,18 @@ jobs:
         key: vcpkg-ubuntu-coverage-${{ hashFiles('vcpkg.json') }}
         restore-keys: |
           vcpkg-ubuntu-coverage-
-        
-    - name: Setup vcpkg
-      uses: lukka/run-vcpkg@v11
-      with:
-        vcpkgJsonGlob: '**/vcpkg.json'
-        
+
     - name: Install Dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y g++ cmake ninja-build lcov
+        sudo apt-get install -y g++ cmake ninja-build lcov curl zip unzip tar pkg-config
+
+    - name: Bootstrap vcpkg
+      shell: bash
+      run: |
+        git clone https://github.com/Microsoft/vcpkg.git
+        ./vcpkg/bootstrap-vcpkg.sh
+        ./vcpkg/vcpkg integrate install
         
     - name: Configure CMake with Coverage
       run: |
