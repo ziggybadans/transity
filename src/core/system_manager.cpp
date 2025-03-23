@@ -1,5 +1,4 @@
 #include "transity/core/system_manager.hpp"
-#include <spdlog/spdlog.h>
 
 namespace transity::core {
     // Most of the implementation is in the header file since it's template-based
@@ -9,6 +8,6 @@ namespace transity::core {
     
     // This is a dummy function to ensure the compiler generates code for the class
     void SystemManager::ensureCompilation() {
-        spdlog::info("SystemManager compilation check");
+        // Compilation check - no logging needed
     }
 } 

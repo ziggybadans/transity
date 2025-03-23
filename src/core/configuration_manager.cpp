@@ -1,7 +1,6 @@
 #include "transity/core/configuration_manager.hpp"
 #include "transity/core/error.hpp"
 #include <fstream>
-#include <spdlog/spdlog.h>
 
 namespace transity::core {
 
@@ -14,12 +13,12 @@ bool ConfigurationManager::initialize(const std::filesystem::path& configPath) {
     configFilePath = configPath;
     
     if (!loadConfiguration()) {
-        spdlog::warn("No configuration file found at {}. Using default settings.", configPath.string());
+        // No configuration file found - using default settings
         return true; // Not finding a config file is not an error - we'll create it when saving
     }
 
     if (!validateConfiguration()) {
-        spdlog::error("Configuration validation failed");
+        // Configuration validation failed
         return false;
     }
 
@@ -30,7 +29,7 @@ bool ConfigurationManager::initialize(const std::filesystem::path& configPath) {
 void ConfigurationManager::shutdown() {
     if (isDirty) {
         if (!saveConfiguration()) {
-            spdlog::error("Failed to save configuration during shutdown");
+            // Failed to save configuration during shutdown
         }
     }
 }
@@ -71,7 +70,7 @@ bool ConfigurationManager::saveConfiguration() {
         return true;
     }
     catch (const std::exception& e) {
-        spdlog::error("Failed to save configuration: {}", e.what());
+        // Failed to save configuration: {e.what()}
         return false;
     }
 }
@@ -111,14 +110,14 @@ bool ConfigurationManager::loadConfiguration() {
                 configData[key] = value.get<std::string>();
             }
             else {
-                spdlog::warn("Skipping unsupported value type for key: {}", key);
+                // Skipping unsupported value type for key: {key}
             }
         }
 
         return true;
     }
     catch (const std::exception& e) {
-        spdlog::error("Failed to load configuration: {}", e.what());
+        // Failed to load configuration: {e.what()}
         return false;
     }
 }

@@ -27,7 +27,7 @@ void TimeManager::update() {
     HighResTimePoint currentHighResTime = HighResClock::now();
     m_preciseFrameDuration = currentHighResTime - m_highResLastFrame;
     m_highResLastFrame = currentHighResTime;
-    m_highResTickCount = duration_cast<nanoseconds>(currentHighResTime - m_gameStartTime).count();
+    m_highResTickCount = duration_cast<nanoseconds>(Clock::now() - m_gameStartTime).count();
 
     // Calculate unscaled delta time
     m_unscaledDeltaTime = duration_cast<duration<double>>(m_preciseFrameDuration).count();
@@ -115,7 +115,7 @@ void TimeManager::updateScheduledEvents() {
 }
 
 double TimeManager::getTimeSinceStart() const {
-    return duration_cast<duration<double>>(HighResClock::now() - m_gameStartTime).count();
+    return duration_cast<duration<double>>(Clock::now() - m_gameStartTime).count();
 }
 
 TimeManager::HighResTimePoint TimeManager::getHighResTimePoint() const {

@@ -1,6 +1,5 @@
 #include "transity/core/event_manager.hpp"
 #include "transity/core/debug_manager.hpp"
-#include <spdlog/spdlog.h>
 
 namespace transity::core {
 
@@ -10,7 +9,7 @@ EventManager::EventManager()
 }
 
 bool EventManager::initialize() {
-    spdlog::info("Initializing Event Manager");
+    // Event Manager initialized
     return true;
 }
 
@@ -19,7 +18,7 @@ void EventManager::update(float deltaTime) {
 }
 
 void EventManager::shutdown() {
-    spdlog::info("Shutting down Event Manager");
+    // Shutting down Event Manager
     clearEventQueue();
     handlers.clear();
     eventLog.clear();
@@ -43,7 +42,7 @@ void EventManager::processCurrentEvents() {
                 try {
                     handler(*entry.event);
                 } catch (const std::exception& e) {
-                    spdlog::error("Error processing event: {}", e.what());
+                    // Error processing event: {e.what()}
                 }
             }
         }
@@ -53,9 +52,9 @@ void EventManager::processCurrentEvents() {
 void EventManager::enableEventLogging(bool enable) {
     eventLoggingEnabled = enable;
     if (enable) {
-        spdlog::info("Event logging enabled");
+        // Event logging enabled
     } else {
-        spdlog::info("Event logging disabled");
+        // Event logging disabled
         eventLog.clear();
     }
 }
@@ -71,11 +70,11 @@ size_t EventManager::getQueueSize() const {
 
 void EventManager::logEvent(const std::shared_ptr<EventBase>& event) {
     eventLog.push_back(event);
-    spdlog::debug("Event logged: type={}", event->getType().name());
+    // Event logged: type={event->getType().name()}
 }
 
 void EventManager::replayEvents(const std::vector<std::shared_ptr<EventBase>>& events) {
-    spdlog::info("Replaying {} events", events.size());
+    // Replaying {events.size()} events
     for (const auto& event : events) {
         auto typeIndex = event->getType();
         auto it = handlers.find(typeIndex);
@@ -85,12 +84,12 @@ void EventManager::replayEvents(const std::vector<std::shared_ptr<EventBase>>& e
                 try {
                     handler(*event);
                 } catch (const std::exception& e) {
-                    spdlog::error("Error replaying event: {}", e.what());
+                    // Error replaying event: {e.what()}
                 }
             }
         }
     }
-    spdlog::info("Event replay completed");
+    // Event replay completed
 }
 
 } // namespace transity::core 
