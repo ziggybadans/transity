@@ -7,6 +7,7 @@ add_library(transity_core
     core/system_manager.cpp
     core/debug_manager.cpp
     core/configuration_manager.cpp
+    core/event_manager.cpp
 )
 
 target_link_libraries(transity_core
