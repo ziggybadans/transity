@@ -35,6 +35,10 @@ jobs:
             os: macos-latest
             compiler: clang
             build-type: Release
+          - name: macOS Clang Debug
+            os: macos-latest
+            compiler: clang
+            build-type: Debug
 
     steps:
     - uses: actions/checkout@v3
@@ -66,16 +70,10 @@ jobs:
           vcpkg-${{ runner.os }}-
 
     - name: Bootstrap vcpkg
-      shell: ${{ runner.os == 'Windows' && 'pwsh' || 'bash' }}
       run: |
         git clone https://github.com/Microsoft/vcpkg.git
-        if ("${{ runner.os }}" -eq "Windows") {
-          ./vcpkg/bootstrap-vcpkg.bat
-          ./vcpkg/vcpkg integrate install
-        } else {
-          ./vcpkg/bootstrap-vcpkg.sh
-          ./vcpkg/vcpkg integrate install
-        }
+        ${{ runner.os == 'Windows' && './vcpkg/bootstrap-vcpkg.bat' || './vcpkg/bootstrap-vcpkg.sh' }}
+        ./vcpkg/vcpkg integrate install
 
     - name: Configure CMake (Windows)
       if: runner.os == 'Windows'
@@ -96,10 +94,11 @@ jobs:
       env:
         CI: true
         CTEST_OUTPUT_ON_FAILURE: 1
-      shell: bash
       run: |
         if [ "${{ runner.os }}" == "Linux" ]; then
           xvfb-run --auto-servernum --server-args="-screen 0 800x600x24" ctest -V -C ${{ matrix.build-type }}
+        elif [ "${{ runner.os }}" == "Windows" ]; then
+          ctest -V -C ${{ matrix.build-type }}
         else
           ctest -V -C ${{ matrix.build-type }}
         fi
