@@ -1,5 +1,6 @@
 #include <catch2/catch_test_macros.hpp>
 #include "transity/ecs/entity_manager.hpp"
+#include <limits>
 
 using namespace transity::ecs;
 
@@ -68,5 +69,62 @@ TEST_CASE("EntityManager basic functionality", "[ecs]") {
         REQUIRE(activeEntities.size() == 2);
         REQUIRE(std::find_if(activeEntities.begin(), activeEntities.end(),
             [entity2](const Entity& e) { return e == entity2; }) == activeEntities.end());
+    }
+
+    SECTION("Entity equality operator") {
+        auto entity1 = manager.createEntity();
+        auto entity2 = manager.createEntity();
+        auto entity1Copy = entity1;
+
+        REQUIRE(entity1 == entity1Copy);
+        REQUIRE_FALSE(entity1 == entity2);
+
+        // Same ID but different version should not be equal
+        Entity differentVersion{entity1.id, entity1.version + 1};
+        REQUIRE_FALSE(entity1 == differentVersion);
+    }
+
+    SECTION("Rapid creation and destruction") {
+        std::vector<Entity> entities;
+        const size_t numEntities = 1000;
+
+        // Create many entities
+        for (size_t i = 0; i < numEntities; ++i) {
+            entities.push_back(manager.createEntity());
+        }
+        REQUIRE(manager.getEntityCount() == numEntities);
+
+        // Destroy all entities
+        for (const auto& entity : entities) {
+            REQUIRE(manager.destroyEntity(entity));
+        }
+        REQUIRE(manager.getEntityCount() == 0);
+
+        // Create new entities, should reuse IDs
+        for (size_t i = 0; i < numEntities; ++i) {
+            auto newEntity = manager.createEntity();
+            REQUIRE(newEntity.id < numEntities);
+            REQUIRE(newEntity.version > 1);
+        }
+    }
+
+    SECTION("Entity version sequence") {
+        // Create initial entity
+        auto entity1 = manager.createEntity();
+        REQUIRE(entity1.version == 1);  // Initial version is 1
+
+        // Destroy it, which increments version
+        REQUIRE(manager.destroyEntity(entity1));
+
+        // Create new entity with same ID, should have incremented version
+        auto entity2 = manager.createEntity();
+        REQUIRE(entity2.id == entity1.id);
+        REQUIRE(entity2.version == 3);  // Version incremented on destroy and create
+
+        // Destroy and recreate again
+        REQUIRE(manager.destroyEntity(entity2));
+        auto entity3 = manager.createEntity();
+        REQUIRE(entity3.id == entity1.id);
+        REQUIRE(entity3.version == 5);  // Version incremented twice more
     }
 } 

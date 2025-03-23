@@ -16,7 +16,8 @@ Entity EntityManager::createEntity() {
         id = nextEntityId++;
     }
 
-    // Increment version or initialize to 1 if new
+    // For recycled IDs, version should already be set and we increment it
+    // For new IDs, we initialize version to 1
     auto& version = versions[id];
     if (version == 0) {
         version = 1;
@@ -41,7 +42,7 @@ bool EntityManager::destroyEntity(Entity entity) {
     if (it != activeEntities.end()) {
         activeEntities.erase(it);
         recycledIds.push(entity.id);
-        // Increment version to invalidate the entity
+        // Increment version to invalidate the entity immediately
         versions[entity.id]++;
         return true;
     }
