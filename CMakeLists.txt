@@ -40,7 +40,6 @@ find_package(SFML CONFIG REQUIRED COMPONENTS system window graphics)
 find_package(imgui CONFIG REQUIRED)
 find_package(ImGui-SFML CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
-find_package(spdlog CONFIG REQUIRED)
 find_package(EnTT CONFIG REQUIRED)
 find_package(Catch2 3 CONFIG REQUIRED)
 
@@ -53,7 +52,6 @@ target_link_libraries(transity_dependencies INTERFACE
     imgui::imgui
     ImGui-SFML::ImGui-SFML
     nlohmann_json::nlohmann_json
-    spdlog::spdlog
     EnTT::EnTT
     Catch2::Catch2
 )
