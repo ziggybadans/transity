@@ -1,11 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
 
-# Enable vcpkg integration and manifest mode
-if(DEFINED ENV{VCPKG_ROOT} AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
-    set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
-        CACHE STRING "")
-endif()
-
 # Enable vcpkg manifest mode
 set(VCPKG_MANIFEST_MODE ON)
 set(VCPKG_MANIFEST_INSTALL ON)
@@ -25,12 +19,6 @@ if(MSVC)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 endif()
 
-# Set vcpkg toolchain file if not already set
-if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
-    set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake"
-        CACHE STRING "Vcpkg toolchain file")
-endif()
-
 # Enable testing
 enable_testing()
 
@@ -46,9 +34,6 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 # Add cmake modules path
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
-
-# Add vcpkg installed directory to CMAKE_PREFIX_PATH
-list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg_installed/x64-windows")
 
 # Dependencies
 find_package(SFML CONFIG REQUIRED COMPONENTS system window graphics)
