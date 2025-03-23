@@ -7,11 +7,13 @@ add_executable(unit_tests
     unit/core/debug_manager_test.cpp
     unit/core/performance_test.cpp
     unit/core/performance_regression_test.cpp
+    unit/ecs/entity_manager_test.cpp
 )
 
 target_link_libraries(unit_tests
     PRIVATE
         transity_core
+        transity_ecs
         Catch2::Catch2WithMain
 )
 
@@ -24,6 +26,7 @@ add_executable(integration_tests
 target_link_libraries(integration_tests
     PRIVATE
         transity_core
+        transity_ecs
         Catch2::Catch2WithMain
 )
 

@@ -10,6 +10,10 @@ add_library(transity_core
     core/event_manager.cpp
 )
 
+add_library(transity_ecs
+    ecs/entity_manager.cpp
+)
+
 target_link_libraries(transity_core
     PUBLIC
         sfml-system
@@ -21,5 +25,14 @@ target_link_libraries(transity_core
         EnTT::EnTT
 )
 
+target_link_libraries(transity_ecs
+    PUBLIC
+        transity_core
+)
+
 add_executable(transity main.cpp)
-target_link_libraries(transity PRIVATE transity_core) 
+target_link_libraries(transity 
+    PRIVATE 
+        transity_core
+        transity_ecs
+) 
