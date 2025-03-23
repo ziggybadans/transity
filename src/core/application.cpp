@@ -16,7 +16,7 @@ Application::Application()
     , m_targetFPS(60)
     , m_currentFPS(0.0f)
     , m_accumulatedTime(0.0f)
-    , m_window(nullptr)
+    , m_mainWindowId("main")
 {
     // Register debug commands
     auto& debug = DebugManager::getInstance();
@@ -55,10 +55,10 @@ void Application::initialize(const std::string& appName) {
         m_appName = appName;
         m_gameState = GameState::Running;
         
-        // Create window with default configuration
+        // Create main window with default configuration
         WindowConfig windowConfig;
         windowConfig.title = m_appName;
-        m_window = std::make_unique<Window>(windowConfig);
+        createWindow(m_mainWindowId, windowConfig);
         
         // Initialize all systems
         if (!m_systemManager.initialize()) {
@@ -88,8 +88,8 @@ void Application::shutdown() {
         // Shutdown all systems
         m_systemManager.shutdown();
         
-        // Clean up window
-        m_window.reset();
+        // Clean up all windows
+        WindowManager::getInstance().cleanup();
         
         m_initialized = false;
         debug.log(LogLevel::Info, "Application '" + m_appName + "' shut down successfully");
@@ -100,6 +100,18 @@ void Application::shutdown() {
     }
 
     debug.endMetric("shutdown");
+}
+
+Window& Application::createWindow(const std::string& windowId, const WindowConfig& config) {
+    return WindowManager::getInstance().createWindow(windowId, config);
+}
+
+Window& Application::getWindow(const std::string& windowId) {
+    return WindowManager::getInstance().getWindow(windowId);
+}
+
+Window& Application::getMainWindow() {
+    return getWindow(m_mainWindowId);
 }
 
 void Application::run() {
@@ -145,6 +157,11 @@ void Application::run() {
             }
 
             updatePerformanceMetrics();
+
+            // Check if all windows are closed
+            if (!WindowManager::getInstance().hasOpenWindows()) {
+                stop();
+            }
         }
     } catch (const TransityError& e) {
         handleError(e);
@@ -184,13 +201,19 @@ void Application::update(float deltaTime) {
 }
 
 void Application::render() {
-    if (!m_window) return;
+    auto& windowManager = WindowManager::getInstance();
+    windowManager.beginFrame();
 
-    // Draw a simple shape for testing
-    sf::CircleShape shape(50.f);
-    shape.setFillColor(sf::Color::Green);
-    shape.setPosition(100.f, 100.f);
-    m_window->getWindow().draw(shape);
+    // Draw to all windows
+    for (size_t i = 0; i < windowManager.getWindowCount(); ++i) {
+        // Draw a simple shape for testing
+        sf::CircleShape shape(50.f);
+        shape.setFillColor(sf::Color::Green);
+        shape.setPosition(100.f, 100.f);
+        getMainWindow().getWindow().draw(shape);
+    }
+
+    windowManager.endFrame();
     
     // Clear input states for next frame
     InputManager::getInstance().clear();

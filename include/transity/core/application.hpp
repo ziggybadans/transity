@@ -11,7 +11,7 @@
 #include <SFML/Window/Keyboard.hpp>
 #include "transity/core/input_manager.hpp"
 #include "transity/core/system_manager.hpp"
-#include "transity/core/window.hpp"
+#include "transity/core/window_manager.hpp"
 #include "transity/core/error.hpp"
 #include "transity/core/debug_manager.hpp"
 
@@ -82,6 +82,27 @@ public:
      * @return Current GameState
      */
     GameState getGameState() const { return m_gameState; }
+
+    /**
+     * @brief Create a new window with given configuration
+     * @param windowId Unique identifier for the window
+     * @param config Window configuration settings
+     * @return Reference to the created window
+     */
+    Window& createWindow(const std::string& windowId, const WindowConfig& config = WindowConfig{});
+
+    /**
+     * @brief Get a window by its ID
+     * @param windowId The ID of the window to retrieve
+     * @return Reference to the window
+     */
+    Window& getWindow(const std::string& windowId);
+
+    /**
+     * @brief Get the main window
+     * @return Reference to the main window
+     */
+    Window& getMainWindow();
 
     /**
      * @brief Register an error handler callback
@@ -173,7 +194,7 @@ private:
     SystemManager m_systemManager;
     sf::Clock m_clock;        // SFML clock for timing
     sf::Clock m_fpsTimer;     // Separate clock for FPS calculation
-    std::unique_ptr<Window> m_window; // Main application window
+    std::string m_mainWindowId;  // ID of the main window
 
     /**
      * @brief Update game logic with fixed timestep

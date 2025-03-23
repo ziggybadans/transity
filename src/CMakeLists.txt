@@ -1,6 +1,7 @@
 add_library(transity_core
     core/application.cpp
     core/window.cpp
+    core/window_manager.cpp
     core/input_manager.cpp
     core/time_manager.cpp
     core/system_manager.cpp
