@@ -2,7 +2,6 @@
 
 #include <memory>
 #include <string>
-#include <stdexcept>
 #include <SFML/System/Clock.hpp>
 #include <SFML/System/Time.hpp>
 #include <SFML/System/Sleep.hpp>
@@ -11,17 +10,11 @@
 #include "transity/core/input_manager.hpp"
 #include "transity/core/system_manager.hpp"
 #include "transity/core/window.hpp"
+#include "transity/core/error.hpp"
+#include "transity/core/debug_manager.hpp"
 
 namespace transity {
 namespace core {
-
-/**
- * @brief Custom exception class for Application-related errors
- */
-class ApplicationError : public std::runtime_error {
-public:
-    explicit ApplicationError(const std::string& message) : std::runtime_error(message) {}
-};
 
 /**
  * @brief Main application class implementing the singleton pattern
@@ -40,18 +33,20 @@ public:
     /**
      * @brief Initialize the application with given parameters
      * @param appName Name of the application
-     * @throws ApplicationError if initialization fails
+     * @throws InitializationError if initialization fails
      */
     void initialize(const std::string& appName = "Transity");
 
     /**
      * @brief Shutdown the application and cleanup resources
+     * @throws SystemError if shutdown fails
      */
     void shutdown();
 
     /**
      * @brief Run the main application loop
-     * @throws ApplicationError if application is not initialized
+     * @throws StateError if application is not initialized
+     * @throws RuntimeError if a critical error occurs during execution
      */
     void run();
 
@@ -84,11 +79,13 @@ public:
 
     /**
      * @brief Pause the game
+     * @throws StateError if game is not in a pausable state
      */
     void pause();
 
     /**
      * @brief Resume the game
+     * @throws StateError if game is not paused
      */
     void resume();
 
@@ -100,8 +97,9 @@ public:
     /**
      * @brief Set target FPS for the game loop
      * @param fps Target frames per second (0 for unlimited)
+     * @throws StateError if fps value is invalid
      */
-    void setTargetFPS(unsigned int fps) { m_targetFPS = fps; }
+    void setTargetFPS(unsigned int fps);
 
     /**
      * @brief Get current FPS
@@ -139,11 +137,13 @@ private:
     /**
      * @brief Update game logic with fixed timestep
      * @param deltaTime Time since last update in seconds
+     * @throws RuntimeError if update fails
      */
     void update(float deltaTime);
 
     /**
      * @brief Render game state
+     * @throws RuntimeError if rendering fails
      */
     void render();
 
@@ -152,8 +152,14 @@ private:
     float m_currentFPS;
     float m_accumulatedTime;
     static constexpr float FIXED_TIMESTEP = 1.0f / 60.0f; // 60 updates per second
+    static constexpr unsigned int MAX_FPS = 1000; // Maximum allowed FPS
 
     void processInput();  // New method for input processing
+
+    /**
+     * @brief Update performance metrics
+     */
+    void updatePerformanceMetrics();
 };
 
 } // namespace core

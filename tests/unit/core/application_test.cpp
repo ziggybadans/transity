@@ -30,7 +30,7 @@ TEST_CASE("Application initialization and shutdown", "[core][application]") {
     
     SECTION("Double initialization throws exception") {
         app.initialize();
-        REQUIRE_THROWS_AS(app.initialize(), ApplicationError);
+        REQUIRE_THROWS_AS(app.initialize(), InitializationError);
         app.shutdown();
     }
     
@@ -53,7 +53,7 @@ TEST_CASE("Application run state", "[core][application]") {
     
     SECTION("Run without initialization throws exception") {
         REQUIRE_FALSE(app.isInitialized());
-        REQUIRE_THROWS_AS(app.run(), ApplicationError);
+        REQUIRE_THROWS_AS(app.run(), StateError);
     }
     
     SECTION("Run after initialization") {
@@ -89,17 +89,17 @@ TEST_CASE("Game state management", "[core][application]") {
     SECTION("Pause and resume functionality") {
         REQUIRE(app.getGameState() == Application::GameState::Running);
         
-        app.pause();
+        REQUIRE_NOTHROW(app.pause());
         REQUIRE(app.getGameState() == Application::GameState::Paused);
         
-        app.resume();
+        REQUIRE_NOTHROW(app.resume());
         REQUIRE(app.getGameState() == Application::GameState::Running);
     }
 
     SECTION("Stop functionality") {
         REQUIRE(app.getGameState() == Application::GameState::Running);
         
-        app.stop();
+        REQUIRE_NOTHROW(app.stop());
         REQUIRE(app.getGameState() == Application::GameState::Stopped);
     }
 
@@ -107,14 +107,14 @@ TEST_CASE("Game state management", "[core][application]") {
         app.stop();
         REQUIRE(app.getGameState() == Application::GameState::Stopped);
         
-        app.pause();
+        REQUIRE_THROWS_AS(app.pause(), StateError);
         REQUIRE(app.getGameState() == Application::GameState::Stopped);
     }
 
     SECTION("Cannot resume when not paused") {
         REQUIRE(app.getGameState() == Application::GameState::Running);
         
-        app.resume();
+        REQUIRE_THROWS_AS(app.resume(), StateError);
         REQUIRE(app.getGameState() == Application::GameState::Running);
     }
 
@@ -131,8 +131,11 @@ TEST_CASE("FPS control", "[core][application]") {
 
     SECTION("Set target FPS") {
         const unsigned int targetFPS = 30;
-        app.setTargetFPS(targetFPS);
-        // Note: We can't test the actual FPS limiting here as it would require running the game loop
+        REQUIRE_NOTHROW(app.setTargetFPS(targetFPS));
+    }
+
+    SECTION("Invalid FPS values") {
+        REQUIRE_THROWS_AS(app.setTargetFPS(1001), StateError);
     }
 
     app.shutdown();

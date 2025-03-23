@@ -26,20 +26,44 @@ TEST_CASE("DebugManager logging functionality", "[debug]") {
         REQUIRE(history.back().first == LogLevel::Warning);
         REQUIRE(history.back().second == "Should be logged");
     }
+
+    SECTION("Clear log history") {
+        debug.log(LogLevel::Info, "Test message");
+        REQUIRE(!debug.getLogHistory().empty());
+        debug.clearLogHistory();
+        REQUIRE(debug.getLogHistory().empty());
+    }
 }
 
 TEST_CASE("DebugManager performance metrics", "[debug]") {
     auto& debug = DebugManager::getInstance();
     
     SECTION("Metric timing works") {
-        debug.beginMetric("test_metric");
+        debug.beginMetric("test_metric", "test_category", "ms");
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
         debug.endMetric("test_metric");
         
         const auto& metrics = debug.getMetrics();
         REQUIRE(!metrics.empty());
         REQUIRE(metrics.back().name == "test_metric");
+        REQUIRE(metrics.back().category == "test_category");
+        REQUIRE(metrics.back().unit == "ms");
         REQUIRE(metrics.back().value >= 10.0); // At least 10ms
+    }
+
+    SECTION("Get metrics by category") {
+        debug.beginMetric("metric1", "category1", "ms");
+        debug.endMetric("metric1");
+        debug.beginMetric("metric2", "category2", "ms");
+        debug.endMetric("metric2");
+
+        auto category1Metrics = debug.getMetricsByCategory("category1");
+        REQUIRE(category1Metrics.size() == 1);
+        REQUIRE(category1Metrics[0].name == "metric1");
+
+        auto category2Metrics = debug.getMetricsByCategory("category2");
+        REQUIRE(category2Metrics.size() == 1);
+        REQUIRE(category2Metrics[0].name == "metric2");
     }
 }
 
@@ -59,6 +83,13 @@ TEST_CASE("DebugManager debug overlay", "[debug]") {
         const auto& info = debug.getDebugInfo();
         REQUIRE(info.at("test_key") == "test_value");
     }
+
+    SECTION("Debug sections work") {
+        debug.createDebugSection("test_section");
+        debug.addDebugInfoToSection("test_section", "test_key", "test_value");
+        const auto& section = debug.getDebugSection("test_section");
+        REQUIRE(section.at("test_key") == "test_value");
+    }
 }
 
 TEST_CASE("DebugManager command system", "[debug]") {
@@ -66,15 +97,22 @@ TEST_CASE("DebugManager command system", "[debug]") {
     bool commandExecuted = false;
     
     SECTION("Command registration and execution") {
-        debug.registerCommand("test_cmd", [&commandExecuted](const std::vector<std::string>& args) {
-            commandExecuted = true;
-            REQUIRE(args.size() == 2);
-            REQUIRE(args[0] == "arg1");
-            REQUIRE(args[1] == "arg2");
-        });
+        debug.registerCommand("test_cmd", 
+            [&commandExecuted](const std::vector<std::string>& args) {
+                commandExecuted = true;
+                REQUIRE(args.size() == 2);
+                REQUIRE(args[0] == "arg1");
+                REQUIRE(args[1] == "arg2");
+            },
+            "Test command description"
+        );
         
         REQUIRE(debug.executeCommand("test_cmd arg1 arg2"));
         REQUIRE(commandExecuted);
+
+        // Check command description
+        auto commands = debug.getCommandList();
+        REQUIRE(commands["test_cmd"] == "Test command description");
     }
     
     SECTION("Invalid command handling") {
@@ -93,5 +131,23 @@ TEST_CASE("DebugManager system state", "[debug]") {
         REQUIRE(debug.getSystemState("test_system") == "stopped");
         
         REQUIRE(debug.getSystemState("nonexistent_system") == "");
+    }
+
+    SECTION("Clear system state") {
+        debug.setSystemState("test_system", "running");
+        REQUIRE(debug.getSystemState("test_system") == "running");
+        
+        debug.clearSystemState("test_system");
+        REQUIRE(debug.getSystemState("test_system") == "");
+    }
+
+    SECTION("Get all system states") {
+        debug.setSystemState("system1", "running");
+        debug.setSystemState("system2", "stopped");
+        
+        const auto& states = debug.getAllSystemStates();
+        REQUIRE(states.size() == 2);
+        REQUIRE(states.at("system1") == "running");
+        REQUIRE(states.at("system2") == "stopped");
     }
 } 

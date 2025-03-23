@@ -1,6 +1,5 @@
 #include "transity/core/application.hpp"
 #include <iostream>
-#include <stdexcept>
 #include <SFML/System/Clock.hpp>
 #include <SFML/System/Sleep.hpp>
 #include <SFML/System/Time.hpp>
@@ -19,6 +18,18 @@ Application::Application()
     , m_accumulatedTime(0.0f)
     , m_window(nullptr)
 {
+    // Register debug commands
+    auto& debug = DebugManager::getInstance();
+    debug.registerCommand("fps", 
+        [this](const std::vector<std::string>& args) {
+            if (args.empty()) {
+                std::cout << "Current FPS: " << m_currentFPS << std::endl;
+            } else {
+                setTargetFPS(std::stoul(args[0]));
+            }
+        },
+        "Display or set target FPS (usage: fps [target])"
+    );
 }
 
 Application::~Application() {
@@ -33,8 +44,11 @@ Application& Application::getInstance() {
 }
 
 void Application::initialize(const std::string& appName) {
+    auto& debug = DebugManager::getInstance();
+    debug.beginMetric("initialization", "core", "ms");
+
     if (m_initialized) {
-        throw ApplicationError("Application is already initialized");
+        throw InitializationError("Application is already initialized");
     }
 
     try {
@@ -48,21 +62,27 @@ void Application::initialize(const std::string& appName) {
         
         // Initialize all systems
         if (!m_systemManager.initialize()) {
-            throw ApplicationError("Failed to initialize systems");
+            throw SystemError("Failed to initialize systems");
         }
         
         m_initialized = true;
-        std::cout << "Application '" << m_appName << "' initialized successfully" << std::endl;
+        debug.log(LogLevel::Info, "Application '" + m_appName + "' initialized successfully");
     }
     catch (const std::exception& e) {
-        throw ApplicationError(std::string("Failed to initialize application: ") + e.what());
+        debug.log(LogLevel::Error, "Initialization failed: " + std::string(e.what()));
+        throw InitializationError(std::string("Failed to initialize application: ") + e.what());
     }
+
+    debug.endMetric("initialization");
 }
 
 void Application::shutdown() {
     if (!m_initialized) {
         return;
     }
+
+    auto& debug = DebugManager::getInstance();
+    debug.beginMetric("shutdown", "core", "ms");
 
     try {
         // Shutdown all systems
@@ -72,24 +92,32 @@ void Application::shutdown() {
         m_window.reset();
         
         m_initialized = false;
-        std::cout << "Application '" << m_appName << "' shut down successfully" << std::endl;
+        debug.log(LogLevel::Info, "Application '" + m_appName + "' shut down successfully");
     }
     catch (const std::exception& e) {
-        // Log error but don't throw during shutdown
-        std::cerr << "Error during shutdown: " << e.what() << std::endl;
+        debug.log(LogLevel::Error, "Error during shutdown: " + std::string(e.what()));
+        throw SystemError(std::string("Failed to shutdown application: ") + e.what());
     }
+
+    debug.endMetric("shutdown");
 }
 
 void Application::run() {
+    auto& debug = DebugManager::getInstance();
+
     if (!m_initialized) {
-        throw ApplicationError("Cannot run application before initialization");
+        throw StateError("Cannot run application before initialization");
     }
 
     unsigned int frameCount = 0;
     m_clock.restart();
     m_fpsTimer.restart();
 
+    debug.log(LogLevel::Info, "Starting main loop");
+
     while (m_gameState != GameState::Stopped && m_window->isOpen()) {
+        debug.beginMetric("frame", "core", "ms");
+
         // Process window events
         if (!m_window->processEvents()) {
             stop();
@@ -101,29 +129,37 @@ void Application::run() {
 
         // Update game logic with fixed timestep
         if (m_gameState == GameState::Running) {
+            debug.beginMetric("update", "core", "ms");
             while (m_accumulatedTime >= FIXED_TIMESTEP) {
-                update(FIXED_TIMESTEP);
+                try {
+                    update(FIXED_TIMESTEP);
+                } catch (const std::exception& e) {
+                    debug.log(LogLevel::Error, "Update error: " + std::string(e.what()));
+                    throw RuntimeError("Critical error during update: " + std::string(e.what()));
+                }
                 m_accumulatedTime -= FIXED_TIMESTEP;
             }
+            debug.endMetric("update");
         }
 
         // Begin frame rendering
+        debug.beginMetric("render", "core", "ms");
         m_window->beginFrame();
         
-        // Render game state
-        render();
+        try {
+            // Render game state
+            render();
+        } catch (const std::exception& e) {
+            debug.log(LogLevel::Error, "Render error: " + std::string(e.what()));
+            throw RuntimeError("Critical error during render: " + std::string(e.what()));
+        }
         
         // End frame and display
         m_window->endFrame();
+        debug.endMetric("render");
         
         frameCount++;
-
-        // Calculate FPS every second
-        if (m_fpsTimer.getElapsedTime().asSeconds() >= 1.0f) {
-            m_currentFPS = static_cast<float>(frameCount);
-            frameCount = 0;
-            m_fpsTimer.restart();
-        }
+        updatePerformanceMetrics();
 
         // Frame rate limiting
         if (m_targetFPS > 0) {
@@ -133,6 +169,8 @@ void Application::run() {
                 sf::sleep(sf::seconds(targetFrameTime - elapsedTime));
             }
         }
+
+        debug.endMetric("frame");
     }
 }
 
@@ -181,22 +219,50 @@ void Application::render() {
 }
 
 void Application::pause() {
-    if (m_gameState == GameState::Running) {
-        m_gameState = GameState::Paused;
-        std::cout << "Game paused" << std::endl;
+    if (m_gameState != GameState::Running) {
+        throw StateError("Cannot pause: game is not running");
     }
+    m_gameState = GameState::Paused;
+    DebugManager::getInstance().log(LogLevel::Info, "Game paused");
 }
 
 void Application::resume() {
-    if (m_gameState == GameState::Paused) {
-        m_gameState = GameState::Running;
-        std::cout << "Game resumed" << std::endl;
+    if (m_gameState != GameState::Paused) {
+        throw StateError("Cannot resume: game is not paused");
     }
+    m_gameState = GameState::Running;
+    DebugManager::getInstance().log(LogLevel::Info, "Game resumed");
 }
 
 void Application::stop() {
     m_gameState = GameState::Stopped;
-    std::cout << "Game stopped" << std::endl;
+    DebugManager::getInstance().log(LogLevel::Info, "Game stopped");
+}
+
+void Application::setTargetFPS(unsigned int fps) {
+    if (fps > MAX_FPS) {
+        throw StateError("Target FPS exceeds maximum allowed value of " + std::to_string(MAX_FPS));
+    }
+    m_targetFPS = fps;
+    DebugManager::getInstance().log(LogLevel::Info, "Target FPS set to: " + std::to_string(fps));
+}
+
+void Application::updatePerformanceMetrics() {
+    auto& debug = DebugManager::getInstance();
+    
+    // Calculate and update FPS
+    if (m_fpsTimer.getElapsedTime().asSeconds() >= 1.0f) {
+        m_currentFPS = static_cast<float>(m_accumulatedTime);
+        debug.addDebugInfo("FPS", std::to_string(static_cast<int>(m_currentFPS)));
+        m_fpsTimer.restart();
+    }
+    
+    // Update system metrics
+    SystemMetrics metrics;
+    metrics.frameTime = m_clock.getElapsedTime().asSeconds() * 1000.0f; // Convert to ms
+    metrics.timestamp = std::chrono::steady_clock::now();
+    // Note: CPU and memory usage would require platform-specific implementations
+    debug.updateSystemMetrics(metrics);
 }
 
 } // namespace transity::core 
