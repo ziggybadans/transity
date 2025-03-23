@@ -49,8 +49,10 @@ bool ConfigurationManager::saveConfiguration() {
         nlohmann::json jsonConfig;
 
         // Convert configuration data to JSON
-        for (const auto& [key, value] : configData) {
-            std::visit([&](const auto& v) {
+        for (const auto& pair : configData) {
+            const auto& key = pair.first;
+            const auto& value = pair.second;
+            std::visit([&jsonConfig, &key](const auto& v) {
                 jsonConfig[key] = v;
             }, value);
         }

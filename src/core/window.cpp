@@ -19,10 +19,17 @@ void Window::create() {
         throw ConfigurationError("Invalid window dimensions");
     }
 
-    // Verify the video mode is valid
-    sf::VideoMode videoMode(m_config.width, m_config.height);
+    // In CI environments, use a more conservative video mode
+    sf::VideoMode videoMode;
+    if (std::getenv("CI") != nullptr) {
+        // Use a smaller, more compatible resolution in CI
+        videoMode = sf::VideoMode(800, 600, 24);
+    } else {
+        videoMode = sf::VideoMode(m_config.width, m_config.height);
+    }
+
     if (!videoMode.isValid()) {
-        throw ConfigurationError("Invalid video mode: " + std::to_string(m_config.width) + "x" + std::to_string(m_config.height));
+        throw ConfigurationError("Invalid video mode: " + std::to_string(videoMode.width) + "x" + std::to_string(videoMode.height));
     }
 
     // Set up window style based on configuration

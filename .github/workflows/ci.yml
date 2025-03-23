@@ -88,9 +88,11 @@ jobs:
 
     - name: Run Tests
       working-directory: ${{ github.workspace }}/build
+      env:
+        CI: true
       run: |
         if [ "${{ runner.os }}" == "Linux" ]; then
-          xvfb-run --auto-servernum --server-args="-screen 0 1280x1024x24" ctest -C ${{ matrix.build-type }} --output-on-failure
+          xvfb-run --auto-servernum --server-args="-screen 0 800x600x24" ctest -C ${{ matrix.build-type }} --output-on-failure
         else
           ctest -C ${{ matrix.build-type }} --output-on-failure
         fi
@@ -148,8 +150,10 @@ jobs:
         
     - name: Run Tests with Coverage
       working-directory: ${{ github.workspace }}/build
+      env:
+        CI: true
       run: |
-        xvfb-run --auto-servernum --server-args="-screen 0 1280x1024x24" ctest -C Debug --output-on-failure
+        xvfb-run --auto-servernum --server-args="-screen 0 800x600x24" ctest -C Debug --output-on-failure
         
     - name: Generate Coverage Report
       run: |
