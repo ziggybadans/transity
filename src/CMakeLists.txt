@@ -12,6 +12,7 @@ add_library(transity_core
 
 add_library(transity_ecs
     ecs/entity_manager.cpp
+    ecs/component_manager.cpp
 )
 
 target_link_libraries(transity_core

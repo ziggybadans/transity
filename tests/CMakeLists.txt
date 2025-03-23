@@ -8,6 +8,7 @@ add_executable(unit_tests
     unit/core/performance_test.cpp
     unit/core/performance_regression_test.cpp
     unit/ecs/entity_manager_test.cpp
+    unit/component_manager_test.cpp
 )
 
 target_link_libraries(unit_tests
