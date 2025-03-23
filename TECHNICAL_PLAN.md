@@ -67,12 +67,15 @@ Each task should be implemented in order, and every task should have tasks writt
    - Implement singleton pattern for global access
    - Add initialization and shutdown sequences
    - Create basic error handling structure
+   (new) - Implement specific exception types for different error categories
+   (new) - Add error recovery mechanisms for non-fatal errors
 
 2. Window Management
    - Create Window class wrapper around SFML window
    - Implement window configuration (resolution, fullscreen, etc.)
    - Add window event handling (resize, focus, close)
    - Create window settings serialization
+   (new) - Add support for multiple window management
 
 3. Game Loop Architecture
    - Implement main loop structure with fixed timestep
@@ -80,6 +83,7 @@ Each task should be implemented in order, and every task should have tasks writt
    - Add frame time calculation and FPS limiting
    - Implement pause/resume functionality
    - Add game state management (running, paused, etc.)
+   (new) - Implement thread safety mechanisms for critical sections
 
 4. Input System
    - Create InputManager class
@@ -96,6 +100,7 @@ Each task should be implemented in order, and every task should have tasks writt
    - Create time scale control (slow-motion, fast-forward)
    - Implement game tick system for simulation
    - Add time-based event scheduling
+   (new) - Use std::chrono for precise time measurements
 
 6. Subsystem Architecture
    - Create ISystem interface for all subsystems
@@ -105,6 +110,8 @@ Each task should be implemented in order, and every task should have tasks writt
    - Implement update order management
    - Add subsystem enable/disable functionality
    - Create system lifecycle hooks (init, update, shutdown)
+   (new) - Implement asynchronous loading capabilities
+   (new) - Add resource handle pattern for asset management
 
 7. Debug Infrastructure
    - Add logging integration for core systems
@@ -112,12 +119,37 @@ Each task should be implemented in order, and every task should have tasks writt
    - Create debug overlay system
    - Add system state visualization
    - Implement debug commands interface
+   (new) - Implement performance monitoring and reporting
+   (new) - Add memory usage tracking
+   (new) - Create system resource monitoring
+   (new) - Add visual profiling tools
+   (new) - Implement event replay system for debugging
 
 8. Testing Framework Integration
    - Create unit tests for core systems
    - Implement performance benchmarks
    - Add stress testing scenarios
    - Create system mock interfaces
+   (new) - Add integration tests between subsystems
+   (new) - Implement automated performance regression testing
+   (new) - Create test coverage reporting
+
+9. Configuration Management
+   - Implement ConfigurationManager class
+   - Add support for runtime configuration changes
+   - Create user preferences system
+   - Implement settings serialization
+   - Add configuration validation
+   - Create configuration migration system
+
+10. Event System
+    - Implement EventQueue class
+    - Add event prioritization
+    - Create event lifecycle management
+    - Implement event replay capabilities
+    - Add event logging and analysis tools
+    - Create event filtering system
+    - Implement event debugging tools
 
 Example commit message for initial implementation:
 "feat: Implement core engine architecture and basic systems
