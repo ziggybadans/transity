@@ -8,6 +8,8 @@
 #include <vector>
 #include <memory>
 #include <unordered_map>
+#include <thread>
+#include <mutex>
 #include "transity/core/error.hpp"
 
 namespace transity {
@@ -33,6 +35,25 @@ struct SystemMetrics {
     size_t memoryUsage;
     double frameTime;
     std::chrono::steady_clock::time_point timestamp;
+    // New fields for enhanced system monitoring
+    size_t availableMemory;
+    size_t peakMemoryUsage;
+    double gpuUsage;
+    double diskUsage;
+    size_t diskReadBytes;
+    size_t diskWriteBytes;
+    size_t networkReadBytes;
+    size_t networkWriteBytes;
+};
+
+struct ProfileEvent {
+    std::string name;
+    std::string category;
+    std::chrono::steady_clock::time_point startTime;
+    std::chrono::steady_clock::time_point endTime;
+    std::thread::id threadId;
+    size_t memoryUsage;
+    std::map<std::string, std::string> metadata;
 };
 
 class DebugManager {
@@ -87,6 +108,39 @@ public:
     void setPerformanceThreshold(const std::string& metric, double threshold);
     bool isPerformanceThresholdExceeded(const std::string& metric) const;
 
+    // Performance monitoring and reporting
+    void startProfiling(const std::string& session);
+    void stopProfiling();
+    void exportProfilingData(const std::string& filename);
+    std::vector<ProfileEvent> getProfilingEvents(const std::string& category = "") const;
+    
+    // Memory usage tracking
+    size_t getCurrentMemoryUsage() const;
+    size_t getPeakMemoryUsage() const;
+    void resetPeakMemoryUsage();
+    std::vector<std::pair<std::string, size_t>> getMemoryBreakdown() const;
+    
+    // System resource monitoring
+    void enableResourceMonitoring(bool enable);
+    bool isResourceMonitoringEnabled() const;
+    SystemMetrics getDetailedSystemMetrics() const;
+    std::map<std::string, double> getResourceUtilization() const;
+    
+    // Visual profiling tools
+    void beginProfile(const std::string& name, const std::string& category);
+    void endProfile(const std::string& name);
+    void addProfileMetadata(const std::string& name, const std::string& key, const std::string& value);
+    std::vector<ProfileEvent> getActiveProfiles() const;
+    
+    // Event replay system
+    void startEventRecording();
+    void stopEventRecording();
+    void recordEvent(const std::string& type, const std::map<std::string, std::string>& data);
+    void saveEventLog(const std::string& filename);
+    void loadEventLog(const std::string& filename);
+    void replayEvents(const std::function<void(const std::string&, const std::map<std::string, std::string>&)>& callback);
+    bool isRecordingEvents() const;
+
 private:
     DebugManager();
     ~DebugManager() = default;
@@ -108,6 +162,18 @@ private:
     std::map<std::string, std::string> metricUnits;
     std::map<std::string, double> performanceThresholds;
     SystemMetrics latestSystemMetrics{};
+
+    // New private members
+    bool m_resourceMonitoringEnabled{false};
+    bool m_isRecordingEvents{false};
+    bool m_isProfilingActive{false};
+    std::string m_currentProfilingSession;
+    std::vector<ProfileEvent> m_profilingEvents;
+    std::map<std::string, ProfileEvent> m_activeProfiles;
+    std::vector<std::pair<std::string, std::map<std::string, std::string>>> m_recordedEvents;
+    size_t m_peakMemoryUsage{0};
+    mutable std::mutex m_profilingMutex;
+    mutable std::mutex m_eventMutex;
 
     static constexpr size_t MAX_LOG_HISTORY = 1000;
     static constexpr size_t MAX_METRICS_HISTORY = 1000;

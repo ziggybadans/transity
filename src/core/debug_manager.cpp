@@ -3,6 +3,12 @@
 #include <iostream>
 #include <sstream>
 #include <numeric>
+#include <thread>
+#include <mutex>
+#include <fstream>
+#include <nlohmann/json.hpp>
+
+using json = nlohmann::json;
 
 namespace transity {
 namespace core {
@@ -246,6 +252,219 @@ bool DebugManager::isPerformanceThresholdExceeded(const std::string& metric) con
 
 const std::vector<PerformanceMetric>& DebugManager::getMetrics() const {
     return metrics;
+}
+
+// Performance monitoring and reporting
+void DebugManager::startProfiling(const std::string& session) {
+    std::lock_guard<std::mutex> lock(m_profilingMutex);
+    if (m_isProfilingActive) {
+        log(LogLevel::Warning, "Profiling session already active. Stopping current session.");
+        stopProfiling();
+    }
+    m_currentProfilingSession = session;
+    m_isProfilingActive = true;
+    m_profilingEvents.clear();
+    log(LogLevel::Info, "Started profiling session: " + session);
+}
+
+void DebugManager::stopProfiling() {
+    std::lock_guard<std::mutex> lock(m_profilingMutex);
+    if (!m_isProfilingActive) {
+        return;
+    }
+    m_isProfilingActive = false;
+    log(LogLevel::Info, "Stopped profiling session: " + m_currentProfilingSession);
+}
+
+void DebugManager::exportProfilingData(const std::string& filename) {
+    std::lock_guard<std::mutex> lock(m_profilingMutex);
+    // TODO: Implement JSON serialization of profiling data
+    log(LogLevel::Info, "Exported profiling data to: " + filename);
+}
+
+std::vector<ProfileEvent> DebugManager::getProfilingEvents(const std::string& category) const {
+    std::lock_guard<std::mutex> lock(m_profilingMutex);
+    if (category.empty()) {
+        return m_profilingEvents;
+    }
+    std::vector<ProfileEvent> filtered;
+    std::copy_if(m_profilingEvents.begin(), m_profilingEvents.end(), 
+                 std::back_inserter(filtered),
+                 [&](const ProfileEvent& event) { return event.category == category; });
+    return filtered;
+}
+
+// Memory usage tracking
+size_t DebugManager::getCurrentMemoryUsage() const {
+    return latestSystemMetrics.memoryUsage;
+}
+
+size_t DebugManager::getPeakMemoryUsage() const {
+    return m_peakMemoryUsage;
+}
+
+void DebugManager::resetPeakMemoryUsage() {
+    m_peakMemoryUsage = getCurrentMemoryUsage();
+}
+
+std::vector<std::pair<std::string, size_t>> DebugManager::getMemoryBreakdown() const {
+    // TODO: Implement detailed memory breakdown by category/system
+    return {};
+}
+
+// System resource monitoring
+void DebugManager::enableResourceMonitoring(bool enable) {
+    m_resourceMonitoringEnabled = enable;
+    log(LogLevel::Info, std::string("Resource monitoring ") + (enable ? "enabled" : "disabled"));
+}
+
+bool DebugManager::isResourceMonitoringEnabled() const {
+    return m_resourceMonitoringEnabled;
+}
+
+SystemMetrics DebugManager::getDetailedSystemMetrics() const {
+    return latestSystemMetrics;
+}
+
+std::map<std::string, double> DebugManager::getResourceUtilization() const {
+    return {
+        {"cpu", latestSystemMetrics.cpuUsage},
+        {"memory", static_cast<double>(latestSystemMetrics.memoryUsage) / latestSystemMetrics.availableMemory},
+        {"gpu", latestSystemMetrics.gpuUsage},
+        {"disk", latestSystemMetrics.diskUsage}
+    };
+}
+
+// Visual profiling tools
+void DebugManager::beginProfile(const std::string& name, const std::string& category) {
+    std::lock_guard<std::mutex> lock(m_profilingMutex);
+    if (!m_isProfilingActive) {
+        return;
+    }
+    
+    ProfileEvent event;
+    event.name = name;
+    event.category = category;
+    event.startTime = std::chrono::steady_clock::now();
+    event.threadId = std::this_thread::get_id();
+    event.memoryUsage = getCurrentMemoryUsage();
+    
+    m_activeProfiles[name] = event;
+}
+
+void DebugManager::endProfile(const std::string& name) {
+    std::lock_guard<std::mutex> lock(m_profilingMutex);
+    if (!m_isProfilingActive) {
+        return;
+    }
+    
+    auto it = m_activeProfiles.find(name);
+    if (it != m_activeProfiles.end()) {
+        auto& event = it->second;
+        event.endTime = std::chrono::steady_clock::now();
+        m_profilingEvents.push_back(event);
+        m_activeProfiles.erase(it);
+    }
+}
+
+void DebugManager::addProfileMetadata(const std::string& name, const std::string& key, const std::string& value) {
+    std::lock_guard<std::mutex> lock(m_profilingMutex);
+    auto it = m_activeProfiles.find(name);
+    if (it != m_activeProfiles.end()) {
+        it->second.metadata[key] = value;
+    }
+}
+
+std::vector<ProfileEvent> DebugManager::getActiveProfiles() const {
+    std::lock_guard<std::mutex> lock(m_profilingMutex);
+    std::vector<ProfileEvent> active;
+    for (const auto& [name, event] : m_activeProfiles) {
+        active.push_back(event);
+    }
+    return active;
+}
+
+// Event replay system
+void DebugManager::startEventRecording() {
+    std::lock_guard<std::mutex> lock(m_eventMutex);
+    m_isRecordingEvents = true;
+    m_recordedEvents.clear();
+    log(LogLevel::Info, "Started event recording");
+}
+
+void DebugManager::stopEventRecording() {
+    std::lock_guard<std::mutex> lock(m_eventMutex);
+    m_isRecordingEvents = false;
+    log(LogLevel::Info, "Stopped event recording. Total events: " + std::to_string(m_recordedEvents.size()));
+}
+
+void DebugManager::recordEvent(const std::string& type, const std::map<std::string, std::string>& data) {
+    std::lock_guard<std::mutex> lock(m_eventMutex);
+    if (!m_isRecordingEvents) {
+        return;
+    }
+    m_recordedEvents.emplace_back(type, data);
+}
+
+void DebugManager::saveEventLog(const std::string& filename) {
+    std::lock_guard<std::mutex> lock(m_eventMutex);
+    
+    json j;
+    j["events"] = json::array();
+    
+    for (const auto& [type, data] : m_recordedEvents) {
+        json event;
+        event["type"] = type;
+        event["data"] = data;
+        j["events"].push_back(event);
+    }
+    
+    std::ofstream file(filename);
+    if (!file) {
+        log(LogLevel::Error, "Failed to open file for writing: " + filename);
+        return;
+    }
+    
+    file << j.dump(4);
+    log(LogLevel::Info, "Saved event log to: " + filename);
+}
+
+void DebugManager::loadEventLog(const std::string& filename) {
+    std::lock_guard<std::mutex> lock(m_eventMutex);
+    
+    std::ifstream file(filename);
+    if (!file) {
+        log(LogLevel::Error, "Failed to open file for reading: " + filename);
+        return;
+    }
+    
+    try {
+        json j;
+        file >> j;
+        
+        m_recordedEvents.clear();
+        
+        for (const auto& event : j["events"]) {
+            std::string type = event["type"];
+            std::map<std::string, std::string> data = event["data"];
+            m_recordedEvents.emplace_back(type, data);
+        }
+        
+        log(LogLevel::Info, "Loaded event log from: " + filename);
+    } catch (const json::exception& e) {
+        log(LogLevel::Error, "Failed to parse event log: " + std::string(e.what()));
+    }
+}
+
+void DebugManager::replayEvents(const std::function<void(const std::string&, const std::map<std::string, std::string>&)>& callback) {
+    std::lock_guard<std::mutex> lock(m_eventMutex);
+    for (const auto& [type, data] : m_recordedEvents) {
+        callback(type, data);
+    }
+}
+
+bool DebugManager::isRecordingEvents() const {
+    return m_isRecordingEvents;
 }
 
 } // namespace core

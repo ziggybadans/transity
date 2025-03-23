@@ -150,4 +150,116 @@ TEST_CASE("DebugManager system state", "[debug]") {
         REQUIRE(states.at("system1") == "running");
         REQUIRE(states.at("system2") == "stopped");
     }
+}
+
+TEST_CASE("DebugManager performance monitoring and profiling", "[debug]") {
+    auto& debug = DebugManager::getInstance();
+    
+    SECTION("Profiling session management") {
+        debug.startProfiling("test_session");
+        REQUIRE(debug.getProfilingEvents().empty());
+        
+        debug.beginProfile("test_profile", "test_category");
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        debug.endProfile("test_profile");
+        
+        debug.stopProfiling();
+        auto events = debug.getProfilingEvents();
+        REQUIRE(events.size() == 1);
+        REQUIRE(events[0].name == "test_profile");
+        REQUIRE(events[0].category == "test_category");
+        REQUIRE(std::chrono::duration_cast<std::chrono::milliseconds>(
+            events[0].endTime - events[0].startTime).count() >= 10);
+    }
+    
+    SECTION("Profile metadata") {
+        debug.startProfiling("test_session");
+        debug.beginProfile("test_profile", "test_category");
+        debug.addProfileMetadata("test_profile", "test_key", "test_value");
+        
+        auto profiles = debug.getActiveProfiles();
+        REQUIRE(profiles.size() == 1);
+        REQUIRE(profiles[0].metadata["test_key"] == "test_value");
+        
+        debug.endProfile("test_profile");
+        debug.stopProfiling();
+    }
+}
+
+TEST_CASE("DebugManager memory tracking", "[debug]") {
+    auto& debug = DebugManager::getInstance();
+    
+    SECTION("Memory usage tracking") {
+        auto currentUsage = debug.getCurrentMemoryUsage();
+        REQUIRE(currentUsage >= 0);
+        
+        debug.resetPeakMemoryUsage();
+        REQUIRE(debug.getPeakMemoryUsage() == currentUsage);
+    }
+}
+
+TEST_CASE("DebugManager system resource monitoring", "[debug]") {
+    auto& debug = DebugManager::getInstance();
+    
+    SECTION("Resource monitoring toggle") {
+        debug.enableResourceMonitoring(true);
+        REQUIRE(debug.isResourceMonitoringEnabled());
+        
+        debug.enableResourceMonitoring(false);
+        REQUIRE_FALSE(debug.isResourceMonitoringEnabled());
+    }
+    
+    SECTION("Resource utilization") {
+        auto metrics = debug.getResourceUtilization();
+        REQUIRE(metrics.find("cpu") != metrics.end());
+        REQUIRE(metrics.find("memory") != metrics.end());
+        REQUIRE(metrics.find("gpu") != metrics.end());
+        REQUIRE(metrics.find("disk") != metrics.end());
+    }
+}
+
+TEST_CASE("DebugManager event replay system", "[debug]") {
+    auto& debug = DebugManager::getInstance();
+    
+    SECTION("Event recording") {
+        debug.startEventRecording();
+        REQUIRE(debug.isRecordingEvents());
+        
+        std::map<std::string, std::string> eventData{{"key", "value"}};
+        debug.recordEvent("test_event", eventData);
+        
+        debug.stopEventRecording();
+        REQUIRE_FALSE(debug.isRecordingEvents());
+        
+        bool eventReplayed = false;
+        debug.replayEvents([&](const std::string& type, const std::map<std::string, std::string>& data) {
+            REQUIRE(type == "test_event");
+            REQUIRE(data.at("key") == "value");
+            eventReplayed = true;
+        });
+        REQUIRE(eventReplayed);
+    }
+    
+    SECTION("Event log save/load") {
+        debug.startEventRecording();
+        std::map<std::string, std::string> eventData{{"key", "value"}};
+        debug.recordEvent("test_event", eventData);
+        debug.stopEventRecording();
+        
+        const std::string testFile = "test_events.json";
+        debug.saveEventLog(testFile);
+        
+        // Clear recorded events by starting a new recording
+        debug.startEventRecording();
+        debug.stopEventRecording();
+        
+        debug.loadEventLog(testFile);
+        bool eventLoaded = false;
+        debug.replayEvents([&](const std::string& type, const std::map<std::string, std::string>& data) {
+            REQUIRE(type == "test_event");
+            REQUIRE(data.at("key") == "value");
+            eventLoaded = true;
+        });
+        REQUIRE(eventLoaded);
+    }
 } 
