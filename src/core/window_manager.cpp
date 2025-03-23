@@ -13,17 +13,36 @@ Window& WindowManager::createWindow(const std::string& windowId, const WindowCon
     debug.beginMetric("window_creation", "core", "ms");
 
     if (hasWindow(windowId)) {
+        debug.log(LogLevel::Error, "Window creation failed: ID '" + windowId + "' already exists");
+        debug.endMetric("window_creation");
         throw ConfigurationError("Window with ID '" + windowId + "' already exists");
     }
 
     try {
+        // Validate window ID
+        if (windowId.empty()) {
+            throw ConfigurationError("Window ID cannot be empty");
+        }
+
+        // Create the window
         auto window = std::make_unique<Window>(config);
+        
+        // Verify window was created successfully
+        if (!window || !window->isOpen()) {
+            throw ConfigurationError("Window creation failed: invalid window state");
+        }
+
+        // Store the window
         auto [it, success] = m_windows.emplace(windowId, std::move(window));
+        if (!success) {
+            throw ConfigurationError("Failed to store window in manager");
+        }
+
         debug.log(LogLevel::Info, "Created window with ID: " + windowId);
         debug.endMetric("window_creation");
         return *it->second;
     } catch (const std::exception& e) {
-        debug.log(LogLevel::Error, "Failed to create window: " + std::string(e.what()));
+        debug.log(LogLevel::Error, "Window creation failed: " + std::string(e.what()));
         debug.endMetric("window_creation");
         throw ConfigurationError("Failed to create window: " + std::string(e.what()));
     }

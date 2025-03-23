@@ -1,4 +1,6 @@
 #include "transity/core/window.hpp"
+#include "transity/core/error.hpp"
+#include "transity/core/application.hpp"
 #include <SFML/Window/Event.hpp>
 
 namespace transity {
@@ -12,41 +14,90 @@ Window::Window(const WindowConfig& config)
 Window::~Window() = default;
 
 void Window::create() {
+    // Validate window configuration
+    if (m_config.width == 0 || m_config.height == 0) {
+        throw ConfigurationError("Invalid window dimensions");
+    }
+
+    // Verify the video mode is valid
+    sf::VideoMode videoMode(m_config.width, m_config.height);
+    if (!videoMode.isValid()) {
+        throw ConfigurationError("Invalid video mode: " + std::to_string(m_config.width) + "x" + std::to_string(m_config.height));
+    }
+
     // Set up window style based on configuration
     sf::Uint32 style = sf::Style::Default;
     if (m_config.fullscreen) {
-        style = sf::Style::Fullscreen;
+        if (!sf::VideoMode::getFullscreenModes().empty()) {
+            videoMode = sf::VideoMode::getFullscreenModes()[0];
+            style = sf::Style::Fullscreen;
+        } else {
+            throw ConfigurationError("No valid fullscreen video modes available");
+        }
     }
 
-    // Create the SFML window
-    m_window = std::make_unique<sf::RenderWindow>(
-        sf::VideoMode(m_config.width, m_config.height),
-        m_config.title,
-        style
-    );
+    try {
+        // Create the SFML window
+        m_window = std::make_unique<sf::RenderWindow>(
+            videoMode,
+            m_config.title,
+            style
+        );
 
-    // Apply framerate limit
-    m_window->setFramerateLimit(m_config.framerate);
+        if (!m_window || !m_window->isOpen()) {
+            throw ConfigurationError("Failed to create window");
+        }
+
+        // Apply framerate limit
+        m_window->setFramerateLimit(m_config.framerate);
+    } catch (const std::exception& e) {
+        throw ConfigurationError(std::string("Window creation failed: ") + e.what());
+    }
 }
 
 bool Window::processEvents() {
+    if (!m_window || !m_window->isOpen()) {
+        return false;
+    }
+
     sf::Event event;
     while (m_window->pollEvent(event)) {
-        sf::FloatRect visibleArea;
+        // First let the application handle the event
+        Application::getInstance().processEvent(event);
+
+        // Then handle window-specific events
         switch (event.type) {
             case sf::Event::Closed:
                 m_window->close();
                 return false;
-            case sf::Event::Resized:
+            case sf::Event::Resized: {
                 // Update the view to match the new window size
-                visibleArea = sf::FloatRect(0, 0, event.size.width, event.size.height);
+                sf::FloatRect visibleArea(0, 0, event.size.width, event.size.height);
                 m_window->setView(sf::View(visibleArea));
                 break;
+            }
+            case sf::Event::LostFocus: {
+                // Optionally pause the game when window loses focus
+                auto& app = Application::getInstance();
+                if (app.getGameState() == Application::GameState::Running) {
+                    app.pause();
+                }
+                break;
+            }
+            case sf::Event::GainedFocus: {
+                // Optionally resume the game when window gains focus
+                auto& app = Application::getInstance();
+                if (app.getGameState() == Application::GameState::Paused) {
+                    app.resume();
+                }
+                break;
+            }
             default:
                 break;
         }
     }
-    return true;
+
+    return m_window->isOpen();
 }
 
 void Window::beginFrame() {

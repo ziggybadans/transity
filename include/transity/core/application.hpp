@@ -191,6 +191,13 @@ private:
     Application(); // Private constructor for singleton pattern
     ~Application(); // Private destructor
 
+    /**
+     * @brief Convert a GameState to its string representation
+     * @param state The state to convert
+     * @return String representation of the state
+     */
+    std::string getStateString(GameState state) const;
+
     bool m_initialized;
     std::string m_appName;
     SystemManager m_systemManager;

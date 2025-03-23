@@ -51,28 +51,50 @@ void Application::initialize(const std::string& appName) {
     debug.beginMetric("initialization", "core", "ms");
 
     if (m_initialized) {
+        debug.log(LogLevel::Error, "Application is already initialized");
+        debug.endMetric("initialization");
         throw InitializationError("Application is already initialized");
     }
 
     try {
+        // Initialize debug manager first for logging
+        debug.log(LogLevel::Info, "Initializing application: " + appName);
+
         m_appName = appName;
-        m_gameState = GameState::Running;
+        m_gameState = GameState::Stopped;  // Start in stopped state
         
         // Create main window with default configuration
         WindowConfig windowConfig;
         windowConfig.title = m_appName;
-        createWindow(m_mainWindowId, windowConfig);
+        windowConfig.width = 1280;   // Explicitly set default size
+        windowConfig.height = 720;
+        windowConfig.fullscreen = false;
+        windowConfig.framerate = 60;
+
+        try {
+            createWindow(m_mainWindowId, windowConfig);
+            debug.log(LogLevel::Info, "Main window created successfully");
+        } catch (const ConfigurationError& e) {
+            throw InitializationError(std::string("Failed to create main window: ") + e.what());
+        }
         
         // Initialize all systems
-        if (!m_systemManager.initialize()) {
-            throw SystemError("Failed to initialize systems");
+        try {
+            if (!m_systemManager.initialize()) {
+                throw SystemError("System manager initialization failed");
+            }
+            debug.log(LogLevel::Info, "System manager initialized successfully");
+        } catch (const std::exception& e) {
+            throw InitializationError(std::string("Failed to initialize systems: ") + e.what());
         }
         
         m_initialized = true;
+        m_gameState = GameState::Running;  // Now we can transition to running state
         debug.log(LogLevel::Info, "Application '" + m_appName + "' initialized successfully");
     }
     catch (const std::exception& e) {
         debug.log(LogLevel::Error, "Initialization failed: " + std::string(e.what()));
+        debug.endMetric("initialization");
         throw InitializationError(std::string("Failed to initialize application: ") + e.what());
     }
 
@@ -120,39 +142,41 @@ Window& Application::getMainWindow() {
 void Application::setGameState(GameState newState) {
     std::lock_guard<std::mutex> lock(m_stateMutex);
     
+    // Don't do anything if we're already in the target state
+    if (m_gameState == newState) {
+        return;
+    }
+    
     // Validate state transitions
+    bool validTransition = false;
     switch (m_gameState) {
         case GameState::Running:
-            if (newState != GameState::Paused && newState != GameState::Stopped && newState != GameState::Error) {
-                throw StateError("Invalid state transition from Running");
-            }
+            validTransition = (newState == GameState::Paused || 
+                             newState == GameState::Stopped || 
+                             newState == GameState::Error);
             break;
         case GameState::Paused:
-            if (newState != GameState::Running && newState != GameState::Stopped && newState != GameState::Error) {
-                throw StateError("Invalid state transition from Paused");
-            }
+            validTransition = (newState == GameState::Running || 
+                             newState == GameState::Stopped || 
+                             newState == GameState::Error);
             break;
         case GameState::Stopped:
-            if (newState != GameState::Running && newState != GameState::Error) {
-                throw StateError("Invalid state transition from Stopped");
-            }
+            validTransition = (newState == GameState::Running || 
+                             newState == GameState::Error);
             break;
         case GameState::Error:
-            if (newState != GameState::Running && newState != GameState::Stopped) {
-                throw StateError("Invalid state transition from Error");
-            }
+            validTransition = (newState == GameState::Running || 
+                             newState == GameState::Stopped);
             break;
+    }
+
+    if (!validTransition) {
+        throw StateError("Invalid state transition from " + getStateString(m_gameState) + 
+                        " to " + getStateString(newState));
     }
     
     m_gameState = newState;
-    std::string stateStr;
-    switch (newState) {
-        case GameState::Running: stateStr = "Running"; break;
-        case GameState::Paused: stateStr = "Paused"; break;
-        case GameState::Stopped: stateStr = "Stopped"; break;
-        case GameState::Error: stateStr = "Error"; break;
-    }
-    DebugManager::getInstance().log(LogLevel::Info, "Game state changed to: " + stateStr);
+    DebugManager::getInstance().log(LogLevel::Info, "Game state changed to: " + getStateString(newState));
 }
 
 Application::GameState Application::getGameState() const {
@@ -165,11 +189,23 @@ void Application::run() {
         throw StateError("Application not initialized");
     }
 
-    setGameState(GameState::Running);
+    // Only transition to Running if we're not already in that state
+    if (getGameState() != GameState::Running) {
+        setGameState(GameState::Running);
+    }
+    
     m_accumulatedTime = 0.0f;
 
     try {
         while (getGameState() != GameState::Stopped) {
+            // Process window events first
+            auto& windowManager = WindowManager::getInstance();
+            if (!windowManager.processEvents()) {
+                // All windows were closed
+                stop();
+                break;
+            }
+
             if (getGameState() == GameState::Error) {
                 if (!attemptRecovery()) {
                     break;
@@ -222,9 +258,13 @@ void Application::run() {
 
             updatePerformanceMetrics();
 
-            // Check if all windows are closed
-            if (!WindowManager::getInstance().hasOpenWindows()) {
-                stop();
+            // Sleep to limit FPS if needed
+            if (m_targetFPS > 0) {
+                float targetFrameTime = 1.0f / static_cast<float>(m_targetFPS);
+                float elapsedTime = m_clock.getElapsedTime().asSeconds();
+                if (elapsedTime < targetFrameTime) {
+                    sf::sleep(sf::seconds(targetFrameTime - elapsedTime));
+                }
             }
         }
     } catch (const TransityError& e) {
@@ -238,8 +278,21 @@ void Application::processEvent(const sf::Event& event) {
     InputManager::getInstance().processEvent(event);
 
     // Handle application-specific events
-    if (event.type == sf::Event::Closed) {
-        stop();
+    switch (event.type) {
+        case sf::Event::Closed:
+            stop();
+            break;
+        case sf::Event::KeyPressed:
+            if (event.key.code == sf::Keyboard::Escape) {
+                if (getGameState() == GameState::Running) {
+                    pause();
+                } else if (getGameState() == GameState::Paused) {
+                    resume();
+                }
+            }
+            break;
+        default:
+            break;
     }
 }
 
@@ -389,6 +442,17 @@ bool Application::handleError(const TransityError& error) {
 
 void Application::setError(std::unique_ptr<TransityError> error) {
     m_lastError = std::move(error);
+}
+
+// Helper method to convert state to string
+std::string Application::getStateString(GameState state) const {
+    switch (state) {
+        case GameState::Running: return "Running";
+        case GameState::Paused: return "Paused";
+        case GameState::Stopped: return "Stopped";
+        case GameState::Error: return "Error";
+        default: return "Unknown";
+    }
 }
 
 } // namespace transity::core 
