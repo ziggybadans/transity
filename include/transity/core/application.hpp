@@ -14,6 +14,8 @@
 #include "transity/core/window_manager.hpp"
 #include "transity/core/error.hpp"
 #include "transity/core/debug_manager.hpp"
+#include <mutex>
+#include <atomic>
 
 namespace transity {
 namespace core {
@@ -81,7 +83,7 @@ public:
      * @brief Get current game state
      * @return Current GameState
      */
-    GameState getGameState() const { return m_gameState; }
+    GameState getGameState() const;
 
     /**
      * @brief Create a new window with given configuration
@@ -240,6 +242,20 @@ private:
      * @param error The error to process
      */
     void setError(std::unique_ptr<TransityError> error);
+
+    // Thread safety members
+    mutable std::mutex m_stateMutex;        // Protects game state changes
+    mutable std::mutex m_updateMutex;       // Protects update loop
+    mutable std::mutex m_renderMutex;       // Protects render loop
+    std::atomic<bool> m_isUpdating;         // Flag for update in progress
+    std::atomic<bool> m_isRendering;        // Flag for render in progress
+    
+    /**
+     * @brief Ensure thread-safe state transitions
+     * @param newState The state to transition to
+     * @throws StateError if transition is invalid
+     */
+    void setGameState(GameState newState);
 };
 
 } // namespace core

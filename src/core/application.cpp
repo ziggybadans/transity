@@ -6,6 +6,7 @@
 #include <SFML/Window/Event.hpp>
 #include <SFML/Window/Keyboard.hpp>
 #include <SFML/Graphics/CircleShape.hpp>
+#include <mutex>
 
 namespace transity::core {
 
@@ -17,6 +18,8 @@ Application::Application()
     , m_currentFPS(0.0f)
     , m_accumulatedTime(0.0f)
     , m_mainWindowId("main")
+    , m_isUpdating(false)
+    , m_isRendering(false)
 {
     // Register debug commands
     auto& debug = DebugManager::getInstance();
@@ -114,21 +117,64 @@ Window& Application::getMainWindow() {
     return getWindow(m_mainWindowId);
 }
 
+void Application::setGameState(GameState newState) {
+    std::lock_guard<std::mutex> lock(m_stateMutex);
+    
+    // Validate state transitions
+    switch (m_gameState) {
+        case GameState::Running:
+            if (newState != GameState::Paused && newState != GameState::Stopped && newState != GameState::Error) {
+                throw StateError("Invalid state transition from Running");
+            }
+            break;
+        case GameState::Paused:
+            if (newState != GameState::Running && newState != GameState::Stopped && newState != GameState::Error) {
+                throw StateError("Invalid state transition from Paused");
+            }
+            break;
+        case GameState::Stopped:
+            if (newState != GameState::Running && newState != GameState::Error) {
+                throw StateError("Invalid state transition from Stopped");
+            }
+            break;
+        case GameState::Error:
+            if (newState != GameState::Running && newState != GameState::Stopped) {
+                throw StateError("Invalid state transition from Error");
+            }
+            break;
+    }
+    
+    m_gameState = newState;
+    std::string stateStr;
+    switch (newState) {
+        case GameState::Running: stateStr = "Running"; break;
+        case GameState::Paused: stateStr = "Paused"; break;
+        case GameState::Stopped: stateStr = "Stopped"; break;
+        case GameState::Error: stateStr = "Error"; break;
+    }
+    DebugManager::getInstance().log(LogLevel::Info, "Game state changed to: " + stateStr);
+}
+
+Application::GameState Application::getGameState() const {
+    std::lock_guard<std::mutex> lock(m_stateMutex);
+    return m_gameState;
+}
+
 void Application::run() {
     if (!m_initialized) {
         throw StateError("Application not initialized");
     }
 
-    m_gameState = GameState::Running;
+    setGameState(GameState::Running);
     m_accumulatedTime = 0.0f;
 
     try {
-        while (m_gameState != GameState::Stopped) {
-            if (m_gameState == GameState::Error) {
+        while (getGameState() != GameState::Stopped) {
+            if (getGameState() == GameState::Error) {
                 if (!attemptRecovery()) {
                     break;
                 }
-                m_gameState = GameState::Running;
+                setGameState(GameState::Running);
             }
 
             float deltaTime = m_clock.restart().asSeconds();
@@ -136,25 +182,43 @@ void Application::run() {
 
             processInput();
 
-            // Fixed timestep updates
+            // Fixed timestep updates with thread safety
             while (m_accumulatedTime >= FIXED_TIMESTEP) {
+                std::unique_lock<std::mutex> updateLock(m_updateMutex);
+                m_isUpdating = true;
+                
                 try {
                     update(FIXED_TIMESTEP);
                 } catch (const RecoverableError& e) {
+                    m_isUpdating = false;
+                    updateLock.unlock();
                     if (!handleError(e)) {
                         throw;
                     }
+                    continue;
                 }
+                
+                m_isUpdating = false;
+                updateLock.unlock();
                 m_accumulatedTime -= FIXED_TIMESTEP;
             }
 
+            // Thread-safe rendering
+            std::unique_lock<std::mutex> renderLock(m_renderMutex);
+            m_isRendering = true;
+            
             try {
                 render();
             } catch (const RecoverableError& e) {
+                m_isRendering = false;
+                renderLock.unlock();
                 if (!handleError(e)) {
                     throw;
                 }
             }
+            
+            m_isRendering = false;
+            renderLock.unlock();
 
             updatePerformanceMetrics();
 
@@ -185,9 +249,9 @@ void Application::processInput() {
 
     // Handle any input-based game logic here
     if (InputManager::getInstance().isKeyJustPressed(sf::Keyboard::Escape)) {
-        if (m_gameState == GameState::Running) {
+        if (getGameState() == GameState::Running) {
             pause();
-        } else if (m_gameState == GameState::Paused) {
+        } else if (getGameState() == GameState::Paused) {
             resume();
         }
     }
@@ -220,24 +284,21 @@ void Application::render() {
 }
 
 void Application::pause() {
-    if (m_gameState != GameState::Running) {
+    if (getGameState() != GameState::Running) {
         throw StateError("Cannot pause: game is not running");
     }
-    m_gameState = GameState::Paused;
-    DebugManager::getInstance().log(LogLevel::Info, "Game paused");
+    setGameState(GameState::Paused);
 }
 
 void Application::resume() {
-    if (m_gameState != GameState::Paused) {
+    if (getGameState() != GameState::Paused) {
         throw StateError("Cannot resume: game is not paused");
     }
-    m_gameState = GameState::Running;
-    DebugManager::getInstance().log(LogLevel::Info, "Game resumed");
+    setGameState(GameState::Running);
 }
 
 void Application::stop() {
-    m_gameState = GameState::Stopped;
-    DebugManager::getInstance().log(LogLevel::Info, "Game stopped");
+    setGameState(GameState::Stopped);
 }
 
 void Application::setTargetFPS(unsigned int fps) {
@@ -276,8 +337,8 @@ void Application::registerRecoveryHandler(RecoveryCallback callback) {
 
 void Application::clearError() {
     m_lastError.reset();
-    if (m_gameState == GameState::Error) {
-        m_gameState = GameState::Stopped;
+    if (getGameState() == GameState::Error) {
+        setGameState(GameState::Stopped);
     }
 }
 
@@ -322,7 +383,7 @@ bool Application::handleError(const TransityError& error) {
     }
 
     // For non-recoverable errors, transition to error state
-    m_gameState = GameState::Error;
+    setGameState(GameState::Error);
     return false;
 }
 
