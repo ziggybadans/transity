@@ -79,6 +79,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 # Add subdirectories
 add_subdirectory(src)
 add_subdirectory(tests)
+add_subdirectory(tools)
 
 # Install targets
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/assets DESTINATION share/transity)
