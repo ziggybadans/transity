@@ -12,6 +12,8 @@ public:
     using Clock = std::chrono::steady_clock;
     using TimePoint = Clock::time_point;
     using Duration = Clock::duration;
+    using HighResClock = std::chrono::high_resolution_clock;
+    using HighResTimePoint = HighResClock::time_point;
     using ScheduledEvent = std::pair<TimePoint, std::function<void()>>;
 
     TimeManager();
@@ -44,6 +46,12 @@ public:
     void scheduleEvent(Duration delay, std::function<void()> event);
     void clearScheduledEvents();
 
+    // High precision time measurements
+    double getTimeSinceStart() const;
+    HighResTimePoint getHighResTimePoint() const;
+    Duration getPreciseFrameDuration() const;
+    uint64_t getHighResTickCount() const;
+
 private:
     void updateScheduledEvents();
 
@@ -66,6 +74,10 @@ private:
         }
     };
     std::priority_queue<ScheduledEvent, std::vector<ScheduledEvent>, EventCompare> m_scheduledEvents;
+
+    HighResTimePoint m_highResLastFrame;
+    Duration m_preciseFrameDuration;
+    uint64_t m_highResTickCount;
 };
 
 } // namespace transity::core 

@@ -118,4 +118,49 @@ TEST_CASE("TimeManager reset", "[core][time]") {
         timeManager.update();
         CHECK_FALSE(eventTriggered);
     }
+}
+
+TEST_CASE("TimeManager high precision measurements", "[core][time]") {
+    TimeManager timeManager;
+    
+    SECTION("High precision time initialization") {
+        CHECK(timeManager.getPreciseFrameDuration() == TimeManager::Duration::zero());
+        CHECK(timeManager.getHighResTickCount() == 0);
+        CHECK(timeManager.getTimeSinceStart() >= 0.0);
+    }
+    
+    SECTION("High precision time updates") {
+        auto initialTime = timeManager.getHighResTimePoint();
+        std::this_thread::sleep_for(16ms);
+        timeManager.update();
+        
+        // Check that time has advanced
+        CHECK(timeManager.getHighResTimePoint() > initialTime);
+        CHECK(timeManager.getPreciseFrameDuration() > TimeManager::Duration::zero());
+        CHECK(timeManager.getHighResTickCount() > 0);
+        
+        // Verify time since start is consistent
+        double timeSinceStart = timeManager.getTimeSinceStart();
+        CHECK(timeSinceStart > 0.0);
+        CHECK(timeSinceStart < 1.0); // Should be less than 1 second in this test
+    }
+    
+    SECTION("High precision time reset") {
+        std::this_thread::sleep_for(16ms);
+        timeManager.update();
+        timeManager.reset();
+        
+        CHECK(timeManager.getPreciseFrameDuration() == TimeManager::Duration::zero());
+        CHECK(timeManager.getHighResTickCount() == 0);
+        CHECK(timeManager.getTimeSinceStart() >= 0.0);
+    }
+    
+    SECTION("High precision frame duration accuracy") {
+        std::this_thread::sleep_for(100ms);
+        timeManager.update();
+        
+        auto frameDuration = duration_cast<milliseconds>(timeManager.getPreciseFrameDuration()).count();
+        CHECK(frameDuration >= 95); // Allow for some system timing variance
+        CHECK(frameDuration <= 115); // Increased tolerance for system scheduling
+    }
 } 

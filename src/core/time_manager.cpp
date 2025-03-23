@@ -11,16 +11,26 @@ TimeManager::TimeManager()
     , m_unscaledDeltaTime(0.0)
     , m_timeScale(1.0f)
     , m_accumulatedTime(0.0)
-    , m_currentTick(0) {
+    , m_currentTick(0)
+    , m_highResLastFrame(HighResClock::now())
+    , m_preciseFrameDuration(Duration::zero())
+    , m_highResTickCount(0) {
 }
 
 void TimeManager::update() {
+    // Standard time update
     TimePoint currentTime = Clock::now();
     Duration frameDuration = currentTime - m_lastFrameTime;
     m_lastFrameTime = currentTime;
 
+    // High precision time update
+    HighResTimePoint currentHighResTime = HighResClock::now();
+    m_preciseFrameDuration = currentHighResTime - m_highResLastFrame;
+    m_highResLastFrame = currentHighResTime;
+    m_highResTickCount = duration_cast<nanoseconds>(currentHighResTime - m_gameStartTime).count();
+
     // Calculate unscaled delta time
-    m_unscaledDeltaTime = duration_cast<duration<double>>(frameDuration).count();
+    m_unscaledDeltaTime = duration_cast<duration<double>>(m_preciseFrameDuration).count();
     
     // Apply time scale to get scaled delta time
     m_deltaTime = m_unscaledDeltaTime * m_timeScale;
@@ -37,12 +47,17 @@ void TimeManager::update() {
 }
 
 void TimeManager::reset() {
-    m_gameStartTime = Clock::now();
-    m_lastFrameTime = m_gameStartTime;
+    auto now = Clock::now();
+    auto highResNow = HighResClock::now();
+    m_gameStartTime = now;
+    m_lastFrameTime = now;
+    m_highResLastFrame = highResNow;
     m_deltaTime = 0.0;
     m_unscaledDeltaTime = 0.0;
     m_accumulatedTime = 0.0;
     m_currentTick = 0;
+    m_preciseFrameDuration = Duration::zero();
+    m_highResTickCount = 0;
     clearScheduledEvents();
 }
 
@@ -97,4 +112,20 @@ void TimeManager::updateScheduledEvents() {
             break;
         }
     }
+}
+
+double TimeManager::getTimeSinceStart() const {
+    return duration_cast<duration<double>>(HighResClock::now() - m_gameStartTime).count();
+}
+
+TimeManager::HighResTimePoint TimeManager::getHighResTimePoint() const {
+    return HighResClock::now();
+}
+
+TimeManager::Duration TimeManager::getPreciseFrameDuration() const {
+    return m_preciseFrameDuration;
+}
+
+uint64_t TimeManager::getHighResTickCount() const {
+    return m_highResTickCount;
 } 
