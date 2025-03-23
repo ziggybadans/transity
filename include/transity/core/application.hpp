@@ -2,6 +2,8 @@
 
 #include <memory>
 #include <string>
+#include <vector>
+#include <functional>
 #include <SFML/System/Clock.hpp>
 #include <SFML/System/Time.hpp>
 #include <SFML/System/Sleep.hpp>
@@ -24,6 +26,9 @@ namespace core {
  */
 class Application {
 public:
+    using ErrorCallback = std::function<void(const TransityError&)>;
+    using RecoveryCallback = std::function<bool(const RecoverableError&)>;
+
     /**
      * @brief Get the singleton instance of the Application
      * @return Reference to the Application instance
@@ -68,7 +73,8 @@ public:
     enum class GameState {
         Running,    ///< Game is running normally
         Paused,     ///< Game is paused
-        Stopped     ///< Game is stopped
+        Stopped,    ///< Game is stopped
+        Error       ///< Game is in error state
     };
 
     /**
@@ -76,6 +82,41 @@ public:
      * @return Current GameState
      */
     GameState getGameState() const { return m_gameState; }
+
+    /**
+     * @brief Register an error handler callback
+     * @param callback Function to be called when an error occurs
+     */
+    void registerErrorHandler(ErrorCallback callback);
+
+    /**
+     * @brief Register a recovery handler for recoverable errors
+     * @param callback Function to be called when a recoverable error occurs
+     */
+    void registerRecoveryHandler(RecoveryCallback callback);
+
+    /**
+     * @brief Get the last error that occurred
+     * @return Pointer to the last error, or nullptr if no error
+     */
+    const TransityError* getLastError() const { return m_lastError.get(); }
+
+    /**
+     * @brief Clear the last error state
+     */
+    void clearError();
+
+    /**
+     * @brief Check if the application is in an error state
+     * @return true if in error state, false otherwise
+     */
+    bool hasError() const { return m_lastError != nullptr; }
+
+    /**
+     * @brief Attempt to recover from current error state
+     * @return true if recovery was successful, false otherwise
+     */
+    bool attemptRecovery();
 
     /**
      * @brief Pause the game
@@ -160,6 +201,24 @@ private:
      * @brief Update performance metrics
      */
     void updatePerformanceMetrics();
+
+    // Error handling members
+    std::unique_ptr<TransityError> m_lastError;
+    std::vector<ErrorCallback> m_errorHandlers;
+    std::vector<RecoveryCallback> m_recoveryHandlers;
+
+    /**
+     * @brief Handle an error that occurred during execution
+     * @param error The error that occurred
+     * @return true if error was handled, false if it needs to be propagated
+     */
+    bool handleError(const TransityError& error);
+
+    /**
+     * @brief Internal method to store and process an error
+     * @param error The error to process
+     */
+    void setError(std::unique_ptr<TransityError> error);
 };
 
 } // namespace core

@@ -55,5 +55,51 @@ public:
     explicit StateError(const std::string& message) : TransityError(message) {}
 };
 
+/**
+ * @brief Exception for configuration errors
+ */
+class ConfigurationError : public TransityError {
+public:
+    explicit ConfigurationError(const std::string& message) : TransityError(message) {}
+};
+
+/**
+ * @brief Exception for network-related errors
+ */
+class NetworkError : public TransityError {
+public:
+    explicit NetworkError(const std::string& message) : TransityError(message) {}
+};
+
+/**
+ * @brief Exception for graphics-related errors
+ */
+class GraphicsError : public TransityError {
+public:
+    explicit GraphicsError(const std::string& message) : TransityError(message) {}
+};
+
+/**
+ * @brief Exception for input-related errors
+ */
+class InputError : public TransityError {
+public:
+    explicit InputError(const std::string& message) : TransityError(message) {}
+};
+
+/**
+ * @brief Exception for recoverable errors that can be handled gracefully
+ */
+class RecoverableError : public TransityError {
+public:
+    explicit RecoverableError(const std::string& message, const std::string& recovery_hint = "")
+        : TransityError(message), m_recovery_hint(recovery_hint) {}
+    
+    const std::string& getRecoveryHint() const { return m_recovery_hint; }
+
+private:
+    std::string m_recovery_hint;
+};
+
 } // namespace core
 } // namespace transity 

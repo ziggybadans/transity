@@ -103,74 +103,52 @@ void Application::shutdown() {
 }
 
 void Application::run() {
-    auto& debug = DebugManager::getInstance();
-
     if (!m_initialized) {
-        throw StateError("Cannot run application before initialization");
+        throw StateError("Application not initialized");
     }
 
-    unsigned int frameCount = 0;
-    m_clock.restart();
-    m_fpsTimer.restart();
+    m_gameState = GameState::Running;
+    m_accumulatedTime = 0.0f;
 
-    debug.log(LogLevel::Info, "Starting main loop");
+    try {
+        while (m_gameState != GameState::Stopped) {
+            if (m_gameState == GameState::Error) {
+                if (!attemptRecovery()) {
+                    break;
+                }
+                m_gameState = GameState::Running;
+            }
 
-    while (m_gameState != GameState::Stopped && m_window->isOpen()) {
-        debug.beginMetric("frame", "core", "ms");
+            float deltaTime = m_clock.restart().asSeconds();
+            m_accumulatedTime += deltaTime;
 
-        // Process window events
-        if (!m_window->processEvents()) {
-            stop();
-            continue;
-        }
+            processInput();
 
-        float deltaTime = m_clock.restart().asSeconds();
-        m_accumulatedTime += deltaTime;
-
-        // Update game logic with fixed timestep
-        if (m_gameState == GameState::Running) {
-            debug.beginMetric("update", "core", "ms");
+            // Fixed timestep updates
             while (m_accumulatedTime >= FIXED_TIMESTEP) {
                 try {
                     update(FIXED_TIMESTEP);
-                } catch (const std::exception& e) {
-                    debug.log(LogLevel::Error, "Update error: " + std::string(e.what()));
-                    throw RuntimeError("Critical error during update: " + std::string(e.what()));
+                } catch (const RecoverableError& e) {
+                    if (!handleError(e)) {
+                        throw;
+                    }
                 }
                 m_accumulatedTime -= FIXED_TIMESTEP;
             }
-            debug.endMetric("update");
-        }
 
-        // Begin frame rendering
-        debug.beginMetric("render", "core", "ms");
-        m_window->beginFrame();
-        
-        try {
-            // Render game state
-            render();
-        } catch (const std::exception& e) {
-            debug.log(LogLevel::Error, "Render error: " + std::string(e.what()));
-            throw RuntimeError("Critical error during render: " + std::string(e.what()));
-        }
-        
-        // End frame and display
-        m_window->endFrame();
-        debug.endMetric("render");
-        
-        frameCount++;
-        updatePerformanceMetrics();
-
-        // Frame rate limiting
-        if (m_targetFPS > 0) {
-            float targetFrameTime = 1.0f / static_cast<float>(m_targetFPS);
-            float elapsedTime = m_clock.getElapsedTime().asSeconds();
-            if (elapsedTime < targetFrameTime) {
-                sf::sleep(sf::seconds(targetFrameTime - elapsedTime));
+            try {
+                render();
+            } catch (const RecoverableError& e) {
+                if (!handleError(e)) {
+                    throw;
+                }
             }
-        }
 
-        debug.endMetric("frame");
+            updatePerformanceMetrics();
+        }
+    } catch (const TransityError& e) {
+        handleError(e);
+        throw;
     }
 }
 
@@ -263,6 +241,70 @@ void Application::updatePerformanceMetrics() {
     metrics.timestamp = std::chrono::steady_clock::now();
     // Note: CPU and memory usage would require platform-specific implementations
     debug.updateSystemMetrics(metrics);
+}
+
+void Application::registerErrorHandler(ErrorCallback callback) {
+    m_errorHandlers.push_back(std::move(callback));
+}
+
+void Application::registerRecoveryHandler(RecoveryCallback callback) {
+    m_recoveryHandlers.push_back(std::move(callback));
+}
+
+void Application::clearError() {
+    m_lastError.reset();
+    if (m_gameState == GameState::Error) {
+        m_gameState = GameState::Stopped;
+    }
+}
+
+bool Application::attemptRecovery() {
+    if (!hasError()) {
+        return true;
+    }
+
+    auto* recoverableError = dynamic_cast<const RecoverableError*>(m_lastError.get());
+    if (!recoverableError) {
+        return false;
+    }
+
+    bool recovered = false;
+    for (const auto& handler : m_recoveryHandlers) {
+        if (handler(*recoverableError)) {
+            recovered = true;
+            break;
+        }
+    }
+
+    if (recovered) {
+        clearError();
+        return true;
+    }
+
+    return false;
+}
+
+bool Application::handleError(const TransityError& error) {
+    // Store the error
+    setError(std::make_unique<TransityError>(error));
+
+    // Notify all error handlers
+    for (const auto& handler : m_errorHandlers) {
+        handler(error);
+    }
+
+    // Check if this is a recoverable error
+    if (auto* recoverableError = dynamic_cast<const RecoverableError*>(&error)) {
+        return attemptRecovery();
+    }
+
+    // For non-recoverable errors, transition to error state
+    m_gameState = GameState::Error;
+    return false;
+}
+
+void Application::setError(std::unique_ptr<TransityError> error) {
+    m_lastError = std::move(error);
 }
 
 } // namespace transity::core 
