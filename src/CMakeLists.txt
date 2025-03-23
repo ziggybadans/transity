@@ -19,7 +19,6 @@ target_link_libraries(transity_core
         ImGui-SFML::ImGui-SFML
         nlohmann_json::nlohmann_json
         EnTT::EnTT
-        spdlog::spdlog
 )
 
 add_executable(transity main.cpp)
