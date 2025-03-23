@@ -16,6 +16,7 @@ Application::Application()
     , m_targetFPS(60)
     , m_currentFPS(0.0f)
     , m_accumulatedTime(0.0f)
+    , m_window(nullptr)
 {
 }
 
@@ -39,6 +40,11 @@ void Application::initialize(const std::string& appName) {
         m_appName = appName;
         m_gameState = GameState::Running;
         
+        // Create window with default configuration
+        WindowConfig windowConfig;
+        windowConfig.title = m_appName;
+        m_window = std::make_unique<Window>(windowConfig);
+        
         // Initialize all systems
         if (!m_systemManager.initialize()) {
             throw ApplicationError("Failed to initialize systems");
@@ -61,6 +67,9 @@ void Application::shutdown() {
         // Shutdown all systems
         m_systemManager.shutdown();
         
+        // Clean up window
+        m_window.reset();
+        
         m_initialized = false;
         std::cout << "Application '" << m_appName << "' shut down successfully" << std::endl;
     }
@@ -76,8 +85,16 @@ void Application::run() {
     }
 
     unsigned int frameCount = 0;
+    m_clock.restart();
+    m_fpsTimer.restart();
 
-    while (m_gameState != GameState::Stopped) {
+    while (m_gameState != GameState::Stopped && m_window->isOpen()) {
+        // Process window events
+        if (!m_window->processEvents()) {
+            stop();
+            continue;
+        }
+
         float deltaTime = m_clock.restart().asSeconds();
         m_accumulatedTime += deltaTime;
 
@@ -89,8 +106,15 @@ void Application::run() {
             }
         }
 
-        // Render at the target frame rate
+        // Begin frame rendering
+        m_window->beginFrame();
+        
+        // Render game state
         render();
+        
+        // End frame and display
+        m_window->endFrame();
+        
         frameCount++;
 
         // Calculate FPS every second

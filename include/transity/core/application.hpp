@@ -10,6 +10,7 @@
 #include <SFML/Window/Keyboard.hpp>
 #include "transity/core/input_manager.hpp"
 #include "transity/core/system_manager.hpp"
+#include "transity/core/window.hpp"
 
 namespace transity {
 namespace core {
@@ -133,6 +134,7 @@ private:
     SystemManager m_systemManager;
     sf::Clock m_clock;        // SFML clock for timing
     sf::Clock m_fpsTimer;     // Separate clock for FPS calculation
+    std::unique_ptr<Window> m_window; // Main application window
 
     /**
      * @brief Update game logic with fixed timestep
