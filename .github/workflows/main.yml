@@ -24,6 +24,7 @@ jobs:
           vcpkgDirectory: ${{ github.workspace }}/vcpkg_installed # Or wherever you want vcpkg installed in the runner
           # Optional: Cache vcpkg artifacts to speed up subsequent runs
           runVcpkgInstall: true # This will run `vcpkg install` based on vcpkg.json
+          vcpkgJsonIgnores: 'cli/**' # Ignore vcpkg.json files within the cli directory
 
       # --- Modify CMake configuration step ---
       - name: Configure CMake
