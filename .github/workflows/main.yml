@@ -23,7 +23,7 @@ jobs:
           vcpkgDirectory: ${{ github.workspace }}/vcpkg_installed
           runVcpkgInstall: true
           vcpkgJsonIgnores: 'cli/**'
-          runVcpkgFormatString: ["install", "--recurse", "--clean-after-build", "--x-install-root", "$[env.VCPKG_INSTALLED_DIR]", "--triplet", "$[env.VCPKG_DEFAULT_TRIPLET]"]
+          runVcpkgFormatString: '["install", "--recurse", "--clean-after-build", "--x-install-root", "$[env.VCPKG_INSTALLED_DIR]", "--triplet", "$[env.VCPKG_DEFAULT_TRIPLET]"]'
 
       # --- Modify CMake configuration step ---
       - name: Configure CMake
