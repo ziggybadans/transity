@@ -26,10 +26,8 @@ jobs:
           runVcpkgInstall: true # This will run `vcpkg install` based on vcpkg.json
           vcpkgJsonIgnores: 'cli/**' # Ignore vcpkg.json files within the cli directory
           doNotCache: true
-          # Explicitly define the install command using standard YAML and GH Actions expressions
-          # to override the problematic default format string.
-          runVcpkgFormatString: >
-            install --recurse --clean-after-build --x-install-root ${{ env.VCPKG_INSTALLED_DIR }} --triplet ${{ env.VCPKG_DEFAULT_TRIPLET }}
+          # Explicitly set useShell to false, allowing the default runVcpkgFormatString
+          useShell: false
 
       # --- Modify CMake configuration step ---
       - name: Configure CMake
