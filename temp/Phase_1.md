@@ -6,12 +6,12 @@
 
 *   **Task 1.1: Setup Build System (CMake)**
     *   Steps:
-        1.  Initialize CMake project (`CMakeLists.txt`).
-        2.  Define project name, C++ standard (C++17).
-        3.  Configure basic build options (Debug/Release).
-        4.  Add subdirectories for source (`src`), tests (`tests`), etc.
-        5.  Integrate dependency management for external libraries (SFML, EnTT, ImGui, GTest) using CMake's `find_package` or a package manager like vcpkg/Conan.
-        6.  Write a simple "Hello World" test case using GTest to verify test framework integration.
+    ✓   1.  Initialize CMake project (`CMakeLists.txt`).
+    ✓   2.  Define project name, C++ standard (C++17).
+    ✓   3.  Configure basic build options (Debug/Release).
+    ✓   4.  Add subdirectories for source (`src`), tests (`tests`), etc.
+    ✓   5.  Integrate dependency management for external libraries (SFML, EnTT, ImGui, GTest) using CMake's `find_package` or a package manager like vcpkg/Conan.
+    ✓   6.  Write a simple "Hello World" test case using GTest to verify test framework integration.
         7.  Configure basic CI/CD pipeline (e.g., GitHub Actions) for automated builds and tests.
 *   **Task 1.2: Establish Coding Standards & Tooling**
     *   Steps:

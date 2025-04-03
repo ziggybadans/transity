@@ -13,7 +13,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_CXX_EXTENSIONS False)
 
 ## Google Test
-#enable_testing()
+enable_testing()
 set(BUILD_GMOCK OFF CACHE BOOL "" FORCE)
 add_subdirectory(lib/googletest)
 
@@ -39,4 +39,4 @@ add_subdirectory(lib/imgui-SFML)
 
 # Subdirectories
 add_subdirectory(src)
-#add_subdirectory(tests)
+add_subdirectory(tests)
