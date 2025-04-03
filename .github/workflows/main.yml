@@ -22,7 +22,6 @@ jobs:
         with:
           # This assumes your vcpkg.json is at the root. Adjust if needed.
           vcpkgDirectory: ${{ github.workspace }}/vcpkg_installed # Or wherever you want vcpkg installed in the runner
-          vcpkgJsonGlob: '${{ github.workspace }}/vcpkg.json'
           # Optional: Cache vcpkg artifacts to speed up subsequent runs
           runVcpkgInstall: true # This will run `vcpkg install` based on vcpkg.json
 
