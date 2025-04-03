@@ -37,3 +37,6 @@ _deps/
 
 # User specific files
 *.userprefs
+
+# Libraries
+lib/SFML-2.6.1
