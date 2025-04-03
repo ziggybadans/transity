@@ -1,0 +1,43 @@
+name: C++ CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: 'recursive' # Keep this if you have submodules
+
+      # --- Add vcpkg setup steps ---
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11 # Uses a dedicated action for vcpkg setup
+        with:
+          # This assumes your vcpkg.json is at the root. Adjust if needed.
+          vcpkgDirectory: ${{ github.workspace }}/vcpkg_installed # Or wherever you want vcpkg installed in the runner
+          vcpkgJsonGlob: '${{ github.workspace }}/vcpkg.json'
+          # Optional: Cache vcpkg artifacts to speed up subsequent runs
+          # runVcpkgInstall: true # This will run `vcpkg install` based on vcpkg.json
+
+      # --- Modify CMake configuration step ---
+      - name: Configure CMake
+        run: |
+          cmake -B ${{ github.workspace }}/build `
+                -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg_installed/scripts/buildsystems/vcpkg.cmake `
+                -DCMAKE_BUILD_TYPE=Debug
+        # Note: Using backtick ` for PowerShell line continuation
+        # Adjust CMAKE_TOOLCHAIN_FILE path if your vcpkgDirectory is different
+
+      - name: Build
+        run: cmake --build ${{ github.workspace }}/build --config Debug
+
+      - name: Test
+        working-directory: ${{ github.workspace }}/build
+        run: ctest -C Debug # Or run your test executable directly

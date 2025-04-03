@@ -31,7 +31,7 @@ add_library(imgui STATIC
 target_include_directories(imgui PUBLIC lib/imgui)
 
 ## SFML
-list(APPEND CMAKE_PREFIX_PATH "lib/SFML-2.6.1")
+# list(APPEND CMAKE_PREFIX_PATH "lib/SFML-2.6.1") # Removed for vcpkg integration
 find_package(SFML 2.6.1 REQUIRED COMPONENTS system window graphics network audio)
 
 ## ImGui-SFML

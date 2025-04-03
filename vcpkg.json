@@ -1,0 +1,14 @@
+{
+    "name": "transity",
+    "version-string": "0.1.0",
+    "dependencies": [
+        "sfml"
+    ],
+    "builtin-baseline": "c799d5ea10a8f384651374a5dbff8964477c1a6a",
+    "overrides": [
+        {
+            "name": "sfml",
+            "version": "2.6.1"
+        }
+    ]
+  }
