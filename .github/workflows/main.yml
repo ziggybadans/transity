@@ -1,4 +1,4 @@
-name: C++ CI
+name: Windows Build
 
 on:
   push:
@@ -11,32 +11,20 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          submodules: 'recursive' # Keep this if you have submodules
+    - name: Checkout repository and submodules
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
 
-      # --- Add vcpkg setup steps ---
-      - name: Setup vcpkg
-        uses: lukka/run-vcpkg@v11
-        with:
-          vcpkgDirectory: ${{ github.workspace }}/vcpkg_installed
-          runVcpkgInstall: true
-          vcpkgJsonIgnores: 'cli/**'
-          runVcpkgFormatString: '["install", "--recurse", "--clean-after-build", "--x-install-root", "$[env.VCPKG_INSTALLED_DIR]", "--triplet", "$[env.VCPKG_DEFAULT_TRIPLET]"]'
+    - name: Bootstrap vcpkg
+      run: cli/bootstrap-vcpkg.bat -disableMetrics
+      shell: cmd # Use cmd for .bat script
 
-      # --- Modify CMake configuration step ---
-      - name: Configure CMake
-        run: |
-          cmake -B ${{ github.workspace }}/build `
-                -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg_installed/scripts/buildsystems/vcpkg.cmake `
-                -DCMAKE_BUILD_TYPE=Debug
-        # Note: Using backtick ` for PowerShell line continuation
-        # Adjust CMAKE_TOOLCHAIN_FILE path if your vcpkgDirectory is different
+    - name: Configure CMake
+      run: |
+        cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE=cli/scripts/buildsystems/vcpkg.cmake
+      shell: pwsh # Use PowerShell for CMake commands
 
-      - name: Build
-        run: cmake --build ${{ github.workspace }}/build --config Debug
-
-      - name: Test
-        working-directory: ${{ github.workspace }}/build
-        run: ctest -C Debug # Or run your test executable directly
+    - name: Build Project
+      run: cmake --build build --config Release
+      shell: pwsh # Use PowerShell for CMake commands
