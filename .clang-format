@@ -20,7 +20,7 @@ AllowShortBlocksOnASingleLine: Never # Don't allow 'while(true){}'
 
 # Line Breaking and Wrapping
 ColumnLimit: 100 # Slightly wider limit for modern screens
-BinPackParameters: BinPack # Pack parameters unless they overflow
+BinPackParameters: true # Pack parameters unless they overflow (Treating as boolean due to CI error)
 BinPackArguments: true  # Pack arguments unless they overflow
 BreakBeforeBinaryOperators: NonAssignment # Break before +, && etc., but after =
 Cpp11BracedListStyle: true # Use modern C++ braced list formatting {1, 2, 3}
