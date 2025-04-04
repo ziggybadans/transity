@@ -2,9 +2,7 @@
 # Add all source files belonging to this library here
 add_library(TransityLib
     logging/ConsoleLogger.cpp
-    # Add other .cpp files from src/ as you create them
-    # e.g., core/Application.cpp
-    #      systems/InputSystem.cpp
+    logging/LogUtils.cpp
 )
 
 # Specify include directories needed by this library

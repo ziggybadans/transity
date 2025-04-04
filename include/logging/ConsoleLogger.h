@@ -1,6 +1,7 @@
 #pragma once
 
 #include "logging/ILogger.h"
+#include "logging/LogUtils.h"
 
 namespace Transity::Logging {
     class ConsoleLogger : public ILogger {

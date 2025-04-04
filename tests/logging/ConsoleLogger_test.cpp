@@ -2,21 +2,10 @@
 #include <gmock/gmock.h>
 #include "logging/ConsoleLogger.h"
 #include "logging/ILogger.h"
+#include "logging/LogUtils.h"
 
 #include <string>
 #include <tuple>
-
-std::string logLevelToString(Transity::Logging::LogLevel level) {
-    switch (level) {
-        case Transity::Logging::LogLevel::TRACE: return "TRACE";
-        case Transity::Logging::LogLevel::DEBUG: return "DEBUG";
-        case Transity::Logging::LogLevel::INFO: return "INFO";
-        case Transity::Logging::LogLevel::WARN: return "WARN";
-        case Transity::Logging::LogLevel::ERROR: return "ERROR";
-        case Transity::Logging::LogLevel::FATAL: return "FATAL";
-        default: return "UNKNOWN";
-    }
-};
 
 class ConsoleLoggerFormatParamTest : public ::testing::TestWithParam<Transity::Logging::LogLevel> {
 protected:
@@ -39,18 +28,25 @@ TEST(ConsoleLoggerTest, WritesMessageToStdOut) {
 TEST_P(ConsoleLoggerFormatParamTest, FormatMessageCorrectlyForLevel) {
     Transity::Logging::LogLevel currentLevel = GetParam();
     std::string testMsg = "Testing level formatting";
-
     Transity::Logging::ConsoleLogger logger(Transity::Logging::LogLevel::TRACE);
 
-    testing::internal::CaptureStdout();
+    std::string output;
 
-    logger.log(currentLevel, testMsg);
+    if (currentLevel >= Transity::Logging::LogLevel::ERROR) {
+        // Capture stderr for ERROR and FATAL
+        testing::internal::CaptureStderr();
+        logger.log(currentLevel, testMsg);
+        output = testing::internal::GetCapturedStderr();
+    } else {
+        // Capture stdout for other levels
+        testing::internal::CaptureStdout();
+        logger.log(currentLevel, testMsg);
+        output = testing::internal::GetCapturedStdout();
+    }
 
     std::string expectedLevelStr = logLevelToString(currentLevel);
     std::string expectedPatternStr = "\\[\\d\\d\\d\\d-\\d\\d-\\d\\d \\d\\d:\\d\\d:\\d\\d\\] \\[" +
                                      expectedLevelStr + "\\] " + testMsg + "\\n";
-
-    std::string output = testing::internal::GetCapturedStdout();
 
     EXPECT_THAT(output, testing::MatchesRegex(expectedPatternStr));
 };

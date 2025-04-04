@@ -1,17 +1,9 @@
 #pragma once
 
 #include <string>
+#include "logging/LogUtils.h"
 
 namespace Transity::Logging {
-
-enum class LogLevel {
-    TRACE,
-    DEBUG,
-    INFO,
-    WARN,
-    ERROR,
-    FATAL
-};
 
 class ILogger {
 public:
