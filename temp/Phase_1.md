@@ -29,7 +29,7 @@
 *   **Task 2.2: Implement Console Logger**
     *   Steps:
     ✓   1.  Write unit tests (TDD) for basic logging functionality (output format, level filtering).
-        2.  Create a concrete `ConsoleLogger` class implementing `ILogger`.
+    ✓   2.  Create a concrete `ConsoleLogger` class implementing `ILogger`.
         3.  Implement logging to `stdout`/`stderr`.
         4.  Add timestamp and log level formatting.
 *   **Task 2.3: Implement File Logger**
