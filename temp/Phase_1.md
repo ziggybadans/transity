@@ -24,7 +24,7 @@
 
 *   **Task 2.1: Define Logging Interface (`ILogger`)**
     *   Steps:
-        1.  Define an abstract base class or interface (`ILogger`) with methods for different log levels (e.g., `debug`, `info`, `warn`, `error`).
+    ✓   1.  Define an abstract base class or interface (`ILogger`) with methods for different log levels (e.g., `debug`, `info`, `warn`, `error`).
         2.  Ensure the interface is simple and decoupled from specific implementations.
 *   **Task 2.2: Implement Console Logger**
     *   Steps:
