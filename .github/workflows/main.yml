@@ -2,8 +2,7 @@ name: Windows Build
 
 on:
   push:
-    branches:
-      - '**'
+    branches: [ main, develop, staging ]
   pull_request:
     branches: [ main, develop ]
 
