@@ -2,8 +2,7 @@
 
 #include <string>
 
-namespace Transity {
-namespace Logging {
+namespace Transity::Logging {
 
 enum class LogLevel {
     TRACE,
@@ -17,7 +16,7 @@ enum class LogLevel {
 class ILogger {
 public:
     virtual ~ILogger() = default;
-    virtual void write(const std::string& message) = 0;
+    virtual void log(LogLevel level, const std::string& message) = 0;
 };
-}
+
 }

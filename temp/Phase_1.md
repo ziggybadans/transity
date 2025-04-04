@@ -25,10 +25,10 @@
 *   **Task 2.1: Define Logging Interface (`ILogger`)**
     *   Steps:
     ✓   1.  Define an abstract base class or interface (`ILogger`) with methods for different log levels (e.g., `debug`, `info`, `warn`, `error`).
-        2.  Ensure the interface is simple and decoupled from specific implementations.
+    ✓   2.  Ensure the interface is simple and decoupled from specific implementations.
 *   **Task 2.2: Implement Console Logger**
     *   Steps:
-        1.  Write unit tests (TDD) for basic logging functionality (output format, level filtering).
+    ✓   1.  Write unit tests (TDD) for basic logging functionality (output format, level filtering).
         2.  Create a concrete `ConsoleLogger` class implementing `ILogger`.
         3.  Implement logging to `stdout`/`stderr`.
         4.  Add timestamp and log level formatting.

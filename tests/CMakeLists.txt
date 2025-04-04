@@ -8,6 +8,7 @@ include(GoogleTest)
 # Add your test executable
 # This creates an executable named 'basic_test' from 'basic_test.cpp'
 add_executable(basic_test basic_test.cpp)
+add_executable(ConsoleLogger_test logging/ConsoleLogger_test.cpp)
 
 # Link the test executable against Google Test libraries
 # The exact target names might be gtest/gtest_main or GTest::gtest/GTest::gtest_main
@@ -15,12 +16,13 @@ add_executable(basic_test basic_test.cpp)
 # Using the namespaced versions (GTest::*) is generally preferred if available.
 # Let's assume the non-namespaced ones based on the add_subdirectory approach.
 target_link_libraries(basic_test PRIVATE gtest gtest_main)
+target_link_libraries(ConsoleLogger_test PRIVATE gtest gtest_main gmock Transity)
+target_include_directories(ConsoleLogger_test PRIVATE ${CMAKE_SOURCE_DIR}/lib/googletest/googletest/include)
+target_include_directories(ConsoleLogger_test PRIVATE ${CMAKE_SOURCE_DIR}/lib/googletest/googlemock/include) 
+target_include_directories(ConsoleLogger_test PRIVATE ${CMAKE_SOURCE_DIR}/include)
 
 # Discover and add tests to CTest
 # This command automatically finds tests defined with TEST() or TEST_F()
 # in the 'basic_test' executable and adds them to CTest.
 gtest_add_tests(TARGET basic_test)
-
-# Optional: If your main project library (e.g., 'Transity' if defined in src/CMakeLists.txt)
-# is needed by the tests, link against it too.
-# target_link_libraries(basic_test PRIVATE Transity)
+gtest_add_tests(TARGET ConsoleLogger_test)
