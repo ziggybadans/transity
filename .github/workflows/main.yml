@@ -19,8 +19,8 @@ jobs:
 
     - name: Check Formatting with Clang-Format
       run: |
-          # Find C++ source and header files in relevant directories
-          $files = Get-ChildItem -Recurse -Include *.cpp, *.h, *.hpp -Path src, include, tests, cli/src # Add other source directories if needed
+          # Find C++ source and header files in relevant directories, ignore errors for non-existent paths
+          $files = Get-ChildItem -Recurse -Include *.cpp, *.h, *.hpp -Path src, include, tests, cli/toolsrc -ErrorAction SilentlyContinue # Add other source directories if needed
           if ($files) {
             # Ensure clang-format is available (usually is on windows-latest)
             # Run check: --dry-run shows changes without applying, -Werror treats warnings (like formatting mismatches) as errors
