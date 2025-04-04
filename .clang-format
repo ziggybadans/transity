@@ -42,5 +42,5 @@ FixNamespaceComments: true  # Add '// namespace X' comments to long namespaces
 
 # Comments
 AlignTrailingComments: Always # Align trailing // comments
-ReflowComments: Always        # Reflow block comments to fit ColumnLimit
+ReflowComments: true        # Reflow block comments to fit ColumnLimit (Treating as boolean due to CI error)
 SpacesBeforeTrailingComments: 2 # Two spaces before // comment
