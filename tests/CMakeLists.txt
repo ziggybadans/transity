@@ -14,3 +14,4 @@ endfunction()
 
 add_transity_test(ConsoleLogger_test logging/ConsoleLogger_test.cpp)
 add_transity_test(FileLogger_test logging/FileLogger_test.cpp)
+add_transity_test(LoggingSystem_test logging/LoggingSystem_test.cpp)

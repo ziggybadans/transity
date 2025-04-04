@@ -36,7 +36,7 @@
     *   Steps:
     ✓   1.  Write unit tests (TDD) for file logging (file creation, writing, rotation - if needed later).
     ✓   2.  Create a concrete `FileLogger` class implementing `ILogger`.
-        3.  Implement logging to a specified file.
+    ✓   3.  Implement logging to a specified file.
 *   **Task 2.4: Create Logging System Facade (`LoggingSystem`)**
     *   Steps:
         1.  Write unit tests (TDD) for managing multiple loggers and providing a global access point (e.g., singleton or service locator).
