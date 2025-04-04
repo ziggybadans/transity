@@ -21,14 +21,14 @@ AllowShortBlocksOnASingleLine: Never # Don't allow 'while(true){}'
 # Line Breaking and Wrapping
 ColumnLimit: 100 # Slightly wider limit for modern screens
 BinPackParameters: BinPack # Pack parameters unless they overflow
-BinPackArguments: BinPack  # Pack arguments unless they overflow
+BinPackArguments: true  # Pack arguments unless they overflow
 BreakBeforeBinaryOperators: NonAssignment # Break before +, && etc., but after =
 Cpp11BracedListStyle: true # Use modern C++ braced list formatting {1, 2, 3}
 BreakConstructorInitializers: BeforeColon # Break initializers before the colon
 
 # Spacing
 SpaceBeforeParens: ControlStatements # Space in 'if (cond)', 'for (...)', etc.
-SpacesInParentheses: Never           # No spaces like '( x )'
+SpacesInParens: Never          # No spaces like '( x )' (Replaces deprecated SpacesInParentheses)
 SpacesInContainerLiterals: true      # Spaces in '[ 1, 2 ]' and '{ key: val }'
 SpaceAfterCStyleCast: true           # Space after '(int) i'
 SpaceBeforeAssignmentOperators: true # Space before '='
@@ -42,5 +42,5 @@ FixNamespaceComments: true  # Add '// namespace X' comments to long namespaces
 
 # Comments
 AlignTrailingComments: Always # Align trailing // comments
-ReflowComments: true        # Reflow block comments to fit ColumnLimit
+ReflowComments: Always        # Reflow block comments to fit ColumnLimit
 SpacesBeforeTrailingComments: 2 # Two spaces before // comment
