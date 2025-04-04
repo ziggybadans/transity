@@ -40,3 +40,12 @@ add_subdirectory(lib/imgui-SFML)
 # Subdirectories
 add_subdirectory(src)
 add_subdirectory(tests)
+
+# Formatting
+if(MSVC)
+  # Add the /analyze flag to the C++ compiler flags for MSVC
+  add_compile_options(/analyze)
+  # Optionally, treat analysis warnings as errors (recommended for CI)
+  # add_compile_options(/analyze:WX-) # Use /analyze:WX- to treat warnings as errors
+  message(STATUS "MSVC /analyze static analysis enabled.")
+endif()

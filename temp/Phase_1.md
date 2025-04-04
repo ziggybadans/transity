@@ -12,10 +12,10 @@
     ✓   4.  Add subdirectories for source (`src`), tests (`tests`), etc.
     ✓   5.  Integrate dependency management for external libraries (SFML, EnTT, ImGui, GTest) using CMake's `find_package` or a package manager like vcpkg/Conan.
     ✓   6.  Write a simple "Hello World" test case using GTest to verify test framework integration.
-        7.  Configure basic CI/CD pipeline (e.g., GitHub Actions) for automated builds and tests.
+    ✓   7.  Configure basic CI/CD pipeline (e.g., GitHub Actions) for automated builds and tests.
 *   **Task 1.2: Establish Coding Standards & Tooling**
     *   Steps:
-        1.  Define coding style guidelines (e.g., based on Google C++ Style Guide, LLVM).
+    ✓   1.  Define coding style guidelines (e.g., based on Google C++ Style Guide, LLVM).
         2.  Integrate static analysis tools (e.g., Clang-Tidy, Cppcheck) into the build process.
         3.  Integrate code formatting tools (e.g., Clang-Format) and enforce formatting checks in CI.
         4.  Set up `.gitignore` and `CONTRIBUTING.md`.
