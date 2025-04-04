@@ -31,6 +31,25 @@ jobs:
           }
       shell: pwsh # Use PowerShell
 
+    - name: Cache vcpkg dependencies
+      uses: actions/cache@v4 # Use version 4 of the cache action
+      with:
+        # Define the directories to cache. These are standard vcpkg folders.
+        # Note: Adjust paths if your vcpkg instance is not directly in the 'cli' directory.
+        path: |
+          cli/vcpkg_installed 
+          cli/buildtrees
+          cli/packages
+          cli/downloads 
+        # Define the primary cache key. This key determines when a cache hit occurs.
+        # It includes the runner's OS and a hash of the vcpkg manifest file.
+        # If vcpkg.json changes, the hash changes, invalidating the cache.
+        key: ${{ runner.os }}-vcpkg-${{ hashFiles('**/vcpkg.json') }}
+        # Define fallback keys. If the exact key isn't found (e.g., first run after vcpkg.json change),
+        # it tries to restore the most recent cache for the same OS.
+        restore-keys: |
+          ${{ runner.os }}-vcpkg- 
+
     - name: Bootstrap vcpkg
       run: cli/bootstrap-vcpkg.bat -disableMetrics
       shell: cmd # Use cmd for .bat script
