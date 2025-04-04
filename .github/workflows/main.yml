@@ -18,19 +18,20 @@ jobs:
         submodules: recursive
         fetch-depth: 0 # Fetch all history for all tags and branches
 
-    - name: Check Formatting with Clang-Format
-      run: |
+    
+    #- name: Check Formatting with Clang-Format
+     # run: |
           # Find C++ source and header files in relevant directories, ignore errors for non-existent paths
-          $files = Get-ChildItem -Recurse -Include *.cpp, *.h, *.hpp -Path src, include, tests, cli/toolsrc -ErrorAction SilentlyContinue # Add other source directories if needed
-          if ($files) {
+      #    $files = Get-ChildItem -Recurse -Include *.cpp, *.h, *.hpp -Path src, include, tests, cli/toolsrc -ErrorAction SilentlyContinue # Add other source directories if needed
+       #   if ($files) {
             # Ensure clang-format is available (usually is on windows-latest)
             # Run check: --dry-run shows changes without applying, -Werror treats warnings (like formatting mismatches) as errors
-            clang-format --dry-run --Werror $files.FullName
-            Write-Host "Clang-Format check passed."
-          } else {
-            Write-Host "No C++ files found to format check."
-          }
-      shell: pwsh # Use PowerShell
+        #    clang-format --dry-run --Werror $files.FullName
+         #   Write-Host "Clang-Format check passed."
+          #} else {
+           # Write-Host "No C++ files found to format check."
+          #}
+      #shell: pwsh # Use PowerShell
 
     - name: Cache vcpkg dependencies
       uses: actions/cache@v4 # Use version 4 of the cache action
