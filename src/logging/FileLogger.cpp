@@ -19,7 +19,7 @@ namespace Transity::Logging {
 
     void FileLogger::log(LogLevel level, const std::string& message) {
         if (file_.is_open()) {
-            file_ << message << std::endl;
+            file_ << formatLogMessage(level, message) << std::endl;
         } else {
             std::cerr << "Failed to open log file: " << filename_ << std::endl;
         }
