@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
+
 #include "logging/ConsoleLogger.h"
 #include "logging/ILogger.h"
 #include "logging/LogUtils.h"
