@@ -16,9 +16,9 @@
 *   **Task 1.2: Establish Coding Standards & Tooling**
     *   Steps:
     ✓   1.  Define coding style guidelines (e.g., based on Google C++ Style Guide, LLVM).
-        2.  Integrate static analysis tools (e.g., Clang-Tidy, Cppcheck) into the build process.
-        3.  Integrate code formatting tools (e.g., Clang-Format) and enforce formatting checks in CI.
-        4.  Set up `.gitignore` and `CONTRIBUTING.md`.
+    ✓   2.  Integrate static analysis tools (e.g., Clang-Tidy, Cppcheck) into the build process.
+    ✓   3.  Integrate code formatting tools (e.g., Clang-Format) and enforce formatting checks in CI.
+    ✓   4.  Set up `.gitignore` and `CONTRIBUTING.md`.
 
 **Objective 2: Implement Logging System**
 

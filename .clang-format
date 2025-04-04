@@ -1,0 +1,46 @@
+# .clang-format configuration for a solo C++ developer
+Language: Cpp
+BasedOnStyle: LLVM
+
+# Indentation
+IndentWidth: 4
+UseTab: Never
+TabWidth: 4
+ContinuationIndentWidth: 4
+IndentCaseLabels: false
+NamespaceIndentation: Inner # Indent nested namespaces, not top-level
+AccessModifierOffset: -4    # Outdent access modifiers
+
+# Braces and Blocks
+BreakBeforeBraces: Attach # Keep braces attached { on same line
+AllowShortIfStatementsOnASingleLine: WithoutElse # Allow 'if (cond) return;' but not if/else
+AllowShortFunctionsOnASingleLine: Inline # Allow short inline member functions on one line
+AllowShortLambdasOnASingleLine: All   # Allow short lambdas on one line
+AllowShortBlocksOnASingleLine: Never # Don't allow 'while(true){}'
+
+# Line Breaking and Wrapping
+ColumnLimit: 100 # Slightly wider limit for modern screens
+BinPackParameters: BinPack # Pack parameters unless they overflow
+BinPackArguments: BinPack  # Pack arguments unless they overflow
+BreakBeforeBinaryOperators: NonAssignment # Break before +, && etc., but after =
+Cpp11BracedListStyle: true # Use modern C++ braced list formatting {1, 2, 3}
+BreakConstructorInitializers: BeforeColon # Break initializers before the colon
+
+# Spacing
+SpaceBeforeParens: ControlStatements # Space in 'if (cond)', 'for (...)', etc.
+SpacesInParentheses: Never           # No spaces like '( x )'
+SpacesInContainerLiterals: true      # Spaces in '[ 1, 2 ]' and '{ key: val }'
+SpaceAfterCStyleCast: true           # Space after '(int) i'
+SpaceBeforeAssignmentOperators: true # Space before '='
+
+# Pointers and References
+PointerAlignment: Right # Align pointers/references to the right (Type* var)
+
+# Includes and Namespaces
+SortIncludes: CaseSensitive # Sort includes alphabetically (case-sensitive)
+FixNamespaceComments: true  # Add '// namespace X' comments to long namespaces
+
+# Comments
+AlignTrailingComments: Always # Align trailing // comments
+ReflowComments: true        # Reflow block comments to fit ColumnLimit
+SpacesBeforeTrailingComments: 2 # Two spaces before // comment
