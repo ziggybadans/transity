@@ -1,0 +1,37 @@
+# Conventional Commit Message Template
+#
+# See CONTRIBUTING.md for details: https://github.com/your-username/transity/blob/develop/.github/CONTRIBUTING.md#commit-message-guidelines
+#
+# Format: <type>(<scope>): <subject>
+#         -- blank line --
+#         <body>
+#         -- blank line --
+#         <footer>
+#
+# Example:
+# feat(simulation): add passenger routing algorithm
+#
+# Implement A* pathfinding for passenger route calculation.
+# - Add priority queue implementation
+# - Add path reconstruction
+# - Add distance heuristic function
+#
+# Closes #123
+
+# --- Commit Header ---
+# Type: feat, fix, docs, style, refactor, perf, test, chore, ci
+# Scope: Optional - Component affected (e.g., core, simulation, gui, build, docs)
+# Subject: Imperative, present tense, lowercase, no period, max 72 chars.
+
+# --- Commit Body (Optional) ---
+# - Imperative, present tense.
+# - Explain *why* vs. *what*. Motivation, contrast with previous behavior.
+# - Wrap at 72 characters.
+
+
+# --- Commit Footer (Optional) ---
+# - Reference related issues/PRs (e.g., Closes #123, Fixes #456, Ref #789).
+# - Breaking changes: Start with `BREAKING CHANGE:` followed by description.
+
+
+# --- END TEMPLATE ---
