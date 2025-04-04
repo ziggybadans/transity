@@ -14,8 +14,9 @@ std::string logLevelToString(Transity::Logging::LogLevel level) {
         case Transity::Logging::LogLevel::WARN: return "WARN";
         case Transity::Logging::LogLevel::ERROR: return "ERROR";
         case Transity::Logging::LogLevel::FATAL: return "FATAL";
+        default: return "UNKNOWN";
     }
-}
+};
 
 class ConsoleLoggerFormatParamTest : public ::testing::TestWithParam<Transity::Logging::LogLevel> {
 protected:
@@ -33,7 +34,7 @@ TEST(ConsoleLoggerTest, WritesMessageToStdOut) {
     std::cout << output;
 
     EXPECT_THAT(output, testing::HasSubstr(testMsg));
-}
+};
 
 TEST_P(ConsoleLoggerFormatParamTest, FormatMessageCorrectlyForLevel) {
     Transity::Logging::LogLevel currentLevel = GetParam();
@@ -46,13 +47,13 @@ TEST_P(ConsoleLoggerFormatParamTest, FormatMessageCorrectlyForLevel) {
     logger.log(currentLevel, testMsg);
 
     std::string expectedLevelStr = logLevelToString(currentLevel);
-    std::string expectedPatternStr = "\\[\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}\\] \\[" +
+    std::string expectedPatternStr = "\\[\\d\\d\\d\\d-\\d\\d-\\d\\d \\d\\d:\\d\\d:\\d\\d\\] \\[" +
                                      expectedLevelStr + "\\] " + testMsg + "\\n";
 
     std::string output = testing::internal::GetCapturedStdout();
 
     EXPECT_THAT(output, testing::MatchesRegex(expectedPatternStr));
-}
+};
 
 // Instantiate the test suite with all possible LogLevel values
 INSTANTIATE_TEST_SUITE_P(
@@ -67,9 +68,9 @@ INSTANTIATE_TEST_SUITE_P(
         Transity::Logging::LogLevel::FATAL
     )
     // Optional: A function/lambda to generate meaningful test names
-    [](const testing::TestParamInfo<LogLevel>& info) {
-        return logLevelToString(info.param);
-    }
+    //[](const testing::TestParamInfo<Transity::Logging::LogLevel>& info) {
+    //    return logLevelToString(info.param);
+    //}
 );
 
 TEST(ConsoleLoggerTest, FilterMessagesBelowMinLevel) {
@@ -88,4 +89,4 @@ TEST(ConsoleLoggerTest, FilterMessagesBelowMinLevel) {
     EXPECT_THAT(output, testing::HasSubstr(infoMsg));
     EXPECT_THAT(output, testing::HasSubstr(warnMsg));
     EXPECT_THAT(output, testing::Not(testing::HasSubstr(debugMsg)));
-}
+};

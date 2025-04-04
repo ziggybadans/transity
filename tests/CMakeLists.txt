@@ -1,7 +1,3 @@
-# Find the GTest package (this might already be implicitly available
-# due to add_subdirectory in the parent scope, but being explicit is safer)
-# find_package(GTest REQUIRED) # Often not needed if added via add_subdirectory
-
 # Include the GoogleTest module provided by CMake for CTest integration
 include(GoogleTest)
 
@@ -16,7 +12,7 @@ add_executable(ConsoleLogger_test logging/ConsoleLogger_test.cpp)
 # Using the namespaced versions (GTest::*) is generally preferred if available.
 # Let's assume the non-namespaced ones based on the add_subdirectory approach.
 target_link_libraries(basic_test PRIVATE gtest gtest_main)
-target_link_libraries(ConsoleLogger_test PRIVATE gtest gtest_main gmock Transity)
+target_link_libraries(ConsoleLogger_test PRIVATE gtest gtest_main gmock TransityLib)
 target_include_directories(ConsoleLogger_test PRIVATE ${CMAKE_SOURCE_DIR}/lib/googletest/googletest/include)
 target_include_directories(ConsoleLogger_test PRIVATE ${CMAKE_SOURCE_DIR}/lib/googletest/googlemock/include) 
 target_include_directories(ConsoleLogger_test PRIVATE ${CMAKE_SOURCE_DIR}/include)
