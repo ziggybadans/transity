@@ -10,7 +10,7 @@ class MockLogger : public Transity::Logging::ILogger {
     public:
         MOCK_METHOD(void, log, 
             (Transity::Logging::LogLevel level, const std::string& message), (override));
-}
+};
 
 TEST(LoggingSystemTest, AddAndDispatchToSingleLogger) {
     // Instantiate logging system
@@ -23,6 +23,24 @@ TEST(LoggingSystemTest, AddAndDispatchToSingleLogger) {
     
     // Expect log method to be called once
     EXPECT_CALL(*mockLogger, log(Transity::Logging::LogLevel::INFO, "Test message"));
+    // Call log method
+    loggingSystem.log(Transity::Logging::LogLevel::INFO, "Test message");
+}
+
+TEST(LoggingSystemTest, AddAndDispatchToMultipleLoggers) {
+    // Instantiate logging system
+    Transity::Logging::LoggingSystem loggingSystem;
+    // Create shared instances of loggers
+    auto mockLogger1 = std::make_shared<MockLogger>();
+    auto mockLogger2 = std::make_shared<MockLogger>();
+
+    // Mock methods
+    loggingSystem.addLogger(mockLogger1);
+    loggingSystem.addLogger(mockLogger2);
+
+    // Expect log method to be called twice
+    EXPECT_CALL(*mockLogger1, log(Transity::Logging::LogLevel::INFO, "Test message"));
+    EXPECT_CALL(*mockLogger2, log(Transity::Logging::LogLevel::INFO, "Test message"));
     // Call log method
     loggingSystem.log(Transity::Logging::LogLevel::INFO, "Test message");
 }
