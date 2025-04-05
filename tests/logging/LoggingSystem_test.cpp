@@ -34,22 +34,6 @@ TEST_F(LoggingSystemSingletonTest, SingletonAccessAndDispatch) {
     loggingSystem.log(Transity::Logging::LogLevel::INFO, "Singleton test");
 }
 
-TEST_F(LoggingSystemSingletonTest, AddAndDispatchToMultipleLoggersGlobal) {
-    // Arrange
-    auto& loggingSystem = Transity::Logging::LoggingSystem::getInstance();
-    auto mockLogger1 = std::make_shared<MockLogger>();
-    auto mockLogger2 = std::make_shared<MockLogger>();
-    loggingSystem.addLogger(mockLogger1);
-    loggingSystem.addLogger(mockLogger2);
-
-    // Assert
-    EXPECT_CALL(*mockLogger1, log(Transity::Logging::LogLevel::WARN, "Another test"));
-    EXPECT_CALL(*mockLogger2, log(Transity::Logging::LogLevel::WARN, "Another test"));
-
-    // Act
-    loggingSystem.log(Transity::Logging::LogLevel::WARN, "Another test");
-}
-
 TEST(LoggingSystemTest, SingletonReturnsSameInstance) {
     // Arrange
     auto& loggingSystem1 = Transity::Logging::LoggingSystem::getInstance();
@@ -58,20 +42,9 @@ TEST(LoggingSystemTest, SingletonReturnsSameInstance) {
     ASSERT_EQ(&loggingSystem1, &loggingSystem2);
 }
 
-TEST(LoggingSystemTest, AddAndDispatchToSingleLogger) {
+TEST_F(LoggingSystemSingletonTest, AddAndDispatchToMultipleLoggersLocal) {
     // Arrange
-    Transity::Logging::LoggingSystem loggingSystem;
-    auto mockLogger = std::make_shared<MockLogger>();
-    loggingSystem.addLogger(mockLogger);
-    // Assert
-    EXPECT_CALL(*mockLogger, log(Transity::Logging::LogLevel::INFO, "Test message"));
-    // Act
-    loggingSystem.log(Transity::Logging::LogLevel::INFO, "Test message");
-}
-
-TEST(LoggingSystemTest, AddAndDispatchToMultipleLoggersLocal) {
-    // Arrange
-    Transity::Logging::LoggingSystem loggingSystem;
+    auto& loggingSystem = Transity::Logging::LoggingSystem::getInstance();
     auto mockLogger1 = std::make_shared<MockLogger>();
     auto mockLogger2 = std::make_shared<MockLogger>();
     loggingSystem.addLogger(mockLogger1);
