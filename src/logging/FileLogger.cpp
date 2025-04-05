@@ -11,7 +11,7 @@
 namespace Transity::Logging {
     FileLogger::FileLogger(const std::string& filename) : 
         filename_(filename), 
-        file_(filename_, std::ios::app) {
+        file_(filename_) {
             if (!file_.is_open()) {
                 std::cerr << "Error: Failed to open log file in constructor: " << filename_ << std::endl;
         }

@@ -41,8 +41,8 @@
     *   Steps:
     ✓   1.  Write unit tests (TDD) for managing multiple loggers and providing a global access point (e.g., singleton or service locator).
     ✓   2.  Implement `LoggingSystem` to manage logger instances (e.g., allow adding/removing console/file loggers).
-        3.  Provide static methods or a globally accessible instance for easy logging throughout the application.
-        4.  Integrate basic logging calls into the initial project setup to test.
+    ✓   3.  Provide static methods or a globally accessible instance for easy logging throughout the application.
+    ✓   4.  Integrate basic logging calls into the initial project setup to test.
 
 **Objective 3: Implement Configuration System**
 
