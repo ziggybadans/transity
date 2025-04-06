@@ -31,10 +31,10 @@
     ✓   1.  Write unit tests (TDD) for basic logging functionality (output format, level filtering).
     ✓   2.  Create a concrete `ConsoleLogger` class implementing `ILogger`.
     ✓   3.  Implement logging to `stdout`/`stderr`.
-    ✓   4.  Add timestamp and log level formatting.
+        4.  Add timestamp and log level formatting.
 *   **Task 2.3: Implement File Logger**
     *   Steps:
-    ✓   1.  Write unit tests (TDD) for file logging (file creation, writing, rotation - if needed later).
+        1.  Write unit tests (TDD) for file logging (file creation, writing, rotation - if needed later).
         2.  Create a concrete `FileLogger` class implementing `ILogger`.
         3.  Implement logging to a specified file.
 *   **Task 2.4: Create Logging System Facade (`LoggingSystem`)**

@@ -3,7 +3,6 @@
 add_library(TransityLib
     logging/ConsoleLogger.cpp
     logging/LogUtils.cpp
-    logging/FileLogger.cpp
 )
 
 # Specify include directories needed by this library
