@@ -14,7 +14,7 @@ set(CMAKE_CXX_EXTENSIONS False)
 
 ## Google Test
 enable_testing()
-set(BUILD_GMOCK OFF CACHE BOOL "" FORCE)
+set(BUILD_GMOCK ON CACHE BOOL "" FORCE)
 add_subdirectory(lib/googletest)
 
 ## EnTT
