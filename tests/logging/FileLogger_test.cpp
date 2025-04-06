@@ -33,26 +33,8 @@ TEST_F(FileLoggerTest, WritesMessageToFile) {
 
     std::string fileContent;
     std::getline(file, fileContent);
+
     file.close();
 
-    EXPECT_THAT(fileContent, testing::HasSubstr(message));
-}
-
-TEST_F(FileLoggerTest, FormatsMessage) {
-    Transity::Logging::FileLogger logger(testLogFilename);
-    const std::string message = "This is a formatted test message";
-    const Transity::Logging::LogLevel level = Transity::Logging::LogLevel::WARN;
-    const std::string expectedLevelStr = Transity::Logging::logLevelToString(level);
-
-    logger.log(level, message);
-    std::ifstream file(testLogFilename);
-    ASSERT_TRUE(file.is_open());
-    std::string fileContent;
-    std::getline(file, fileContent);
-    file.close();
-
-    EXPECT_THAT(fileContent, testing::HasSubstr("[" + expectedLevelStr + "]"));
-    EXPECT_THAT(fileContent, testing::HasSubstr(message));
-    std::string expectedPatternStr = "\\[\\d\\d\\d\\d-\\d\\d-\\d\\d \\d\\d:\\d\\d:\\d\\d\\]";
-    EXPECT_THAT(fileContent, testing::ContainsRegex(expectedPatternStr));
+    EXPECT_EQ(fileContent, message);
 }

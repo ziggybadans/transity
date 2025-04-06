@@ -13,5 +13,4 @@ namespace Transity::Logging {
     };
 
     std::string logLevelToString(LogLevel level);
-    std::string formatLogMessage(LogLevel level, const std::string& message);
 }
