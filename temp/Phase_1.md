@@ -20,29 +20,64 @@
     ✓   3.  Integrate code formatting tools (e.g., Clang-Format) and enforce formatting checks in CI.
     ✓   4.  Set up `.gitignore` and `CONTRIBUTING.md`.
 
-**Objective 2: Implement Logging System**
+**Objective 2: Implement Robust Logging System (TDD)**
 
-*   **Task 2.1: Define Logging Interface (`ILogger`)**
-    *   Steps:
-        1.  Define an abstract base class or interface (`ILogger`) with methods for different log levels (e.g., `debug`, `info`, `warn`, `error`).
-        2.  Ensure the interface is simple and decoupled from specific implementations.
-*   **Task 2.2: Implement Console Logger**
-    *   Steps:
-        1.  Write unit tests (TDD) for basic logging functionality (output format, level filtering).
-        2.  Create a concrete `ConsoleLogger` class implementing `ILogger`.
-        3.  Implement logging to `stdout`/`stderr`.
-        4.  Add timestamp and log level formatting.
-*   **Task 2.3: Implement File Logger**
-    *   Steps:
-        1.  Write unit tests (TDD) for file logging (file creation, writing, rotation - if needed later).
-        2.  Create a concrete `FileLogger` class implementing `ILogger`.
-        3.  Implement logging to a specified file.
-*   **Task 2.4: Create Logging System Facade (`LoggingSystem`)**
-    *   Steps:
-        1.  Write unit tests (TDD) for managing multiple loggers and providing a global access point (e.g., singleton or service locator).
-        2.  Implement `LoggingSystem` to manage logger instances (e.g., allow adding/removing console/file loggers).
-        3.  Provide static methods or a globally accessible instance for easy logging throughout the application.
-        4.  Integrate basic logging calls into the initial project setup to test.
+*   **Goal:** Establish a flexible, configurable, and thread-safe logging system using Test-Driven Development (TDD). This system will support multiple output sinks (console, file) and severity levels, adhering closely to the specifications outlined in `template/LoggingSystem.spec.md`.
+*   **Core Principles:**
+    *   **Modularity:** Decouple the logging interface (`LogSink`) from concrete implementations (`ConsoleSink`, `FileSink`).
+    *   **Configurability:** Allow configuration of log level, output sinks, file paths, and message format via the `ConfigSystem` (or defaults).
+    *   **Testability:** Ensure all components are unit-testable.
+*   **TDD Workflow:** Development will strictly follow the **Red-Green-Refactor** cycle. For each feature or requirement, guided by the `TDD_ANCHOR` points defined in `template/LoggingSystem.spec.md`:
+    1.  **Red:** Write a unit test that captures the requirement and fails because the functionality is not yet implemented. Commit this failing test.
+    2.  **Green:** Write the simplest, minimal code necessary to make the failing test pass. Verify all tests pass. Commit the working code.
+    3.  **Refactor:** Improve the code's design, clarity, performance, and adherence to coding standards *without changing its external behavior*. Ensure all tests continue to pass after refactoring. Commit the refactored code.
+*   **Task 2.1: Define Core Logging Structures & Interface**
+    *   **Goal:** Define the fundamental data types and the abstract interface for log outputs.
+    *   **Steps:**
+        1.  Define `LogLevel` enum (`TRACE`, `DEBUG`, `INFO`, `WARN`, `ERROR`, `FATAL`) based on the spec.
+        2.  Define `LogSink` interface (abstract class) with a pure virtual `write(const std::string& formattedMessage)` method.
+        3.  Define `LogConfig` struct to hold configuration parameters (minimum `LogLevel`, file path, format string, active sinks).
+*   **Task 2.2: Implement Console Sink (`ConsoleSink`)**
+    *   **Goal:** Create a concrete `LogSink` that writes messages to the standard console output (`stdout`/`stderr`).
+    *   **Steps (following TDD workflow):**
+        1.  Implement `ConsoleSink` inheriting from `LogSink`.
+        2.  Implement the `write` method to output formatted messages to the console.
+        3.  *Targeted TDD Anchors:* `Test_Logging_ConsoleSink_Initialization`, `Test_Logging_Dispatch_To_Console`.
+*   **Task 2.3: Implement File Sink (`FileSink`)**
+    *   **Goal:** Create a concrete `LogSink` that writes messages to a specified log file.
+    *   **Steps (following TDD workflow):**
+        1.  Implement `FileSink` inheriting from `LogSink`.
+        2.  Implement constructor to open/create the log file based on configuration.
+        3.  Implement the `write` method to append formatted messages to the file stream.
+        4.  Implement destructor or `shutdown` method to ensure the file stream is flushed and closed properly.
+        5.  Handle potential file I/O errors gracefully (e.g., log to console if file fails).
+        6.  *Targeted TDD Anchors:* `Test_Logging_FileSink_Initialization`, `Test_Logging_FileSink_ErrorHandling`, `Test_Logging_Dispatch_To_File`, `Test_Logging_Shutdown_Flush`, `Test_Logging_Shutdown_CloseFile`.
+*   **Task 2.4: Implement Logging System Facade (`LoggingSystem`)**
+    *   **Goal:** Create a central manager for configuring, initializing, and dispatching log messages to active sinks.
+    *   **Steps (following TDD workflow):**
+        1.  Implement `LoggingSystem` class (consider singleton or service locator pattern for access).
+        2.  Implement `initialize(const LogConfig& config)`:
+            *   Store configuration (min level, format).
+            *   Instantiate and store configured `LogSink` objects (Console, File).
+            *   Log an initialization message via the newly configured sinks.
+            *   *Targeted TDD Anchors:* `Test_Logging_Config_Defaults`, `Test_Logging_Config_LoadFromFile` (assuming integration with `ConfigSystem`), `Test_Logging_Initialization_Message`, `Test_Logging_Dispatch_To_Multiple_Sinks`.
+        3.  Implement `log(LogLevel level, const std::string& message, ... /* variadic args or fmtlib */)`:
+            *   Check if `level` meets the minimum configured threshold.
+            *   Format the message string (timestamp, level, message content) according to `LogConfig`.
+            *   Dispatch the formatted message to all active `LogSink`s. Ensure thread safety if logging from multiple threads is anticipated.
+            *   *Targeted TDD Anchors:* `Test_Logging_Level_Filtering`, `Test_Logging_Message_Formatting`.
+        4.  Implement `shutdown()`:
+            *   Log a shutdown message.
+            *   Call shutdown/cleanup methods on all active sinks (e.g., flush/close `FileSink`).
+            *   *Targeted TDD Anchors:* (Covered by sink tests like `Test_Logging_Shutdown_Flush`, `Test_Logging_Shutdown_CloseFile`).
+        5.  (Optional) Implement helper macros (e.g., `LOG_INFO(...)`, `LOG_WARN(...)`) for convenient logging calls.
+            *   *Targeted TDD Anchors:* `Test_Logging_Helper_Macros`.
+*   **Task 2.5: Integrate Basic Logging into `CoreApplication`**
+    *   **Goal:** Connect the `LoggingSystem` to the application's lifecycle.
+    *   **Steps:**
+        1.  In `CoreApplication::initialize()`, create `LogConfig` (potentially loading from `ConfigSystem`) and call `LoggingSystem::initialize()`.
+        2.  In `CoreApplication::shutdown()`, call `LoggingSystem::shutdown()`.
+        3.  Add basic `LOG_INFO` calls at key points (e.g., "Initializing RenderingSystem...", "Application shutdown.") to verify integration.
 
 **Objective 3: Implement Configuration System**
 
