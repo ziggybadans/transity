@@ -8,6 +8,8 @@
 #include <cstdarg>
 #include <vector>
 #include <string>
+#include <thread>
+#include <regex>
 
 namespace transity::logging {
 
@@ -62,10 +64,15 @@ std::string LoggingSystem::levelToString(LogLevel level) const {
     }
 }
 
-void LoggingSystem::log(LogLevel level, const char* format, ...) {
+void LoggingSystem::log(LogLevel level, const char* system, const char* format, ...) {
     if (level < logLevel) {
         return;
     }
+
+    std::thread::id this_id = std::this_thread::get_id();
+    std::ostringstream oss_tid;
+    oss_tid << this_id;
+    std::string threadIdStr = oss_tid.str();
 
     va_list args;
     va_start(args, format);
@@ -76,7 +83,7 @@ void LoggingSystem::log(LogLevel level, const char* format, ...) {
     va_end(args_copy);
 
     std::string formatted_message_part;
-    if (requiredSize > 0) {
+    if (requiredSize >= 0) {
         std::vector<char> buffer(requiredSize + 1);
         std::vsnprintf(buffer.data(), buffer.size(), format, args);
         formatted_message_part = std::string(buffer.data());
@@ -102,13 +109,22 @@ void LoggingSystem::log(LogLevel level, const char* format, ...) {
     oss_ms << std::setw(3) << std::setfill('0') << milliseconds;
     std::string msStr = oss_ms.str();
 
+    std::string timestamp_field = dateTimeStr + "." + msStr;
+    std::string tid_field = "[TID: " + threadIdStr + "]";
+    std::string level_field = "[" + levelToString(level) + "]";
+    std::string system_field = "[" + std::string(system) + "]";
+
     std::ostringstream oss_formatted;
-    oss_formatted << std::left // Align text to the left within the width
-                << std::setw(24) << (dateTimeStr + "." + msStr) // Timestamp column (adjust width 24)
-                << std::setw(8) << ("[" + levelToString(level) + "]") // Level column (adjust width 8)
-                //<< std::setw(10) << "[TID: " << threadIdStr << "]"
-                << ""
-                << formatted_message_part; // The rest of the message
+    oss_formatted << std::left // Apply left alignment once
+                  << std::setw(24) << timestamp_field // Timestamp
+                  << " " // Separator
+                  << std::setw(12) << tid_field       // Thread ID (adjust width 12 or as needed)
+                  << " " // Separator
+                  << std::setw(8) << level_field       // Level
+                  << " " // Separator
+                  << std::setw(10) << system_field      // System (adjust width 10 or as needed)
+                  << " " // Separator
+                  << formatted_message_part;          // The actual message
     std::string formattedMessage = oss_formatted.str();
     internalLog(formattedMessage);
 }

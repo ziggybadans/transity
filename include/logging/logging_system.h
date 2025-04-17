@@ -21,7 +21,7 @@ public:
     void initialize();
     void initialize(LogLevel level, bool enableFileSink, bool enableConsoleSink, std::string filePath = "game_log.log");
     void internalLog(const std::string& message);
-    void log(LogLevel level, const char* format, ...);
+    void log(LogLevel level, const char* system, const char* format, ...);
 
     LogLevel getLogLevel() const;
     bool isConsoleSinkEnabled() const;
