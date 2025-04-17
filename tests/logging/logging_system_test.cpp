@@ -27,3 +27,28 @@ TEST(LoggingSystem, InitializesWithCustomConfig) {
     ASSERT_EQ(logger.isConsoleSinkEnabled(), enableConsoleSink);
     ASSERT_EQ(logger.getFilePath(), filePath);
 }
+
+TEST(LoggingSystem, ConsoleSinkInitializes) {
+    transity::logging::LoggingSystem logger;
+
+    logger.initialize(transity::logging::LogLevel::INFO, false, true);
+
+    ASSERT_TRUE(logger.isConsoleSinkEnabled());
+}
+
+TEST(LoggingSystem, FileSinkInitializes) {
+    transity::logging::LoggingSystem logger;
+
+    logger.initialize(transity::logging::LogLevel::INFO, true, false);
+
+    ASSERT_TRUE(logger.isFileSinkEnabled());
+}
+
+TEST(LoggingSystem, FileSinkHandlesErrors) {
+    transity::logging::LoggingSystem logger;
+
+    ASSERT_THROW(
+        logger.initialize(transity::logging::LogLevel::INFO, true, false, "invalid/path.txt"),
+        std::runtime_error
+    );
+}

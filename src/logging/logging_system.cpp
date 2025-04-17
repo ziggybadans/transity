@@ -1,5 +1,7 @@
 #include "logging/logging_system.h"
 
+#include <fstream>
+
 namespace transity::logging {
 
 // Default config
@@ -16,6 +18,13 @@ void LoggingSystem::initialize(LogLevel level, bool enableFileSink, bool enableC
     consoleSinkEnabled = enableConsoleSink;
     fileSinkEnabled = enableFileSink;
     filePath = path;
+
+    if (fileSinkEnabled) {
+        std::ofstream file(filePath);
+        if (!file.is_open()) {
+            throw std::runtime_error("Failed to open log file: " + filePath);
+        }
+    }
 }
 
 LogLevel LoggingSystem::getLogLevel() const {
