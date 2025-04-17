@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <regex>
+#include <thread>
 
 #include "logging/logging_system.h"
 
@@ -26,9 +27,19 @@ TEST(LoggingSystem, FiltersLevel) {
     TestableLoggingSystem logger;
     logger.initialize(transity::logging::LogLevel::INFO, false, true);
 
-    logger.log("This is a TRACE message", transity::logging::LogLevel::TRACE);
-    logger.log("This is a DEBUG message", transity::logging::LogLevel::DEBUG);
-    logger.log("This is an INFO message", transity::logging::LogLevel::INFO);
+    logger.log(transity::logging::LogLevel::TRACE, "This is a TRACE message");
+    logger.log(transity::logging::LogLevel::DEBUG, "This is a DEBUG message");
+    logger.log(transity::logging::LogLevel::INFO, "This is an INFO message");
+
+    std::cout << "\n--- Log Output ---\n";
+    if (!logger.mockSink->messagesReceived.empty()) {
+         for(const auto& msg : logger.mockSink->messagesReceived) {
+             std::cout << msg << std::endl;
+         }
+    } else {
+         std::cout << "(No message received by mock sink)\n";
+    }
+    std::cout << "---------------------------------------\n";
 
     ASSERT_EQ(logger.mockSink->messagesReceived.size(), 2);
 }
@@ -37,12 +48,13 @@ TEST(LoggingSystem, FormatsMessage) {
     TestableLoggingSystem logger;
     logger.initialize(transity::logging::LogLevel::INFO, false, true);
 
-    logger.log("This is a formatted message.", transity::logging::LogLevel::INFO);
+    logger.log(transity::logging::LogLevel::INFO, "This is a formatted message.");
 
-    std::cout << "\n--- Log Output (FormatsMessage Test) ---\n";
+    std::cout << "\n--- Log Output ---\n";
     if (!logger.mockSink->messagesReceived.empty()) {
-         // Print the last message received by the mock
-         std::cout << logger.mockSink->messagesReceived.back() << std::endl;
+         for(const auto& msg : logger.mockSink->messagesReceived) {
+             std::cout << msg << std::endl;
+         }
     } else {
          std::cout << "(No message received by mock sink)\n";
     }
@@ -53,4 +65,22 @@ TEST(LoggingSystem, FormatsMessage) {
     ASSERT_TRUE(std::regex_search(logger.mockSink->messagesReceived[1], timestamp_regex));
     ASSERT_NE(logger.mockSink->messagesReceived[1].find("[INFO]"), std::string::npos);
     ASSERT_NE(logger.mockSink->messagesReceived[1].find("This is a formatted message."), std::string::npos);
+}
+
+TEST(LoggingSystem, FormatsMessageWithArgs) {
+    TestableLoggingSystem logger;
+    logger.initialize(transity::logging::LogLevel::INFO, false, true);
+
+    std::cout << "\n--- Log Output ---\n";
+    if (!logger.mockSink->messagesReceived.empty()) {
+         for(const auto& msg : logger.mockSink->messagesReceived) {
+             std::cout << msg << std::endl;
+         }
+    } else {
+         std::cout << "(No message received by mock sink)\n";
+    }
+    std::cout << "---------------------------------------\n";
+
+    logger.log(transity::logging::LogLevel::INFO, "User %s logged in with ID %d", "TestUser", 123);
+    ASSERT_NE(logger.mockSink->messagesReceived[1].find("User TestUser logged in with ID 123"), std::string::npos);
 }

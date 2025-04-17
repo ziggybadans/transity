@@ -5,6 +5,9 @@
 #include <ctime>
 #include <sstream>
 #include <iomanip>
+#include <cstdarg>
+#include <vector>
+#include <string>
 
 namespace transity::logging {
 
@@ -59,32 +62,55 @@ std::string LoggingSystem::levelToString(LogLevel level) const {
     }
 }
 
-void LoggingSystem::log(const std::string& message, LogLevel level) {
-    if (level >= logLevel) {
-        auto now = std::chrono::system_clock::now();
-        auto now_c = std::chrono::system_clock::to_time_t(now);
-        std::tm now_tm = *std::localtime(&now_c);
-
-        std::ostringstream oss_dt;
-        oss_dt << std::put_time(&now_tm, "%Y-%m-%d %H:%M:%S");
-        std::string dateTimeStr = oss_dt.str();
-
-        auto timeSinceEpoch = now.time_since_epoch();
-        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(timeSinceEpoch);
-        long long milliseconds = ms.count() % 1000;
-
-        std::ostringstream oss_ms;
-        oss_ms << std::setw(3) << std::setfill('0') << milliseconds;
-        std::string msStr = oss_ms.str();
-
-        std::ostringstream oss_formatted;
-        oss_formatted << std::left // Align text to the left within the width
-                    << std::setw(24) << (dateTimeStr + "." + msStr) // Timestamp column (adjust width 24)
-                    << std::setw(8) << ("[" + levelToString(level) + "]") // Level column (adjust width 8)
-                    << message; // The rest of the message
-        std::string formattedMessage = oss_formatted.str();
-        internalLog(formattedMessage);
+void LoggingSystem::log(LogLevel level, const char* format, ...) {
+    if (level < logLevel) {
+        return;
     }
+
+    va_list args;
+    va_start(args, format);
+
+    va_list args_copy;
+    va_copy(args_copy, args);
+    int requiredSize = std::vsnprintf(nullptr, 0, format, args_copy);
+    va_end(args_copy);
+
+    std::string formatted_message_part;
+    if (requiredSize > 0) {
+        std::vector<char> buffer(requiredSize + 1);
+        std::vsnprintf(buffer.data(), buffer.size(), format, args);
+        formatted_message_part = std::string(buffer.data());
+    } else {
+        formatted_message_part = "Error formatting log message";
+    }
+
+    va_end(args);
+
+    auto now = std::chrono::system_clock::now();
+    auto now_c = std::chrono::system_clock::to_time_t(now);
+    std::tm now_tm = *std::localtime(&now_c);
+
+    std::ostringstream oss_dt;
+    oss_dt << std::put_time(&now_tm, "%Y-%m-%d %H:%M:%S");
+    std::string dateTimeStr = oss_dt.str();
+
+    auto timeSinceEpoch = now.time_since_epoch();
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(timeSinceEpoch);
+    long long milliseconds = ms.count() % 1000;
+
+    std::ostringstream oss_ms;
+    oss_ms << std::setw(3) << std::setfill('0') << milliseconds;
+    std::string msStr = oss_ms.str();
+
+    std::ostringstream oss_formatted;
+    oss_formatted << std::left // Align text to the left within the width
+                << std::setw(24) << (dateTimeStr + "." + msStr) // Timestamp column (adjust width 24)
+                << std::setw(8) << ("[" + levelToString(level) + "]") // Level column (adjust width 8)
+                //<< std::setw(10) << "[TID: " << threadIdStr << "]"
+                << ""
+                << formatted_message_part; // The rest of the message
+    std::string formattedMessage = oss_formatted.str();
+    internalLog(formattedMessage);
 }
 
 void LoggingSystem::internalLog(const std::string& message) {
