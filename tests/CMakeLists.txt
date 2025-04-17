@@ -12,4 +12,5 @@ function(add_transity_test TEST_NAME TEST_SOURCE)
     gtest_add_tests(TARGET ${TEST_NAME})
 endfunction()
 
-add_transity_test(LoggingSystem_test logging/logging_system_test.cpp)
+add_transity_test(LoggingSystemInitialization_test logging/logging_system_initialize.cpp)
+add_transity_test(LoggingSystemLog_test logging/logging_system_log.cpp)

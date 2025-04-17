@@ -1,7 +1,28 @@
 #include <gtest/gtest.h>
+#include <vector>
+#include <memory>
 
 #include "logging/logging_system.h"
+#include "logging/ILogSink.h"
 
+class MockLogSink : public transity::logging::ILogSink {
+public:
+    void write(const std::string& message) override {
+        messagesReceived.push_back(message);
+    }
+    std::vector<std::string> messagesReceived;
+};
+
+class TestableLoggingSystem : public transity::logging::LoggingSystem {
+public:
+    MockLogSink* mockSink = nullptr;
+    void initializeSinks() override {
+        activeSinks.clear();
+        auto uniqueMock = std::make_unique<MockLogSink>();
+        mockSink = uniqueMock.get();
+        activeSinks.push_back(std::move(uniqueMock));
+    }
+};
 
 TEST(LoggingSystem, InitializesWithDefaultConfig) {
     transity::logging::LoggingSystem logger;
@@ -10,7 +31,7 @@ TEST(LoggingSystem, InitializesWithDefaultConfig) {
 
     ASSERT_EQ(logger.getLogLevel(), transity::logging::LogLevel::INFO);
     ASSERT_TRUE(logger.isConsoleSinkEnabled());
-    ASSERT_FALSE(logger.isFileSinkEnabled());
+    ASSERT_TRUE(logger.isFileSinkEnabled());
 }
 
 TEST(LoggingSystem, InitializesWithCustomConfig) {
@@ -51,4 +72,14 @@ TEST(LoggingSystem, FileSinkHandlesErrors) {
         logger.initialize(transity::logging::LogLevel::INFO, true, false, "invalid/path.txt"),
         std::runtime_error
     );
+}
+
+TEST(LoggingSystem, InitializationMessageLogged) {
+    TestableLoggingSystem logger;
+    std::string expectedMessage = "Logging system started. Level: INFO. Sinks: Console, File.";
+
+    logger.initialize();
+
+    ASSERT_EQ(logger.mockSink->messagesReceived.size(), 1);
+    ASSERT_EQ(logger.mockSink->messagesReceived[0], expectedMessage);
 }

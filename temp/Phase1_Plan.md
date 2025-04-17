@@ -4,9 +4,9 @@
 
 **1. Logging System (`LoggingSystem.spec.md`)**
 - [x] Define `LogLevel` enum.
-- [ ] Define `LogSink` interface (`ConsoleSink`, `FileSink`).
+- [x] Define `LogSink` interface (`ConsoleSink`, `FileSink`).
 - [ ] Define `LogConfig` structure.
-- [ ] Implement `initialize(config)` function (load config, setup sinks, handle errors, log init).
+- [x] Implement `initialize(config)` function (load config, setup sinks, handle errors, log init).
 - [ ] Implement `log(level, message, ...args)` function (level filtering, formatting, dispatch).
 - [ ] Implement `shutdown()` function (flush/close sinks).
 - [ ] Implement `LogSink::write()` for `ConsoleSink`.
