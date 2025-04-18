@@ -31,18 +31,12 @@ void LoggingSystem::initialize(LogLevel level, bool enableFileSink, bool enableC
     fileSinkEnabled = enableFileSink;
     filePath = path;
 
-    if (fileSinkEnabled) {
-        std::ofstream file(filePath);
-        if (!file.is_open()) {
-            throw std::runtime_error("Failed to open log file: " + filePath);
-        }
-    }
-
     initializeSinks();
     internalLog("Logging system started. Level: " + std::to_string(level) + ". Sinks: " + (enableConsoleSink ? "Console, " : "") + (enableFileSink ? "File." : ""));
 }
 
 void LoggingSystem::initializeSinks() {
+    std::lock_guard<std::mutex> lock(logMutex);
     activeSinks.clear();
     if (consoleSinkEnabled) {
         activeSinks.push_back(std::make_unique<ConsoleSink>());
@@ -130,6 +124,7 @@ void LoggingSystem::log(LogLevel level, const char* system, const char* format, 
 }
 
 void LoggingSystem::internalLog(const std::string& message) {
+    std::lock_guard<std::mutex> lock(logMutex);
     for (auto& sink : activeSinks) {
         sink->write(message);
     }
@@ -137,9 +132,11 @@ void LoggingSystem::internalLog(const std::string& message) {
 
 void LoggingSystem::shutdown() {
     internalLog("Logging system shutting down.");
+    std::lock_guard<std::mutex> lock(logMutex);
     for (auto& sink : activeSinks) {
         sink->flush();
     }
+    activeSinks.clear();
 }
 
 LogLevel LoggingSystem::getLogLevel() const {
@@ -168,6 +165,9 @@ void ConsoleSink::flush() {
 
 FileSink::FileSink(const std::string& filePath) : filePath(filePath) {
     file = std::ofstream(filePath, std::ios_base::app);
+    if (!file.is_open()) {
+        throw std::runtime_error("Failed to open log file: " + filePath);
+    }
 }
 
 FileSink::~FileSink() {

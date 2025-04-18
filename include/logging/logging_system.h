@@ -3,6 +3,7 @@
 #include <vector>
 #include <memory>
 #include <fstream>
+#include <mutex>
 #include "logging/ILogSink.h"
 
 namespace transity::logging {
@@ -39,6 +40,7 @@ private:
     bool consoleSinkEnabled;
     bool fileSinkEnabled;
     std::string filePath;
+    std::mutex logMutex;
 };
 
 class ConsoleSink : public ILogSink {
