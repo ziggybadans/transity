@@ -8,11 +8,11 @@
 - [ ] Define `LogConfig` structure.
 - [x] Implement `initialize(config)` function (load config, setup sinks, handle errors, log init).
 - [x] Implement `log(level, message, ...args)` function (level filtering, formatting, dispatch).
-- [ ] Implement `shutdown()` function (flush/close sinks).
+- [x] Implement `shutdown()` function (flush/close sinks).
 - [x] Implement `LogSink::write()` for `ConsoleSink`.
 - [x] Implement `LogSink::write()` for `FileSink`.
-- [ ] (Optional) Implement helper macros (e.g., `LOG_INFO`).
-- [ ] Ensure basic thread safety.
+- [x] (Optional) Implement helper macros (e.g., `LOG_INFO`).
+- [x] Ensure basic thread safety.
 
 **2. Configuration System (`ConfigSystem.spec.md`)**
 - [ ] Decide on configuration file format (e.g., INI, JSON).
