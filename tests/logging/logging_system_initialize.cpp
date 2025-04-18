@@ -10,6 +10,7 @@ public:
     void write(const std::string& message) override {
         messagesReceived.push_back(message);
     }
+    void flush() override {}
     std::vector<std::string> messagesReceived;
 };
 

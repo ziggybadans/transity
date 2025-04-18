@@ -14,3 +14,4 @@ endfunction()
 
 add_transity_test(LoggingSystemInitialization_test logging/logging_system_initialize.cpp)
 add_transity_test(LoggingSystemLog_test logging/logging_system_log.cpp)
+add_transity_test(LoggingSystemShutdown_test logging/logging_system_shutdown.cpp)

@@ -7,10 +7,10 @@
 - [x] Define `LogSink` interface (`ConsoleSink`, `FileSink`).
 - [ ] Define `LogConfig` structure.
 - [x] Implement `initialize(config)` function (load config, setup sinks, handle errors, log init).
-- [ ] Implement `log(level, message, ...args)` function (level filtering, formatting, dispatch).
+- [x] Implement `log(level, message, ...args)` function (level filtering, formatting, dispatch).
 - [ ] Implement `shutdown()` function (flush/close sinks).
-- [ ] Implement `LogSink::write()` for `ConsoleSink`.
-- [ ] Implement `LogSink::write()` for `FileSink`.
+- [x] Implement `LogSink::write()` for `ConsoleSink`.
+- [x] Implement `LogSink::write()` for `FileSink`.
 - [ ] (Optional) Implement helper macros (e.g., `LOG_INFO`).
 - [ ] Ensure basic thread safety.
 

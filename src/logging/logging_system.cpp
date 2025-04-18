@@ -135,6 +135,13 @@ void LoggingSystem::internalLog(const std::string& message) {
     }
 }
 
+void LoggingSystem::shutdown() {
+    internalLog("Logging system shutting down.");
+    for (auto& sink : activeSinks) {
+        sink->flush();
+    }
+}
+
 LogLevel LoggingSystem::getLogLevel() const {
     return logLevel;
 }
@@ -155,6 +162,10 @@ void ConsoleSink::write(const std::string& message) {
     std::cout << message << std::endl;
 }
 
+void ConsoleSink::flush() {
+    std::cout.flush();
+}
+
 FileSink::FileSink(const std::string& filePath) : filePath(filePath) {
     file = std::ofstream(filePath, std::ios_base::app);
 }
@@ -168,6 +179,12 @@ FileSink::~FileSink() {
 void FileSink::write(const std::string& message) {
     if (file.is_open()) {
         file << message << std::endl;
+    }
+}
+
+void FileSink::flush() {
+    if (file.is_open()) {
+        file.flush();
     }
 }
 
