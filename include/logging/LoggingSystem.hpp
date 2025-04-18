@@ -1,5 +1,5 @@
 /**
- * @file logging_system.h
+ * @file LoggingSystem.hpp
  * @brief Logging system interface for the Transity engine
  *
  * Provides a thread-safe logging system with multiple log levels and output sinks.

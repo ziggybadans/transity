@@ -37,6 +37,9 @@ find_package(SFML 2.6.1 REQUIRED COMPONENTS system window graphics network audio
 ## ImGui-SFML
 add_subdirectory(lib/imgui-SFML)
 
+## TOML++
+add_subdirectory(lib/tomlplusplus)
+
 # Subdirectories
 add_subdirectory(src)
 add_subdirectory(tests)

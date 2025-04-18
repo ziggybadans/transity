@@ -13,7 +13,7 @@
 #include <vector>
 #include <memory>
 
-#include "logging/logging_system.h"
+#include "logging/LoggingSystem.hpp"
 #include "logging/ILogSink.h"
 
 /**

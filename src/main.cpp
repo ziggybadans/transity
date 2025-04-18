@@ -1,4 +1,4 @@
-#include "logging/logging_system.h"
+#include "logging/LoggingSystem.hpp"
 
 int main() {
     transity::logging::LoggingSystem::getInstance().initialize();

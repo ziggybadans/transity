@@ -15,7 +15,7 @@
 - [x] Ensure basic thread safety.
 
 **2. Configuration System (`ConfigSystem.spec.md`)**
-- [ ] Decide on configuration file format (e.g., INI, JSON).
+- [x] Decide on configuration file format (e.g., INI, JSON).
 - [ ] Define `ConfigSource` enum, `ConfigValue` variant, `ConfigStore` map.
 - [ ] Implement `initialize(...)` function (load defaults, parse chosen format, load primary/user files, handle errors).
 - [ ] Implement `getValue<T>(key, defaultValue)` template function (lookup, type conversion, defaults).

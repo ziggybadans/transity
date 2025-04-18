@@ -1,11 +1,11 @@
 /**
- * @file logging_system.cpp
+ * @file LoggingSystem.cpp
  * @brief Implementation of the Transity engine logging system
  *
  * Contains the concrete implementation of all logging system functionality
- * declared in logging_system.h.
+ * declared in LoggingSystem.h.
  */
-#include "logging/logging_system.h"
+#include "logging/LoggingSystem.hpp"
 
 #include <iostream>
 #include <chrono>

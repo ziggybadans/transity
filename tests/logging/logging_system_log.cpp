@@ -11,7 +11,7 @@
 #include <regex>
 #include <thread>
 
-#include "logging/logging_system.h"
+#include "logging/LoggingSystem.hpp"
 
 /**
  * @class MockLogSink
