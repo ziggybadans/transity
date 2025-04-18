@@ -1,9 +1,24 @@
+/**
+ * @file logging_system_log.cpp
+ * @brief Tests for logging system message formatting and filtering
+ *
+ * Verifies:
+ * - Log level filtering works correctly
+ * - Messages are properly formatted with timestamps, thread IDs, etc.
+ * - Variable argument formatting works as expected
+ */
 #include <gtest/gtest.h>
 #include <regex>
 #include <thread>
 
 #include "logging/logging_system.h"
 
+/**
+ * @class MockLogSink
+ * @brief Mock implementation of ILogSink for testing
+ *
+ * Captures all received messages in a vector for verification
+ */
 class MockLogSink : public transity::logging::ILogSink {
     public:
         void write(const std::string& message) override {
@@ -13,6 +28,12 @@ class MockLogSink : public transity::logging::ILogSink {
         std::vector<std::string> messagesReceived;
 };
 
+/**
+ * @class LoggingSystemTest
+ * @brief Test fixture for logging system tests
+ *
+ * Sets up a mock log sink before each test and cleans up after
+ */
 class LoggingSystemTest : public ::testing::Test {
     protected:
         MockLogSink* mockSink = nullptr;
@@ -31,6 +52,14 @@ class LoggingSystemTest : public ::testing::Test {
         }
     };
 
+/**
+ * @test FiltersLevel
+ * @brief Verifies log level filtering works correctly
+ *
+ * Tests that:
+ * - Messages below current log level are filtered out
+ * - Messages at or above current level are passed through
+ */
 TEST_F(LoggingSystemTest, FiltersLevel) {
     transity::logging::LoggingSystem& logger = transity::logging::LoggingSystem::getInstance();
     logger.initialize(transity::logging::LogLevel::INFO, false, true);
@@ -52,6 +81,17 @@ TEST_F(LoggingSystemTest, FiltersLevel) {
     ASSERT_EQ(mockSink->messagesReceived.size(), 2);
 }
 
+/**
+ * @test FormatsMessage
+ * @brief Verifies message formatting is correct
+ *
+ * Tests that messages contain:
+ * - Proper timestamp format
+ * - Thread ID
+ * - Log level
+ * - System/component name
+ * - Message content
+ */
 TEST_F(LoggingSystemTest, FormatsMessage) {
     transity::logging::LoggingSystem& logger = transity::logging::LoggingSystem::getInstance();
     logger.initialize(transity::logging::LogLevel::INFO, false, true);
@@ -78,6 +118,13 @@ TEST_F(LoggingSystemTest, FormatsMessage) {
     ASSERT_NE(mockSink->messagesReceived[1].find("This is a formatted message."), std::string::npos);
 }
 
+/**
+ * @test FormatsMessageWithArgs
+ * @brief Verifies variable argument formatting works
+ *
+ * Tests that printf-style format strings with arguments
+ * are properly expanded in the final log message
+ */
 TEST_F(LoggingSystemTest, FormatsMessageWithArgs) {
     transity::logging::LoggingSystem& logger = transity::logging::LoggingSystem::getInstance();
     logger.initialize(transity::logging::LogLevel::INFO, false, true);

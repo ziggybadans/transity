@@ -1,3 +1,10 @@
+/**
+ * @file logging_system.cpp
+ * @brief Implementation of the Transity engine logging system
+ *
+ * Contains the concrete implementation of all logging system functionality
+ * declared in logging_system.h.
+ */
 #include "logging/logging_system.h"
 
 #include <iostream>
@@ -13,7 +20,14 @@
 
 namespace transity::logging {
 
-// Default config
+/**
+ * @brief Initialize logging system with default configuration
+ *
+ * Sets up logging with:
+ * - Log level: INFO
+ * - Both console and file sinks enabled
+ * - Default log file path: "game_log.log"
+ */
 void LoggingSystem::initialize() {
     logLevel = LogLevel::INFO;
     consoleSinkEnabled = true;
@@ -24,7 +38,13 @@ void LoggingSystem::initialize() {
     internalLog("Logging system started. Level: INFO. Sinks: Console, File.");
 }
 
-// Overloaded method for custom config
+/**
+ * @brief Initialize logging system with custom configuration
+ * @param level Minimum log level to output
+ * @param enableFileSink Whether to enable file output
+ * @param enableConsoleSink Whether to enable console output
+ * @param path Path to log file (default: "game_log.log")
+ */
 void LoggingSystem::initialize(LogLevel level, bool enableFileSink, bool enableConsoleSink, std::string path) {
     logLevel = level;
     consoleSinkEnabled = enableConsoleSink;
@@ -35,6 +55,11 @@ void LoggingSystem::initialize(LogLevel level, bool enableFileSink, bool enableC
     internalLog("Logging system started. Level: " + std::to_string(level) + ". Sinks: " + (enableConsoleSink ? "Console, " : "") + (enableFileSink ? "File." : ""));
 }
 
+/**
+ * @brief Initialize configured log sinks
+ * @details Creates and activates the requested sink implementations.
+ * Skips initialization if test sinks are currently active.
+ */
 void LoggingSystem::initializeSinks() {
     std::lock_guard<std::mutex> lock(logMutex);
     if (testingSinksActive) {
@@ -49,6 +74,11 @@ void LoggingSystem::initializeSinks() {
     }
 }
 
+/**
+ * @brief Convert LogLevel enum to human-readable string
+ * @param level LogLevel to convert
+ * @return String representation of the log level
+ */
 std::string LoggingSystem::levelToString(LogLevel level) const {
     switch (level) {
         case LogLevel::TRACE: return "TRACE";
@@ -61,6 +91,21 @@ std::string LoggingSystem::levelToString(LogLevel level) const {
     }
 }
 
+/**
+ * @brief Log a formatted message
+ * @details Handles:
+ * - Log level filtering
+ * - Thread-safe message formatting
+ * - Timestamp generation
+ * - Thread ID capture
+ * - Message formatting with variable arguments
+ * - Output to all active sinks
+ *
+ * @param level Severity level of the message
+ * @param system Name of the system/component generating the log
+ * @param format printf-style format string
+ * @param ... Variable arguments for the format string
+ */
 void LoggingSystem::log(LogLevel level, const char* system, const char* format, ...) {
     if (level < logLevel) {
         return;
@@ -126,6 +171,11 @@ void LoggingSystem::log(LogLevel level, const char* system, const char* format, 
     internalLog(formattedMessage);
 }
 
+/**
+ * @brief Internal method to write message to all active sinks
+ * @details Thread-safe operation that writes to all configured sinks
+ * @param message Formatted log message to output
+ */
 void LoggingSystem::internalLog(const std::string& message) {
     std::lock_guard<std::mutex> lock(logMutex);
     for (auto& sink : activeSinks) {
@@ -133,6 +183,10 @@ void LoggingSystem::internalLog(const std::string& message) {
     }
 }
 
+/**
+ * @brief Shutdown the logging system
+ * @details Flushes all sinks and releases resources
+ */
 void LoggingSystem::shutdown() {
     internalLog("Logging system shutting down.");
     std::lock_guard<std::mutex> lock(logMutex);
@@ -142,12 +196,22 @@ void LoggingSystem::shutdown() {
     activeSinks.clear();
 }
 
+/**
+ * @brief Replace active sinks with test sinks
+ * @param sinks Vector of test sink implementations
+ * @note For testing purposes only
+ */
 void LoggingSystem::setSinksForTesting(std::vector<std::unique_ptr<ILogSink>> sinks) {
     std::lock_guard<std::mutex> lock(logMutex);
     activeSinks = std::move(sinks);
     testingSinksActive = true;
 }
 
+/**
+ * @brief Reset logging system to default state
+ * @details Clears test sinks and resets to normal operation
+ * @note For testing purposes only
+ */
 void LoggingSystem::resetToDefaults() {
     std::lock_guard<std::mutex> lock(logMutex);
     activeSinks.clear();
@@ -170,14 +234,26 @@ std::string LoggingSystem::getFilePath() const {
     return filePath;
 }
 
+/**
+ * @brief Write message to console
+ * @param message Formatted log message to output
+ */
 void ConsoleSink::write(const std::string& message) {
     std::cout << message << std::endl;
 }
 
+/**
+ * @brief Flush console output
+ */
 void ConsoleSink::flush() {
     std::cout.flush();
 }
 
+/**
+ * @brief Construct FileSink with specified log file path
+ * @param filePath Path to log file
+ * @throws std::runtime_error if file cannot be opened
+ */
 FileSink::FileSink(const std::string& filePath) : filePath(filePath) {
     file = std::ofstream(filePath, std::ios_base::app);
     if (!file.is_open()) {
@@ -185,18 +261,29 @@ FileSink::FileSink(const std::string& filePath) : filePath(filePath) {
     }
 }
 
+/**
+ * @brief FileSink destructor
+ * @details Ensures log file is properly closed
+ */
 FileSink::~FileSink() {
     if (file.is_open()) {
         file.close();
     }
 }
 
+/**
+ * @brief Write message to log file
+ * @param message Formatted log message to output
+ */
 void FileSink::write(const std::string& message) {
     if (file.is_open()) {
         file << message << std::endl;
     }
 }
 
+/**
+ * @brief Flush file output
+ */
 void FileSink::flush() {
     if (file.is_open()) {
         file.flush();
