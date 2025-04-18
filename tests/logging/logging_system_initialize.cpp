@@ -14,20 +14,25 @@ public:
     std::vector<std::string> messagesReceived;
 };
 
-class TestableLoggingSystem : public transity::logging::LoggingSystem {
-public:
+class LoggingSystemTest : public ::testing::Test {
+protected:
     MockLogSink* mockSink = nullptr;
-    void initializeSinks() override {
-        activeSinks.clear();
+    void SetUp() override {
         auto uniqueMock = std::make_unique<MockLogSink>();
         mockSink = uniqueMock.get();
-        activeSinks.push_back(std::move(uniqueMock));
+
+        std::vector<std::unique_ptr<transity::logging::ILogSink>> testSinks;
+        testSinks.push_back(std::move(uniqueMock));
+
+        transity::logging::LoggingSystem::getInstance().setSinksForTesting(std::move(testSinks));
+    }
+    void TearDown() override {
+        transity::logging::LoggingSystem& logger = transity::logging::LoggingSystem::getInstance();
     }
 };
 
-TEST(LoggingSystem, InitializesWithDefaultConfig) {
-    transity::logging::LoggingSystem logger;
-
+TEST_F(LoggingSystemTest, InitializesWithDefaultConfig) {
+    transity::logging::LoggingSystem& logger = transity::logging::LoggingSystem::getInstance();
     logger.initialize();
 
     ASSERT_EQ(logger.getLogLevel(), transity::logging::LogLevel::INFO);
@@ -35,13 +40,13 @@ TEST(LoggingSystem, InitializesWithDefaultConfig) {
     ASSERT_TRUE(logger.isFileSinkEnabled());
 }
 
-TEST(LoggingSystem, InitializesWithCustomConfig) {
-    transity::logging::LoggingSystem logger;
+TEST_F(LoggingSystemTest, InitializesWithCustomConfig) {
     transity::logging::LogLevel customLevel = transity::logging::LogLevel::DEBUG;
     bool enableFileSink = true;
     std::string filePath = "custom_log.txt";
     bool enableConsoleSink = false;
 
+    transity::logging::LoggingSystem& logger = transity::logging::LoggingSystem::getInstance();
     logger.initialize(customLevel, enableFileSink, enableConsoleSink, filePath);
 
     ASSERT_EQ(logger.getLogLevel(), customLevel);
@@ -50,16 +55,16 @@ TEST(LoggingSystem, InitializesWithCustomConfig) {
     ASSERT_EQ(logger.getFilePath(), filePath);
 }
 
-TEST(LoggingSystem, ConsoleSinkInitializes) {
-    transity::logging::LoggingSystem logger;
+TEST_F(LoggingSystemTest, ConsoleSinkInitializes) {
+    transity::logging::LoggingSystem& logger = transity::logging::LoggingSystem::getInstance();
 
     logger.initialize(transity::logging::LogLevel::INFO, false, true);
 
     ASSERT_TRUE(logger.isConsoleSinkEnabled());
 }
 
-TEST(LoggingSystem, FileSinkInitializes) {
-    transity::logging::LoggingSystem logger;
+TEST_F(LoggingSystemTest, FileSinkInitializes) {
+    transity::logging::LoggingSystem& logger = transity::logging::LoggingSystem::getInstance();
 
     logger.initialize(transity::logging::LogLevel::INFO, true, false);
 
@@ -67,7 +72,7 @@ TEST(LoggingSystem, FileSinkInitializes) {
 }
 
 TEST(LoggingSystem, FileSinkHandlesErrors) {
-    transity::logging::LoggingSystem logger;
+    transity::logging::LoggingSystem& logger = transity::logging::LoggingSystem::getInstance();
 
     ASSERT_THROW(
         logger.initialize(transity::logging::LogLevel::INFO, true, false, "invalid/path.txt"),
@@ -75,12 +80,23 @@ TEST(LoggingSystem, FileSinkHandlesErrors) {
     );
 }
 
-TEST(LoggingSystem, InitializationMessageLogged) {
-    TestableLoggingSystem logger;
+TEST_F(LoggingSystemTest, InitializationMessageLogged) {
+    transity::logging::LoggingSystem& logger = transity::logging::LoggingSystem::getInstance();
     std::string expectedMessage = "Logging system started. Level: INFO. Sinks: Console, File.";
 
     logger.initialize();
 
-    ASSERT_EQ(logger.mockSink->messagesReceived.size(), 1);
-    ASSERT_EQ(logger.mockSink->messagesReceived[0], expectedMessage);
+    std::cout << "\n--- Log Output ---\n";
+    if (!mockSink->messagesReceived.empty()) {
+         for(const auto& msg : mockSink->messagesReceived) {
+             std::cout << msg << std::endl;
+         }
+    } else {
+         std::cout << "(No message received by mock sink)\n";
+    }
+    std::cout << "---------------------------------------\n";
+
+    ASSERT_NE(mockSink, nullptr);
+    ASSERT_EQ(mockSink->messagesReceived.size(), 1);
+    ASSERT_EQ(mockSink->messagesReceived[0], expectedMessage);
 }

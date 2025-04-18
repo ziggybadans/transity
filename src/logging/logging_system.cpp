@@ -37,6 +37,9 @@ void LoggingSystem::initialize(LogLevel level, bool enableFileSink, bool enableC
 
 void LoggingSystem::initializeSinks() {
     std::lock_guard<std::mutex> lock(logMutex);
+    if (testingSinksActive) {
+        return;
+    }
     activeSinks.clear();
     if (consoleSinkEnabled) {
         activeSinks.push_back(std::make_unique<ConsoleSink>());
@@ -137,6 +140,18 @@ void LoggingSystem::shutdown() {
         sink->flush();
     }
     activeSinks.clear();
+}
+
+void LoggingSystem::setSinksForTesting(std::vector<std::unique_ptr<ILogSink>> sinks) {
+    std::lock_guard<std::mutex> lock(logMutex);
+    activeSinks = std::move(sinks);
+    testingSinksActive = true;
+}
+
+void LoggingSystem::resetToDefaults() {
+    std::lock_guard<std::mutex> lock(logMutex);
+    activeSinks.clear();
+    testingSinksActive = false;
 }
 
 LogLevel LoggingSystem::getLogLevel() const {

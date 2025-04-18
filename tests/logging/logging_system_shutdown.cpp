@@ -16,23 +16,30 @@ public:
     std::vector<std::string> messagesReceived;
 };
 
-class TestableLoggingSystem : public transity::logging::LoggingSystem {
-public:
-    MockLogSink* mockSink = nullptr;
-    void initializeSinks() override {
-        activeSinks.clear();
-        auto uniqueMock = std::make_unique<MockLogSink>();
-        mockSink = uniqueMock.get();
-        activeSinks.push_back(std::move(uniqueMock));
-    }
-};
+class LoggingSystemTest : public ::testing::Test {
+    protected:
+        MockLogSink* mockSink = nullptr;
+        void SetUp() override {
+            auto uniqueMock = std::make_unique<MockLogSink>();
+            mockSink = uniqueMock.get();
+    
+            std::vector<std::unique_ptr<transity::logging::ILogSink>> testSinks;
+            testSinks.push_back(std::move(uniqueMock));
+    
+            transity::logging::LoggingSystem::getInstance().setSinksForTesting(std::move(testSinks));
+        }
+        void TearDown() override {
+            transity::logging::LoggingSystem& logger = transity::logging::LoggingSystem::getInstance();
+            logger.activeSinks.clear();
+        }
+    };
 
-TEST(LoggingSystem, ShutdownFlushesSinks) {
-    TestableLoggingSystem logger;
+TEST_F(LoggingSystemTest, ShutdownFlushesSinks) {
+    transity::logging::LoggingSystem& logger = transity::logging::LoggingSystem::getInstance();
     logger.initialize();
     logger.log(transity::logging::LogLevel::INFO, "Logger", "This is a test message.");
 
     logger.shutdown();
 
-    ASSERT_TRUE(logger.mockSink->messagesReceived.empty());
+    ASSERT_TRUE(mockSink->messagesReceived.empty());
 }
