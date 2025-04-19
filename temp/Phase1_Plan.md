@@ -1,6 +1,6 @@
 # Development Plan: Phase 1 - Foundation
 
-*Refer to the specification documents in `template/` for detailed requirements.*
+*Refer to the specification documents in `template/` for detailed requirements. Always follow TDD practices.*
 
 **1. Logging System (`LoggingSystem.spec.md`)**
 - [x] Define `LogLevel` enum.
