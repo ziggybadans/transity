@@ -2,6 +2,10 @@
 #include <toml++/toml.hpp>
 #include <filesystem>
 #include <fstream>
+#include <thread>
+#include <vector>
+#include <string>
+#include <atomic>
 
 #include "config/ConfigSystem.hpp"
 
@@ -467,4 +471,67 @@ TEST(ConfigSystemTest, ShutdownMergesNestedKeys) {
 
     // Cleanup
     std::filesystem::remove(userFilePath);
+}
+
+TEST(ConfigSystemTest, ConcurrentAccess) {
+    transity::config::ConfigSystem configSystem;
+    // Initialize if necessary, or rely on constructor init
+
+    const int num_threads = 8;
+    const int operations_per_thread = 1000;
+    std::vector<std::thread> threads;
+
+    // Pre-set a value to check later
+    std::string testKey = "concurrency.test.value";
+    int initialValue = 100;
+    configSystem.setValue(testKey, initialValue);
+
+    for (int i = 0; i < num_threads; ++i) {
+        threads.emplace_back([&configSystem, i, testKey, operations_per_thread]() {
+            for (int j = 0; j < operations_per_thread; ++j) {
+                // Mix of reads and writes
+                if (j % 10 == 0) { // Occasionally write
+                    std::string writeKey = "thread_" + std::to_string(i) + ".write_val";
+                    configSystem.setValue(writeKey, i * 100 + j);
+                } else if (j % 5 == 0) { // Read the test key
+                    int val = configSystem.getInt(testKey, -1);
+                    // Could add an assertion here if needed, but often just ensuring
+                    // no crashes and checking at the end is sufficient for basic safety.
+                    // ASSERT_NE(val, -1); // Example: Check it was found
+                } else { // Read some other key
+                    configSystem.getString("windowTitle", "Default");
+                }
+            }
+            // Set a final value for the test key from some threads
+            if (i % 2 == 0) {
+                 configSystem.setValue(testKey, 200 + i);
+            }
+        });
+    }
+
+    // Wait for all threads to complete
+    for (auto& t : threads) {
+        t.join();
+    }
+
+    // Verification after threads finish
+    // Check if the final value of testKey is one of the values set by the writing threads
+    int finalValue = configSystem.getInt(testKey, -1);
+    bool foundExpectedValue = false;
+    for (int i = 0; i < num_threads; ++i) {
+        if (i % 2 == 0 && finalValue == (200 + i)) {
+            foundExpectedValue = true;
+            break;
+        }
+    }
+     // If no even thread wrote last, it might still be the initial value
+    if (!foundExpectedValue && finalValue == initialValue) {
+         foundExpectedValue = true;
+    }
+
+    ASSERT_TRUE(foundExpectedValue); // Assert that the final value is one of the expected ones
+
+    // You might also check some of the thread-specific keys
+    int expected_last_j = ((operations_per_thread - 1) / 10) * 10;
+    ASSERT_EQ(configSystem.getInt("thread_0.write_val", -1), expected_last_j); // Example check
 }

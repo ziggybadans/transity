@@ -3,9 +3,9 @@
 #include <string>
 #include <map>
 #include <any>
+#include <mutex>
 
 #include <toml++/toml.hpp>
-
 #include "logging/LoggingSystem.hpp"
 
 namespace transity::config {
@@ -50,6 +50,7 @@ public:
 
     template <typename T>
     T getValue(const std::string& key, T defaultValue) const {
+        std::lock_guard<std::mutex> lock(configMutex_);
         std::optional<T> result;
 
         result = tryGetValueFromSource<T>(runtimeOverrides, key);
@@ -70,6 +71,7 @@ public:
 
     template <typename T>
     void setValue(const std::string& key, T value) {
+        std::lock_guard<std::mutex> lock(configMutex_);
         std::vector<std::string> pathComponents = splitPath(key, '.');
 
         if (pathComponents.empty()) {
@@ -116,6 +118,8 @@ private:
     // Maybe store file paths if needed for saving later
     std::string storedPrimaryPath;
     std::string storedUserPath; 
+
+    mutable std::mutex configMutex_;
 
     template <typename T>
     std::optional<T> tryGetValueFromSource(const toml::table& source, const std::string& key) const {

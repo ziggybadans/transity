@@ -47,11 +47,14 @@ ConfigSystem::ConfigSystem() {
 }
 
 ConfigSystem::~ConfigSystem() {
+    std::lock_guard<std::mutex> lock(configMutex_);
     LOG_INFO("Config", "Config system shutting down");
     defaultConfigValues.clear();
 }
 
 void ConfigSystem::initialize(const std::string& primaryConfigFilepath, const std::string& userConfigFilepath) {
+    std::lock_guard<std::mutex> lock(configMutex_);
+
     // 1. Load Defaults
     defaultConfigValues.clear();
     defaultConfigValues.insert_or_assign("windowWidth", 800);
@@ -92,6 +95,7 @@ void ConfigSystem::initialize(const std::string& primaryConfigFilepath, const st
 }
 
 void ConfigSystem::shutdown() {
+    std::lock_guard<std::mutex> lock(configMutex_);
     LOG_INFO("Config", "Config system shutting down...");
     if (storedUserPath.empty()) {
         LOG_WARN("Config", "No user config path stored, cannot save runtime changes.");
