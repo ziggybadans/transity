@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <toml++/toml.hpp>
 #include <filesystem>
 #include <fstream>
 
@@ -176,4 +177,294 @@ TEST(ConfigSystemTest, ShutdownSave) {
 
     std::filesystem::remove(primaryPath);
     std::filesystem::remove(userPath);
+}
+
+TEST(ConfigSystemTest, GetIntValueFound) {
+    // Arrange
+    transity::config::ConfigSystem config;
+    config.setValue("test.integer", 123); // Set a runtime value
+
+    // Act
+    int result = config.getInt("test.integer", 999); // Provide a different default
+
+    // Assert
+    ASSERT_EQ(result, 123); // Expect the value we set
+}
+
+TEST(ConfigSystemTest, GetIntValueNotFoundUseDefault) {
+    // Arrange
+    transity::config::ConfigSystem config;
+    // Ensure "missing.integer" is not set anywhere
+
+    // Act
+    int result = config.getInt("missing.integer", 42); // Provide a default
+
+    // Assert
+    ASSERT_EQ(result, 42); // Expect the default value
+}
+
+TEST(ConfigSystemTest, GetBoolValueFound) {
+    // Arrange
+    transity::config::ConfigSystem config;
+    config.setValue("test.boolean", true); // Set a runtime value
+
+    // Act
+    bool result = config.getBool("test.boolean", false); // Provide a different default
+
+    // Assert
+    ASSERT_EQ(result, true); // Expect the value we set
+}
+
+TEST(ConfigSystemTest, GetBoolValueNotFoundUseDefault) {
+    // Arrange
+    transity::config::ConfigSystem config;
+    // Ensure "missing.boolean" is not set anywhere
+
+    // Act
+    bool result = config.getBool("missing.boolean", true); // Provide a default
+
+    // Assert
+    ASSERT_EQ(result, true); // Expect the default value
+}
+
+TEST(ConfigSystemTest, GetDoubleValueFound) {
+    // Arrange
+    transity::config::ConfigSystem config;
+    config.setValue("test.double", 123.456); // Set a runtime value
+
+    // Act
+    double result = config.getDouble("test.double", 999.999); // Provide a different default
+
+    // Assert
+    ASSERT_DOUBLE_EQ(result, 123.456); // Expect the value we set (use ASSERT_DOUBLE_EQ for floating point)
+}
+
+TEST(ConfigSystemTest, GetDoubleValueNotFoundUseDefault) {
+    // Arrange
+    transity::config::ConfigSystem config;
+    // Ensure "missing.double" is not set anywhere
+
+    // Act
+    double result = config.getDouble("missing.double", 42.42); // Provide a default
+
+    // Assert
+    ASSERT_DOUBLE_EQ(result, 42.42); // Expect the default value
+}
+
+TEST(ConfigSystemTest, GetFloatValueFound) {
+    // Arrange
+    transity::config::ConfigSystem config;
+    // Note: setValue likely stores as double due to template deduction,
+    // but getFloat should handle the conversion.
+    config.setValue("test.float", 78.9f); // Set a runtime value
+
+    // Act
+    float result = config.getFloat("test.float", 99.9f); // Provide a different default
+
+    // Assert
+    ASSERT_FLOAT_EQ(result, 78.9f); // Expect the value we set (use ASSERT_FLOAT_EQ)
+}
+
+TEST(ConfigSystemTest, GetFloatValueNotFoundUseDefault) {
+    // Arrange
+    transity::config::ConfigSystem config;
+    // Ensure "missing.float" is not set anywhere
+
+    // Act
+    float result = config.getFloat("missing.float", 12.3f); // Provide a default
+
+    // Assert
+    ASSERT_FLOAT_EQ(result, 12.3f); // Expect the default value
+}
+
+TEST(ConfigSystemTest, SetValueOverwrite) {
+    // Arrange
+    transity::config::ConfigSystem config;
+
+    // Act
+    config.setValue("runtime.value", 100);
+    config.setValue("runtime.value", 200); // Overwrite
+
+    // Assert
+    ASSERT_EQ(config.getInt("runtime.value", 0), 200); // Check the final value
+}
+
+TEST(ConfigSystemTest, SetValueNestedConflict) {
+    // Arrange
+    transity::config::ConfigSystem config;
+    config.setValue("a.b", 1); // Set a non-table value at a.b
+
+    // Act
+    config.setValue("a.b.c", 2); // Attempt to create a table under a.b
+
+    // Assert
+    ASSERT_EQ(config.getInt("a.b", 0), 1); // Original value should remain
+    ASSERT_EQ(config.getInt("a.b.c", 999), 999); // Nested value should not exist (get default)
+    // Implicitly asserts no crash occurred.
+}
+
+TEST(ConfigSystemTest, SetValueEmptyKey) {
+    // Arrange
+    transity::config::ConfigSystem config;
+    // You might want to get the initial state/size of runtimeOverrides if possible,
+    // but it's not strictly necessary for just checking graceful handling.
+
+    // Act
+    // The main point is that this call should not crash or throw.
+    ASSERT_NO_THROW(config.setValue("", 123));
+
+    // Assert
+    // Optionally, verify no key named "" was actually added if your getValue allows empty keys (it likely doesn't based on splitPath)
+    // Or verify the overall size/state didn't change unexpectedly.
+    ASSERT_EQ(config.getInt("", 999), 999); // Assuming getInt handles empty key similarly
+}
+
+TEST(ConfigSystemTest, ShutdownNoUserPathNoSave) {
+    // Arrange
+    const std::string userFilePath = "non_existent_user_for_no_save_test.toml";
+    std::filesystem::remove(userFilePath); // Ensure it doesn't exist beforehand
+
+    transity::config::ConfigSystem config;
+    // Initialize WITHOUT a user file path
+    config.initialize("config.toml", ""); // Assuming config.toml might exist or defaults are fine
+
+    config.setValue("some.runtime.setting", 12345); // Add a runtime value
+
+    // Act
+    config.shutdown();
+
+    // Assert
+    ASSERT_FALSE(std::filesystem::exists(userFilePath)); // Crucial: File should NOT have been created
+
+    // Cleanup (optional, as it shouldn't exist, but safe)
+    std::filesystem::remove(userFilePath);
+}
+
+TEST(ConfigSystemTest, ShutdownCreatesUserFileWithRuntimeValues) {
+    // Arrange
+    const std::string userFilePath = "created_on_shutdown.toml";
+    std::filesystem::remove(userFilePath); // Ensure it doesn't exist
+
+    transity::config::ConfigSystem config;
+    // Initialize with a user file path that doesn't exist yet
+    config.initialize("", userFilePath); // No primary file needed for this test
+
+    // Set some runtime values
+    config.setValue("runtime.string", "test_value");
+    config.setValue("runtime.integer", 123);
+    config.setValue("runtime.nested.boolean", true);
+
+    // Act
+    config.shutdown();
+
+    // Assert
+    // 1. Check if the file was created
+    ASSERT_TRUE(std::filesystem::exists(userFilePath));
+
+    // 2. Parse the created file and check its contents
+    try {
+        toml::table savedTable = toml::parse_file(userFilePath);
+
+        // Check for the specific runtime values we set
+        ASSERT_TRUE(savedTable.contains("runtime"));
+        ASSERT_TRUE(savedTable["runtime"].is_table());
+        auto* runtimeTable = savedTable["runtime"].as_table(); // Get pointer to table
+        ASSERT_NE(runtimeTable, nullptr); // Ensure table exists
+
+        // --- Revised String Check ---
+        auto string_node = runtimeTable->get("string");
+        ASSERT_NE(string_node, nullptr); // Check node exists
+        ASSERT_TRUE(string_node->is_string()); // Check node type
+        // Explicitly get value as std::string and compare
+        ASSERT_EQ(string_node->value<std::string>().value_or(""), "test_value");
+
+        // --- Revised Integer Check ---
+        auto integer_node = runtimeTable->get("integer");
+        ASSERT_NE(integer_node, nullptr);
+        ASSERT_TRUE(integer_node->is_integer());
+        // TOML integers are often 64-bit, be explicit or let value<> handle it
+        ASSERT_EQ(integer_node->value<int>().value_or(0), 123);
+
+        // --- Revised Nested Boolean Check ---
+        auto nested_node = runtimeTable->get("nested");
+        ASSERT_NE(nested_node, nullptr);
+        ASSERT_TRUE(nested_node->is_table());
+        auto* nestedTable = nested_node->as_table();
+        ASSERT_NE(nestedTable, nullptr);
+
+        auto boolean_node = nestedTable->get("boolean");
+        ASSERT_NE(boolean_node, nullptr);
+        ASSERT_TRUE(boolean_node->is_boolean());
+        ASSERT_EQ(boolean_node->value<bool>().value_or(false), true);
+
+        // Optionally, check that default values weren't saved
+        ASSERT_FALSE(savedTable.contains("windowWidth"));
+
+    } catch (const toml::parse_error& err) {
+        FAIL() << "Failed to parse the created user config file: " << err.what();
+    } catch (const std::exception& e) {
+        FAIL() << "Unexpected exception parsing created user file: " << e.what();
+    }
+
+    // Cleanup
+    std::filesystem::remove(userFilePath);
+}
+
+TEST(ConfigSystemTest, ShutdownMergesNestedKeys) {
+    // Arrange
+    const std::string userFilePath = "nested_merge_user.toml";
+
+    // 1. Create initial user file with nested structure
+    std::filesystem::remove(userFilePath); // Clean slate
+    { // Scope for ofstream
+        std::ofstream userFile(userFilePath);
+        userFile << "[Graphics.Resolution]\n";
+        userFile << "Width = 1920\n";
+        userFile << "Height = 1080\n\n";
+        userFile << "[Audio]\n";
+        userFile << "GlobalMute = false\n";
+        userFile.close();
+        ASSERT_TRUE(std::filesystem::exists(userFilePath)); // Verify creation
+    }
+
+
+    transity::config::ConfigSystem config;
+    // Initialize with the user file we just created
+    config.initialize("", userFilePath);
+
+    // 2. Set runtime values, some overlapping/nested differently
+    config.setValue("Graphics.Resolution.RefreshRate", 144); // Add to existing table
+    config.setValue("Audio.Volume.Master", 75);          // Create new nested table 'Volume'
+    config.setValue("Input.Mouse.Sensitivity", 0.8);     // Create new top-level table 'Input'
+    config.setValue("Audio.GlobalMute", true);           // Overwrite existing value
+
+    // Act
+    config.shutdown(); // Should save merged data back to userFilePath
+
+    // Assert
+    ASSERT_TRUE(std::filesystem::exists(userFilePath)); // File should still exist
+
+    try {
+        toml::table savedTable = toml::parse_file(userFilePath);
+
+        // Verify Graphics section (original + added)
+        ASSERT_TRUE(savedTable["Graphics"]["Resolution"]["Width"].value_or(0) == 1920);
+        ASSERT_TRUE(savedTable["Graphics"]["Resolution"]["Height"].value_or(0) == 1080);
+        ASSERT_TRUE(savedTable["Graphics"]["Resolution"]["RefreshRate"].value_or(0) == 144);
+
+        // Verify Audio section (overwritten + new nested)
+        ASSERT_TRUE(savedTable["Audio"]["GlobalMute"].value_or(false) == true);
+        ASSERT_TRUE(savedTable["Audio"]["Volume"]["Master"].value_or(0) == 75);
+
+        // Verify Input section (new)
+        ASSERT_TRUE(savedTable["Input"]["Mouse"]["Sensitivity"].value_or(0.0) == 0.8); // Use floating point compare if needed
+
+    } catch (const toml::parse_error& err) {
+        FAIL() << "Failed to parse the merged user config file: " << err.what();
+    } catch (const std::exception& e) {
+        FAIL() << "Unexpected exception parsing merged user file: " << e.what();
+    }
+
+    // Cleanup
+    std::filesystem::remove(userFilePath);
 }

@@ -76,10 +76,10 @@ void ConfigSystem::initialize(const std::string& primaryConfigFilepath, const st
     userConfigTable.reset(); // Ensure it's clear
     storedUserPath = "";     // Clear stored path
     if (!userConfigFilepath.empty()) {
+        storedUserPath = userConfigFilepath;
         auto loadedUser = loadConfigFile(userConfigFilepath, "User");
         if (loadedUser) {
             userConfigTable = std::move(*loadedUser); // Move the table
-            storedUserPath = userConfigFilepath;      // Store path on success
         }
         // Log messages handled in loadConfigFile
     } else {
