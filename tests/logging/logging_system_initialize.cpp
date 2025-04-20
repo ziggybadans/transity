@@ -135,8 +135,8 @@ TEST_F(LoggingSystemTest, FileSinkInitializes) {
 TEST(LoggingSystem, FileSinkHandlesErrors) {
     transity::logging::LoggingSystem& logger = transity::logging::LoggingSystem::getInstance();
 
-    ASSERT_THROW(
-        logger.initialize(transity::logging::LogLevel::INFO, true, false, "invalid/path.txt"),
+    ASSERT_ANY_THROW(
+        logger.initialize(transity::logging::LogLevel::INFO, true, false, "inv*alid_dir"),
         std::runtime_error
     );
 }

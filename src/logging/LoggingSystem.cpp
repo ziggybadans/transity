@@ -17,6 +17,7 @@
 #include <string>
 #include <thread>
 #include <regex>
+#include <filesystem>
 
 namespace transity::logging {
 
@@ -32,7 +33,7 @@ void LoggingSystem::initialize() {
     logLevel = LogLevel::INFO;
     consoleSinkEnabled = true;
     fileSinkEnabled = true;
-    filePath = "game_log.log";
+    filePath = "logs";
 
     initializeSinks();
     internalLog("Logging system started. Level: INFO. Sinks: Console, File.");
@@ -66,11 +67,32 @@ void LoggingSystem::initializeSinks() {
         return;
     }
     activeSinks.clear();
+
     if (consoleSinkEnabled) {
         activeSinks.push_back(std::make_unique<ConsoleSink>());
     }
     if (fileSinkEnabled) {
-        activeSinks.push_back(std::make_unique<FileSink>(filePath));
+        try {
+            std::filesystem::path target_log_directory(filePath);
+            std::filesystem::create_directories(target_log_directory);
+
+            auto now = std::chrono::system_clock::now();
+            auto now_c = std::chrono::system_clock::to_time_t(now);
+            std::tm now_tm = *std::localtime(&now_c);
+            std::ostringstream filename_stream;
+            filename_stream << std::put_time(&now_tm, "%Y-%m-%d_%H-%M-%S");
+            std::string timestamp_str = filename_stream.str();
+            std::string log_filename_only = timestamp_str + ".log";
+
+            std::filesystem::path full_log_path = target_log_directory / log_filename_only;
+            activeSinks.push_back(std::make_unique<FileSink>(full_log_path.string()));
+        } catch (const std::filesystem::filesystem_error& e) {
+            std::cerr << "Filesystem error during log setup: " << e.what() << std::endl;
+            throw;
+        } catch (const std::runtime_error& e) {
+            std::cerr << "Error creating file log sink: " << e.what() << std::endl;
+            throw;
+        }
     }
 }
 
@@ -255,7 +277,7 @@ void ConsoleSink::flush() {
  * @throws std::runtime_error if file cannot be opened
  */
 FileSink::FileSink(const std::string& filePath) : filePath(filePath) {
-    file = std::ofstream(filePath, std::ios_base::app);
+    file = std::ofstream(filePath, std::ios_base::trunc);
     if (!file.is_open()) {
         throw std::runtime_error("Failed to open log file: " + filePath);
     }
