@@ -6,7 +6,6 @@
 
 #include "logging/LoggingSystem.hpp"
 
-namespace toml { class table; }
 namespace transity::config {
 
 class ConfigSystem {
@@ -14,7 +13,8 @@ public:
     ConfigSystem();
     ~ConfigSystem();
 
-    void initialize(const std::string& primaryConfigFilepath = "config.toml");
+    void initialize(const std::string& primaryConfigFilepath = "config.toml",
+                    const std::string& userConfigFilepath = "");
 
     template <typename T>
     T getValue(const std::string& key, T defaultValue) const {

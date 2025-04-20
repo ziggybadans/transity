@@ -16,6 +16,7 @@ target_include_directories(LoggingLib PUBLIC
 target_include_directories(ConfigLib PUBLIC
     # Allow code in this library to find headers in the main include dir
     ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/lib/tomlplusplus/include
 )
 
 # Define the main application executable
