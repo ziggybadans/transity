@@ -2,7 +2,7 @@
 #include <filesystem>
 #include <fstream>
 
-#include "config/ConfigSystem.h"
+#include "config/ConfigSystem.hpp"
 
 class ConfigSystemFileTest : public ::testing::Test {
 protected:

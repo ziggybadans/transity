@@ -1,4 +1,4 @@
-#include "config/ConfigSystem.h"
+#include "config/ConfigSystem.hpp"
 
 #include <filesystem>
 #include <string>
