@@ -118,3 +118,13 @@ TEST_F(ConfigSystemFileTest, UserFileOverridesPrimary) {
     std::filesystem::remove(primaryPath);
     std::filesystem::remove(userPath);
 }
+
+TEST(ConfigSystemTest, GetStringWrapper) {
+    transity::config::ConfigSystem configSystem;
+    configSystem.initialize();
+
+    ASSERT_EQ(configSystem.getString("windowTitle"), "Transity");
+    ASSERT_EQ(configSystem.getString("windowTitle", "fallback"), "Transity");
+    ASSERT_EQ(configSystem.getString("nonExistentString"), "");
+    ASSERT_EQ(configSystem.getString("nonExistentString", "fallback"), "fallback");
+}
