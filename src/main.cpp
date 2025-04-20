@@ -1,10 +1,15 @@
-#include "logging/logging_system.h"
+#include "logging/LoggingSystem.hpp"
+#include "config/ConfigSystem.hpp"
 
 int main() {
-    transity::logging::LoggingSystem::getInstance().initialize();
+    transity::logging::LoggingSystem::getInstance().initialize(transity::logging::LogLevel::TRACE, true, true);
 
     LOG_INFO("Core", "Application starting...");
 
+    transity::config::ConfigSystem configSystem;
+    configSystem.initialize();
+
+    configSystem.shutdown();
     transity::logging::LoggingSystem::getInstance().shutdown();
 
     return 0;

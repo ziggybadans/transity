@@ -13,3 +13,6 @@
 [submodule "cli"]
 	path = cli
 	url = https://github.com/microsoft/vcpkg.git
+[submodule "lib/tomlplusplus"]
+	path = lib/tomlplusplus
+	url = https://github.com/marzer/tomlplusplus.git
