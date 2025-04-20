@@ -5,23 +5,23 @@
 
 namespace {
 std::optional<toml::table> loadConfigFile(const std::string& filepath, const std::string& fileType) {
-    LOG_INFO(("Attempting to load " + fileType + " config from: " + filepath).c_str(), "Config");
+    LOG_INFO("Config", ("Attempting to load " + fileType + " config from: " + filepath).c_str());
 
     if (!std::filesystem::exists(filepath)) {
-        LOG_WARN((fileType + " config not found at: " + filepath + ". Ignoring.").c_str(), "Config");
+        LOG_WARN("Config", (fileType + " config not found at: " + filepath + ". Ignoring.").c_str());
         return std::nullopt;
     }
 
     try {
         toml::table parsedTable = toml::parse_file(filepath);
-        LOG_INFO((fileType + " config loaded successfully from: " + filepath).c_str(), "Config");
+        LOG_INFO("Config", (fileType + " config loaded successfully from: " + filepath).c_str());
         return parsedTable;
     } catch (const toml::parse_error& err) {
         // Log the specific TOML error details if possible/desired
-        LOG_ERROR(("Failed to parse " + fileType + " config from: " + filepath + ". Error: " + std::string(err.what())).c_str(), "Config");
+        LOG_ERROR("Config", ("Failed to parse " + fileType + " config from: " + filepath + ". Error: " + std::string(err.what())).c_str());
         return std::nullopt;
     } catch (const std::exception& e) {
-        LOG_ERROR(("Unexpected error while parsing " + fileType + " config from: " + filepath + ". Error: " + std::string(e.what())).c_str(), "Config");
+        LOG_ERROR("Config", ("Unexpected error while parsing " + fileType + " config from: " + filepath + ". Error: " + std::string(e.what())).c_str());
         return std::nullopt;
     }
 }
@@ -43,11 +43,11 @@ namespace transity::config {
 
 ConfigSystem::ConfigSystem() {
     initialize();
-    LOG_INFO("Config system initialized", "Config");
+    LOG_INFO("Config", "Config system initialized");
 }
 
 ConfigSystem::~ConfigSystem() {
-    LOG_INFO("Config system shutting down", "Config");
+    LOG_INFO("Config", "Config system shutting down");
     defaultConfigValues.clear();
 }
 
@@ -57,7 +57,7 @@ void ConfigSystem::initialize(const std::string& primaryConfigFilepath, const st
     defaultConfigValues.insert_or_assign("windowWidth", 800);
     defaultConfigValues.insert_or_assign("windowHeight", 600);
     defaultConfigValues.insert_or_assign("windowTitle", "Transity");
-    LOG_INFO("Default configuration loaded", "Config");
+    LOG_INFO("Config", "Default configuration loaded");
 
     // 2. Load Primary Config File
     primaryConfigTable.reset(); // Ensure it's clear before attempting load
@@ -68,7 +68,7 @@ void ConfigSystem::initialize(const std::string& primaryConfigFilepath, const st
         storedPrimaryPath = primaryConfigFilepath;      // Store path on success
     } else {
         // Log message already handled in loadConfigFile if file not found or parse error
-        LOG_WARN("Using default configuration values as primary source.", "Config");
+        LOG_WARN("Config", "Using default configuration values as primary source.");
     }
 
 
@@ -83,18 +83,18 @@ void ConfigSystem::initialize(const std::string& primaryConfigFilepath, const st
         }
         // Log messages handled in loadConfigFile
     } else {
-        LOG_INFO("No user config file specified. Skipping.", "Config");
+        LOG_INFO("Config", "No user config file specified. Skipping.");
     }
 
     // 4. Log Initialization Summary (Optional)
     // Could add a log message summarizing which files were successfully loaded
-    LOG_INFO("Config system initialization complete.", "Config");
+    LOG_INFO("Config", "Config system initialization complete.");
 }
 
 void ConfigSystem::shutdown() {
-    LOG_INFO("Config system shutting down...", "Config");
+    LOG_INFO("Config", "Config system shutting down...");
     if (storedUserPath.empty()) {
-        LOG_WARN("No user config path stored, cannot save runtime changes.", "Config");
+        LOG_WARN("Config", "No user config path stored, cannot save runtime changes.");
         return;
     }
 
@@ -106,15 +106,15 @@ void ConfigSystem::shutdown() {
     mergeTomlTables(tableToSave, runtimeOverrides);
 
     if (tableToSave.empty()) {
-        LOG_INFO("No user or runtime configuration settings to save.", "Config");
+        LOG_INFO("Config", "No user or runtime configuration settings to save.");
         return;
     }
 
-    LOG_INFO(("Attempting to save configuration to: " + storedUserPath).c_str(), "Config");
+    LOG_INFO("Config", ("Attempting to save configuration to: " + storedUserPath).c_str());
     try {
         std::ofstream outFile(storedUserPath);
         if (!outFile.is_open()) {
-            LOG_ERROR(("Failed to open user config file for writing: " + storedUserPath).c_str(), "Config");
+            LOG_ERROR("Config", ("Failed to open user config file for writing: " + storedUserPath).c_str());
             return;
         }
 
@@ -123,12 +123,12 @@ void ConfigSystem::shutdown() {
         outFile.close();
 
         if (outFile.fail()) {
-            LOG_ERROR(("Failed to write to user config file: " + storedUserPath).c_str(), "Config");
+            LOG_ERROR("Config", ("Failed to write to user config file: " + storedUserPath).c_str());
         } else {
-            LOG_INFO(("Configuration saved to: " + storedUserPath).c_str(), "Config");
+            LOG_INFO("Config", ("Configuration saved to: " + storedUserPath).c_str());
         }
     } catch (const std::exception& e) {
-        LOG_ERROR(("Unexpected error while saving configuration: " + std::string(e.what())).c_str(), "Config");
+        LOG_ERROR("Config", ("Unexpected error while saving configuration: " + std::string(e.what())).c_str());
     }
 }
 
