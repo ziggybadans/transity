@@ -141,3 +141,39 @@ TEST(ConfigSystemTest, SetValueRuntime) {
     configSystem.setValue<bool>(newKey, newValue);
     ASSERT_EQ(configSystem.getBool(newKey), newValue);
 }
+
+TEST(ConfigSystemTest, ShutdownSave) {
+    const std::string primaryPath = "shutdown_primary.toml";
+    std::ofstream primaryFile(primaryPath);
+    primaryFile << "setting1 = 10\nsetting2 = 20\n";
+    primaryFile.close();
+
+    const std::string userPath = "shutdown_user.toml";
+    std::ofstream userFile(userPath);
+    userFile << "setting2 = 200\nsetting3 = 300\n";
+    userFile.close();
+
+    transity::config::ConfigSystem configSystem;
+    configSystem.initialize(primaryPath, userPath);
+
+    configSystem.setValue<int>("setting3", 3000);
+    configSystem.setValue<std::string>("setting4", "runtimeValue");
+
+    configSystem.shutdown();
+
+    ASSERT_TRUE(std::filesystem::exists(primaryPath));
+    try {
+        toml::table savedTable = toml::parse_file(userPath);
+
+        ASSERT_FALSE(savedTable.contains("setting1"));
+        ASSERT_EQ(savedTable["setting2"].value_or(0), 200);
+        ASSERT_EQ(savedTable["setting3"].value_or(0), 3000);
+        std::optional<std::string> setting4_opt = savedTable["setting4"].value<std::string>();
+        ASSERT_EQ(*setting4_opt, "runtimeValue");
+    } catch (const std::exception& e) {
+        FAIL() << "Failed to parse saved user config: " << e.what();
+    }
+
+    std::filesystem::remove(primaryPath);
+    std::filesystem::remove(userPath);
+}

@@ -122,8 +122,10 @@ public:
 
         const std::string& lastSegment = pathComponents.back();
         currentTable->insert_or_assign(lastSegment, value);
-        LOG_INFO(("Runtime config override set: " + key + " = " + std::to_string(value)).c_str(), "Config");
+        LOG_INFO(("Runtime value set for key: " + key).c_str(), "Config");
     }
+
+    void shutdown();
 private:
     toml::table runtimeOverrides;
     toml::table defaultConfigValues; // For hardcoded defaults

@@ -62,4 +62,57 @@ void ConfigSystem::initialize(const std::string& primaryConfigFilepath, const st
     }
 }
 
+void mergeTomlTables(toml::table& dest, const toml::table& src) {
+    for (auto&& [key, src_node_ref] : src) {
+        toml::node* dest_node = dest.get(key); 
+
+        if (src_node_ref.is_table() && dest_node && dest_node->is_table()) { 
+            mergeTomlTables(*dest_node->as_table(), *src_node_ref.as_table());
+        } else {
+            dest.insert_or_assign(key, src_node_ref);
+        }
+    }
+}
+
+void ConfigSystem::shutdown() {
+    LOG_INFO("Config system shutting down...", "Config");
+    if (storedUserPath.empty()) {
+        LOG_WARN("No user config path stored, cannot save runtime changes.", "Config");
+        return;
+    }
+
+    toml::table tableToSave;
+    if (userConfigTable) {
+        tableToSave = *userConfigTable;
+    }
+
+    mergeTomlTables(tableToSave, runtimeOverrides);
+
+    if (tableToSave.empty()) {
+        LOG_INFO("No user or runtime configuration settings to save.", "Config");
+        return;
+    }
+
+    LOG_INFO(("Attempting to save configuration to: " + storedUserPath).c_str(), "Config");
+    try {
+        std::ofstream outFile(storedUserPath);
+        if (!outFile.is_open()) {
+            LOG_ERROR(("Failed to open user config file for writing: " + storedUserPath).c_str(), "Config");
+            return;
+        }
+
+        toml::toml_formatter formatter{ tableToSave };
+        outFile << formatter;
+        outFile.close();
+
+        if (outFile.fail()) {
+            LOG_ERROR(("Failed to write to user config file: " + storedUserPath).c_str(), "Config");
+        } else {
+            LOG_INFO(("Configuration saved to: " + storedUserPath).c_str(), "Config");
+        }
+    } catch (const std::exception& e) {
+        LOG_ERROR(("Unexpected error while saving configuration: " + std::string(e.what())).c_str(), "Config");
+    }
+}
+
 }
