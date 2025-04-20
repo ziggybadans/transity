@@ -24,6 +24,7 @@ std::optional<toml::table> loadConfigFile(const std::string& filepath, const std
         LOG_ERROR("Config", ("Unexpected error while parsing " + fileType + " config from: " + filepath + ". Error: " + std::string(e.what())).c_str());
         return std::nullopt;
     }
+    LOG_DEBUG("Config", ("Finished processing " + fileType + " config from: " + filepath).c_str());
 }
 
 void mergeTomlTables(toml::table& dest, const toml::table& src) {
@@ -31,8 +32,10 @@ void mergeTomlTables(toml::table& dest, const toml::table& src) {
         toml::node* dest_node = dest.get(key); 
 
         if (src_node_ref.is_table() && dest_node && dest_node->is_table()) { 
+            LOG_TRACE("Config", ("Merging table for key: " + std::string(key.str())).c_str());
             mergeTomlTables(*dest_node->as_table(), *src_node_ref.as_table());
         } else {
+            LOG_TRACE("Config", ("Setting value for key: " + std::string(key.str())).c_str());
             dest.insert_or_assign(key, src_node_ref);
         }
     }
@@ -47,7 +50,6 @@ ConfigSystem::ConfigSystem() {
 
 ConfigSystem::~ConfigSystem() {
     std::lock_guard<std::mutex> lock(configMutex_);
-    LOG_INFO("Config", "Config system shutting down");
     defaultConfigValues.clear();
 }
 

@@ -2,7 +2,7 @@
 #include "config/ConfigSystem.hpp"
 
 int main() {
-    transity::logging::LoggingSystem::getInstance().initialize();
+    transity::logging::LoggingSystem::getInstance().initialize(transity::logging::LogLevel::TRACE, true, true);
 
     LOG_INFO("Core", "Application starting...");
 

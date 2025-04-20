@@ -61,7 +61,7 @@ public:
      * @param enableConsoleSink Whether to enable console output
      * @param filePath Path to log file (default: "game_log.log")
      */
-    void initialize(LogLevel level, bool enableFileSink, bool enableConsoleSink, std::string filePath = "game_log.log");
+    void initialize(LogLevel level, bool enableFileSink, bool enableConsoleSink, std::string filePath = "logs");
     /**
      * @brief Log a formatted message
      * @param level Severity level of the message

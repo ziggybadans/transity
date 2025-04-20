@@ -35,8 +35,10 @@ void LoggingSystem::initialize() {
     fileSinkEnabled = true;
     filePath = "logs";
 
+    LOG_DEBUG("Logging", "Initializing sinks...");
     initializeSinks();
     internalLog("Logging system started. Level: INFO. Sinks: Console, File.");
+    LOG_DEBUG("Logging", ("Log directory: " + filePath).c_str());
 }
 
 /**
@@ -61,38 +63,89 @@ void LoggingSystem::initialize(LogLevel level, bool enableFileSink, bool enableC
  * @details Creates and activates the requested sink implementations.
  * Skips initialization if test sinks are currently active.
  */
+/**
+ * @brief Initialize configured log sinks
+ * @details Creates and activates the requested sink implementations.
+ * Skips initialization if test sinks are currently active.
+ */
 void LoggingSystem::initializeSinks() {
-    std::lock_guard<std::mutex> lock(logMutex);
-    if (testingSinksActive) {
-        return;
-    }
-    activeSinks.clear();
+    // --- Variables to store results outside the lock ---
+    bool consoleSinkAdded = false;
+    bool fileSinkAdded = false;
+    std::string initializationErrorMsg;
+    std::string finalLogFilePath; // Store the actual path used
 
-    if (consoleSinkEnabled) {
-        activeSinks.push_back(std::make_unique<ConsoleSink>());
-    }
-    if (fileSinkEnabled) {
-        try {
-            std::filesystem::path target_log_directory(filePath);
-            std::filesystem::create_directories(target_log_directory);
-
-            auto now = std::chrono::system_clock::now();
-            auto now_c = std::chrono::system_clock::to_time_t(now);
-            std::tm now_tm = *std::localtime(&now_c);
-            std::ostringstream filename_stream;
-            filename_stream << std::put_time(&now_tm, "%Y-%m-%d_%H-%M-%S");
-            std::string timestamp_str = filename_stream.str();
-            std::string log_filename_only = timestamp_str + ".log";
-
-            std::filesystem::path full_log_path = target_log_directory / log_filename_only;
-            activeSinks.push_back(std::make_unique<FileSink>(full_log_path.string()));
-        } catch (const std::filesystem::filesystem_error& e) {
-            std::cerr << "Filesystem error during log setup: " << e.what() << std::endl;
-            throw;
-        } catch (const std::runtime_error& e) {
-            std::cerr << "Error creating file log sink: " << e.what() << std::endl;
-            throw;
+    { // --- Start of critical section ---
+        std::lock_guard<std::mutex> lock(logMutex);
+        if (testingSinksActive) {
+            // Still log this immediately if needed, maybe just std::cerr?
+            // Or accept that this specific debug log might be lost if testing.
+            // For now, let's skip logging inside the lock here.
+            return; // Exit early if testing sinks are active
         }
+        activeSinks.clear(); // Clear existing sinks
+
+        if (consoleSinkEnabled) {
+            activeSinks.push_back(std::make_unique<ConsoleSink>());
+            consoleSinkAdded = true; // Mark console sink as added
+        }
+
+        if (fileSinkEnabled) {
+            try {
+                std::filesystem::path target_log_directory(filePath);
+                // Attempt to create directories, log error outside if it fails
+                std::error_code ec;
+                std::filesystem::create_directories(target_log_directory, ec);
+                if (ec) {
+                    // Store error message instead of logging directly
+                    initializationErrorMsg = "Filesystem error creating log directory '" +
+                                             target_log_directory.string() + "': " + ec.message();
+                    // Don't proceed with file sink creation if directory failed
+                } else {
+                    // Proceed only if directory creation succeeded or wasn't needed
+                    auto now = std::chrono::system_clock::now();
+                    auto now_c = std::chrono::system_clock::to_time_t(now);
+                    std::tm now_tm = *std::localtime(&now_c); // Note: localtime not thread-safe, consider alternatives if needed later
+                    std::ostringstream filename_stream;
+                    filename_stream << std::put_time(&now_tm, "%Y-%m-%d_%H-%M-%S");
+                    std::string timestamp_str = filename_stream.str();
+                    std::string log_filename_only = timestamp_str + ".log";
+
+                    std::filesystem::path full_log_path = target_log_directory / log_filename_only;
+                    finalLogFilePath = full_log_path.string(); // Store the path
+
+                    // Create the sink - the constructor might throw std::runtime_error
+                    activeSinks.push_back(std::make_unique<FileSink>(finalLogFilePath));
+                    fileSinkAdded = true; // Mark file sink as added successfully
+                }
+
+            } catch (const std::filesystem::filesystem_error& e) {
+                // Store error message instead of logging directly
+                initializationErrorMsg = "Filesystem error during log setup: " + std::string(e.what());
+                // Consider adding e.path1() and e.path2() if relevant
+            } catch (const std::runtime_error& e) {
+                // Store error message instead of logging directly
+                initializationErrorMsg = "Error creating file log sink: " + std::string(e.what());
+            } catch (const std::exception& e) {
+                // Catch any other standard exceptions during setup
+                initializationErrorMsg = "Unexpected exception during sink initialization: " + std::string(e.what());
+            }
+        }
+    } // --- End of critical section (mutex released here) ---
+
+    // --- Now log the results outside the lock ---
+    if (consoleSinkAdded) {
+        // Use internalLog directly to bypass level check if needed, or use LOG_DEBUG
+        LOG_DEBUG("Logging", "Console sink initialized successfully.");
+    }
+    if (fileSinkAdded) {
+        LOG_DEBUG("Logging", ("File sink initialized successfully for path: " + finalLogFilePath).c_str());
+    }
+
+    // Log any error that occurred during initialization
+    if (!initializationErrorMsg.empty()) {
+        LOG_ERROR("Logging", initializationErrorMsg.c_str());
+        throw std::runtime_error("Logging system initialization failed: " + initializationErrorMsg); // Re-throw
     }
 }
 
@@ -205,17 +258,48 @@ void LoggingSystem::internalLog(const std::string& message) {
     }
 }
 
+
 /**
  * @brief Shutdown the logging system
- * @details Flushes all sinks and releases resources
+ * @details Flushes all sinks and releases resources safely.
  */
 void LoggingSystem::shutdown() {
+    // Log the initial shutdown message (acquires and releases mutex internally)
     internalLog("Logging system shutting down.");
-    std::lock_guard<std::mutex> lock(logMutex);
-    for (auto& sink : activeSinks) {
-        sink->flush();
+
+    // Create a temporary copy of sinks to work on outside the main lock
+    std::vector<std::unique_ptr<ILogSink>> sinksToShutdown;
+
+    { // --- Start short critical section ---
+        std::lock_guard<std::mutex> lock(logMutex);
+
+        // Move ownership of sinks from activeSinks to the temporary vector
+        sinksToShutdown = std::move(activeSinks);
+
+        // activeSinks is now empty within the lock
+        // No need to call activeSinks.clear() explicitly after std::move
+
+    } // --- End short critical section (mutex released) ---
+
+    // Now, flush and implicitly destroy sinks outside the main lock
+    for (auto& sink : sinksToShutdown) {
+        try {
+            if (sink) { // Check if sink is valid before flushing
+                sink->flush();
+            }
+        } catch (const std::exception& e) {
+            // If flush throws, we can only log to stderr now as the logging system is down
+            std::cerr << "ERROR: Exception during sink flush on shutdown: " << e.what() << std::endl;
+        } catch (...) {
+            std::cerr << "ERROR: Unknown exception during sink flush on shutdown." << std::endl;
+        }
     }
-    activeSinks.clear();
+    // Sinks in sinksToShutdown are automatically destroyed when the vector
+    // goes out of scope here, closing files etc. via their destructors.
+
+    // Note: This final log message might not make it to the file sink
+    // if the file sink was in sinksToShutdown, as it's already flushed and closed.
+    // It will likely only go to the console if it was active.
 }
 
 /**
@@ -261,7 +345,7 @@ std::string LoggingSystem::getFilePath() const {
  * @param message Formatted log message to output
  */
 void ConsoleSink::write(const std::string& message) {
-    std::cout << message << std::endl;
+    std::cout << message << '\n';
 }
 
 /**
