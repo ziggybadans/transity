@@ -3,62 +3,26 @@
 #include <filesystem>
 #include <string>
 
-namespace transity::config {
+namespace {
+std::optional<toml::table> loadConfigFile(const std::string& filepath, const std::string& fileType) {
+    LOG_INFO(("Attempting to load " + fileType + " config from: " + filepath).c_str(), "Config");
 
-ConfigSystem::ConfigSystem() {
-    initialize();
-    LOG_INFO("Config system initialized", "Config");
-}
-
-ConfigSystem::~ConfigSystem() {
-    LOG_INFO("Config system shutting down", "Config");
-    defaultConfigValues.clear();
-}
-
-void ConfigSystem::initialize(const std::string& primaryConfigFilepath, const std::string& userConfigFilepath) {
-    defaultConfigValues.clear();
-    defaultConfigValues.insert_or_assign("windowWidth", 800);
-    defaultConfigValues.insert_or_assign("windowHeight", 600);
-    defaultConfigValues.insert_or_assign("windowTitle", "Transity");
-
-    LOG_INFO("Default configuration loaded", "Config");
-
-    LOG_INFO(("Attempting to load primary config from: " + primaryConfigFilepath).c_str(), "Config");
-    if (std::filesystem::exists(primaryConfigFilepath)) {
-        try {
-            primaryConfigTable = toml::parse_file(primaryConfigFilepath);
-            storedPrimaryPath = primaryConfigFilepath;
-            LOG_INFO(("Primary config loaded from: " + primaryConfigFilepath).c_str(), "Config");
-        } catch (const toml::parse_error& err) {
-            primaryConfigTable.reset();
-            LOG_ERROR(("Failed to parse primary config from: " + primaryConfigFilepath + ". Using defaults.").c_str(), "Config");
-        } catch (const std::exception& e) {
-            primaryConfigTable.reset();
-            LOG_ERROR(("Unexpected error while parsing primary config from: " + primaryConfigFilepath + ". Using defaults.").c_str(), "Config");
-        }
-    } else {
-        LOG_WARN(("Primary config not found at: " + primaryConfigFilepath + ". Using defaults.").c_str(), "Config");
+    if (!std::filesystem::exists(filepath)) {
+        LOG_WARN((fileType + " config not found at: " + filepath + ". Ignoring.").c_str(), "Config");
+        return std::nullopt;
     }
 
-    if (!userConfigFilepath.empty()) {
-        LOG_INFO(("Attempting to load user config from: " + userConfigFilepath).c_str(), "Config");
-        if (std::filesystem::exists(userConfigFilepath)) {
-            try {
-                userConfigTable = toml::parse_file(userConfigFilepath);
-                storedUserPath = userConfigFilepath;
-                LOG_INFO(("User config loaded from: " + userConfigFilepath).c_str(), "Config");
-            } catch (const toml::parse_error& err) {
-                userConfigTable.reset();
-                LOG_ERROR(("Failed to parse user config from: " + userConfigFilepath + ". Ignoring.").c_str(), "Config");
-            } catch (const std::exception& e) {
-                userConfigTable.reset();
-                LOG_ERROR(("Unexpected error while parsing user config from: " + userConfigFilepath + ". Ignoring.").c_str(), "Config");
-            }
-        } else {
-            LOG_WARN(("User config not found at: " + userConfigFilepath + ". Ignoring.").c_str(), "Config");
-        }
-    } else {
-        LOG_INFO("No user config file specified. Ignoring.", "Config");
+    try {
+        toml::table parsedTable = toml::parse_file(filepath);
+        LOG_INFO((fileType + " config loaded successfully from: " + filepath).c_str(), "Config");
+        return parsedTable;
+    } catch (const toml::parse_error& err) {
+        // Log the specific TOML error details if possible/desired
+        LOG_ERROR(("Failed to parse " + fileType + " config from: " + filepath + ". Error: " + std::string(err.what())).c_str(), "Config");
+        return std::nullopt;
+    } catch (const std::exception& e) {
+        LOG_ERROR(("Unexpected error while parsing " + fileType + " config from: " + filepath + ". Error: " + std::string(e.what())).c_str(), "Config");
+        return std::nullopt;
     }
 }
 
@@ -72,6 +36,59 @@ void mergeTomlTables(toml::table& dest, const toml::table& src) {
             dest.insert_or_assign(key, src_node_ref);
         }
     }
+}
+}
+
+namespace transity::config {
+
+ConfigSystem::ConfigSystem() {
+    initialize();
+    LOG_INFO("Config system initialized", "Config");
+}
+
+ConfigSystem::~ConfigSystem() {
+    LOG_INFO("Config system shutting down", "Config");
+    defaultConfigValues.clear();
+}
+
+void ConfigSystem::initialize(const std::string& primaryConfigFilepath, const std::string& userConfigFilepath) {
+    // 1. Load Defaults
+    defaultConfigValues.clear();
+    defaultConfigValues.insert_or_assign("windowWidth", 800);
+    defaultConfigValues.insert_or_assign("windowHeight", 600);
+    defaultConfigValues.insert_or_assign("windowTitle", "Transity");
+    LOG_INFO("Default configuration loaded", "Config");
+
+    // 2. Load Primary Config File
+    primaryConfigTable.reset(); // Ensure it's clear before attempting load
+    storedPrimaryPath = "";     // Clear stored path
+    auto loadedPrimary = loadConfigFile(primaryConfigFilepath, "Primary");
+    if (loadedPrimary) {
+        primaryConfigTable = std::move(*loadedPrimary); // Move the table
+        storedPrimaryPath = primaryConfigFilepath;      // Store path on success
+    } else {
+        // Log message already handled in loadConfigFile if file not found or parse error
+        LOG_WARN("Using default configuration values as primary source.", "Config");
+    }
+
+
+    // 3. Load User Config File (Optional)
+    userConfigTable.reset(); // Ensure it's clear
+    storedUserPath = "";     // Clear stored path
+    if (!userConfigFilepath.empty()) {
+        auto loadedUser = loadConfigFile(userConfigFilepath, "User");
+        if (loadedUser) {
+            userConfigTable = std::move(*loadedUser); // Move the table
+            storedUserPath = userConfigFilepath;      // Store path on success
+        }
+        // Log messages handled in loadConfigFile
+    } else {
+        LOG_INFO("No user config file specified. Skipping.", "Config");
+    }
+
+    // 4. Log Initialization Summary (Optional)
+    // Could add a log message summarizing which files were successfully loaded
+    LOG_INFO("Config system initialization complete.", "Config");
 }
 
 void ConfigSystem::shutdown() {

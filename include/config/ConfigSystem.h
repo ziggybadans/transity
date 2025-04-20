@@ -18,44 +18,6 @@ public:
     void initialize(const std::string& primaryConfigFilepath = "config.toml",
                     const std::string& userConfigFilepath = "");
 
-    template <typename T>
-    T getValue(const std::string& key, T defaultValue) const {
-        std::optional<T> result;
-
-        if (auto node = runtimeOverrides.at_path(key)) {
-            result = node.value<T>();
-            if (result) {
-                return *result;
-            }
-        }
-
-        if (userConfigTable) {
-            if (auto node = userConfigTable->at_path(key)) {
-                result = node.value<T>();
-                if (result) {
-                    return *result;
-                }
-            }
-        }
-        if (primaryConfigTable) {
-            if (auto node = primaryConfigTable->at_path(key)) {
-                result = node.value<T>();
-                if (result) {
-                    return *result;
-                }
-            }
-        }
-        if (auto node = defaultConfigValues.at_path(key)) {
-            result = node.value<T>();
-            if (result) {
-                return *result;
-            }
-        }
-
-        LOG_WARN(("Config key '" + key + "' not found or type mismatch in any config source. Returning default.").c_str(), "Config");
-        return defaultValue;
-    }
-
     inline std::string getString(const std::string& key, const std::string& defaultValue = "") const {
         return getValue<std::string>(key, defaultValue);
     }
@@ -84,6 +46,26 @@ public:
             tokens.push_back(token);
         }
         return tokens;
+    }
+
+    template <typename T>
+    T getValue(const std::string& key, T defaultValue) const {
+        std::optional<T> result;
+
+        result = tryGetValueFromSource<T>(runtimeOverrides, key);
+        if (result) return *result;
+
+        result = tryGetValueFromSource<T>(userConfigTable, key);
+        if (result) return *result;
+
+        result = tryGetValueFromSource<T>(primaryConfigTable, key);
+        if (result) return *result;
+
+        result = tryGetValueFromSource<T>(defaultConfigValues, key);
+        if (result) return *result;
+
+        LOG_WARN(("Config key '" + key + "' not found or type mismatch in any config source. Returning default.").c_str(), "Config");
+        return defaultValue;
     }
 
     template <typename T>
@@ -134,6 +116,24 @@ private:
     // Maybe store file paths if needed for saving later
     std::string storedPrimaryPath;
     std::string storedUserPath; 
+
+    template <typename T>
+    std::optional<T> tryGetValueFromSource(const toml::table& source, const std::string& key) const {
+        if (auto node = source.at_path(key)) {
+            // node.value<T>() already returns std::optional<T>
+            return node.value<T>();
+        }
+        return std::nullopt; // Key not found in this source
+    }
+
+    template <typename T>
+    std::optional<T> tryGetValueFromSource(const std::optional<toml::table>& sourceOpt, const std::string& key) const {
+        if (sourceOpt) {
+            // Delegate to the non-optional version
+            return tryGetValueFromSource<T>(*sourceOpt, key);
+        }
+        return std::nullopt; // Source itself doesn't exist
+    }
 };
 
 }
