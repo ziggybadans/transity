@@ -42,7 +42,6 @@ void mergeTomlTables(toml::table& dest, const toml::table& src) {
 namespace transity::config {
 
 ConfigSystem::ConfigSystem() {
-    initialize();
     LOG_INFO("Config", "Config system initialized");
 }
 
