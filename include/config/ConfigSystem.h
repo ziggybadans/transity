@@ -22,6 +22,13 @@ public:
     T getValue(const std::string& key, T defaultValue) const {
         std::optional<T> result;
 
+        if (auto node = runtimeOverrides.at_path(key)) {
+            result = node.value<T>();
+            if (result) {
+                return *result;
+            }
+        }
+
         if (userConfigTable) {
             if (auto node = userConfigTable->at_path(key)) {
                 result = node.value<T>();
@@ -68,7 +75,57 @@ public:
     inline float getFloat(const std::string& key, float defaultValue = 0.0f) const {
         return static_cast<float>(getValue<double>(key, static_cast<double>(defaultValue)));
     }
+
+    inline std::vector<std::string> splitPath(const std::string& s, char delimiter) {
+        std::vector<std::string> tokens;
+        std::string token;
+        std::istringstream tokenStream(s);
+        while (std::getline(tokenStream, token, delimiter)) {
+            tokens.push_back(token);
+        }
+        return tokens;
+    }
+
+    template <typename T>
+    void setValue(const std::string& key, T value) {
+        std::vector<std::string> pathComponents = splitPath(key, '.');
+
+        if (pathComponents.empty()) {
+            LOG_ERROR("setValue called with empty key.", "Config");
+            return;
+        }
+
+        toml::table* currentTable = &runtimeOverrides;
+
+        for (size_t i = 0; i < pathComponents.size() - 1; ++i) {
+            const std::string& segment = pathComponents[i];
+
+            toml::node* node = currentTable->get(segment);
+
+            if (node && node->is_table()) {
+                currentTable = node->as_table();
+            } else if (!node) {
+                auto result_pair = currentTable->emplace<toml::table>(segment);
+                toml::node& newNode = result_pair.first->second;
+
+                if (newNode.is_table()) {
+                    currentTable = newNode.as_table();
+                } else {
+                    LOG_ERROR(("Failed to emplace segment '" + segment + "' as a table.").c_str(), "Config");
+                    return;
+                }
+            } else {
+                LOG_ERROR(("Cannot create table path segment '" + segment + "' in key '" + key + "' because a non-table value already exists there.").c_str(), "Config");
+                return;
+            }
+        }
+
+        const std::string& lastSegment = pathComponents.back();
+        currentTable->insert_or_assign(lastSegment, value);
+        LOG_INFO(("Runtime config override set: " + key + " = " + std::to_string(value)).c_str(), "Config");
+    }
 private:
+    toml::table runtimeOverrides;
     toml::table defaultConfigValues; // For hardcoded defaults
     std::optional<toml::table> primaryConfigTable; // Parsed primary file
     std::optional<toml::table> userConfigTable;    // Parsed user file

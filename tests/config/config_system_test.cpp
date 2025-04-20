@@ -128,3 +128,16 @@ TEST(ConfigSystemTest, GetStringWrapper) {
     ASSERT_EQ(configSystem.getString("nonExistentString"), "");
     ASSERT_EQ(configSystem.getString("nonExistentString", "fallback"), "fallback");
 }
+
+TEST(ConfigSystemTest, SetValueRuntime) {
+    transity::config::ConfigSystem configSystem;
+    configSystem.initialize();
+
+    configSystem.setValue("windowWidth", 1024);
+    ASSERT_EQ(configSystem.getValue<int>("windowWidth", 0), 1024);
+
+    std::string newKey = "NewSetting.TestValue";
+    bool newValue = true;
+    configSystem.setValue<bool>(newKey, newValue);
+    ASSERT_EQ(configSystem.getBool(newKey), newValue);
+}
