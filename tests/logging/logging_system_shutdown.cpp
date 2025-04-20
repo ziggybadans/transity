@@ -9,6 +9,7 @@
 #include <gtest/gtest.h>
 #include <vector>
 #include <memory>
+#include <filesystem>
 
 #include "logging/LoggingSystem.hpp"
 #include "logging/ILogSink.h"
@@ -71,4 +72,53 @@ TEST_F(LoggingSystemTest, ShutdownFlushesSinks) {
     logger.shutdown();
 
     ASSERT_TRUE(mockSink->messagesReceived.empty());
+}
+
+TEST(LoggingSystemShutdown, FileSinkClosesOnFile) {
+    transity::logging::LoggingSystem& logger = transity::logging::LoggingSystem::getInstance();
+    const std::string tempLogDir = "./temp_closure_test_logs"; // Directory path
+    const std::string testMessage = "== FileSinkClosureTest message ==";
+
+    // Cleanup before starting
+    std::filesystem::remove_all(tempLogDir);
+
+    // Initialize logger to write to the directory
+    logger.initialize(transity::logging::LogLevel::INFO, true, false, tempLogDir);
+
+    // Log the message
+    logger.log(transity::logging::LogLevel::INFO, "ClosureTest", testMessage.c_str());
+
+    // Shutdown
+    logger.shutdown();
+
+    // --- Find the actual log file ---
+    std::string actualLogFilePath = "";
+    try {
+        for (const auto& entry : std::filesystem::directory_iterator(tempLogDir)) {
+            if (entry.is_regular_file() && entry.path().extension() == ".log") {
+                actualLogFilePath = entry.path().string();
+                break; // Found it
+            }
+        }
+    } catch (const std::filesystem::filesystem_error& e) {
+        FAIL() << "Filesystem error finding log file: " << e.what();
+    }
+
+    ASSERT_FALSE(actualLogFilePath.empty()) << "Could not find .log file in " << tempLogDir;
+
+    // --- Read back the actual log file ---
+    std::ifstream logFile(actualLogFilePath);
+    ASSERT_TRUE(logFile.is_open()) << "Failed to open actual log file: " << actualLogFilePath;
+
+    std::stringstream buffer;
+    buffer << logFile.rdbuf();
+    std::string fileContent = buffer.str();
+    logFile.close(); // Close it now we're done reading
+
+    // Assert content contains the message
+    ASSERT_NE(fileContent.find(testMessage), std::string::npos)
+        << "Test message '" << testMessage << "' not found in log file content:\n" << fileContent;
+
+    // Cleanup directory and its contents
+    std::filesystem::remove_all(tempLogDir);
 }

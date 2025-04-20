@@ -22,10 +22,13 @@
 class MockLogSink : public transity::logging::ILogSink {
     public:
         void write(const std::string& message) override {
+            std::lock_guard<std::mutex> lock(sinkMutex);
             messagesReceived.push_back(message);
         }
         void flush() override {}
         std::vector<std::string> messagesReceived;
+    private:
+        std::mutex sinkMutex;
 };
 
 /**
@@ -142,4 +145,95 @@ TEST_F(LoggingSystemTest, FormatsMessageWithArgs) {
     std::cout << "---------------------------------------\n";
 
     ASSERT_NE(mockSink->messagesReceived[1].find("User TestUser logged in with ID 123"), std::string::npos);
+}
+
+TEST_F (LoggingSystemTest, LogsConcurrently) {
+    transity::logging::LoggingSystem& logger = transity::logging::LoggingSystem::getInstance();
+    logger.initialize(transity::logging::LogLevel::TRACE, false, true);
+
+    const int numThreads = 5;
+    const int messagesPerThread = 1000;
+    std::vector<std::thread> threads;
+
+    for (int i = 0; i < numThreads; ++i) {
+        threads.emplace_back([&logger, i, messagesPerThread]() {
+            for (int j = 0; j < messagesPerThread; ++j) {
+                logger.log(transity::logging::LogLevel::INFO, "ConcurrentTest", "Thread %d logging message %d", i, j);
+                std::this_thread::yield();
+            }
+        });
+    }
+
+    for (auto& t : threads) {
+        if (t.joinable()) {
+            t.join();
+        }
+    }
+
+    const size_t expectedTotalMessages = (numThreads * messagesPerThread) + 1;
+    ASSERT_EQ(mockSink->messagesReceived.size(), expectedTotalMessages);
+}
+
+TEST_F(LoggingSystemTest, DispatchesToMultipleSinks) {
+    transity::logging::LoggingSystem& logger = transity::logging::LoggingSystem::getInstance();
+
+    auto mockSink1_ptr = std::make_unique<MockLogSink>();
+    MockLogSink* mockSink1 = mockSink1_ptr.get();
+
+    auto mockSink2_ptr = std::make_unique<MockLogSink>();
+    MockLogSink* mockSink2 = mockSink2_ptr.get();
+
+    std::vector<std::unique_ptr<transity::logging::ILogSink>> testSinks;
+    testSinks.push_back(std::move(mockSink1_ptr));
+    testSinks.push_back(std::move(mockSink2_ptr));
+
+    logger.setSinksForTesting(std::move(testSinks));
+
+    logger.initialize(transity::logging::LogLevel::INFO, false, true);
+
+    logger.log(transity::logging::LogLevel::INFO, "Logger", "This is a test message.");
+
+    ASSERT_EQ(mockSink1->messagesReceived.size(), 2);
+    ASSERT_EQ(mockSink2->messagesReceived.size(), 2);
+    ASSERT_EQ(mockSink1->messagesReceived, mockSink2->messagesReceived);
+}
+
+TEST_F(LoggingSystemTest, HelperMacrosLogCorrectly) {
+    // Arrange
+    transity::logging::LoggingSystem& logger = transity::logging::LoggingSystem::getInstance();
+    // Initialize with a low level to capture all test messages
+    logger.initialize(transity::logging::LogLevel::TRACE, false, true); // Logs init message
+
+    const std::string debugMsg = "This is a debug macro message.";
+    const std::string infoMsg = "This is an info macro message with arg: 42";
+    const std::string warnMsg = "This is a warning macro message.";
+
+    // Act: Call various helper macros
+    LOG_DEBUG("MacroTest", debugMsg.c_str());
+    LOG_INFO("MacroTest", "This is an info macro message with arg: %d", 42);
+    LOG_WARN("MacroTest", warnMsg.c_str());
+    // Maybe call one that should be filtered out if you change init level
+    // LOG_TRACE("MacroTest", "This trace message should be logged.");
+
+    // Assert
+    // Expecting: Init message + DEBUG + INFO + WARN = 4 messages
+    ASSERT_EQ(mockSink->messagesReceived.size(), 4);
+
+    // Check content of each message (adjust indices based on actual output order if needed)
+    // Note: Index 0 is the init message from logger.initialize()
+
+    // Check Debug message (likely index 1)
+    ASSERT_NE(mockSink->messagesReceived[1].find("[DEBUG]"), std::string::npos);
+    ASSERT_NE(mockSink->messagesReceived[1].find("[MacroTest]"), std::string::npos);
+    ASSERT_NE(mockSink->messagesReceived[1].find(debugMsg), std::string::npos);
+
+    // Check Info message (likely index 2)
+    ASSERT_NE(mockSink->messagesReceived[2].find("[INFO]"), std::string::npos);
+    ASSERT_NE(mockSink->messagesReceived[2].find("[MacroTest]"), std::string::npos);
+    ASSERT_NE(mockSink->messagesReceived[2].find(infoMsg), std::string::npos);
+
+    // Check Warn message (likely index 3)
+    ASSERT_NE(mockSink->messagesReceived[3].find("[WARN]"), std::string::npos);
+    ASSERT_NE(mockSink->messagesReceived[3].find("[MacroTest]"), std::string::npos);
+    ASSERT_NE(mockSink->messagesReceived[3].find(warnMsg), std::string::npos);
 }

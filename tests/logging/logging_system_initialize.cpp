@@ -12,6 +12,8 @@
 #include <gtest/gtest.h>
 #include <vector>
 #include <memory>
+#include <filesystem>
+#include <regex>
 
 #include "logging/LoggingSystem.hpp"
 #include "logging/ILogSink.h"
@@ -167,4 +169,103 @@ TEST_F(LoggingSystemTest, InitializationMessageLogged) {
     ASSERT_NE(mockSink, nullptr);
     ASSERT_EQ(mockSink->messagesReceived.size(), 1);
     ASSERT_EQ(mockSink->messagesReceived[0], expectedMessage);
+}
+
+TEST(LoggingSystem, CreateTimestampedLogInDirectory) {
+    transity::logging::LoggingSystem& logger = transity::logging::LoggingSystem::getInstance();
+    const std::string tempLogDir = "./temp_logs"; // Directory path
+
+    std::filesystem::remove_all(tempLogDir);
+    ASSERT_FALSE(std::filesystem::exists(tempLogDir));
+
+    try {
+        logger.initialize(transity::logging::LogLevel::INFO, true, false, tempLogDir);
+    } catch (const std::exception& e) {
+        FAIL() << "Filesystem error during log setup: " << e.what();
+    }
+
+    ASSERT_TRUE(std::filesystem::is_directory(tempLogDir))
+        << "Log directory '" << tempLogDir << "' was not created.";
+
+    int logFilesCount = 0;
+    std::string foundLogFilename = "";
+    std::regex logPatternRegex(R"(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.log)");
+
+    try {
+        for (const auto& entry : std::filesystem::directory_iterator(tempLogDir)) {
+            if (entry.is_regular_file() && entry.path().extension() == ".log") {
+                logFilesCount++;
+                foundLogFilename = entry.path().filename().string();
+            }
+        }
+    } catch (const std::filesystem::filesystem_error& e) {
+        FAIL() << "Filesystem error iterating directory '" << tempLogDir << "': " << e.what();
+    }
+
+    ASSERT_EQ(logFilesCount, 1) << "Expected exactly one log file in '" << tempLogDir << "', found " << logFilesCount << ".";
+    if (logFilesCount == 1) {
+        ASSERT_TRUE(std::regex_match(foundLogFilename, logPatternRegex))
+            << "Log file name '" << foundLogFilename << "' does not match expected pattern.";
+    };
+
+    logger.shutdown();
+
+    std::filesystem::remove_all(tempLogDir);
+}
+
+TEST_F(LoggingSystemTest, InitMessageReflectsConsoleOnly) {
+    // Arrange
+    transity::logging::LoggingSystem& logger = transity::logging::LoggingSystem::getInstance();
+    // Expected message when only console is enabled at INFO level
+    const std::string expectedMessage = "Logging system started. Level: 2. Sinks: Console, ";
+
+    // Act: Initialize with console sink only
+    logger.initialize(transity::logging::LogLevel::INFO, false, true);
+
+    // Assert
+    ASSERT_NE(mockSink, nullptr); // Good practice from original test
+    ASSERT_EQ(mockSink->messagesReceived.size(), 1)
+        << "Expected 1 initialization message, found " << mockSink->messagesReceived.size();
+
+    if (mockSink->messagesReceived.size() == 1) {
+        ASSERT_EQ(mockSink->messagesReceived[0], expectedMessage);
+    }
+}
+
+TEST_F(LoggingSystemTest, InitMessageReflectsFileOnly) {
+    // Arrange
+    transity::logging::LoggingSystem& logger = transity::logging::LoggingSystem::getInstance();
+    // Expected message when only console is enabled at INFO level
+    const std::string expectedMessage = "Logging system started. Level: 2. Sinks: File.";
+
+    // Act: Initialize with console sink only
+    logger.initialize(transity::logging::LogLevel::INFO, true, false);
+
+    // Assert
+    ASSERT_NE(mockSink, nullptr); // Good practice from original test
+    ASSERT_EQ(mockSink->messagesReceived.size(), 1)
+        << "Expected 1 initialization message, found " << mockSink->messagesReceived.size();
+
+    if (mockSink->messagesReceived.size() == 1) {
+        ASSERT_EQ(mockSink->messagesReceived[0], expectedMessage);
+    }
+}
+
+TEST_F(LoggingSystemTest, InitMessageReflectsCustomLevel) {
+    // Arrange
+    transity::logging::LoggingSystem& logger = transity::logging::LoggingSystem::getInstance();
+    // Expected message when only console is enabled at INFO level
+    const std::string expectedMessage = "Logging system started. Level: 1. Sinks: Console, File.";
+
+    // Act: Initialize with console sink only
+    logger.initialize(transity::logging::LogLevel::DEBUG, true, true);
+
+    // Assert
+    ASSERT_NE(mockSink, nullptr); // Good practice from original test
+    ASSERT_EQ(mockSink->messagesReceived.size(), 1)
+        << "Expected 1 initialization message, found " << mockSink->messagesReceived.size();
+
+    if (mockSink->messagesReceived.size() == 1) {
+        ASSERT_EQ(mockSink->messagesReceived[0], expectedMessage);
+    }
 }
