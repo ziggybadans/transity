@@ -14,7 +14,7 @@ public:
     ConfigSystem();
     ~ConfigSystem();
 
-    void initialize();
+    void initialize(const std::string& primaryConfigFilepath = "config.toml");
 
     template <typename T>
     T getValue(const std::string& key, T defaultValue) const {
