@@ -1,6 +1,11 @@
 #include <gtest/gtest.h>
-#include "ecs/ECSCore.hpp"
+#include <SFML/Graphics.hpp>
+
 #include <ostream>
+#include <memory>
+
+#include "ecs/ECSCore.hpp"
+#include "ecs/ISystem.h"
 
 namespace entt {
     inline std::ostream& operator<<(std::ostream& os, const entt::entity entity) {
@@ -13,6 +18,28 @@ namespace entt {
         return os << "entt::null";
     }
 }
+
+class MockUpdateSystem : public transity::ecs::IUpdateSystem {
+public:
+    bool updated = false;
+    float lastDeltaTime = -1.0f;
+
+    void update(entt::registry& registry, float deltaTime) override {
+        updated = true;
+        lastDeltaTime = deltaTime;
+    }
+};
+
+class MockRenderSystem : public transity::ecs::IRenderSystem {
+public:
+    bool rendered = false;
+    sf::RenderTarget* lastRenderTarget = nullptr;
+
+    void render(entt::registry& registry, sf::RenderTarget& renderTarget) override {
+        rendered = true;
+        lastRenderTarget = &renderTarget;
+    }
+};
 
 TEST(ECSCoreTest, RegistryCreated) {
     ASSERT_NO_THROW({
@@ -180,4 +207,172 @@ TEST(ECSCoreTest, ComponentRemoval) {
     ecsCore.removeComponent<PositionComponent>(entity);
     ASSERT_FALSE(ecsCore.hasComponent<PositionComponent>(entity));
     ASSERT_NO_THROW(ecsCore.removeComponent<PositionComponent>(entity));
+}
+
+TEST(ECSCoreTest, ViewSingleComponent) {
+    transity::ecs::ECSCore ecsCore;
+    ecsCore.initialize();
+    struct PositionComponent { float x = 0.0f; float y = 0.0f; };
+    struct VelocityComponent { float dx = 0.0f; float dy = 0.0f; };
+    entt::entity entity1 = ecsCore.createEntity();
+    entt::entity entity2 = ecsCore.createEntity();
+    entt::entity entity3 = ecsCore.createEntity();
+
+    ecsCore.addComponent<PositionComponent>(entity1, 1.0f, 1.0f);
+    ecsCore.addComponent<PositionComponent>(entity3, 3.0f, 3.0f);
+    ecsCore.addComponent<VelocityComponent>(entity3);
+
+    auto positionView = ecsCore.getView<PositionComponent>();
+
+    size_t count = 0;
+    bool foundEntity1 = false;
+    bool foundEntity3 = false;
+    for(auto entity : positionView) {
+        count++;
+        if(entity == entity1) {
+            foundEntity1 = true;
+        }
+        if(entity == entity3) {
+            foundEntity3 = true;
+        }
+
+        auto& pos = positionView.get<PositionComponent>(entity);
+        ASSERT_NE(pos.x, 0.0f);
+    }
+
+    ASSERT_EQ(count, 2);
+    ASSERT_TRUE(foundEntity1);
+    ASSERT_TRUE(foundEntity3);
+}
+
+TEST(ECSCoreTest, ViewMultiComponent) {
+    transity::ecs::ECSCore ecsCore;
+    ecsCore.initialize();
+    struct PositionComponent { float x = 0.0f; float y = 0.0f; };
+    struct VelocityComponent { float dx = 0.0f; float dy = 0.0f; };
+    entt::entity entity1 = ecsCore.createEntity();
+    entt::entity entity2 = ecsCore.createEntity();
+    entt::entity entity3 = ecsCore.createEntity();
+    entt::entity entity4 = ecsCore.createEntity();
+
+    ecsCore.addComponent<PositionComponent>(entity1, 1.0f, 1.0f);
+    ecsCore.addComponent<VelocityComponent>(entity2, 2.0f, 2.0f);
+    ecsCore.addComponent<PositionComponent>(entity3, 3.0f, 3.0f);
+    ecsCore.addComponent<VelocityComponent>(entity3, 3.0f, 3.0f);
+
+    auto multiView = ecsCore.getView<PositionComponent, VelocityComponent>();
+
+    size_t count = 0;
+    bool foundEntity3 = false;
+    for(auto entity : multiView) {
+        count++;
+        if(entity == entity3) {
+            foundEntity3 = true;
+        }
+
+        auto& pos = multiView.get<PositionComponent>(entity);
+        auto& vel = multiView.get<VelocityComponent>(entity);
+    }
+
+    ASSERT_EQ(count, 1);
+    ASSERT_TRUE(foundEntity3);
+}
+
+TEST(ECSCoreTest, ViewEmpty) {
+    transity::ecs::ECSCore ecsCore;
+    ecsCore.initialize();
+    struct PositionComponent { float x = 0.0f; float y = 0.0f; };
+    struct VelocityComponent { float dx = 0.0f; float dy = 0.0f; };
+    struct RenderableComponent { int layer = 0; };
+
+    entt::entity entity1 = ecsCore.createEntity();
+    entt::entity entity2 = ecsCore.createEntity();
+    ecsCore.addComponent<PositionComponent>(entity1);
+    ecsCore.addComponent<VelocityComponent>(entity2);
+
+    auto renderableView = ecsCore.getView<RenderableComponent>();
+    size_t count = 0;
+    for(auto entity : renderableView) {
+        count++;
+    }
+    ASSERT_EQ(count, 0);
+    ASSERT_TRUE(renderableView.empty());
+}
+
+TEST(ECSCoreTest, SystemRegistration) {
+    transity::ecs::ECSCore ecsCore;
+    ecsCore.initialize();
+
+    auto mockUpdate = std::make_unique<MockUpdateSystem>();
+    auto mockRender = std::make_unique<MockRenderSystem>();
+
+    MockUpdateSystem* mockUpdatePtr = mockUpdate.get();
+    MockRenderSystem* mockRenderPtr = mockRender.get();
+
+    ecsCore.registerUpdateSystem(std::move(mockUpdate));
+    ecsCore.registerRenderSystem(std::move(mockRender));
+
+    SUCCEED();
+}
+
+TEST(ECSCoreTest, UpdateSystemsExecution) {
+    transity::ecs::ECSCore ecsCore;
+    ecsCore.initialize();
+
+    auto mockUpdate = std::make_unique<MockUpdateSystem>();
+    MockUpdateSystem* mockUpdatePtr = mockUpdate.get();
+
+    ecsCore.registerUpdateSystem(std::move(mockUpdate));
+
+    ASSERT_FALSE(mockUpdatePtr->updated);
+    ASSERT_EQ(mockUpdatePtr->lastDeltaTime, -1.0f);
+
+    float testDeltaTime = 0.16f;
+    ecsCore.updateSystems(testDeltaTime);
+
+    ASSERT_TRUE(mockUpdatePtr->updated);
+    ASSERT_FLOAT_EQ(mockUpdatePtr->lastDeltaTime, testDeltaTime);
+}
+
+TEST(ECSCoreTest, RenderSystemsExecution) {
+    transity::ecs::ECSCore ecsCore;
+    ecsCore.initialize();
+
+    auto mockRender = std::make_unique<MockRenderSystem>();
+    MockRenderSystem* mockRenderPtr = mockRender.get();
+
+    ecsCore.registerRenderSystem(std::move(mockRender));
+
+    ASSERT_FALSE(mockRenderPtr->rendered);
+    ASSERT_EQ(mockRenderPtr->lastRenderTarget, nullptr);
+
+    sf::RenderTexture dummyTarget;
+    ecsCore.renderSystems(dummyTarget);
+
+    ASSERT_TRUE(mockRenderPtr->rendered);
+    ASSERT_EQ(mockRenderPtr->lastRenderTarget, &dummyTarget);
+}
+
+TEST(ECSCoreTest, ShutdownRegistryClear) {
+    transity::ecs::ECSCore ecsCore;
+    ecsCore.initialize();
+    struct PositionComponent { float x = 0.0f; float y = 0.0f; };
+
+    entt::entity entity = ecsCore.createEntity();
+    ecsCore.addComponent<PositionComponent>(entity, 1.0f, 2.0f);
+
+    ecsCore.registerUpdateSystem(std::make_unique<MockUpdateSystem>());
+
+    ASSERT_TRUE(ecsCore.hasEntity(entity));
+    ASSERT_TRUE(ecsCore.hasComponent<PositionComponent>(entity));
+    ASSERT_GT(ecsCore.getEntityCount(), 0);
+
+    ecsCore.shutdown();
+
+    ASSERT_FALSE(ecsCore.hasEntity(entity));
+    ASSERT_EQ(ecsCore.getEntityCount(), 0);
+
+    ecsCore.initialize();
+    entt::entity newEntity = ecsCore.createEntity();
+    ASSERT_NE(newEntity, entt::null);
 }

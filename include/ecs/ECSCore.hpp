@@ -1,18 +1,32 @@
 #pragma once
 
 #include <entt/entt.hpp>
+
 #include <utility>
+#include <vector>
+#include <memory>
+#include <stdexcept>
+
+#include "ecs/ISystem.h"
 
 namespace transity::ecs {
 
 class ECSCore {
 public:
     void initialize();
-    void shutdown();
 
     entt::entity createEntity();
     bool hasEntity(entt::entity);
     void destroyEntity(entt::entity);
+    size_t getEntityCount() const;
+
+    void registerUpdateSystem(std::unique_ptr<IUpdateSystem> system);
+    void registerRenderSystem(std::unique_ptr<IRenderSystem> system);
+
+    void updateSystems(float deltaTime);
+    void renderSystems(sf::RenderTarget& renderTarget);
+
+    void shutdown();
 
     template<typename T, typename... Args>
     T& addComponent(entt::entity entity, Args&&... args) {
@@ -44,8 +58,15 @@ public:
     void removeComponent(entt::entity entity) {
         _registry.remove<T>(entity);
     }
+
+    template<typename ...ComponentTs>
+    auto getView() const {
+        return _registry.view<ComponentTs...>();
+    }
 private:
     entt::registry _registry;
+    std::vector<std::unique_ptr<IUpdateSystem>> _updateSystems;
+    std::vector<std::unique_ptr<IRenderSystem>> _renderSystems;
 };
 
 }

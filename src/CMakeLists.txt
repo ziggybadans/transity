@@ -7,6 +7,8 @@ add_library(ConfigLib ${CONFIG_SOURCES})
 file(GLOB ECS_SOURCES "ecs/*.cpp")
 add_library(ECSLib ${ECS_SOURCES})
 
+target_link_libraries(ECSLib PUBLIC EnTT::EnTT)
+
 # Specify include directories needed by this library
 # PUBLIC: Means consumers linking to library also get these includes
 # PRIVATE: Means only library uses these includes internally
@@ -23,7 +25,6 @@ target_include_directories(ConfigLib PUBLIC
 target_include_directories(ECSLib PUBLIC
     # Allow code in this library to find headers in the main include dir
     ${CMAKE_SOURCE_DIR}/include
-    ${CMAKE_SOURCE_DIR}/lib/entt/src
 )
 
 # Define the main application executable

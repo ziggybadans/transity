@@ -3,7 +3,7 @@ include(GoogleTest)
 
 function(add_transity_test TEST_NAME TEST_SOURCE TEST_LABEL)
     add_executable(${TEST_NAME} ${TEST_SOURCE})
-    target_link_libraries(${TEST_NAME} PRIVATE gtest gtest_main gmock LoggingLib ConfigLib ECSLib)
+    target_link_libraries(${TEST_NAME} PRIVATE gtest gtest_main gmock LoggingLib ConfigLib ECSLib sfml-graphics sfml-window sfml-system)
     target_include_directories(${TEST_NAME} PRIVATE
         ${CMAKE_SOURCE_DIR}/lib/googletest/googletest/include
         ${CMAKE_SOURCE_DIR}/lib/googletest/googlemock/include
