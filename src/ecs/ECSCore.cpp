@@ -8,7 +8,9 @@ void ECSCore::initialize() {
 }
 
 entt::entity ECSCore::createEntity() {
-    return _registry.create();
+    auto entity = _registry.create();
+    LOG_DEBUG("ECS", "Created entity {}", static_cast<uint32_t>(entity));
+    return entity;
 }
 
 bool ECSCore::hasEntity(entt::entity entity) {
@@ -16,6 +18,7 @@ bool ECSCore::hasEntity(entt::entity entity) {
 }
 
 void ECSCore::destroyEntity(entt::entity entity) {
+    LOG_DEBUG("ECS", "Destroying entity {}", static_cast<uint32_t>(entity));
     _registry.destroy(entity);
 }
 
@@ -25,12 +28,16 @@ size_t ECSCore::getEntityCount() const {
 
 void ECSCore::registerUpdateSystem(std::unique_ptr<IUpdateSystem> system) {
     if (system) {
+        // TODO: Log system type name if possible without RTTI overhead?
+        LOG_INFO("ECS", "Registering Update System");
         _updateSystems.push_back(std::move(system));
     }
 }
 
 void ECSCore::registerRenderSystem(std::unique_ptr<IRenderSystem> system) {
     if (system) {
+        // TODO: Log system type name if possible without RTTI overhead?
+        LOG_INFO("ECS", "Registering Render System");
         _renderSystems.push_back(std::move(system));
     }
 }
