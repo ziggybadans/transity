@@ -1,3 +1,7 @@
+/**
+ * @file ecs_core_test.cpp
+ * @brief Unit tests for the ECSCore class using Google Test.
+ */
 #include <gtest/gtest.h>
 #include <SFML/Graphics.hpp>
 
@@ -9,18 +13,36 @@
 #include "ecs/ECSCore.hpp"
 #include "ecs/ISystem.h"
 
+// Provide ostream operators for entt types to allow Google Test to print them.
 namespace entt {
+    /**
+     * @brief Overload for printing entt::entity to an output stream.
+     * Used by Google Test for informative output on assertion failures.
+     * @param os The output stream.
+     * @param entity The entity to print.
+     * @return The output stream.
+     */
     inline std::ostream& operator<<(std::ostream& os, const entt::entity entity) {
         // Print the underlying integer representation
         return os << static_cast<std::underlying_type_t<entt::entity>>(entity);
     }
     
-    // Printer for entt::null_t
+    /**
+     * @brief Overload for printing entt::null_t to an output stream.
+     * @param os The output stream.
+     * @param The entt::null_t value.
+     * @return The output stream.
+     */
     inline std::ostream& operator<<(std::ostream& os, const entt::null_t) {
         return os << "entt::null";
     }
 }
 
+/**
+ * @class MockUpdateSystem
+ * @brief A mock implementation of IUpdateSystem for testing purposes.
+ * Records whether its update method was called and the last delta time received.
+ */
 class MockUpdateSystem : public transity::ecs::IUpdateSystem {
 public:
     bool updated = false;
@@ -32,6 +54,11 @@ public:
     }
 };
 
+/**
+ * @class MockOrderedUpdateSystem
+ * @brief A mock implementation of IUpdateSystem designed to test execution order.
+ * Appends its identifier to a shared vector when its update method is called.
+ */
 class MockOrderedUpdateSystem : public transity::ecs::IUpdateSystem {
 public:
     std::vector<std::string>& executionOrderRef;
@@ -45,6 +72,11 @@ public:
     }
 };
 
+/**
+ * @class MockRenderSystem
+ * @brief A mock implementation of IRenderSystem for testing purposes.
+ * Records whether its render method was called and the last render target received.
+ */
 class MockRenderSystem : public transity::ecs::IRenderSystem {
 public:
     bool rendered = false;
@@ -56,6 +88,7 @@ public:
     }
 };
 
+// Test fixture for ECSCore tests.
 TEST(ECSCoreTest, RegistryCreated) {
     ASSERT_NO_THROW({
         transity::ecs::ECSCore ecsCore;
@@ -63,6 +96,7 @@ TEST(ECSCoreTest, RegistryCreated) {
     });
 }
 
+// Test basic entity creation and uniqueness.
 TEST(ECSCoreTest, EntityCreation) {
     transity::ecs::ECSCore ecsCore;
     ecsCore.initialize();
@@ -78,6 +112,7 @@ TEST(ECSCoreTest, EntityCreation) {
     ASSERT_TRUE(ecsCore.hasEntity(entity2));
 }
 
+// Test entity destruction and validation check after destruction.
 TEST(ECSCoreTest, EntityDestruction) {
     transity::ecs::ECSCore ecsCore;
     ecsCore.initialize();
@@ -91,6 +126,7 @@ TEST(ECSCoreTest, EntityDestruction) {
     ASSERT_FALSE(ecsCore.hasEntity(entity));
 }
 
+// Test that destroying an entity also removes its components.
 TEST(ECSCoreTest, EntityDestructionRemovesComponents) {
     transity::ecs::ECSCore ecsCore;
     ecsCore.initialize();
@@ -111,6 +147,7 @@ TEST(ECSCoreTest, EntityDestructionRemovesComponents) {
     ASSERT_FALSE(ecsCore.hasComponent<TestComponent>(entity));
 }
 
+// Test adding a component to an entity.
 TEST(ECSCoreTest, ComponentAddition) {
     transity::ecs::ECSCore ecsCore;
     ecsCore.initialize();
@@ -124,6 +161,7 @@ TEST(ECSCoreTest, ComponentAddition) {
     ASSERT_TRUE(ecsCore.hasComponent<PositionComponent>(entity));
 }
 
+// Test that adding a component replaces an existing component of the same type.
 TEST(ECSCoreTest, ComponentAdditionReplace) {
     transity::ecs::ECSCore ecsCore;
     ecsCore.initialize();
@@ -144,6 +182,7 @@ TEST(ECSCoreTest, ComponentAdditionReplace) {
     ASSERT_EQ(ecsCore.getComponent<PositionComponent>(entity).y, 4.0f);
 }
 
+// Test checking for the existence of a component.
 TEST(ECSCoreTest, ComponentCheckExists) {
     transity::ecs::ECSCore ecsCore;
     ecsCore.initialize();
@@ -157,6 +196,7 @@ TEST(ECSCoreTest, ComponentCheckExists) {
     ASSERT_TRUE(ecsCore.hasComponent<PositionComponent>(entity));
 }
 
+// Test checking for a component that does not exist.
 TEST(ECSCoreTest, ComponentCheckNotExists) {
     transity::ecs::ECSCore ecsCore;
     ecsCore.initialize();
@@ -169,6 +209,7 @@ TEST(ECSCoreTest, ComponentCheckNotExists) {
     ASSERT_FALSE(ecsCore.hasComponent<PositionComponent>(entity));
 }
 
+// Test retrieving an existing component (mutable and const references).
 TEST(ECSCoreTest, ComponentRetrievalExists) {
     transity::ecs::ECSCore ecsCore;
     ecsCore.initialize();
@@ -193,6 +234,7 @@ TEST(ECSCoreTest, ComponentRetrievalExists) {
     ASSERT_EQ(constPos.y, 2.0f);
 }
 
+// Test that attempting to retrieve a non-existent component throws an exception.
 TEST(ECSCoreTest, ComponentRetrievalNotExists) {
     transity::ecs::ECSCore ecsCore;
     ecsCore.initialize();
@@ -208,6 +250,7 @@ TEST(ECSCoreTest, ComponentRetrievalNotExists) {
     ASSERT_THROW(constEcsCore.getComponent<PositionComponent>(entity), std::exception);
 }
 
+// Test removing a component from an entity.
 TEST(ECSCoreTest, ComponentRemoval) {
     transity::ecs::ECSCore ecsCore;
     ecsCore.initialize();
@@ -224,6 +267,7 @@ TEST(ECSCoreTest, ComponentRemoval) {
     ASSERT_NO_THROW(ecsCore.removeComponent<PositionComponent>(entity));
 }
 
+// Test creating and iterating over a view with a single component type.
 TEST(ECSCoreTest, ViewSingleComponent) {
     transity::ecs::ECSCore ecsCore;
     ecsCore.initialize();
@@ -260,6 +304,7 @@ TEST(ECSCoreTest, ViewSingleComponent) {
     ASSERT_TRUE(foundEntity3);
 }
 
+// Test creating and iterating over a view with multiple component types.
 TEST(ECSCoreTest, ViewMultiComponent) {
     transity::ecs::ECSCore ecsCore;
     ecsCore.initialize();
@@ -293,6 +338,7 @@ TEST(ECSCoreTest, ViewMultiComponent) {
     ASSERT_TRUE(foundEntity3);
 }
 
+// Test creating and checking an empty view.
 TEST(ECSCoreTest, ViewEmpty) {
     transity::ecs::ECSCore ecsCore;
     ecsCore.initialize();
@@ -314,6 +360,7 @@ TEST(ECSCoreTest, ViewEmpty) {
     ASSERT_TRUE(renderableView.empty());
 }
 
+// Test registration of update and render systems.
 TEST(ECSCoreTest, SystemRegistration) {
     transity::ecs::ECSCore ecsCore;
     ecsCore.initialize();
@@ -330,6 +377,7 @@ TEST(ECSCoreTest, SystemRegistration) {
     SUCCEED();
 }
 
+// Test that registered update systems are executed correctly.
 TEST(ECSCoreTest, UpdateSystemsExecution) {
     transity::ecs::ECSCore ecsCore;
     ecsCore.initialize();
@@ -349,6 +397,7 @@ TEST(ECSCoreTest, UpdateSystemsExecution) {
     ASSERT_FLOAT_EQ(mockUpdatePtr->lastDeltaTime, testDeltaTime);
 }
 
+// Test that registered render systems are executed correctly.
 TEST(ECSCoreTest, RenderSystemsExecution) {
     transity::ecs::ECSCore ecsCore;
     ecsCore.initialize();
@@ -368,6 +417,7 @@ TEST(ECSCoreTest, RenderSystemsExecution) {
     ASSERT_EQ(mockRenderPtr->lastRenderTarget, &dummyTarget);
 }
 
+// Test that shutdown clears the registry and systems.
 TEST(ECSCoreTest, ShutdownRegistryClear) {
     transity::ecs::ECSCore ecsCore;
     ecsCore.initialize();
@@ -392,6 +442,7 @@ TEST(ECSCoreTest, ShutdownRegistryClear) {
     ASSERT_NE(newEntity, entt::null);
 }
 
+// Test that update systems are executed in the order they were registered.
 TEST(ECSCoreTest, UpdateSystemsOrder) {
     transity::ecs::ECSCore ecsCore;
     ecsCore.initialize();
@@ -411,6 +462,7 @@ TEST(ECSCoreTest, UpdateSystemsOrder) {
     ASSERT_EQ(executionOrder[1], "System2");
 }
 
+// Test the accuracy of the entity count after creation and destruction.
 TEST(ECSCoreTest, GetEntityCount) {
     transity::ecs::ECSCore ecsCore;
     ecsCore.initialize();
@@ -436,6 +488,7 @@ TEST(ECSCoreTest, GetEntityCount) {
     ASSERT_EQ(ecsCore.getEntityCount(), 0);
 }
 
+// Test that hasEntity returns false for entt::null.
 TEST(ECSCoreTest, HasEntityNull) {
     transity::ecs::ECSCore ecsCore;
     ecsCore.initialize();
