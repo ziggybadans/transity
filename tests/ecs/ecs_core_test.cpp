@@ -3,6 +3,8 @@
 
 #include <ostream>
 #include <memory>
+#include <vector>
+#include <string>
 
 #include "ecs/ECSCore.hpp"
 #include "ecs/ISystem.h"
@@ -27,6 +29,19 @@ public:
     void update(entt::registry& registry, float deltaTime) override {
         updated = true;
         lastDeltaTime = deltaTime;
+    }
+};
+
+class MockOrderedUpdateSystem : public transity::ecs::IUpdateSystem {
+public:
+    std::vector<std::string>& executionOrderRef;
+    std::string id;
+
+    MockOrderedUpdateSystem(std::vector<std::string>& orderList, const std::string identifier)
+        : executionOrderRef(orderList), id(identifier) {}
+    
+    void update(entt::registry& registry, float deltaTime) override {
+        executionOrderRef.push_back(id);
     }
 };
 
@@ -375,4 +390,55 @@ TEST(ECSCoreTest, ShutdownRegistryClear) {
     ecsCore.initialize();
     entt::entity newEntity = ecsCore.createEntity();
     ASSERT_NE(newEntity, entt::null);
+}
+
+TEST(ECSCoreTest, UpdateSystemsOrder) {
+    transity::ecs::ECSCore ecsCore;
+    ecsCore.initialize();
+
+    std::vector<std::string> executionOrder;
+
+    auto system1 = std::make_unique<MockOrderedUpdateSystem>(executionOrder, "System1");
+    auto system2 = std::make_unique<MockOrderedUpdateSystem>(executionOrder, "System2");
+
+    ecsCore.registerUpdateSystem(std::move(system1));
+    ecsCore.registerUpdateSystem(std::move(system2));
+
+    ecsCore.updateSystems(0.1f);
+
+    ASSERT_EQ(executionOrder.size(), 2);
+    ASSERT_EQ(executionOrder[0], "System1");
+    ASSERT_EQ(executionOrder[1], "System2");
+}
+
+TEST(ECSCoreTest, GetEntityCount) {
+    transity::ecs::ECSCore ecsCore;
+    ecsCore.initialize();
+
+    ASSERT_EQ(ecsCore.getEntityCount(), 0);
+
+    entt::entity entity1 = ecsCore.createEntity();
+    ASSERT_EQ(ecsCore.getEntityCount(), 1);
+
+    entt::entity entity2 = ecsCore.createEntity();
+    ASSERT_EQ(ecsCore.getEntityCount(), 2);
+
+    entt::entity entity3 = ecsCore.createEntity();
+    ASSERT_EQ(ecsCore.getEntityCount(), 3);
+
+    ecsCore.destroyEntity(entity2);
+    ASSERT_EQ(ecsCore.getEntityCount(), 2);
+
+    ecsCore.destroyEntity(entity1);
+    ASSERT_EQ(ecsCore.getEntityCount(), 1);
+
+    ecsCore.destroyEntity(entity3);
+    ASSERT_EQ(ecsCore.getEntityCount(), 0);
+}
+
+TEST(ECSCoreTest, HasEntityNull) {
+    transity::ecs::ECSCore ecsCore;
+    ecsCore.initialize();
+
+    ASSERT_FALSE(ecsCore.hasEntity(entt::null));
 }
