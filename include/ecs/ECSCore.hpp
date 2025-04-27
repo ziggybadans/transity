@@ -26,12 +26,23 @@ public:
 
     template <typename T>
     T& getComponent(entt::entity entity) {
+        if (!hasComponent<T>(entity)) {
+            throw std::runtime_error("Entity does not have the specified component.");
+        }
         return _registry.get<T>(entity);
     }
 
     template <typename T>
     const T& getComponent(entt::entity entity) const {
+        if (!hasComponent<T>(entity)) {
+            throw std::runtime_error("Entity does not have the specified component.");
+        }
         return _registry.get<T>(entity);
+    }
+
+    template<typename T>
+    void removeComponent(entt::entity entity) {
+        _registry.remove<T>(entity);
     }
 private:
     entt::registry _registry;

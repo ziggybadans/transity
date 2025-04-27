@@ -126,3 +126,58 @@ TEST(ECSCoreTest, ComponentCheckNotExists) {
 
     ASSERT_FALSE(ecsCore.hasComponent<PositionComponent>(entity));
 }
+
+TEST(ECSCoreTest, ComponentRetrievalExists) {
+    transity::ecs::ECSCore ecsCore;
+    ecsCore.initialize();
+    struct PositionComponent { float x = 0.0f; float y = 0.0f; };
+
+    entt::entity entity = ecsCore.createEntity();
+    ASSERT_NE(entity, entt::null);
+    ASSERT_TRUE(ecsCore.hasEntity(entity));
+    ecsCore.addComponent<PositionComponent>(entity, 1.0f, 2.0f);
+    ASSERT_TRUE(ecsCore.hasComponent<PositionComponent>(entity));
+
+    PositionComponent& pos = ecsCore.getComponent<PositionComponent>(entity);
+    ASSERT_EQ(pos.x, 1.0f);
+    ASSERT_EQ(pos.y, 2.0f);
+
+    pos.x = 50.0f;
+    ASSERT_FLOAT_EQ(ecsCore.getComponent<PositionComponent>(entity).x, 50.0f);
+
+    const transity::ecs::ECSCore& constEcsCore = ecsCore;
+    const PositionComponent& constPos = constEcsCore.getComponent<PositionComponent>(entity);
+    ASSERT_EQ(constPos.x, 50.0f);
+    ASSERT_EQ(constPos.y, 2.0f);
+}
+
+TEST(ECSCoreTest, ComponentRetrievalNotExists) {
+    transity::ecs::ECSCore ecsCore;
+    ecsCore.initialize();
+    struct PositionComponent { float x = 0.0f; float y = 0.0f; };
+
+    entt::entity entity = ecsCore.createEntity();
+    ASSERT_NE(entity, entt::null);
+    ASSERT_TRUE(ecsCore.hasEntity(entity));
+
+    ASSERT_THROW(ecsCore.getComponent<PositionComponent>(entity), std::exception);
+
+    const transity::ecs::ECSCore& constEcsCore = ecsCore;
+    ASSERT_THROW(constEcsCore.getComponent<PositionComponent>(entity), std::exception);
+}
+
+TEST(ECSCoreTest, ComponentRemoval) {
+    transity::ecs::ECSCore ecsCore;
+    ecsCore.initialize();
+    struct PositionComponent { float x = 0.0f; float y = 0.0f; };
+    entt::entity entity = ecsCore.createEntity();
+    ASSERT_NE(entity, entt::null);
+    ASSERT_TRUE(ecsCore.hasEntity(entity));
+
+    ecsCore.addComponent<PositionComponent>(entity, 1.0f, 2.0f);
+    ASSERT_TRUE(ecsCore.hasComponent<PositionComponent>(entity));
+
+    ecsCore.removeComponent<PositionComponent>(entity);
+    ASSERT_FALSE(ecsCore.hasComponent<PositionComponent>(entity));
+    ASSERT_NO_THROW(ecsCore.removeComponent<PositionComponent>(entity));
+}
