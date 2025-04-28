@@ -18,7 +18,12 @@ set(BUILD_GMOCK ON CACHE BOOL "" FORCE)
 add_subdirectory(lib/googletest)
 
 ## EnTT
-add_subdirectory(lib/entt)
+FetchContent_Declare(
+  entt
+  GIT_REPOSITORY https://github.com/skypjack/entt.git
+  GIT_TAG v3.11.1
+)
+FetchContent_MakeAvailable(entt)
 
 ## ImGui
 set(IMGUI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/imgui)
@@ -36,6 +41,9 @@ find_package(SFML 2.6.1 REQUIRED COMPONENTS system window graphics network audio
 
 ## ImGui-SFML
 add_subdirectory(lib/imgui-SFML)
+
+## TOML++
+add_subdirectory(lib/tomlplusplus)
 
 # Subdirectories
 add_subdirectory(src)

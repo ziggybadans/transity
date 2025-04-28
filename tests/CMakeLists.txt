@@ -1,17 +1,25 @@
 # Include the GoogleTest module provided by CMake for CTest integration
-#include(GoogleTest)
+include(GoogleTest)
 
-#function(add_transity_test TEST_NAME TEST_SOURCE)
-#    add_executable(${TEST_NAME} ${TEST_SOURCE})
-#    target_link_libraries(${TEST_NAME} PRIVATE gtest gtest_main gmock LoggingLib)
-#    target_include_directories(${TEST_NAME} PRIVATE
-#        ${CMAKE_SOURCE_DIR}/lib/googletest/googletest/include
-#        ${CMAKE_SOURCE_DIR}/lib/googletest/googlemock/include
-#        ${CMAKE_SOURCE_DIR}/include
-#    )
-#    gtest_add_tests(TARGET ${TEST_NAME})
-#endfunction()
+function(add_transity_test TEST_NAME TEST_SOURCE TEST_LABEL)
+    add_executable(${TEST_NAME} ${TEST_SOURCE})
+    target_link_libraries(${TEST_NAME} PRIVATE gtest gtest_main gmock LoggingLib ConfigLib ECSLib sfml-graphics sfml-window sfml-system)
+    target_include_directories(${TEST_NAME} PRIVATE
+        ${CMAKE_SOURCE_DIR}/lib/googletest/googletest/include
+        ${CMAKE_SOURCE_DIR}/lib/googletest/googlemock/include
+        ${CMAKE_SOURCE_DIR}/include
+        ${CMAKE_SOURCE_DIR}/lib/entt/src
+    )
+    gtest_add_tests(TARGET ${TEST_NAME} TEST_LIST current_tests)
+    foreach(test_in_target ${current_tests})
+        set_tests_properties(${test_in_target} PROPERTIES LABELS "${TEST_LABEL}")
+    endforeach()
+endfunction()
 
-#add_transity_test(ConsoleLogger_test logging/ConsoleLogger_test.cpp)
-#add_transity_test(FileLogger_test logging/FileLogger_test.cpp)
-#add_transity_test(LoggingSystem_test logging/LoggingSystem_test.cpp)
+add_transity_test(LoggingSystemInitialization_test logging/logging_system_initialize.cpp "Logging")
+add_transity_test(LoggingSystemLog_test logging/logging_system_log.cpp "Logging")
+add_transity_test(LoggingSystemShutdown_test logging/logging_system_shutdown.cpp "Logging")
+
+add_transity_test(ConfigSystem_test config/config_system_test.cpp "Config")
+
+add_transity_test(ECSCore_test ecs/ecs_core_test.cpp "ECS")

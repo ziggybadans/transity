@@ -141,11 +141,12 @@ Closes #789
 - **Naming Conventions**
   - Classes: PascalCase (e.g., `TransportManager`)
   - Methods/Functions: camelCase (e.g., `calculateRoute()`)
-  - Variables: camelCase (e.g., `busCapacity`)
+  - Variables: camelCase (e.g., `busCapacity`) with '_' if private
   - Constants: UPPER_SNAKE_CASE (e.g., `MAX_PASSENGER_COUNT`)
   - Namespaces: lowercase (e.g., `transity::simulation`)
-  - Files: snake_case.hpp/cpp (e.g., `transport_manager.hpp`)
+  - Files: PascalCase, .h for header files with no implementation, .hpp for mixed header/implementation, .cpp for implementation
   - Template parameters: PascalCase with 'T' prefix (e.g., `template <typename TValue>`)
+  - Interfaces: PascalCase with 'I' prefix (e.g., `IEntity`)
 
 - **Code Organization**
   - One class per file where appropriate
