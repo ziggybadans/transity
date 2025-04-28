@@ -1,0 +1,10 @@
+[window]
+title = "Transity"
+width = 1280
+height = 720
+fullscreen = false
+vsync = true
+framerate_limit = 60
+
+[logging]
+level = "info"

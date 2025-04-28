@@ -6,8 +6,10 @@ file(GLOB CONFIG_SOURCES "config/*.cpp")
 add_library(ConfigLib ${CONFIG_SOURCES})
 file(GLOB ECS_SOURCES "ecs/*.cpp")
 add_library(ECSLib ${ECS_SOURCES})
-
 target_link_libraries(ECSLib PUBLIC EnTT::EnTT)
+file(GLOB RENDER_SOURCES "rendering/*.cpp")
+add_library(RenderLib ${RENDER_SOURCES})
+target_link_libraries(RenderLib PUBLIC sfml-graphics sfml-window sfml-system)
 
 # Specify include directories needed by this library
 # PUBLIC: Means consumers linking to library also get these includes
@@ -26,6 +28,11 @@ target_include_directories(ECSLib PUBLIC
     # Allow code in this library to find headers in the main include dir
     ${CMAKE_SOURCE_DIR}/include
 )
+target_include_directories(RenderLib PUBLIC
+    # Allow code in this library to find headers in the main include dir
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/lib/tomlplusplus/include
+)
 
 # Define the main application executable
 # You can name it 'Transity', 'App', or whatever you prefer
@@ -33,7 +40,7 @@ add_executable(Transity main.cpp)
 
 # Link the executable against the library we just defined
 # This makes all the code in TransityLib available to the executable
-target_link_libraries(Transity PRIVATE LoggingLib ConfigLib ECSLib)
+target_link_libraries(Transity PRIVATE LoggingLib ConfigLib ECSLib RenderLib)
 
 # Link TransityLib against any dependencies it needs
 # For example, if ConsoleLogger used SFML directly (it doesn't yet),
