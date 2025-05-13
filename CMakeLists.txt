@@ -12,42 +12,47 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_CXX_EXTENSIONS False)
 
-## Google Test
-enable_testing()
-set(BUILD_GMOCK ON CACHE BOOL "" FORCE)
-add_subdirectory(lib/googletest)
-
 ## EnTT
 FetchContent_Declare(
   entt
   GIT_REPOSITORY https://github.com/skypjack/entt.git
-  GIT_TAG v3.11.1
+  GIT_TAG v3.15.0
 )
 FetchContent_MakeAvailable(entt)
 
 ## ImGui
-set(IMGUI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/imgui)
-add_library(imgui STATIC
-    lib/imgui/imgui.cpp
-    lib/imgui/imgui_draw.cpp
-    lib/imgui/imgui_tables.cpp
-    lib/imgui/imgui_widgets.cpp
+FetchContent_Declare(
+  ImGui
+  GIT_REPOSITORY https://github.com/ocornut/imgui.git
+  GIT_TAG v1.91.9b
 )
-target_include_directories(imgui PUBLIC lib/imgui)
+FetchContent_MakeAvailable(ImGui)
 
 ## SFML
-# list(APPEND CMAKE_PREFIX_PATH "lib/SFML-2.6.1") # Removed for vcpkg integration
-find_package(SFML 2.6.1 REQUIRED COMPONENTS system window graphics network audio)
+FetchContent_Declare(
+  SFML
+  GIT_REPOSITORY https://github.com/SFML/SFML.git
+  GIT_TAG 3.0.0
+  CMAKE_ARGS
+      -DBUILD_SHARED_LIBS=OFF
+      -DSFML_USE_STATIC_STD_LIBS=ON
+)
+FetchContent_MakeAvailable(SFML)
+FetchContent_GetProperties(SFML BINARY_DIR sfml_BINARY_DIR)
+list(APPEND CMAKE_PREFIX_PATH "${sfml_BINARY_DIR}")
 
 ## ImGui-SFML
-add_subdirectory(lib/imgui-SFML)
-
-## TOML++
-add_subdirectory(lib/tomlplusplus)
+FetchContent_Declare(
+  ImGui-SFML
+  GIT_REPOSITORY https://github.com/SFML/imgui-sfml.git
+  GIT_TAG v3.0
+  IMGUI_SFML_FIND_SFML_STATIC=ON
+  UPDATE_COMMAND ""
+)
+FetchContent_MakeAvailable(ImGui-SFML)
 
 # Subdirectories
 add_subdirectory(src)
-add_subdirectory(tests)
 
 # Formatting
 if(MSVC)

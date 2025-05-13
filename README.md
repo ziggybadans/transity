@@ -27,7 +27,6 @@ If further customisation is needed, there is a modding API that allows mods to b
 
 ## Development Phases
 
-1. **Foundation**: Essential systems setup (logging, configuration) and core architecture (ECS, basic rendering loop, input handling)
 2. **Mini Metro Clone**: Implement a Minimum Viable Product (MVP) replicating core Mini Metro gameplay with adjustments to fit the game's systems
 3. **Transport Mechanics**: Expand beyond simple lines to include distinct modes (road, rail initially), basic infrastructure placement (roads, tracks, stations/stops), and multi-modal pathfinding logic
 4. **Deeper Simulation**: Enhance the 'cim' (citizen) simulation with individual needs, destinations (home, work, leisure based on zones), schedules, and more complex decision-making for route choices
@@ -54,12 +53,11 @@ If further customisation is needed, there is a modding API that allows mods to b
 
 ### Requirements
 - C++17 compatible compiler
-- CMake 3.29.3
-- SFML 2.6.1
-- ImGui 1.90.6
-- ImGui-SFML 2.6.1
-- EnTT 3.13.0
-- Gtest 1.14.0
+- CMake
+- SFML
+- ImGui
+- ImGui-SFML
+- EnTT
 
 ## License
 [MIT License](LICENSE)
