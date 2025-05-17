@@ -39,4 +39,5 @@ _deps/
 *.userprefs
 
 # Libraries
-vcpkg_installed/
+docs/
+.DS_Store

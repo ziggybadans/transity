@@ -54,7 +54,7 @@ If further customisation is needed, there is a modding API that allows mods to b
 ### Requirements
 - C++17 compatible compiler
 - CMake
-- SFML
+- SFML 3.0.0
 - ImGui
 - ImGui-SFML
 - EnTT
