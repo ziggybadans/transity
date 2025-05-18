@@ -19,6 +19,8 @@ FetchContent_MakeAvailable(SFML)
 # ---- your executable --------------------------------------------------------
 add_executable(main
     src/main.cpp
+    src/Game.cpp
+    src/Camera.cpp
 )
 target_compile_features(main PRIVATE cxx_std_17)
 
