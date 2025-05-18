@@ -19,6 +19,7 @@ enum class GameMode {
 class Game {
 public:
     Game();
+    void init();
     void run();
 
 private:
