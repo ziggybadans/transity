@@ -114,6 +114,9 @@ void Logger::enableFileLogging(bool enable) {
     }
 }
 
+static const int SYSTEM_NAME_WIDTH = 13;
+static const int LOG_LEVEL_WIDTH = 7;
+
 void Logger::logMessage(LogLevel level, const char* system, unsigned int messageSpecificDelayMs, const char* format, ...) {
     if (!m_isLoggingEnabled || level < m_currentLogLevel) {
         return;
@@ -153,6 +156,23 @@ void Logger::logMessage(LogLevel level, const char* system, unsigned int message
     timestamp_ss << std::put_time(&buf, "%Y-%m-%d %H:%M:%S");
     std::string timestamp_str = timestamp_ss.str();
 
+    std::string system_name_for_padding(system);
+    if (system_name_for_padding.length() > SYSTEM_NAME_WIDTH) {
+        system_name_for_padding.resize(SYSTEM_NAME_WIDTH);
+    }
+    std::string log_level_for_padding(logLevelToString(level));
+    if (log_level_for_padding.length() > LOG_LEVEL_WIDTH) {
+        log_level_for_padding.resize(LOG_LEVEL_WIDTH);
+    }
+
+    std::ostringstream formatted_log_prefix_ss;
+    formatted_log_prefix_ss << timestamp_str << " ["
+                            << std::left << std::setw(SYSTEM_NAME_WIDTH) << system_name_for_padding
+                            << "] ["
+                            << std::left << std::setw(LOG_LEVEL_WIDTH) << log_level_for_padding
+                            << "] ";
+    std::string formatted_log_prefix = formatted_log_prefix_ss.str();
+
     std::ostringstream message_ss;
     va_list args;
     va_start(args, format);
@@ -170,10 +190,10 @@ void Logger::logMessage(LogLevel level, const char* system, unsigned int message
     }
     va_end(args);
 
-    std::cout << timestamp_str << " [" << system << "] [" << logLevelToString(level) << "] " << formatted_message_str << std::endl;
+    std::cout << formatted_log_prefix << formatted_message_str << std::endl;
 
     if (m_isFileLoggingEnabled && m_logFileStream.is_open()) {
-        m_logFileStream << timestamp_str << " [" << system << "] [" << logLevelToString(level) << "] " << formatted_message_str << std::endl;
+        m_logFileStream << formatted_log_prefix << formatted_message_str << std::endl;
     }
 
     m_lastLogTime = std::chrono::steady_clock::now();
