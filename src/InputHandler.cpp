@@ -26,8 +26,6 @@ std::optional<sf::Vector2f> InputHandler::handleEvent(const sf::Event& event, co
         if (event.mouseButton.button == sf::Mouse::Right) {
             sf::Vector2i mousePixelPos = sf::Mouse::getPosition(window);
             sf::Vector2f worldPos = window.mapPixelToCoords(mousePixelPos, view);
-            std::cout << "Right mouse button clicked at world position: (" 
-                      << worldPos.x << ", " << worldPos.y << ")" << std::endl;
             return worldPos;
         }
     }

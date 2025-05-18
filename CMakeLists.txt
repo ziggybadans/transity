@@ -21,7 +21,7 @@ include(FetchContent)
 FetchContent_Declare(
     EnTT
     GIT_REPOSITORY https://github.com/skypjack/entt.git
-    GIT_TAG        v3.13.0  # Or the latest stable version
+    GIT_TAG        v3.12.0  # Or the latest stable version
     GIT_SHALLOW    ON
     EXCLUDE_FROM_ALL
     SYSTEM

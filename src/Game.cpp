@@ -34,8 +34,9 @@ void Game::processEvents() {
         }
 
         std::optional<sf::Vector2f> stationPlacementPos = camera.handleEvent(event, window);
+        int nextStationID = registry.alive() ? registry.size() : 0;
         if (stationPlacementPos) {
-            m_entityFactory.createStation(stationPlacementPos.value(), "New Station");
+            m_entityFactory.createStation(stationPlacementPos.value(), "New Station" + std::to_string(nextStationID));
         }
     }
 }
