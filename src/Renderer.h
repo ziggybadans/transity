@@ -1,11 +1,9 @@
 #pragma once
 
 #include <SFML/Graphics.hpp>
+#include <entt/entity/fwd.hpp>
 
 // Forward declarations
-namespace entt {
-    class registry;
-}
 class Camera;
 
 class Renderer {

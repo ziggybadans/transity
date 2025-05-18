@@ -8,6 +8,7 @@
 #include <entt/entt.hpp>
 #include "Renderer.h"        // Include the new Renderer header
 #include <memory>            // For std::unique_ptr
+#include "EntityFactory.h"   // For EntityFactory
 
 class Game {
 public:
@@ -26,5 +27,6 @@ private:
     // sf::Color oceanColor;   // Moved to Renderer
 
     entt::registry registry;
+    EntityFactory m_entityFactory; // EntityFactory instance
     std::unique_ptr<Renderer> m_renderer; // Renderer instance
 };

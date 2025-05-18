@@ -35,6 +35,7 @@ add_executable(main
     src/Camera.cpp
     src/InputHandler.cpp
     src/Renderer.cpp
+src/EntityFactory.cpp
 )
 target_compile_features(main PRIVATE cxx_std_17)
 
