@@ -3,6 +3,7 @@
 #include "imgui.h"
 #include "imgui-SFML.h"
 #include "Logger.h"
+#include <cstdlib> // For exit()
 #include <memory>
 #include <string>
 #include <SFML/Graphics.hpp>
@@ -20,8 +21,23 @@ Game::Game()
 
 void Game::init() {
     LOG_INFO("Game", "Game initialization started.");
+    try {
         m_renderer = std::make_unique<Renderer>(window);
-    m_renderer->init();
+        if (!m_renderer) {
+            LOG_FATAL("Game", "Failed to create Renderer instance (m_renderer is null).");
+            exit(EXIT_FAILURE);
+        }
+        m_renderer->init();
+    } catch (const std::bad_alloc& e) {
+        LOG_FATAL("Game", "Failed to allocate memory for Renderer: %s", e.what());
+        exit(EXIT_FAILURE);
+    } catch (const std::exception& e) {
+        LOG_FATAL("Game", "An unexpected exception occurred during Renderer creation: %s", e.what());
+        exit(EXIT_FAILURE);
+    } catch (...) {
+        LOG_FATAL("Game", "An unknown exception occurred during Renderer creation.");
+        exit(EXIT_FAILURE);
+    }
 
     sf::Vector2f landCenter = m_renderer->getLandCenter();
     sf::Vector2f landSize = m_renderer->getLandSize();
@@ -30,7 +46,7 @@ void Game::init() {
     ImGui::CreateContext();
     if (!ImGui::SFML::Init(window)) {
         LOG_FATAL("Game", "Failed to initialize ImGui-SFML");
-        throw std::runtime_error("Failed to initialize ImGui-SFML");
+        exit(EXIT_FAILURE);
     }
     ImGui::StyleColorsDark();
     LOG_INFO("Game", "Game initialization completed.");

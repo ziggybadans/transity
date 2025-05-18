@@ -4,6 +4,8 @@
 #include <cstdarg>
 #include <utility> // For std::forward
 #include <array>   // For std::array
+#include <fstream> // For std::ofstream
+#include <chrono>  // For std::chrono::steady_clock
 
 namespace Logging {
 
@@ -17,23 +19,43 @@ enum class LogLevel {
 };
 
 constexpr int LOG_LEVEL_COUNT = static_cast<int>(LogLevel::FATAL) + 1;
-extern std::array<unsigned int, LOG_LEVEL_COUNT> g_logLevelDelays;
 
-void logMessage(LogLevel level, const char* system, unsigned int messageSpecificDelayMs, const char* format, ...);
+class Logger {
+public:
+    static Logger& getInstance();
 
-extern bool g_isLoggingEnabled;
-extern LogLevel g_currentLogLevel;
-extern unsigned int g_logDelayMs;
+    ~Logger();
 
-void setLoggingEnabled(bool enabled);
-void setMinLogLevel(LogLevel level);
-bool isLoggingEnabled();
-LogLevel getMinLogLevel();
-void setLogDelay(unsigned int delayMs);
-unsigned int getLogDelay();
-const char* logLevelToString(LogLevel level);
-void setLogLevelDelay(LogLevel level, unsigned int delayMs);
-unsigned int getLogLevelDelay(LogLevel level);
+    void setLoggingEnabled(bool enabled);
+    void setMinLogLevel(LogLevel level);
+    bool isLoggingEnabled() const;
+    LogLevel getMinLogLevel() const;
+    void setLogDelay(unsigned int delayMs);
+    unsigned int getLogDelay() const;
+    const char* logLevelToString(LogLevel level) const;
+    void setLogLevelDelay(LogLevel level, unsigned int delayMs);
+    unsigned int getLogLevelDelay(LogLevel level) const;
+
+    void logMessage(LogLevel level, const char* system, unsigned int messageSpecificDelayMs, const char* format, ...);
+
+    void enableFileLogging(bool enable);
+
+private:
+    Logger();
+    Logger(const Logger&) = delete;
+    Logger& operator=(const Logger&) = delete;
+
+    bool m_isLoggingEnabled = true;
+    LogLevel m_currentLogLevel = LogLevel::TRACE;
+    unsigned int m_logDelayMs = 0;
+    std::chrono::steady_clock::time_point m_lastLogTime;
+    std::array<unsigned int, LOG_LEVEL_COUNT> m_logLevelDelays{};
+
+    bool m_isFileLoggingEnabled = false;
+    std::ofstream m_logFileStream;
+    std::string m_logDirectory = "logs";
+    std::string m_currentLogFileName;
+};
 
 } // namespace Logging
 
@@ -41,62 +63,62 @@ namespace LoggerMacrosImpl {
 
 template<typename... Args>
 inline void log_trace_proxy(const char* system, const char* format, Args&&... args) {
-    Logging::logMessage(Logging::LogLevel::TRACE, system, 0, format, std::forward<Args>(args)...);
+    Logging::Logger::getInstance().logMessage(Logging::LogLevel::TRACE, system, 0, format, std::forward<Args>(args)...);
 }
 
 template<typename... Args>
 inline void log_trace_proxy(unsigned int delayMs, const char* system, const char* format, Args&&... args) {
-    Logging::logMessage(Logging::LogLevel::TRACE, system, delayMs, format, std::forward<Args>(args)...);
+    Logging::Logger::getInstance().logMessage(Logging::LogLevel::TRACE, system, delayMs, format, std::forward<Args>(args)...);
 }
 
 template<typename... Args>
 inline void log_debug_proxy(const char* system, const char* format, Args&&... args) {
-    Logging::logMessage(Logging::LogLevel::DEBUG, system, 0, format, std::forward<Args>(args)...);
+    Logging::Logger::getInstance().logMessage(Logging::LogLevel::DEBUG, system, 0, format, std::forward<Args>(args)...);
 }
 
 template<typename... Args>
 inline void log_debug_proxy(unsigned int delayMs, const char* system, const char* format, Args&&... args) {
-    Logging::logMessage(Logging::LogLevel::DEBUG, system, delayMs, format, std::forward<Args>(args)...);
+    Logging::Logger::getInstance().logMessage(Logging::LogLevel::DEBUG, system, delayMs, format, std::forward<Args>(args)...);
 }
 
 template<typename... Args>
 inline void log_info_proxy(const char* system, const char* format, Args&&... args) {
-    Logging::logMessage(Logging::LogLevel::INFO, system, 0, format, std::forward<Args>(args)...);
+    Logging::Logger::getInstance().logMessage(Logging::LogLevel::INFO, system, 0, format, std::forward<Args>(args)...);
 }
 
 template<typename... Args>
 inline void log_info_proxy(unsigned int delayMs, const char* system, const char* format, Args&&... args) {
-    Logging::logMessage(Logging::LogLevel::INFO, system, delayMs, format, std::forward<Args>(args)...);
+    Logging::Logger::getInstance().logMessage(Logging::LogLevel::INFO, system, delayMs, format, std::forward<Args>(args)...);
 }
 
 template<typename... Args>
 inline void log_warn_proxy(const char* system, const char* format, Args&&... args) {
-    Logging::logMessage(Logging::LogLevel::WARN, system, 0, format, std::forward<Args>(args)...);
+    Logging::Logger::getInstance().logMessage(Logging::LogLevel::WARN, system, 0, format, std::forward<Args>(args)...);
 }
 
 template<typename... Args>
 inline void log_warn_proxy(unsigned int delayMs, const char* system, const char* format, Args&&... args) {
-    Logging::logMessage(Logging::LogLevel::WARN, system, delayMs, format, std::forward<Args>(args)...);
+    Logging::Logger::getInstance().logMessage(Logging::LogLevel::WARN, system, delayMs, format, std::forward<Args>(args)...);
 }
 
 template<typename... Args>
 inline void log_error_proxy(const char* system, const char* format, Args&&... args) {
-    Logging::logMessage(Logging::LogLevel::ERROR, system, 0, format, std::forward<Args>(args)...);
+    Logging::Logger::getInstance().logMessage(Logging::LogLevel::ERROR, system, 0, format, std::forward<Args>(args)...);
 }
 
 template<typename... Args>
 inline void log_error_proxy(unsigned int delayMs, const char* system, const char* format, Args&&... args) {
-    Logging::logMessage(Logging::LogLevel::ERROR, system, delayMs, format, std::forward<Args>(args)...);
+    Logging::Logger::getInstance().logMessage(Logging::LogLevel::ERROR, system, delayMs, format, std::forward<Args>(args)...);
 }
 
 template<typename... Args>
 inline void log_fatal_proxy(const char* system, const char* format, Args&&... args) {
-    Logging::logMessage(Logging::LogLevel::FATAL, system, 0, format, std::forward<Args>(args)...);
+    Logging::Logger::getInstance().logMessage(Logging::LogLevel::FATAL, system, 0, format, std::forward<Args>(args)...);
 }
 
 template<typename... Args>
 inline void log_fatal_proxy(unsigned int delayMs, const char* system, const char* format, Args&&... args) {
-    Logging::logMessage(Logging::LogLevel::FATAL, system, delayMs, format, std::forward<Args>(args)...);
+    Logging::Logger::getInstance().logMessage(Logging::LogLevel::FATAL, system, delayMs, format, std::forward<Args>(args)...);
 }
 
 } // namespace LoggerMacrosImpl

@@ -8,54 +8,63 @@
 #include <vector>
 #include <cstdio> // For vsnprintf
 #include <array>
-#include <algorithm> // For std::max (though not used in current priority logic)
+#include <algorithm> // For std::max
+#include <filesystem> // For std::filesystem::create_directory
+#include <fstream> // For std::ofstream
 
 namespace Logging {
 
-bool g_isLoggingEnabled = true;
-LogLevel g_currentLogLevel = LogLevel::TRACE;
-unsigned int g_logDelayMs = 0;
-static std::chrono::steady_clock::time_point g_lastLogTime;
-std::array<unsigned int, LOG_LEVEL_COUNT> g_logLevelDelays{};
+Logger& Logger::getInstance() {
+    static Logger instance;
+    return instance;
+}
 
-void setLogLevelDelay(LogLevel level, unsigned int delayMs) {
-    if (static_cast<int>(level) < LOG_LEVEL_COUNT) {
-        g_logLevelDelays[static_cast<int>(level)] = delayMs;
+Logger::Logger() : m_lastLogTime(std::chrono::steady_clock::now()) {}
+
+Logger::~Logger() {
+    if (m_logFileStream.is_open()) {
+        m_logFileStream.close();
     }
 }
 
-unsigned int getLogLevelDelay(LogLevel level) {
+void Logger::setLogLevelDelay(LogLevel level, unsigned int delayMs) {
     if (static_cast<int>(level) < LOG_LEVEL_COUNT) {
-        return g_logLevelDelays[static_cast<int>(level)];
+        m_logLevelDelays[static_cast<int>(level)] = delayMs;
     }
-    return 0; // Should not happen with valid LogLevel
 }
 
-void setLoggingEnabled(bool enabled) {
-    g_isLoggingEnabled = enabled;
+unsigned int Logger::getLogLevelDelay(LogLevel level) const {
+    if (static_cast<int>(level) < LOG_LEVEL_COUNT) {
+        return m_logLevelDelays[static_cast<int>(level)];
+    }
+    return 0;
 }
 
-void setMinLogLevel(LogLevel level) {
-    g_currentLogLevel = level;
+void Logger::setLoggingEnabled(bool enabled) {
+    m_isLoggingEnabled = enabled;
 }
 
-bool isLoggingEnabled() {
-    return g_isLoggingEnabled;
+void Logger::setMinLogLevel(LogLevel level) {
+    m_currentLogLevel = level;
 }
 
-LogLevel getMinLogLevel() {
-    return g_currentLogLevel;
+bool Logger::isLoggingEnabled() const {
+    return m_isLoggingEnabled;
 }
 
-void setLogDelay(unsigned int delayMs) {
-    g_logDelayMs = delayMs;
+LogLevel Logger::getMinLogLevel() const {
+    return m_currentLogLevel;
 }
 
-unsigned int getLogDelay() {
-    return g_logDelayMs;
+void Logger::setLogDelay(unsigned int delayMs) {
+    m_logDelayMs = delayMs;
 }
 
-const char* logLevelToString(LogLevel level) {
+unsigned int Logger::getLogDelay() const {
+    return m_logDelayMs;
+}
+
+const char* Logger::logLevelToString(LogLevel level) const {
     switch (level) {
         case LogLevel::TRACE: return "TRACE";
         case LogLevel::DEBUG: return "DEBUG";
@@ -67,8 +76,46 @@ const char* logLevelToString(LogLevel level) {
     }
 }
 
-void logMessage(LogLevel level, const char* system, unsigned int messageSpecificDelayMs, const char* format, ...) {
-    if (!g_isLoggingEnabled || level < g_currentLogLevel) {
+void Logger::enableFileLogging(bool enable) {
+    if (enable && !m_isFileLoggingEnabled) {
+        try {
+            if (!std::filesystem::exists(m_logDirectory)) {
+                std::filesystem::create_directory(m_logDirectory);
+            }
+
+            auto now = std::chrono::system_clock::now();
+            auto in_time_t = std::chrono::system_clock::to_time_t(now);
+            std::tm buf;
+#ifdef _WIN32
+            localtime_s(&buf, &in_time_t);
+#else
+            localtime_r(&in_time_t, &buf);
+#endif
+            std::ostringstream filename_ss;
+            filename_ss << m_logDirectory << "/" << std::put_time(&buf, "%Y-%m-%d_%H-%M-%S") << ".log";
+            m_currentLogFileName = filename_ss.str();
+            m_logFileStream.open(m_currentLogFileName, std::ios::out | std::ios::app);
+            if (m_logFileStream.is_open()) {
+                m_isFileLoggingEnabled = true;
+            } else {
+                std::cerr << "Error: Could not open log file: " << m_currentLogFileName << std::endl;
+                m_isFileLoggingEnabled = false; // Ensure it's false if open failed
+            }
+        } catch (const std::filesystem::filesystem_error& e) {
+            std::cerr << "Filesystem error: " << e.what() << std::endl;
+            m_isFileLoggingEnabled = false;
+        }
+    } else if (!enable && m_isFileLoggingEnabled) {
+        if (m_logFileStream.is_open()) {
+            m_logFileStream.close();
+        }
+        m_isFileLoggingEnabled = false;
+        m_currentLogFileName.clear();
+    }
+}
+
+void Logger::logMessage(LogLevel level, const char* system, unsigned int messageSpecificDelayMs, const char* format, ...) {
+    if (!m_isLoggingEnabled || level < m_currentLogLevel) {
         return;
     }
 
@@ -80,20 +127,20 @@ void logMessage(LogLevel level, const char* system, unsigned int messageSpecific
         if (levelDelay > 0) {
             actualDelayToApply = levelDelay;
         } else {
-            actualDelayToApply = g_logDelayMs;
+            actualDelayToApply = m_logDelayMs;
         }
     }
 
     if (actualDelayToApply > 0) {
         auto currentTime = std::chrono::steady_clock::now();
-        auto timeSinceLastLog = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - g_lastLogTime);
+        auto timeSinceLastLog = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - m_lastLogTime);
         if (timeSinceLastLog.count() < actualDelayToApply) {
             return;
         }
     }
 
-    auto now = std::chrono::system_clock::now();
-    auto in_time_t = std::chrono::system_clock::to_time_t(now);
+    auto now_sys = std::chrono::system_clock::now();
+    auto in_time_t = std::chrono::system_clock::to_time_t(now_sys);
     std::tm buf;
 
 #ifdef _WIN32
@@ -104,6 +151,7 @@ void logMessage(LogLevel level, const char* system, unsigned int messageSpecific
 
     std::ostringstream timestamp_ss;
     timestamp_ss << std::put_time(&buf, "%Y-%m-%d %H:%M:%S");
+    std::string timestamp_str = timestamp_ss.str();
 
     std::ostringstream message_ss;
     va_list args;
@@ -114,15 +162,21 @@ void logMessage(LogLevel level, const char* system, unsigned int messageSpecific
     int size = std::vsnprintf(nullptr, 0, format, args_copy);
     va_end(args_copy);
 
+    std::string formatted_message_str;
     if (size >= 0) {
         std::vector<char> buffer(size + 1);
         std::vsnprintf(buffer.data(), buffer.size(), format, args);
-        message_ss << buffer.data();
+        formatted_message_str = buffer.data();
     }
     va_end(args);
 
-    std::cout << timestamp_ss.str() << " [" << system << "] [" << logLevelToString(level) << "] " << message_ss.str() << std::endl;
-    g_lastLogTime = std::chrono::steady_clock::now();
+    std::cout << timestamp_str << " [" << system << "] [" << logLevelToString(level) << "] " << formatted_message_str << std::endl;
+
+    if (m_isFileLoggingEnabled && m_logFileStream.is_open()) {
+        m_logFileStream << timestamp_str << " [" << system << "] [" << logLevelToString(level) << "] " << formatted_message_str << std::endl;
+    }
+
+    m_lastLogTime = std::chrono::steady_clock::now();
 }
 
 } // namespace Logging

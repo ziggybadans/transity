@@ -16,7 +16,20 @@ void Camera::setInitialView(const sf::RenderWindow& window, const sf::Vector2f& 
     sf::Vector2f windowSizeF(static_cast<float>(windowSizeU.x), static_cast<float>(windowSizeU.y));
     LOG_DEBUG("Camera", "Window size: (%.1f, %.1f)", windowSizeF.x, windowSizeF.y);
 
+    if (windowSizeF.y == 0.0f) {
+        LOG_ERROR("Camera", "Window height is zero, cannot calculate aspect ratio. Using default view settings.");
+        view.setSize(800, 600); // Default size
+        view.setCenter(landCenter); // Still center on land if possible
+        return;
+    }
+
     float windowAspectRatio = windowSizeF.x / windowSizeF.y;
+
+    if (landSize.y == 0.0f) {
+        LOG_WARN("Camera", "Land height is zero, cannot calculate land aspect ratio. View may not be correctly framed.");
+        // Continue with calculation, windowAspectRatio will be used, but land framing might be off.
+    }
+
     float landAspectRatio = landSize.x / landSize.y;
     LOG_DEBUG("Camera", "Window aspect ratio: %.2f, Land aspect ratio: %.2f", windowAspectRatio, landAspectRatio);
 
