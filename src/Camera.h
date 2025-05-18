@@ -1,7 +1,12 @@
 #pragma once
 
-#include <SFML/Graphics.hpp>
-#include <SFML/Window.hpp> // For sf::Event and sf::Mouse
+#include <SFML/Graphics.hpp> // For sf::View, sf::RenderWindow
+#include "InputHandler.h"    // For InputHandler
+
+// Forward declaration for sf::Event if <SFML/Window/Event.hpp> is not fully included by Graphics.hpp for this context
+namespace sf {
+    class Event;
+}
 
 class Camera {
 public:
@@ -13,7 +18,8 @@ public:
 
 private:
     sf::View view;
-    float cameraSpeed;
-    float zoomFactor;
-    float unzoomFactor;
+    InputHandler m_inputHandler;
+    // float cameraSpeed; // Moved to InputHandler
+    // float zoomFactor; // Moved to InputHandler
+    // float unzoomFactor; // Moved to InputHandler
 };

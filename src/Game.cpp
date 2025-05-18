@@ -1,21 +1,30 @@
 #include "Game.h"
-#include "Components.h"
-#include <iostream> // For std::optional in older C++ versions if needed, though SFML events should handle it.
+#include "Components.h" // Still needed for entity creation
+#include "Renderer.h"   // For std::make_unique<Renderer>
+#include <iostream>     // For std::cout (optional, can be removed if no logging)
+#include <memory>       // For std::make_unique
 
 Game::Game()
-    : window(sf::VideoMode({800, 600}), "Transity Predev"),
-      oceanColor(173, 216, 230) {
+    : window(sf::VideoMode({800, 600}), "Transity Predev")
+    // oceanColor removed
+     {
     camera.setInitialView(window); // Initialize camera view based on window
     window.setFramerateLimit(144);
 
-    // Initialize land
-    land.setSize({100, 100});
-    land.setFillColor(sf::Color::White);
-    land.setOrigin(land.getSize() / 2.0f);
-    land.setPosition({50, 50});
+    // Initialize Renderer
+    m_renderer = std::make_unique<Renderer>(window);
+    m_renderer->init(); // Call init to set up renderer-specific things like land, clear color
 
+    // land initialization moved to Renderer::init()
+
+    // Example entity creation - this part remains in Game logic
+    // If land's position is needed for entities, it should be retrieved from renderer or a game config
+    // For now, using a hardcoded position or a default from PositionComponent
     auto stationEntity = registry.create();
-    registry.emplace<PositionComponent>(stationEntity, land.getPosition());
+    // Assuming land's initial position was {50,50} and it's static, or game logic will place stations.
+    // If Renderer::m_landShape's position is needed, Game would need a way to get it.
+    // For simplicity, let's assume the station's position is independent for now.
+    registry.emplace<PositionComponent>(stationEntity, sf::Vector2f{50.f, 50.f});
     registry.emplace<NameComponent>(stationEntity, "Station");
     registry.emplace<StationTag>(stationEntity);
 
@@ -30,41 +39,24 @@ void Game::run() {
         sf::Time dt = deltaClock.restart();
         processEvents();
         update(dt);
-        render();
+        m_renderer->render(registry, camera); // Delegate rendering to the Renderer instance
     }
 }
 
 void Game::processEvents() {
     sf::Event event;
-    while (window.pollEvent(event)) { // Use traditional pollEvent
+    while (window.pollEvent(event)) {
         if (event.type == sf::Event::Closed) {
             window.close();
         }
-        // Pass event to camera for handling zoom
         camera.handleEvent(event, window);
     }
 }
 
 void Game::update(sf::Time dt) {
-    // Update camera (handles movement input)
     camera.update(dt);
-
-    // Other game logic updates can go here
+    // Other game logic updates
 }
 
-void Game::render() {
-    window.setView(camera.getView());
-    window.clear(oceanColor);
-    window.draw(land);
-
-    auto view = registry.view<PositionComponent, RenderableComponent>();
-    for (auto entity : view) {
-        auto& position = view.get<PositionComponent>(entity);
-        auto& renderable = view.get<RenderableComponent>(entity);
-
-        renderable.shape.setPosition(position.coordinates);
-        window.draw(renderable.shape);
-    }
-
-    window.display();
-}
+// The old Game::render() method is now removed.
+// Its logic has been moved to Renderer::render().
