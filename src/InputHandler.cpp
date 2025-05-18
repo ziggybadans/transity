@@ -1,11 +1,12 @@
 #include "InputHandler.h"
+#include <iostream>
 
 InputHandler::InputHandler()
     : cameraSpeed(200.0f), zoomFactor(0.9f), unzoomFactor(1.0f / zoomFactor) {
     // Constructor can be empty if all initialization is done in the initializer list
 }
 
-void InputHandler::handleEvent(const sf::Event& event, const sf::RenderWindow& window, sf::View& view) {
+std::optional<sf::Vector2f> InputHandler::handleEvent(const sf::Event& event, const sf::RenderWindow& window, sf::View& view) {
     if (event.type == sf::Event::MouseWheelScrolled) {
         if (event.mouseWheelScroll.wheel == sf::Mouse::VerticalWheel) {
             sf::Vector2i mousePixelPos = sf::Mouse::getPosition(window);
@@ -21,7 +22,17 @@ void InputHandler::handleEvent(const sf::Event& event, const sf::RenderWindow& w
             sf::Vector2f offset = worldPosBeforeZoom - worldPosAfterZoom;
             view.move(offset);
         }
+    } else if (event.type == sf::Event::MouseButtonPressed) {
+        if (event.mouseButton.button == sf::Mouse::Right) {
+            sf::Vector2i mousePixelPos = sf::Mouse::getPosition(window);
+            sf::Vector2f worldPos = window.mapPixelToCoords(mousePixelPos, view);
+            std::cout << "Right mouse button clicked at world position: (" 
+                      << worldPos.x << ", " << worldPos.y << ")" << std::endl;
+            return worldPos;
+        }
     }
+
+    return std::nullopt;
 }
 
 void InputHandler::update(sf::Time dt, sf::View& view) {

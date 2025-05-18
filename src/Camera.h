@@ -1,6 +1,7 @@
 #pragma once
 
 #include <SFML/Graphics.hpp>
+#include <optional>
 #include "InputHandler.h"
 
 namespace sf {
@@ -10,10 +11,10 @@ namespace sf {
 class Camera {
 public:
     Camera();
-    void handleEvent(const sf::Event& event, const sf::RenderWindow& window);
+    std::optional<sf::Vector2f> handleEvent(const sf::Event& event, const sf::RenderWindow& window);
     void update(sf::Time dt);
     const sf::View& getView() const;
-    void setInitialView(const sf::RenderWindow& window);
+    void setInitialView(const sf::RenderWindow& window, const sf::Vector2f& landCenter, const sf::Vector2f& landSize);
 
 private:
     sf::View view;

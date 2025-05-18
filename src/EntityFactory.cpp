@@ -15,7 +15,7 @@ entt::entity EntityFactory::createStation(const sf::Vector2f& position, const st
 
     auto& renderable = m_registry.emplace<RenderableComponent>(entity);
     
-    const float stationRadius = 10.f;
+    const float stationRadius = 2.f;
     renderable.shape.setRadius(stationRadius);
     renderable.shape.setFillColor(sf::Color::Blue);
     renderable.shape.setOrigin(stationRadius, stationRadius);

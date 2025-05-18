@@ -52,3 +52,11 @@ void Renderer::setClearColor(const sf::Color& color) {
 const sf::Color& Renderer::getClearColor() const {
     return m_clearColor;
 }
+
+sf::Vector2f Renderer::getLandCenter() const {
+    return m_landShape.getPosition();
+}
+
+sf::Vector2f Renderer::getLandSize() const {
+    return m_landShape.getSize();
+}

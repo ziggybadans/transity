@@ -17,6 +17,9 @@ public:
     void setClearColor(const sf::Color& color);
     const sf::Color& getClearColor() const;
 
+    sf::Vector2f getLandCenter() const;
+    sf::Vector2f getLandSize() const;
+
 private:
     sf::RenderWindow& m_window;
     sf::Color m_clearColor;
