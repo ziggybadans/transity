@@ -1,9 +1,9 @@
-#include "Game.h" // Include the new Game class header
+#include "Game.h"
 
 int main()
 {
-    Game game; // Create an instance of the Game class
-    game.run(); // Run the game
+    Game game;
+    game.run();
 
     return 0;
 }

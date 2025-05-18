@@ -1,7 +1,7 @@
 #pragma once
 
-#include <SFML/Graphics.hpp> // For sf::View, sf::RenderWindow, sf::Time
-#include <SFML/Window.hpp>   // For sf::Event, sf::Mouse, sf::Keyboard
+#include <SFML/Graphics.hpp>
+#include <SFML/Window.hpp>
 
 class InputHandler {
 public:

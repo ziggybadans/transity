@@ -1,14 +1,14 @@
 #pragma once
 
-#include <SFML/Graphics.hpp> // For sf::RenderWindow, sf::Time
-#include <SFML/Window.hpp>   // For sf::Event
-#include <SFML/System.hpp>   // For sf::Clock
-#include <optional>          // Keep if used elsewhere, or remove if only for old event handling
+#include <SFML/Graphics.hpp>
+#include <SFML/Window.hpp>
+#include <SFML/System.hpp>
+#include <optional>
 #include "Camera.h"
 #include <entt/entt.hpp>
-#include "Renderer.h"        // Include the new Renderer header
-#include <memory>            // For std::unique_ptr
-#include "EntityFactory.h"   // For EntityFactory
+#include "Renderer.h"
+#include <memory>
+#include "EntityFactory.h"
 
 class Game {
 public:
@@ -18,15 +18,12 @@ public:
 private:
     void processEvents();
     void update(sf::Time dt);
-    // render() is now handled by m_renderer
 
-    sf::RenderWindow window; // Game owns the window
+    sf::RenderWindow window;
     Camera camera;
     sf::Clock deltaClock;
-    // sf::RectangleShape land; // Moved to Renderer
-    // sf::Color oceanColor;   // Moved to Renderer
 
     entt::registry registry;
-    EntityFactory m_entityFactory; // EntityFactory instance
-    std::unique_ptr<Renderer> m_renderer; // Renderer instance
+    EntityFactory m_entityFactory;
+    std::unique_ptr<Renderer> m_renderer;
 };

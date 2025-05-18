@@ -1,11 +1,7 @@
 #include "Camera.h"
-#include <SFML/Window/Event.hpp> // For sf::Event, used in handleEvent
-// #include <SFML/Window/Mouse.hpp> // Moved to InputHandler
-// #include <SFML/Window/Keyboard.hpp> // Moved to InputHandler
+#include <SFML/Window/Event.hpp>
 
 Camera::Camera() {
-    // cameraSpeed, zoomFactor, unzoomFactor initializations removed as they are now in InputHandler
-    // Initialize view with default values, can be adjusted by setInitialView
     view.setSize({800, 600});
     view.setCenter({400, 300});
 }

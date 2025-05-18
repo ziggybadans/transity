@@ -1,12 +1,12 @@
 #include "Renderer.h"
-#include "Camera.h"       // For Camera class
-#include "Components.h"   // For PositionComponent, RenderableComponent
-#include <entt/entt.hpp> // For entt::registry
+#include "Camera.h"
+#include "Components.h"
+#include <entt/entt.hpp>
 #include <SFML/Graphics.hpp>
 #include <iostream>
 
 Renderer::Renderer(sf::RenderWindow& window)
-    : m_window(window), m_clearColor(173, 216, 230) { // Initialize with former oceanColor
+    : m_window(window), m_clearColor(173, 216, 230) {
     std::cout << "Renderer created." << std::endl;
 }
 
@@ -15,24 +15,20 @@ Renderer::~Renderer() {
 }
 
 void Renderer::init() {
-    // Initialize land shape (moved from Game::Game())
     m_landShape.setSize({100, 100});
     m_landShape.setFillColor(sf::Color::White);
     m_landShape.setOrigin(m_landShape.getSize() / 2.0f);
-    m_landShape.setPosition({50, 50}); // Initial position, game logic might update this if it's dynamic
+    m_landShape.setPosition({50, 50});
 
-    // m_clearColor is already set in the constructor, but could be adjusted here if needed.
-    // For example, if it were configurable or loaded from a file.
     std::cout << "Renderer initialized. Land shape created." << std::endl;
 }
 
 void Renderer::render(entt::registry& registry, Camera& camera) {
-    m_window.setView(camera.getView()); // Set the view from the camera
-    m_window.clear(m_clearColor);       // Clear with the background color
+    m_window.setView(camera.getView());
+    m_window.clear(m_clearColor);
 
-    m_window.draw(m_landShape);         // Draw the land
+    m_window.draw(m_landShape);
 
-    // Draw entities with PositionComponent and RenderableComponent
     auto view = registry.view<PositionComponent, RenderableComponent>();
     for (auto entity : view) {
         auto& position = view.get<PositionComponent>(entity);
@@ -42,16 +38,10 @@ void Renderer::render(entt::registry& registry, Camera& camera) {
         m_window.draw(renderable.shape);
     }
 
-    // Potentially draw UI elements here, after resetting the view if necessary
-    // m_window.setView(m_window.getDefaultView());
-    // ... draw UI ...
-
-    m_window.display(); // Display the rendered frame
+    m_window.display();
 }
 
 void Renderer::cleanup() {
-    // Clean up any resources allocated by the renderer
-    // (e.g., shaders, textures not managed by SFML's resource classes directly)
     std::cout << "Renderer cleaned up." << std::endl;
 }
 
