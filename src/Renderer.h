@@ -1,18 +1,24 @@
 #pragma once
 
 #include <SFML/Graphics.hpp>
-#include <entt/entity/fwd.hpp>
+#include <SFML/System.hpp>
+#include <entt/entt.hpp>
 
-class Camera;
 
 class Renderer {
 public:
-    Renderer(sf::RenderWindow& window);
+    Renderer();
     ~Renderer();
 
     void init();
-    void render(entt::registry& registry, Camera& camera);
+    void render(entt::registry& registry, const sf::View& view, sf::Time dt);
+    void updateImGui(sf::Time dt);
+    void renderImGui();
+    void display();
     void cleanup();
+    bool isOpen() const;
+    sf::RenderWindow& getWindow();
+
 
     void setClearColor(const sf::Color& color);
     const sf::Color& getClearColor() const;
@@ -21,7 +27,7 @@ public:
     sf::Vector2f getLandSize() const;
 
 private:
-    sf::RenderWindow& m_window;
+    sf::RenderWindow m_windowInstance;
     sf::Color m_clearColor;
     sf::RectangleShape m_landShape;
 };

@@ -47,14 +47,18 @@ void Camera::setInitialView(const sf::RenderWindow& window, const sf::Vector2f& 
     LOG_INFO("Camera", "Initial view set. View size: (%.1f, %.1f), View center: (%.1f, %.1f)", view.getSize().x, view.getSize().y, view.getCenter().x, view.getCenter().y);
 }
 
-std::optional<sf::Vector2f> Camera::handleEvent(const sf::Event& event, const sf::RenderWindow& window) {
-    LOG_TRACE("Camera", "Handling event type %d", event.type);
-    return m_inputHandler.handleEvent(event, window, this->view);
+sf::View& Camera::getViewToModify() {
+    return view;
 }
 
-void Camera::update(sf::Time dt) {
-    LOG_TRACE("Camera", "Updating camera state with dt: %f", dt.asSeconds());
-    m_inputHandler.update(dt, this->view);
+void Camera::moveView(const sf::Vector2f& offset) {
+    view.move(offset);
+    LOG_TRACE("Camera", "View moved by (%.1f, %.1f). New center: (%.1f, %.1f)", offset.x, offset.y, view.getCenter().x, view.getCenter().y);
+}
+
+void Camera::zoomView(float factor) {
+    view.zoom(factor);
+    LOG_TRACE("Camera", "View zoomed by factor %.2f. New size: (%.1f, %.1f)", factor, view.getSize().x, view.getSize().y);
 }
 
 const sf::View& Camera::getView() const {

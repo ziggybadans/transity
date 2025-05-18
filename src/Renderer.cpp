@@ -1,59 +1,94 @@
 #include "Renderer.h"
-#include "Camera.h"
 #include "Components.h"
 #include "Logger.h"
+#include "imgui.h"
+#include "imgui-SFML.h"
 #include <entt/entt.hpp>
 #include <SFML/Graphics.hpp>
-#include <iostream>
+#include <iostream> // Keep for now, might be removed if all std::cout are gone
+#include <cstdlib> // For exit()
 
-Renderer::Renderer(sf::RenderWindow& window)
-    : m_window(window), m_clearColor(173, 216, 230) {
-    LOG_INFO("Renderer", "Renderer created.");
-    // std::cout << "Renderer created." << std::endl; // Original logging, can be removed
+Renderer::Renderer()
+    : m_windowInstance(sf::VideoMode({800, 600}), "Transity Predev")
+    , m_clearColor(173, 216, 230) {
+    LOG_INFO("Renderer", "Renderer created and window initialized.");
+    m_windowInstance.setFramerateLimit(144);
 }
 
 Renderer::~Renderer() {
     LOG_INFO("Renderer", "Renderer destroyed.");
-    // std::cout << "Renderer destroyed." << std::endl; // Original logging, can be removed
 }
 
 void Renderer::init() {
-    LOG_INFO("Renderer", "Initializing Renderer.");
+    LOG_INFO("Renderer", "Initializing Renderer and ImGui.");
     m_landShape.setSize({100, 100});
     m_landShape.setFillColor(sf::Color::White);
     m_landShape.setOrigin(m_landShape.getSize() / 2.0f);
     m_landShape.setPosition({50, 50});
     LOG_DEBUG("Renderer", "Land shape created at (%.1f, %.1f) with size (%.1f, %.1f).", m_landShape.getPosition().x, m_landShape.getPosition().y, m_landShape.getSize().x, m_landShape.getSize().y);
-    // std::cout << "Renderer initialized. Land shape created." << std::endl; // Original logging
-    LOG_INFO("Renderer", "Renderer initialized.");
+
+    ImGui::CreateContext();
+    if (!ImGui::SFML::Init(m_windowInstance)) {
+        LOG_FATAL("Renderer", "Failed to initialize ImGui-SFML");
+        exit(EXIT_FAILURE); // Or handle error more gracefully
+    }
+    ImGui::StyleColorsDark();
+    LOG_INFO("Renderer", "Renderer and ImGui initialized.");
 }
 
-void Renderer::render(entt::registry& registry, Camera& camera) {
+void Renderer::render(entt::registry& registry, const sf::View& view, sf::Time dt) {
     LOG_TRACE("Renderer", "Beginning render pass.");
-    m_window.setView(camera.getView());
-    m_window.clear(m_clearColor);
+    m_windowInstance.setView(view);
+    m_windowInstance.clear(m_clearColor);
 
-    m_window.draw(m_landShape);
+    m_windowInstance.draw(m_landShape);
     LOG_TRACE("Renderer", "Land shape drawn.");
 
-    auto view = registry.view<PositionComponent, RenderableComponent>();
+    auto view_registry = registry.view<PositionComponent, RenderableComponent>();
     int entityCount = 0;
-    for (auto entity : view) {
-        auto& position = view.get<PositionComponent>(entity);
-        auto& renderable = view.get<RenderableComponent>(entity);
+    for (auto entity : view_registry) {
+        auto& position = view_registry.get<PositionComponent>(entity);
+        auto& renderable = view_registry.get<RenderableComponent>(entity);
 
         renderable.shape.setPosition(position.coordinates);
-        m_window.draw(renderable.shape);
+        m_windowInstance.draw(renderable.shape);
         entityCount++;
     }
     LOG_TRACE("Renderer", "Rendered %d entities.", entityCount);
+
+    ImGui::Begin("Debug Window");
+    ImGui::Text("FPS: %.1f", 1.f / dt.asSeconds());
+    ImGui::Text("Camera Position: (%.1f, %.1f)", view.getCenter().x, view.getCenter().y);
+    ImGui::Text("Entity Count: %d", static_cast<int>(registry.alive()));
+    ImGui::End();
+
     LOG_TRACE("Renderer", "Render pass complete.");
+}
+
+void Renderer::updateImGui(sf::Time dt) {
+    ImGui::SFML::Update(m_windowInstance, dt);
+}
+
+void Renderer::renderImGui() {
+    ImGui::SFML::Render(m_windowInstance);
+}
+
+void Renderer::display() {
+    m_windowInstance.display();
 }
 
 void Renderer::cleanup() {
     LOG_INFO("Renderer", "Renderer cleanup initiated.");
-    // std::cout << "Renderer cleaned up." << std::endl; // Original logging
-    LOG_INFO("Renderer", "Renderer cleaned up.");
+    ImGui::SFML::Shutdown(m_windowInstance);
+    LOG_INFO("Renderer", "ImGui shutdown. Renderer cleaned up.");
+}
+
+bool Renderer::isOpen() const {
+    return m_windowInstance.isOpen();
+}
+
+sf::RenderWindow& Renderer::getWindow(){
+    return m_windowInstance;
 }
 
 void Renderer::setClearColor(const sf::Color& color) {
