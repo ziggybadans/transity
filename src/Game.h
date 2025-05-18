@@ -5,6 +5,7 @@
 #include <SFML/System.hpp>
 #include <optional>
 #include "Camera.h"
+#include <entt/entt.hpp>
 
 class Game {
 public:
@@ -21,4 +22,6 @@ private:
     sf::Clock deltaClock;
     sf::RectangleShape land;
     sf::Color oceanColor;
+
+    entt::registry registry;
 };

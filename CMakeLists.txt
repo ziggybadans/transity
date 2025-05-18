@@ -16,6 +16,18 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(SFML)
 
+# ---- pull EnTT from GitHub -------------------------------------------------
+include(FetchContent)
+FetchContent_Declare(
+    EnTT
+    GIT_REPOSITORY https://github.com/skypjack/entt.git
+    GIT_TAG        v3.13.0  # Or the latest stable version
+    GIT_SHALLOW    ON
+    EXCLUDE_FROM_ALL
+    SYSTEM
+)
+FetchContent_MakeAvailable(EnTT)
+
 # ---- your executable --------------------------------------------------------
 add_executable(main
     src/main.cpp
@@ -25,7 +37,10 @@ add_executable(main
 target_compile_features(main PRIVATE cxx_std_17)
 
 # Add include directory
-target_include_directories(main PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(main PRIVATE 
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${entt_SOURCE_DIR}/src
+)
 
 # SFML 2.x exports the old, lower-case targets
 target_link_libraries(main PRIVATE
