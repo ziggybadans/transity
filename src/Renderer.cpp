@@ -37,8 +37,6 @@ void Renderer::render(entt::registry& registry, Camera& camera) {
         renderable.shape.setPosition(position.coordinates);
         m_window.draw(renderable.shape);
     }
-
-    m_window.display();
 }
 
 void Renderer::cleanup() {

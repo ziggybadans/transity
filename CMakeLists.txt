@@ -15,6 +15,7 @@ FetchContent_Declare(
     SYSTEM
 )
 FetchContent_MakeAvailable(SFML)
+set(SFML_DIR ${SFML_BINARY_DIR})
 
 # ---- pull EnTT from GitHub -------------------------------------------------
 include(FetchContent)
@@ -28,6 +29,31 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(EnTT)
 
+# ---- pull ImGui from GitHub --------------------------------------------------
+include(FetchContent)
+FetchContent_Declare(
+    imgui
+    GIT_REPOSITORY https://github.com/ocornut/imgui.git
+    GIT_TAG        v1.91.9b # Or a specific version tag like v1.89.9
+    GIT_SHALLOW    ON
+    EXCLUDE_FROM_ALL
+    SYSTEM
+)
+FetchContent_MakeAvailable(imgui)
+set(IMGUI_DIR ${imgui_SOURCE_DIR})
+
+# ---- pull ImGui-SFML from GitHub ---------------------------------------------
+include(FetchContent)
+FetchContent_Declare(
+    ImGuiSFML
+    GIT_REPOSITORY https://github.com/eliasdaler/imgui-sfml.git
+    GIT_TAG        v2.6.1 # Or the latest compatible version
+    GIT_SHALLOW    ON
+    EXCLUDE_FROM_ALL
+    SYSTEM
+)
+FetchContent_MakeAvailable(ImGuiSFML)
+
 # ---- your executable --------------------------------------------------------
 add_executable(main
     src/main.cpp
@@ -40,9 +66,12 @@ src/EntityFactory.cpp
 target_compile_features(main PRIVATE cxx_std_17)
 
 # Add include directory
-target_include_directories(main PRIVATE 
+target_include_directories(main PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${entt_SOURCE_DIR}/src
+    ${imgui_SOURCE_DIR}          # For ImGui headers
+    ${imgui_SOURCE_DIR}/backends # For ImGui backend headers (if needed directly)
+    ${ImGuiSFML_SOURCE_DIR}      # For ImGui-SFML headers
 )
 
 # SFML 2.x exports the old, lower-case targets
@@ -50,4 +79,5 @@ target_link_libraries(main PRIVATE
     sfml-graphics
     sfml-window
     sfml-system
+    ImGui-SFML
 )

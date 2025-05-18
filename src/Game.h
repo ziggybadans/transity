@@ -10,6 +10,12 @@
 #include <memory>
 #include "EntityFactory.h"
 
+enum class GameMode {
+    StationPlacement,
+    LineCreation,
+    None
+};
+
 class Game {
 public:
     Game();
@@ -26,4 +32,6 @@ private:
     entt::registry registry;
     EntityFactory m_entityFactory;
     std::unique_ptr<Renderer> m_renderer;
+    
+    GameMode m_currentGameMode = GameMode::None;
 };
