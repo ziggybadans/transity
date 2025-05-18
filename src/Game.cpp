@@ -105,7 +105,7 @@ void Game::run() {
 
         processInputCommands(); // Game processes the commands from InputHandler
 
-        m_renderer->updateImGui(dt);
+        m_renderer->updateImGui(dt, m_currentInteractionMode); // Update ImGui with the current state
 
         update(dt); // Game-specific update logic (currently empty regarding input)
         LOG_TRACE("Game", "Game logic updated.");

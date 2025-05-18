@@ -3,7 +3,7 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/System.hpp>
 #include <entt/entt.hpp>
-
+#include "Game.h"
 
 class Renderer {
 public:
@@ -12,13 +12,12 @@ public:
 
     void init();
     void render(entt::registry& registry, const sf::View& view, sf::Time dt);
-    void updateImGui(sf::Time dt);
+    void updateImGui(sf::Time dt, InteractionMode& currentMode);
     void renderImGui();
     void display();
     void cleanup();
     bool isOpen() const;
     sf::RenderWindow& getWindow();
-
 
     void setClearColor(const sf::Color& color);
     const sf::Color& getClearColor() const;

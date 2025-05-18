@@ -6,16 +6,19 @@
 #include <optional>
 #include "Camera.h"
 #include <entt/entt.hpp>
-#include "Renderer.h"
 #include "InputHandler.h" // Added
 #include <memory>
 #include "EntityFactory.h"
 
+class Renderer;
 
-enum class GameMode {
+enum GameMode {
+    Play
+};
+
+enum InteractionMode {
     StationPlacement,
-    LineCreation,
-    None
+    LineCreation
 };
 
 class Game {
@@ -37,5 +40,6 @@ private:
     std::unique_ptr<Renderer> m_renderer;
     std::unique_ptr<InputHandler> m_inputHandler;
     
-    GameMode m_currentGameMode = GameMode::None;
+    InteractionMode m_currentInteractionMode;
+    GameMode m_currentGameMode;
 };

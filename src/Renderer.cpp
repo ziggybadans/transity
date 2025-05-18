@@ -56,17 +56,29 @@ void Renderer::render(entt::registry& registry, const sf::View& view, sf::Time d
     }
     LOG_TRACE("Renderer", "Rendered %d entities.", entityCount);
 
-    ImGui::Begin("Debug Window");
-    ImGui::Text("FPS: %.1f", 1.f / dt.asSeconds());
-    ImGui::Text("Camera Position: (%.1f, %.1f)", view.getCenter().x, view.getCenter().y);
-    ImGui::Text("Entity Count: %d", static_cast<int>(registry.alive()));
-    ImGui::End();
-
     LOG_TRACE("Renderer", "Render pass complete.");
 }
 
-void Renderer::updateImGui(sf::Time dt) {
+void Renderer::updateImGui(sf::Time dt, InteractionMode& currentMode) { // Note: We also need registry and view if Debug Window stays
     ImGui::SFML::Update(m_windowInstance, dt);
+
+    ImGui::Begin("Interaction Modes");
+
+    int mode = static_cast<int>(currentMode);
+
+    if (ImGui::RadioButton("Station Placement", &mode, static_cast<int>(InteractionMode::StationPlacement))) {
+        currentMode = InteractionMode::StationPlacement;
+    }
+    ImGui::SameLine();
+    if (ImGui::RadioButton("Line Creation", &mode, static_cast<int>(InteractionMode::LineCreation))) {
+        currentMode = InteractionMode::LineCreation;
+    }
+
+    ImGui::End();
+
+    ImGui::Begin("Debug Window");
+    ImGui::Text("FPS: %.1f", 1.f / dt.asSeconds());
+    ImGui::End();
 }
 
 void Renderer::renderImGui() {
