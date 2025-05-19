@@ -6,6 +6,7 @@
 #include <iostream>
 #include <string>
 #include <vector> // Added for std::vector
+#include <variant> // For std::get_if
 
 InputHandler::InputHandler(sf::RenderWindow& window, Camera& camera)
     : m_window(window)
@@ -18,10 +19,10 @@ InputHandler::InputHandler(sf::RenderWindow& window, Camera& camera)
 
 void InputHandler::processEvents() {
     LOG_TRACE("Input", "Processing events.");
-    sf::Event event;
-    while (m_window.pollEvent(event)) {
-        ImGui::SFML::ProcessEvent(event);
-        if (event.type == sf::Event::Closed) {
+    while (auto optEvent = m_window.pollEvent()) {
+        const auto& event = *optEvent;
+        ImGui::SFML::ProcessEvent(m_window, event);
+        if (const auto* closedData = event.getIf<sf::Event::Closed>()) {
             LOG_INFO("Input", "Window close event received.");
             m_commands.push_back({InputEventType::WindowClose, {}});
         }
@@ -33,15 +34,15 @@ void InputHandler::handleEvent(const sf::Event& event) {
     // Camera view is needed for mapPixelToCoords, but we don't modify it directly here.
     // const sf::View& view = m_camera.getView(); // Assuming Camera has a const getView()
 
-    if (event.type == sf::Event::MouseWheelScrolled) {
-        if (event.mouseWheelScroll.wheel == sf::Mouse::VerticalWheel) {
-            LOG_DEBUG("Input", "Mouse wheel scrolled: delta %.1f", event.mouseWheelScroll.delta);
+    if (const auto* scrollData = event.getIf<sf::Event::MouseWheelScrolled>()) {
+        if (scrollData->wheel == sf::Mouse::Wheel::Vertical) {
+            LOG_DEBUG("Input", "Mouse wheel scrolled: delta %.1f", scrollData->delta);
             InputData data;
             data.mousePixelPosition = sf::Mouse::getPosition(m_window);
-            if (event.mouseWheelScroll.delta > 0) {
+            if (scrollData->delta > 0) {
                 data.zoomDelta = zoomFactor;
                 LOG_TRACE("Input", "Zoom in command generated.");
-            } else if (event.mouseWheelScroll.delta < 0) {
+            } else if (scrollData->delta < 0) {
                 data.zoomDelta = unzoomFactor;
                 LOG_TRACE("Input", "Zoom out command generated.");
             }
@@ -49,8 +50,8 @@ void InputHandler::handleEvent(const sf::Event& event) {
                  m_commands.push_back({InputEventType::CameraZoom, data});
             }
         }
-    } else if (event.type == sf::Event::MouseButtonPressed) {
-        if (event.mouseButton.button == sf::Mouse::Right) {
+    } else if (const auto* pressData = event.getIf<sf::Event::MouseButtonPressed>()) {
+        if (pressData->button == sf::Mouse::Button::Right) {
             sf::Vector2i mousePixelPos = sf::Mouse::getPosition(m_window);
             // We need the current view from the camera to map pixel to world coordinates
             // This is a read-only operation on the camera's state.

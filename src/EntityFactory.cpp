@@ -37,7 +37,7 @@ void EntityFactory::applyArchetype(entt::entity entity, const Archetype& archety
         const auto& data = archetype.renderable_data.value();
         renderable.shape.setRadius(data.radius);
         renderable.shape.setFillColor(data.color);
-        renderable.shape.setOrigin(data.radius, data.radius);
+        renderable.shape.setOrigin(sf::Vector2f(data.radius, data.radius));
     }
     LOG_DEBUG("EntityFactory", "Applied archetype '%s' to entity (ID: %u).", archetype.id.c_str(), static_cast<unsigned int>(entity));
 }

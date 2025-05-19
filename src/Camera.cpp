@@ -18,7 +18,7 @@ void Camera::setInitialView(const sf::RenderWindow& window, const sf::Vector2f& 
 
     if (windowSizeF.y == 0.0f) {
         LOG_ERROR("Camera", "Window height is zero, cannot calculate aspect ratio. Using default view settings.");
-        view.setSize(800, 600); // Default size
+        view.setSize(sf::Vector2f(800.f, 600.f)); // Default size
         view.setCenter(landCenter); // Still center on land if possible
         return;
     }
