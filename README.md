@@ -54,10 +54,10 @@ If further customisation is needed, there is a modding API that allows mods to b
 ### Requirements
 - C++17 compatible compiler
 - CMake
-- SFML 3.0.0
-- ImGui
-- ImGui-SFML
-- EnTT
+- SFML 2.6.1
+- ImGui 1.91.9b
+- ImGui-SFML 2.6.1
+- EnTT 3.12.0
 
 ## License
 [MIT License](LICENSE)

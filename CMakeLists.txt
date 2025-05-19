@@ -9,7 +9,7 @@ include(FetchContent)
 FetchContent_Declare(
     SFML
     GIT_REPOSITORY https://github.com/SFML/SFML.git
-    GIT_TAG        2.6.1       # <- pinned to the last 2.x release line
+    GIT_TAG        3.0.0       # <- pinned to the last 2.x release line
     GIT_SHALLOW    ON
     EXCLUDE_FROM_ALL
     SYSTEM
@@ -40,6 +40,8 @@ FetchContent_Declare(
     SYSTEM
 )
 FetchContent_MakeAvailable(imgui)
+FetchContent_GetProperties(ImGui SOURCE_DIR IMGUI_DIR)
+set(IMGUI_SFML_FIND_SFML OFF)
 set(IMGUI_DIR ${imgui_SOURCE_DIR})
 
 # ---- pull ImGui-SFML from GitHub ---------------------------------------------
@@ -47,7 +49,7 @@ include(FetchContent)
 FetchContent_Declare(
     ImGuiSFML
     GIT_REPOSITORY https://github.com/eliasdaler/imgui-sfml.git
-    GIT_TAG        v2.6.1 # Or the latest compatible version
+    GIT_TAG        v3.0 # Or the latest compatible version
     GIT_SHALLOW    ON
     EXCLUDE_FROM_ALL
     SYSTEM
@@ -75,10 +77,9 @@ target_include_directories(main PRIVATE
     ${ImGuiSFML_SOURCE_DIR}      # For ImGui-SFML headers
 )
 
-# SFML 2.x exports the old, lower-case targets
 target_link_libraries(main PRIVATE
-    sfml-graphics
-    sfml-window
-    sfml-system
+    SFML::Graphics
+    SFML::Window
+    SFML::System
     ImGui-SFML
 )
