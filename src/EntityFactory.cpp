@@ -22,15 +22,6 @@ void EntityFactory::registerArchetypes() {
 
 void EntityFactory::applyArchetype(entt::entity entity, const Archetype& archetype, const sf::Vector2f& position, const std::string& name) {
     m_registry.emplace<PositionComponent>(entity, position);
-    if (!name.empty()) {
-        m_registry.emplace<NameComponent>(entity, name);
-    } else {
-        LOG_WARN("EntityFactory", "Creating entity of type '%s' with an empty name at (%.1f, %.1f).", archetype.id.c_str(), position.x, position.y);
-    }
-
-    if (archetype.has_station_tag) {
-        m_registry.emplace<StationTag>(entity);
-    }
 
     if (archetype.renderable_data) {
         auto& renderable = m_registry.emplace<RenderableComponent>(entity);
