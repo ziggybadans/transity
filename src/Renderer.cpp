@@ -68,10 +68,12 @@ void Renderer::updateImGui(sf::Time dt, InteractionMode& currentMode) { // Note:
 
     if (ImGui::RadioButton("Station Placement", &mode, static_cast<int>(InteractionMode::StationPlacement))) {
         currentMode = InteractionMode::StationPlacement;
+        LOG_INFO("Renderer", "Interaction mode changed to: %s", "StationPlacement");
     }
     ImGui::SameLine();
     if (ImGui::RadioButton("Line Creation", &mode, static_cast<int>(InteractionMode::LineCreation))) {
         currentMode = InteractionMode::LineCreation;
+        LOG_INFO("Renderer", "Interaction mode changed to: %s", "LineCreation");
     }
 
     ImGui::End();

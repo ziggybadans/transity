@@ -6,7 +6,7 @@
 int main()
 {
     Logging::Logger::getInstance().setLoggingEnabled(true);
-    Logging::Logger::getInstance().setMinLogLevel(Logging::LogLevel::TRACE);
+    Logging::Logger::getInstance().setMinLogLevel(Logging::LogLevel::DEBUG);
 
     Logging::Logger::getInstance().enableFileLogging(true);
 
