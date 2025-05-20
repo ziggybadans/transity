@@ -66,6 +66,11 @@ void Renderer::updateImGui(sf::Time dt, InteractionMode& currentMode) { // Note:
 
     int mode = static_cast<int>(currentMode);
 
+    if (ImGui::RadioButton("None", &mode, static_cast<int>(InteractionMode::None))) {
+        currentMode = InteractionMode::None;
+        LOG_INFO("Renderer", "Interaction mode changed to: %s", "None");
+    }
+    ImGui::SameLine();
     if (ImGui::RadioButton("Station Placement", &mode, static_cast<int>(InteractionMode::StationPlacement))) {
         currentMode = InteractionMode::StationPlacement;
         LOG_INFO("Renderer", "Interaction mode changed to: %s", "StationPlacement");

@@ -8,7 +8,7 @@
 // SFML includes for specific types like sf::Time, sf::Clock are in Game.h
 
 Game::Game()
-    : m_entityFactory(registry) {
+    : m_entityFactory(registry), m_currentInteractionMode(InteractionMode::None) {
     LOG_INFO("Game", "Game instance creating.");
     // Window creation and framerate limit moved to Renderer
     LOG_INFO("Game", "Game instance created successfully.");
@@ -79,12 +79,13 @@ void Game::processInputCommands() {
                 camera.moveView(command.data.panDirection);
                 break;
             case InputEventType::TryPlaceStation:
-                {
+                if (m_currentInteractionMode == InteractionMode::StationPlacement) {
                     LOG_DEBUG("Game", "Processing TryPlaceStation command at (%.1f, %.1f)", command.data.worldPosition.x, command.data.worldPosition.y);
                     int nextStationID = registry.alive() ? static_cast<int>(registry.size()) : 0;
                     m_entityFactory.createStation(command.data.worldPosition, "New Station " + std::to_string(nextStationID));
                 }
                 break;
+            // Add similar checks for other mode-specific commands like TryStartLine if they exist
             case InputEventType::None:
             default:
                 break;

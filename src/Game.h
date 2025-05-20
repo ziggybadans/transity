@@ -17,6 +17,7 @@ enum GameMode {
 };
 
 enum InteractionMode {
+    None,
     StationPlacement,
     LineCreation
 };
