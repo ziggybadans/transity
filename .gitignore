@@ -39,5 +39,4 @@ _deps/
 *.userprefs
 
 # Libraries
-docs/
 .DS_Store

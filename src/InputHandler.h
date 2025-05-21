@@ -6,12 +6,13 @@
 #include <vector>
 #include <variant>
 #include "Camera.h"
+#include "InteractionMode.h"
 
 enum class InputEventType {
     WindowClose,
-    CameraZoom,      // data.zoomDelta, data.mousePixelPosition
-    CameraPan,       // data.panDirection (scaled by dt)
-    TryPlaceStation, // data.worldPosition
+    CameraZoom,
+    CameraPan,
+    TryPlaceStation,
     None
 };
 
@@ -29,21 +30,17 @@ struct InputCommand {
 
 class InputHandler {
 public:
-    InputHandler(sf::RenderWindow& window, Camera& camera);
-    void processEvents();
-    void handleEvent(const sf::Event& event); // Now adds to m_commands
+    InputHandler();
+    void handleGameEvent(const sf::Event& event, InteractionMode currentMode, Camera& camera, sf::RenderWindow& window);
     void update(sf::Time dt);
-    bool isWindowOpen() const;
 
     const std::vector<InputCommand>& getCommands() const;
     void clearCommands();
 
 private:
-    sf::RenderWindow& m_window;
-    Camera& m_camera; // Kept for mapPixelToCoords and getting view state
     std::vector<InputCommand> m_commands;
 
-    float cameraSpeed; // Will be used to calculate panDirection magnitude
+    float cameraSpeed;
     float zoomFactor;
     float unzoomFactor;
 };

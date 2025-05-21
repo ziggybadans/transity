@@ -8,9 +8,8 @@
 // SFML includes for specific types like sf::Time, sf::Clock are in Game.h
 
 Game::Game()
-    : m_entityFactory(registry), m_currentInteractionMode(InteractionMode::None) {
+    : m_entityFactory(registry) {
     LOG_INFO("Game", "Game instance creating.");
-    // Window creation and framerate limit moved to Renderer
     LOG_INFO("Game", "Game instance created successfully.");
 }
 
@@ -20,14 +19,21 @@ void Game::init() {
     LOG_INFO("Main", "Default global log delay set to: %ums", Logging::Logger::getInstance().getLogDelay());
     LOG_INFO("Main", "Application starting.");
     try {
-        m_renderer = std::make_unique<Renderer>(); // Renderer now default constructs and manages its window
+        m_renderer = std::make_unique<Renderer>();
         if (!m_renderer) {
             LOG_FATAL("Game", "Failed to create Renderer instance (m_renderer is null).");
             exit(EXIT_FAILURE);
         }
-        m_renderer->init(); // Renderer initializes its own window and ImGui
+        m_renderer->init();
 
-        m_inputHandler = std::make_unique<InputHandler>(m_renderer->getWindow(), camera); // EntityFactory removed
+        m_ui = std::make_unique<UI>(m_renderer->getWindow());
+        if (!m_ui) {
+            LOG_FATAL("Game", "Failed to create UI instance (m_ui is null).");
+            exit(EXIT_FAILURE);
+        }
+        m_ui->init();
+
+        m_inputHandler = std::make_unique<InputHandler>();
         if (!m_inputHandler) {
             LOG_FATAL("Game", "Failed to create InputHandler instance (m_inputHandler is null).");
             exit(EXIT_FAILURE);
@@ -63,9 +69,7 @@ void Game::processInputCommands() {
             case InputEventType::CameraZoom:
                 {
                     LOG_DEBUG("Game", "Processing CameraZoom command with delta: %.2f", command.data.zoomDelta);
-                    // The original InputHandler logic for zoom involved maintaining focus.
-                    // This needs to be replicated here.
-                    sf::View& view = camera.getViewToModify(); // Assuming Camera has getViewToModify()
+                    sf::View& view = camera.getViewToModify();
                     sf::Vector2f worldPosBeforeZoom = m_renderer->getWindow().mapPixelToCoords(command.data.mousePixelPosition, view);
                     camera.zoomView(command.data.zoomDelta);
                     sf::Vector2f worldPosAfterZoom = m_renderer->getWindow().mapPixelToCoords(command.data.mousePixelPosition, view);
@@ -79,13 +83,12 @@ void Game::processInputCommands() {
                 camera.moveView(command.data.panDirection);
                 break;
             case InputEventType::TryPlaceStation:
-                if (m_currentInteractionMode == InteractionMode::StationPlacement) {
+                if (m_ui->getInteractionMode() == InteractionMode::StationPlacement) {
                     LOG_DEBUG("Game", "Processing TryPlaceStation command at (%.1f, %.1f)", command.data.worldPosition.x, command.data.worldPosition.y);
                     int nextStationID = registry.alive() ? static_cast<int>(registry.size()) : 0;
                     m_entityFactory.createStation(command.data.worldPosition, "New Station " + std::to_string(nextStationID));
                 }
                 break;
-            // Add similar checks for other mode-specific commands like TryStartLine if they exist
             case InputEventType::None:
             default:
                 break;
@@ -97,35 +100,41 @@ void Game::processInputCommands() {
 
 void Game::run() {
     LOG_INFO("Game", "Starting game loop.");
-    while (m_inputHandler->isWindowOpen() && m_renderer->getWindow().isOpen()) { // Check both InputHandler's view and actual window
+    while (m_renderer->getWindow().isOpen()) {
         sf::Time dt = deltaClock.restart();
         LOG_TRACE("Game", "Delta time: %f seconds", dt.asSeconds());
 
-        m_inputHandler->processEvents(); // InputHandler processes all SFML events and populates its command queue
-        m_inputHandler->update(dt);      // InputHandler checks for continuous input (keyboard) and populates command queue
+        while (auto optEvent = m_renderer->getWindow().pollEvent()) {
+            if (optEvent) {
+                const sf::Event& currentEvent = *optEvent;
+                m_ui->processEvent(currentEvent);
+                m_inputHandler->handleGameEvent(currentEvent, m_ui->getInteractionMode(), camera, m_renderer->getWindow());
+            }
+        }
+        
+        m_inputHandler->update(dt);
 
-        processInputCommands(); // Game processes the commands from InputHandler
+        processInputCommands();
 
-        m_renderer->updateImGui(dt, m_currentInteractionMode); // Update ImGui with the current state
+        m_ui->update(dt);
 
-        update(dt); // Game-specific update logic (currently empty regarding input)
+        update(dt);
         LOG_TRACE("Game", "Game logic updated.");
 
         m_renderer->render(registry, camera.getView(), dt);
         LOG_TRACE("Game", "Frame rendered.");
 
-        m_renderer->renderImGui();
+        m_ui->render();
 
         m_renderer->display();
     }
     LOG_INFO("Game", "Game loop ended.");
     m_renderer->cleanup();
-    LOG_INFO("Game", "Renderer cleaned up.");
+    m_ui->cleanup();
+    LOG_INFO("Game", "Renderer and UI cleaned up.");
 }
 
 void Game::update(sf::Time dt) {
-    // m_inputHandler->update(dt); // This is now called in run() before processInputCommands()
-    // Camera updates are now driven by commands processed in processInputCommands()
 }
 
 Game::~Game() {
