@@ -7,8 +7,6 @@
 #include <variant>
 #include "Camera.h"
 
-
-
 enum class InputEventType {
     WindowClose,
     CameraZoom,      // data.zoomDelta, data.mousePixelPosition
