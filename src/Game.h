@@ -9,8 +9,10 @@
 #include "InputHandler.h" // Added
 #include <memory>
 #include "EntityFactory.h"
+#include "UIManager.h" // Added UIManager include
 
 class Renderer;
+// InteractionMode enum is now defined here, UIManager.h includes Game.h for it.
 
 enum GameMode {
     Play
@@ -40,7 +42,8 @@ private:
     EntityFactory m_entityFactory;
     std::unique_ptr<Renderer> m_renderer;
     std::unique_ptr<InputHandler> m_inputHandler;
+    std::unique_ptr<UIManager> m_uiManager; // Added UIManager member
     
-    InteractionMode m_currentInteractionMode;
+    // InteractionMode m_currentInteractionMode; // Removed, UIManager handles this
     GameMode m_currentGameMode;
 };

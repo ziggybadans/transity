@@ -65,6 +65,7 @@ add_executable(main
     src/Renderer.cpp
     src/EntityFactory.cpp
     src/Logger.cpp
+    src/UIManager.cpp # Added UIManager.cpp
 )
 target_compile_features(main PRIVATE cxx_std_17)
 
