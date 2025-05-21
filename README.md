@@ -52,11 +52,11 @@ If further customisation is needed, there is a modding API that allows mods to b
 - **SFML/ImGui**: Utilized for clean rendering with effects (weather, time-of-day) and a flexible, dockable developer/user interface.
 
 ### Requirements
-- Clang C++17
-- CMake 3.31.7
-- SFML 3.0.0 (documentation in docs folder)
+- C++17 compatible compiler
+- CMake
+- SFML 2.6.1
 - ImGui 1.91.9b
-- ImGui-SFML 3.0
+- ImGui-SFML 2.6.1
 - EnTT 3.12.0
 
 ## License

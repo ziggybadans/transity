@@ -1,11 +1,11 @@
 #include "Renderer.h"
-#include "Components.h" // Still needed for PositionComponent, RenderableComponent
+#include "Components.h"
 #include "Logger.h"
-// #include "imgui.h" // Removed
-// #include "imgui-SFML.h" // Removed
-#include <entt/entt.hpp> // Still needed for registry.view
+#include "imgui.h"
+#include "imgui-SFML.h"
+#include <entt/entt.hpp>
 #include <SFML/Graphics.hpp>
-#include <iostream> // Keep for now
+#include <iostream> // Keep for now, might be removed if all std::cout are gone
 #include <cstdlib> // For exit()
 
 Renderer::Renderer()
@@ -20,20 +20,20 @@ Renderer::~Renderer() {
 }
 
 void Renderer::init() {
-    LOG_INFO("Renderer", "Initializing Renderer."); // ImGui init removed
+    LOG_INFO("Renderer", "Initializing Renderer and ImGui.");
     m_landShape.setSize({100, 100});
     m_landShape.setFillColor(sf::Color::White);
     m_landShape.setOrigin(m_landShape.getSize() / 2.0f);
     m_landShape.setPosition({50, 50});
     LOG_DEBUG("Renderer", "Land shape created at (%.1f, %.1f) with size (%.1f, %.1f).", m_landShape.getPosition().x, m_landShape.getPosition().y, m_landShape.getSize().x, m_landShape.getSize().y);
 
-    // ImGui::CreateContext(); // Removed
-    // if (!ImGui::SFML::Init(m_windowInstance)) { // Removed
-    //     LOG_FATAL("Renderer", "Failed to initialize ImGui-SFML"); // Removed
-    //     exit(EXIT_FAILURE); // Removed
-    // } // Removed
-    // ImGui::StyleColorsDark(); // Removed
-    LOG_INFO("Renderer", "Renderer initialized."); // ImGui part removed
+    ImGui::CreateContext();
+    if (!ImGui::SFML::Init(m_windowInstance)) {
+        LOG_FATAL("Renderer", "Failed to initialize ImGui-SFML");
+        exit(EXIT_FAILURE); // Or handle error more gracefully
+    }
+    ImGui::StyleColorsDark();
+    LOG_INFO("Renderer", "Renderer and ImGui initialized.");
 }
 
 void Renderer::render(entt::registry& registry, const sf::View& view, sf::Time dt) {
@@ -59,11 +59,38 @@ void Renderer::render(entt::registry& registry, const sf::View& view, sf::Time d
     LOG_TRACE("Renderer", "Render pass complete.");
 }
 
-// void Renderer::updateImGui(sf::Time dt, InteractionMode& currentMode) { // Method removed
-// }
+void Renderer::updateImGui(sf::Time dt, InteractionMode& currentMode) { // Note: We also need registry and view if Debug Window stays
+    ImGui::SFML::Update(m_windowInstance, dt);
 
-// void Renderer::renderImGui() { // Method removed
-// }
+    ImGui::Begin("Interaction Modes");
+
+    int mode = static_cast<int>(currentMode);
+
+    if (ImGui::RadioButton("None", &mode, static_cast<int>(InteractionMode::None))) {
+        currentMode = InteractionMode::None;
+        LOG_INFO("Renderer", "Interaction mode changed to: %s", "None");
+    }
+    ImGui::SameLine();
+    if (ImGui::RadioButton("Station Placement", &mode, static_cast<int>(InteractionMode::StationPlacement))) {
+        currentMode = InteractionMode::StationPlacement;
+        LOG_INFO("Renderer", "Interaction mode changed to: %s", "StationPlacement");
+    }
+    ImGui::SameLine();
+    if (ImGui::RadioButton("Line Creation", &mode, static_cast<int>(InteractionMode::LineCreation))) {
+        currentMode = InteractionMode::LineCreation;
+        LOG_INFO("Renderer", "Interaction mode changed to: %s", "LineCreation");
+    }
+
+    ImGui::End();
+
+    ImGui::Begin("Debug Window");
+    ImGui::Text("FPS: %.1f", 1.f / dt.asSeconds());
+    ImGui::End();
+}
+
+void Renderer::renderImGui() {
+    ImGui::SFML::Render(m_windowInstance);
+}
 
 void Renderer::display() {
     m_windowInstance.display();
@@ -71,8 +98,8 @@ void Renderer::display() {
 
 void Renderer::cleanup() {
     LOG_INFO("Renderer", "Renderer cleanup initiated.");
-    // ImGui::SFML::Shutdown(m_windowInstance); // Removed, UIManager handles ImGui shutdown
-    LOG_INFO("Renderer", "Renderer cleaned up."); // ImGui part removed
+    ImGui::SFML::Shutdown(m_windowInstance);
+    LOG_INFO("Renderer", "ImGui shutdown. Renderer cleaned up.");
 }
 
 bool Renderer::isOpen() const {

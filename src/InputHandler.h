@@ -30,10 +30,10 @@ struct InputCommand {
 class InputHandler {
 public:
     InputHandler(sf::RenderWindow& window, Camera& camera);
-    // void processEvents(); // Removed, event loop is now in Game::run()
+    void processEvents();
     void handleEvent(const sf::Event& event); // Now adds to m_commands
     void update(sf::Time dt);
-    bool isWindowOpen() const; // This might need to be re-evaluated if window is closed outside event loop
+    bool isWindowOpen() const;
 
     const std::vector<InputCommand>& getCommands() const;
     void clearCommands();

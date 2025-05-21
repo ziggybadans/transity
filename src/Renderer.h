@@ -12,8 +12,8 @@ public:
 
     void init();
     void render(entt::registry& registry, const sf::View& view, sf::Time dt);
-    // void updateImGui(sf::Time dt, InteractionMode& currentMode); // Removed
-    // void renderImGui(); // Removed
+    void updateImGui(sf::Time dt, InteractionMode& currentMode);
+    void renderImGui();
     void display();
     void cleanup();
     bool isOpen() const;
