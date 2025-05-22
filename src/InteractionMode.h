@@ -1,7 +1,8 @@
 #pragma once
 
 enum class InteractionMode {
-    None,
-    StationPlacement,
-    LineCreation
+    SELECT,
+    CREATE_STATION,
+    CREATE_LINE_START,
+    CREATE_LINE_CONTINUE
 };

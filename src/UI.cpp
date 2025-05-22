@@ -6,7 +6,7 @@
 #include <cstdlib> // For EXIT_FAILURE
 
 UI::UI(sf::RenderWindow& window)
-    : m_window(window), m_currentInteractionMode(InteractionMode::None) {
+    : m_window(window), m_currentInteractionMode(InteractionMode::SELECT) {
     LOG_INFO("UI", "UI instance created.");
 }
 
@@ -35,18 +35,18 @@ void UI::update(sf::Time deltaTime) {
     ImGui::Begin("Interaction Modes");
     int mode = static_cast<int>(m_currentInteractionMode);
 
-    if (ImGui::RadioButton("None", &mode, static_cast<int>(InteractionMode::None))) {
-        m_currentInteractionMode = InteractionMode::None;
+    if (ImGui::RadioButton("None", &mode, static_cast<int>(InteractionMode::SELECT))) {
+        m_currentInteractionMode = InteractionMode::SELECT;
         LOG_INFO("UI", "Interaction mode changed to: None");
     }
     ImGui::SameLine();
-    if (ImGui::RadioButton("Station Placement", &mode, static_cast<int>(InteractionMode::StationPlacement))) {
-        m_currentInteractionMode = InteractionMode::StationPlacement;
+    if (ImGui::RadioButton("Station Placement", &mode, static_cast<int>(InteractionMode::CREATE_STATION))) {
+        m_currentInteractionMode = InteractionMode::CREATE_STATION;
         LOG_INFO("UI", "Interaction mode changed to: StationPlacement");
     }
     ImGui::SameLine();
-    if (ImGui::RadioButton("Line Creation", &mode, static_cast<int>(InteractionMode::LineCreation))) {
-        m_currentInteractionMode = InteractionMode::LineCreation;
+    if (ImGui::RadioButton("Line Creation", &mode, static_cast<int>(InteractionMode::CREATE_LINE_START))) {
+        m_currentInteractionMode = InteractionMode::CREATE_LINE_START;
         LOG_INFO("UI", "Interaction mode changed to: LineCreation");
     }
     ImGui::End();

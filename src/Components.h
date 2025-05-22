@@ -11,3 +11,17 @@ struct PositionComponent {
 struct RenderableComponent {
     sf::CircleShape shape;
 };
+
+struct StationComponent {
+    std::vector<entt::entity> connectedLines;
+};
+
+struct LineComponent {
+    sf::Color color;
+    std::vector<entt::entity> stops;
+};
+
+struct CreateLineIntent {
+    entt::entity startStation;
+    entt::entity endStation;
+};

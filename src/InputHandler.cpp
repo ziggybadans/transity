@@ -34,7 +34,7 @@ void InputHandler::handleGameEvent(const sf::Event& event, InteractionMode curre
         }
     } else if (auto* pressData = event.getIf<sf::Event::MouseButtonPressed>()) {
         if (pressData->button == sf::Mouse::Button::Right) {
-            if (currentMode == InteractionMode::StationPlacement) {
+            if (currentMode == InteractionMode::CREATE_STATION) {
                 sf::Vector2i mousePixelPos = sf::Mouse::getPosition(window);
                 sf::Vector2f worldPos = window.mapPixelToCoords(mousePixelPos, camera.getView());
                 LOG_DEBUG("Input", "Right mouse button pressed at screen ( %d, %d ), world (%.1f, %.1f). TryPlaceStation command generated.", mousePixelPos.x, mousePixelPos.y, worldPos.x, worldPos.y);

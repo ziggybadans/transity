@@ -83,7 +83,7 @@ void Game::processInputCommands() {
                 camera.moveView(command.data.panDirection);
                 break;
             case InputEventType::TryPlaceStation:
-                if (m_ui->getInteractionMode() == InteractionMode::StationPlacement) {
+                if (m_ui->getInteractionMode() == InteractionMode::CREATE_STATION) {
                     LOG_DEBUG("Game", "Processing TryPlaceStation command at (%.1f, %.1f)", command.data.worldPosition.x, command.data.worldPosition.y);
                     int nextStationID = registry.alive() ? static_cast<int>(registry.size()) : 0;
                     m_entityFactory.createStation(command.data.worldPosition, "New Station " + std::to_string(nextStationID));
