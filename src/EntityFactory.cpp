@@ -12,11 +12,20 @@ EntityFactory::EntityFactory(entt::registry& registry)
 void EntityFactory::registerArchetypes() {
     Archetype stationArchetype;
     stationArchetype.id = "station";
-    stationArchetype.has_station_tag = true;
+
     EntityArchetypeData::RenderableData stationRenderData;
     stationRenderData.radius = 2.0f;
     stationRenderData.color = sf::Color::Blue;
     stationArchetype.renderable_data = stationRenderData;
+
+    EntityArchetypeData::ClickableData stationClickableData;
+    if (stationArchetype.renderable_data) {
+        stationClickableData.boundingRadius = stationArchetype.renderable_data->radius * 1.5f;
+    } else {
+        stationClickableData.boundingRadius = 5.0f; // Default value if no renderable data
+    }
+    stationArchetype.clickable_data = stationClickableData;
+
     m_archetypes[stationArchetype.id] = stationArchetype;
     LOG_INFO("EntityFactory", "Registered archetype: %s", stationArchetype.id.c_str());
 }
@@ -31,6 +40,12 @@ void EntityFactory::applyArchetype(entt::entity entity, const Archetype& archety
         renderable.shape.setFillColor(data.color);
         renderable.shape.setOrigin(sf::Vector2f(data.radius, data.radius));
     }
+
+    if (archetype.clickable_data) {
+        auto& clickable = m_registry.emplace<ClickableComponent>(entity);
+        clickable.boundingRadius = archetype.clickable_data->boundingRadius;
+    }
+
     LOG_DEBUG("EntityFactory", "Applied archetype '%s' to entity (ID: %u).", archetype.id.c_str(), static_cast<unsigned int>(entity));
 }
 
@@ -47,11 +62,7 @@ entt::entity EntityFactory::createStation(const sf::Vector2f& position, const st
     auto entity = m_registry.create();
     applyArchetype(entity, stationArchetype, position, name);
 
-    float clickRadius = 5.0f;
-    if (stationArchetype.renderable_data) {
-        clickRadius = stationArchetype.renderable_data.value().radius * 1.5f;
-    }
-    m_registry.emplace<ClickableComponent>(entity, clickRadius);
+    m_registry.emplace<StationComponent>(entity);
     
     LOG_DEBUG("EntityFactory", "Station entity (ID: %u) created successfully using archetype.", static_cast<unsigned int>(entity));
     return entity;

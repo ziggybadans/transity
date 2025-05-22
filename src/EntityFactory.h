@@ -14,14 +14,18 @@ namespace EntityArchetypeData {
         float radius;
         sf::Color color;
     };
+
+    struct ClickableData {
+        float boundingRadius;
+    };
 }
 
 class EntityFactory {
 public:
     struct Archetype {
-        std::string id; 
-        bool has_station_tag = false;
+        std::string id;
         std::optional<EntityArchetypeData::RenderableData> renderable_data;
+        std::optional<EntityArchetypeData::ClickableData> clickable_data;
     };
 
     EntityFactory(entt::registry& registry);

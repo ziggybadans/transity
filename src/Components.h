@@ -10,6 +10,7 @@ struct PositionComponent {
 
 struct RenderableComponent {
     sf::CircleShape shape;
+    int z_order;
 };
 
 struct StationComponent {
