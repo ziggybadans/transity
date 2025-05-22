@@ -3,6 +3,5 @@
 enum class InteractionMode {
     SELECT,
     CREATE_STATION,
-    CREATE_LINE_START,
-    CREATE_LINE_CONTINUE
+    CREATE_LINE
 };

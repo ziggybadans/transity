@@ -21,7 +21,6 @@ struct LineComponent {
     std::vector<entt::entity> stops;
 };
 
-struct CreateLineIntent {
-    entt::entity startStation;
-    entt::entity endStation;
+struct ClickableComponent {
+    float boundingRadius;
 };

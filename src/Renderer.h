@@ -3,7 +3,7 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/System.hpp>
 #include <entt/entt.hpp>
-// #include "Game.h" // InteractionMode is now in its own header
+#include "InteractionMode.h"
 
 class Renderer {
 public:
@@ -11,7 +11,7 @@ public:
     ~Renderer();
 
     void init();
-    void render(entt::registry& registry, const sf::View& view, sf::Time dt);
+    void render(entt::registry& registry, const sf::View& view, sf::Time dt, const std::vector<entt::entity>& activeLineStations, InteractionMode currentMode);
     void display();
     void cleanup();
     bool isOpen() const;

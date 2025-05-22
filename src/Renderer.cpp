@@ -27,7 +27,7 @@ void Renderer::init() {
     LOG_INFO("Renderer", "Renderer initialized.");
 }
 
-void Renderer::render(entt::registry& registry, const sf::View& view, sf::Time dt) {
+void Renderer::render(entt::registry& registry, const sf::View& view, sf::Time dt, const std::vector<entt::entity>& activeLineStations, InteractionMode currentMode) {
     LOG_TRACE("Renderer", "Beginning render pass.");
     m_windowInstance.setView(view);
     m_windowInstance.clear(m_clearColor);
@@ -46,6 +46,85 @@ void Renderer::render(entt::registry& registry, const sf::View& view, sf::Time d
         entityCount++;
     }
     LOG_TRACE("Renderer", "Rendered %d entities.", entityCount);
+
+    LOG_TRACE("Renderer", "Rendering finalized lines.");
+    auto lineView = registry.view<LineComponent>();
+    int finalizedLineCount = 0;
+    for (auto entity : lineView) {
+        const auto& lineComp = lineView.get<LineComponent>(entity);
+        if (lineComp.stops.size() < 2) {
+            LOG_WARN("Renderer", "Line has less than 2 stops, skipping rendering.");
+            continue;
+        }
+
+        for (size_t i = 0; i < lineComp.stops.size() - 1; ++i) {
+            entt::entity station1 = lineComp.stops[i];
+            entt::entity station2 = lineComp.stops[i + 1];
+
+            if (!registry.valid(station1) || !registry.all_of<PositionComponent>(station1) || 
+                !registry.valid(station2) || !registry.all_of<PositionComponent>(station2)) {
+                LOG_WARN("Renderer", "Invalid entity in line stops.");
+                continue;
+            }
+
+            const auto& pos1_comp = registry.get<PositionComponent>(station1);
+            const auto& pos2_comp = registry.get<PositionComponent>(station2);
+
+            sf::Vertex line[] = {
+                sf::Vertex(pos1_comp.coordinates, lineComp.color),
+                sf::Vertex(pos2_comp.coordinates, lineComp.color)
+            };
+            m_windowInstance.draw(line, 2, sf::Lines);
+        }
+        finalizedLineCount++;
+    }
+    if (finalizedLineCount > 0) {
+        LOG_TRACE("Renderer", "Rendered %d finalized lines.", finalizedLineCount);
+    }
+
+    if (currentMode == InteractionMode::CREATE_LINE && activeLineStations.size() >= 1) {
+        LOG_TRACE("Renderer", "Drawing active line with %zu stations.", activeLineStations.size());
+
+        if (activeLineStations.size() >= 2) { // Need at least two points to draw a segment
+            for (size_t i = 0; i < activeLineStations.size() - 1; ++i) {
+                entt::entity station_entity1 = activeLineStations[i];
+                entt::entity station_entity2 = activeLineStations[i+1];
+
+                if (!registry.valid(station_entity1) || !registry.all_of<PositionComponent>(station_entity1) ||
+                    !registry.valid(station_entity2) || !registry.all_of<PositionComponent>(station_entity2)) {
+                    LOG_WARN("Renderer", "Skipping active line segment due to invalid station or missing PositionComponent.");
+                    continue;
+                }
+                const auto& pos1_comp = registry.get<PositionComponent>(station_entity1);
+                const auto& pos2_comp = registry.get<PositionComponent>(station_entity2);
+
+                sf::Vertex line_segment[] = { // Use a different variable name to avoid conflict
+                    sf::Vertex(pos1_comp.coordinates, sf::Color::Yellow), // Changed to Yellow for active line
+                    sf::Vertex(pos2_comp.coordinates, sf::Color::Yellow)
+                };
+                m_windowInstance.draw(line_segment, 2, sf::Lines);
+                LOG_TRACE("Renderer", "Drew active line segment between selected stations.");
+            }
+        }
+
+        // For drawing from the LAST selected station to the CURRENT mouse cursor:
+        if (!activeLineStations.empty()) {
+            if (registry.valid(activeLineStations.back()) && registry.all_of<PositionComponent>(activeLineStations.back())) {
+                const auto& lastStationPosComp = registry.get<PositionComponent>(activeLineStations.back());
+                sf::Vector2f p1 = lastStationPosComp.coordinates;
+                
+                sf::Vector2i currentMousePixelPos = sf::Mouse::getPosition(m_windowInstance); // Get current mouse pos
+                sf::Vector2f p2_mouse = m_windowInstance.mapPixelToCoords(currentMousePixelPos, view); // Use the view passed to render
+
+                sf::Vertex lineToMouse[] = {
+                    sf::Vertex(p1, sf::Color::Yellow), 
+                    sf::Vertex(p2_mouse, sf::Color::Yellow)
+                };
+                m_windowInstance.draw(lineToMouse, 2, sf::Lines);
+                LOG_TRACE("Renderer", "Drew active line segment from last station to mouse.");
+            }
+        }
+    }
 
     LOG_TRACE("Renderer", "Render pass complete.");
 }

@@ -45,6 +45,12 @@ entt::entity EntityFactory::createStation(const sf::Vector2f& position, const st
     const Archetype& stationArchetype = it->second;
     auto entity = m_registry.create();
     applyArchetype(entity, stationArchetype, position, name);
+
+    float clickRadius = 5.0f;
+    if (stationArchetype.renderable_data) {
+        clickRadius = stationArchetype.renderable_data.value().radius * 1.5f;
+    }
+    m_registry.emplace<ClickableComponent>(entity, clickRadius);
     
     LOG_DEBUG("EntityFactory", "Station entity (ID: %u) created successfully using archetype.", static_cast<unsigned int>(entity));
     return entity;

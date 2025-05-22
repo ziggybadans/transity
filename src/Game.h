@@ -38,4 +38,6 @@ private:
     std::unique_ptr<InputHandler> m_inputHandler;
     std::unique_ptr<UI> m_ui;
     GameMode m_currentGameMode;
+
+    std::vector<entt::entity> m_stationsForNewLine;
 };

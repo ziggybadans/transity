@@ -1,5 +1,6 @@
 #include "InputHandler.h"
 #include "Logger.h"
+#include "Components.h"
 #include <iostream>
 #include <string>
 #include <vector>
@@ -12,7 +13,7 @@ InputHandler::InputHandler()
     LOG_INFO("Input", "InputHandler created.");
 }
 
-void InputHandler::handleGameEvent(const sf::Event& event, InteractionMode currentMode, Camera& camera, sf::RenderWindow& window) {
+void InputHandler::handleGameEvent(const sf::Event& event, InteractionMode currentMode, Camera& camera, sf::RenderWindow& window, entt::registry& registry) {
     if (event.is<sf::Event::Closed>()) {
         LOG_INFO("Input", "Window close event received.");
         m_commands.push_back({InputEventType::WindowClose, {}});
@@ -41,6 +42,37 @@ void InputHandler::handleGameEvent(const sf::Event& event, InteractionMode curre
                 InputData data;
                 data.worldPosition = worldPos;
                 m_commands.push_back({InputEventType::TryPlaceStation, data});
+            }
+        } else if (pressData->button == sf::Mouse::Button::Left) {
+            sf::Vector2i pixelPos = sf::Mouse::getPosition(window);
+            sf::Vector2f worldPos = window.mapPixelToCoords(pixelPos, camera.getView());
+
+            if (currentMode == InteractionMode::CREATE_LINE) {
+                LOG_DEBUG("Input", "Mouse click in CREATE_LINE mode at world (%.1f, %.1f).", worldPos.x, worldPos.y);
+                auto view = registry.view<PositionComponent, ClickableComponent>();
+                bool stationClickedThisPress = false;
+                for (auto entity_id : view) {
+                    const auto& pos = view.get<PositionComponent>(entity_id);
+                    const auto& clickable = view.get<ClickableComponent>(entity_id);
+
+                    sf::Vector2f diff = worldPos - pos.coordinates;
+                    float distanceSquared = (diff.x * diff.x) + (diff.y * diff.y);
+
+                    if (distanceSquared <= clickable.boundingRadius * clickable.boundingRadius) {
+                        LOG_DEBUG("Input", "Mouse click in CREATE_LINE mode at world (%.1f, %.1f).", worldPos.x, worldPos.y);
+                        InputCommand command;
+                        command.type = InputEventType::AddStationToLineIntent;
+                        command.data.worldPosition = worldPos;
+                        command.data.mousePixelPosition = pixelPos;
+                        command.data.clickedEntity = entity_id;
+                        m_commands.push_back(command);
+                        stationClickedThisPress = true;
+                        break;
+                    }
+                }
+                if (!stationClickedThisPress) {
+                    LOG_TRACE("Input", "Mouse click in CREATE_LINE mode at world (%.1f, %.1f) but no station found.", worldPos.x, worldPos.y);
+                }
             }
         }
     }

@@ -89,6 +89,50 @@ void Game::processInputCommands() {
                     m_entityFactory.createStation(command.data.worldPosition, "New Station " + std::to_string(nextStationID));
                 }
                 break;
+            case InputEventType::AddStationToLineIntent:
+                if (m_ui->getInteractionMode() == InteractionMode::CREATE_LINE) {
+                    entt::entity clickedEntity = command.data.clickedEntity;
+                    if (registry.valid(clickedEntity)) {
+                        if (m_stationsForNewLine.empty() || m_stationsForNewLine.back() != clickedEntity) {
+                            m_stationsForNewLine.push_back(clickedEntity);
+                            LOG_DEBUG("Game", "Station added to new line: %u", static_cast<unsigned int>(clickedEntity));
+                        } else {
+                            LOG_WARN("Game", "Station already added to new line.");
+                        }
+                    } else {
+                        LOG_WARN("Game", "Clicked entity is not valid.");
+                    }
+                }
+                break;
+            case InputEventType::FinalizeLineIntent:
+                if (m_ui->getInteractionMode() == InteractionMode::CREATE_LINE) {
+                    if (m_stationsForNewLine.size() >= 2) {
+                        LOG_DEBUG("Game", "Finalizing line with %zu stations.", m_stationsForNewLine.size());
+
+                        auto lineEntity = registry.create();
+                        auto& lineComponent = registry.emplace<LineComponent>(lineEntity);
+                        lineComponent.stops = m_stationsForNewLine;
+
+                        static int lineColorIndex = 0;
+                        sf::Color lineColors[] = { sf::Color::Red, sf::Color::Green, sf::Color::Blue, sf::Color::Yellow, sf::Color::Magenta, sf::Color::Cyan };
+                        lineComponent.color = lineColors[lineColorIndex % (sizeof(lineColors) / sizeof(lineColors[0]))];
+                        lineColorIndex++;
+
+                        for (entt::entity station_ent : lineComponent.stops) {
+                            if (registry.valid(station_ent) && registry.all_of<StationComponent>(station_ent)) {
+                                auto& stationComp = registry.get<StationComponent>(station_ent);
+                                stationComp.connectedLines.push_back(lineEntity);
+                                LOG_DEBUG("Game", "Connected line %u to station %u", static_cast<unsigned int>(lineEntity), static_cast<unsigned int>(station_ent));
+                            } 
+                        }
+
+                        m_stationsForNewLine.clear();
+                        LOG_INFO("Game", "Created line entity with ID: %u", static_cast<unsigned int>(lineEntity));
+                    }
+                    else {
+                        LOG_WARN("Game", "Not enough stations to finalize line.");
+                    }
+                }
             case InputEventType::None:
             default:
                 break;
@@ -108,7 +152,7 @@ void Game::run() {
             if (optEvent) {
                 const sf::Event& currentEvent = *optEvent;
                 m_ui->processEvent(currentEvent);
-                m_inputHandler->handleGameEvent(currentEvent, m_ui->getInteractionMode(), camera, m_renderer->getWindow());
+                m_inputHandler->handleGameEvent(currentEvent, m_ui->getInteractionMode(), camera, m_renderer->getWindow(), registry);
             }
         }
         
@@ -121,7 +165,7 @@ void Game::run() {
         update(dt);
         LOG_TRACE("Game", "Game logic updated.");
 
-        m_renderer->render(registry, camera.getView(), dt);
+        m_renderer->render(registry, camera.getView(), dt, m_stationsForNewLine, m_ui->getInteractionMode());
         LOG_TRACE("Game", "Frame rendered.");
 
         m_ui->render();

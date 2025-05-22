@@ -2,6 +2,7 @@
 
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
+#include <entt/entt.hpp>
 #include <optional>
 #include <vector>
 #include <variant>
@@ -13,6 +14,8 @@ enum class InputEventType {
     CameraZoom,
     CameraPan,
     TryPlaceStation,
+    AddStationToLineIntent,
+    FinalizeLineIntent,
     None
 };
 
@@ -21,6 +24,7 @@ struct InputData {
     sf::Vector2i mousePixelPosition;
     sf::Vector2f panDirection;
     sf::Vector2f worldPosition;
+    entt::entity clickedEntity = entt::null;
 };
 
 struct InputCommand {
@@ -31,7 +35,7 @@ struct InputCommand {
 class InputHandler {
 public:
     InputHandler();
-    void handleGameEvent(const sf::Event& event, InteractionMode currentMode, Camera& camera, sf::RenderWindow& window);
+    void handleGameEvent(const sf::Event& event, InteractionMode currentMode, Camera& camera, sf::RenderWindow& window, entt::registry& registry);
     void update(sf::Time dt);
 
     const std::vector<InputCommand>& getCommands() const;

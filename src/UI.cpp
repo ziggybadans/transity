@@ -45,8 +45,8 @@ void UI::update(sf::Time deltaTime) {
         LOG_INFO("UI", "Interaction mode changed to: StationPlacement");
     }
     ImGui::SameLine();
-    if (ImGui::RadioButton("Line Creation", &mode, static_cast<int>(InteractionMode::CREATE_LINE_START))) {
-        m_currentInteractionMode = InteractionMode::CREATE_LINE_START;
+    if (ImGui::RadioButton("Line Creation", &mode, static_cast<int>(InteractionMode::CREATE_LINE))) {
+        m_currentInteractionMode = InteractionMode::CREATE_LINE;
         LOG_INFO("UI", "Interaction mode changed to: LineCreation");
     }
     ImGui::End();
