@@ -4,6 +4,7 @@
 #include <SFML/Window/Event.hpp>
 #include <SFML/Graphics/RenderWindow.hpp>
 #include "InteractionMode.h"
+#include "LineEvents.h"
 
 class UI {
 public:
@@ -15,10 +16,12 @@ public:
     void render();
     void cleanup();
     InteractionMode getInteractionMode() const;
-    bool wasFinalizeLineClicked() const;
+
+    const std::vector<FinalizeLineEvent>& getUIEvents() const;
+    void clearUIEvents();
 
 private:
     sf::RenderWindow& m_window;
     InteractionMode m_currentInteractionMode;
-    bool m_finalizeLineClicked = false;
+    std::vector<FinalizeLineEvent> m_uiEvents;
 };

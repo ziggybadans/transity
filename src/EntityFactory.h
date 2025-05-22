@@ -27,6 +27,7 @@ public:
     EntityFactory(entt::registry& registry);
 
     entt::entity createStation(const sf::Vector2f& position, const std::string& name);
+    entt::entity createLine(const std::vector<entt::entity>& stops, const sf::Color& color);
 
 private:
     void registerArchetypes(); 

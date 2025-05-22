@@ -60,12 +60,10 @@ void InputHandler::handleGameEvent(const sf::Event& event, InteractionMode curre
 
                     if (distanceSquared <= clickable.boundingRadius * clickable.boundingRadius) {
                         LOG_DEBUG("Input", "Mouse click in CREATE_LINE mode at world (%.1f, %.1f).", worldPos.x, worldPos.y);
-                        InputCommand command;
-                        command.type = InputEventType::AddStationToLineIntent;
-                        command.data.worldPosition = worldPos;
-                        command.data.mousePixelPosition = pixelPos;
-                        command.data.clickedEntity = entity_id;
-                        m_commands.push_back(command);
+                        AddStationToLineEvent event;
+                        event.stationEntity = entity_id;
+                        m_gameEvents.emplace_back(event);
+                        LOG_DEBUG("Input", "AddStationToLineEvent created for entity %u.", static_cast<unsigned int>(entity_id));
                         stationClickedThisPress = true;
                         break;
                     }
@@ -117,4 +115,13 @@ void InputHandler::clearCommands() {
 void InputHandler::addCommand(const InputCommand& command) {
     m_commands.push_back(command);
     LOG_TRACE("Input", "Input command added: %d", static_cast<int>(command.type));
+}
+
+const std::vector<std::variant<AddStationToLineEvent, FinalizeLineEvent>>& InputHandler::getGameEvents() const {
+    return m_gameEvents;
+}
+
+void InputHandler::clearGameEvents() {
+    m_gameEvents.clear();
+    LOG_TRACE("Input", "Game events cleared.");
 }

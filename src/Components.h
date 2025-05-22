@@ -24,3 +24,7 @@ struct LineComponent {
 struct ClickableComponent {
     float boundingRadius;
 };
+
+struct ActiveLineStationTag {
+    int order = 0;
+};

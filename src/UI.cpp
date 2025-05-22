@@ -31,7 +31,6 @@ void UI::processEvent(const sf::Event& event) {
 
 void UI::update(sf::Time deltaTime, size_t numStationsInActiveLine) {
     ImGui::SFML::Update(m_window, deltaTime);
-    m_finalizeLineClicked = false;
 
     ImGui::Begin("Interaction Modes");
         int mode = static_cast<int>(m_currentInteractionMode);
@@ -52,7 +51,8 @@ void UI::update(sf::Time deltaTime, size_t numStationsInActiveLine) {
         }
         if (m_currentInteractionMode == InteractionMode::CREATE_LINE && numStationsInActiveLine >= 2) {
             if (ImGui::Button("Finalize Line")) {
-                m_finalizeLineClicked = true;
+                FinalizeLineEvent event;
+                m_uiEvents.emplace_back(event);
                 LOG_INFO("UI", "Finalize Line button clicked.");
             }
         }
@@ -77,6 +77,11 @@ InteractionMode UI::getInteractionMode() const {
     return m_currentInteractionMode;
 }
 
-bool UI::wasFinalizeLineClicked() const {
-    return m_finalizeLineClicked;
+const std::vector<FinalizeLineEvent>& UI::getUIEvents() const {
+    return m_uiEvents;
+}
+
+void UI::clearUIEvents() {
+    m_uiEvents.clear();
+    LOG_DEBUG("UI", "UI events cleared.");
 }

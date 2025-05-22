@@ -11,6 +11,7 @@
 #include "EntityFactory.h"
 #include "UI.h"
 #include "InteractionMode.h"
+#include "LineCreationSystem.h"
 
 class Renderer;
 
@@ -38,6 +39,5 @@ private:
     std::unique_ptr<InputHandler> m_inputHandler;
     std::unique_ptr<UI> m_ui;
     GameMode m_currentGameMode;
-
-    std::vector<entt::entity> m_stationsForNewLine;
+    std::unique_ptr<LineCreationSystem> m_lineCreationSystem;
 };

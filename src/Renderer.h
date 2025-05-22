@@ -11,7 +11,7 @@ public:
     ~Renderer();
 
     void init();
-    void render(entt::registry& registry, const sf::View& view, sf::Time dt, const std::vector<entt::entity>& activeLineStations, InteractionMode currentMode);
+    void render(entt::registry& registry, const sf::View& view, sf::Time dt, InteractionMode currentMode);
     void display();
     void cleanup();
     bool isOpen() const;

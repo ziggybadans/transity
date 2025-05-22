@@ -8,6 +8,7 @@
 #include <variant>
 #include "Camera.h"
 #include "InteractionMode.h"
+#include "LineEvents.h"
 
 enum class InputEventType {
     WindowClose,
@@ -42,10 +43,15 @@ public:
     void clearCommands();
     void addCommand(const InputCommand& command);
 
+    const std::vector<std::variant<AddStationToLineEvent, FinalizeLineEvent>>& getGameEvents() const;
+    void clearGameEvents();
+
 private:
     std::vector<InputCommand> m_commands;
 
     float cameraSpeed;
     float zoomFactor;
     float unzoomFactor;
+
+    std::vector<std::variant<AddStationToLineEvent, FinalizeLineEvent>> m_gameEvents;
 };

@@ -9,6 +9,8 @@
 
 Game::Game()
     : m_entityFactory(registry) {
+    m_lineCreationSystem = std::make_unique<LineCreationSystem>(registry, m_entityFactory);
+    
     LOG_INFO("Game", "Game instance creating.");
     LOG_INFO("Game", "Game instance created successfully.");
 }
@@ -59,17 +61,6 @@ void Game::init() {
 }
 
 void Game::processInputCommands() {
-    if (m_ui->wasFinalizeLineClicked()) {
-        if (m_ui->getInteractionMode() == InteractionMode::CREATE_LINE && m_stationsForNewLine.size() >= 2) {
-            InputCommand finalizeLineCommand;
-            finalizeLineCommand.type = InputEventType::FinalizeLineIntent;
-            m_inputHandler->addCommand(finalizeLineCommand);
-            LOG_DEBUG("Game", "FinalizeLineIntent command added.");
-        } else {
-            LOG_WARN("Game", "FinalizeLineIntent command not added due to insufficient stations.");
-        }
-    }
-
     const auto& commands = m_inputHandler->getCommands();
     for (const auto& command : commands) {
         switch (command.type) {
@@ -100,50 +91,6 @@ void Game::processInputCommands() {
                     m_entityFactory.createStation(command.data.worldPosition, "New Station " + std::to_string(nextStationID));
                 }
                 break;
-            case InputEventType::AddStationToLineIntent:
-                if (m_ui->getInteractionMode() == InteractionMode::CREATE_LINE) {
-                    entt::entity clickedEntity = command.data.clickedEntity;
-                    if (registry.valid(clickedEntity)) {
-                        if (m_stationsForNewLine.empty() || m_stationsForNewLine.back() != clickedEntity) {
-                            m_stationsForNewLine.push_back(clickedEntity);
-                            LOG_DEBUG("Game", "Station added to new line: %u", static_cast<unsigned int>(clickedEntity));
-                        } else {
-                            LOG_WARN("Game", "Station already added to new line.");
-                        }
-                    } else {
-                        LOG_WARN("Game", "Clicked entity is not valid.");
-                    }
-                }
-                break;
-            case InputEventType::FinalizeLineIntent:
-                if (m_ui->getInteractionMode() == InteractionMode::CREATE_LINE) {
-                    if (m_stationsForNewLine.size() >= 2) {
-                        LOG_DEBUG("Game", "Finalizing line with %zu stations.", m_stationsForNewLine.size());
-
-                        auto lineEntity = registry.create();
-                        auto& lineComponent = registry.emplace<LineComponent>(lineEntity);
-                        lineComponent.stops = m_stationsForNewLine;
-
-                        static int lineColorIndex = 0;
-                        sf::Color lineColors[] = { sf::Color::Red, sf::Color::Green, sf::Color::Blue, sf::Color::Yellow, sf::Color::Magenta, sf::Color::Cyan };
-                        lineComponent.color = lineColors[lineColorIndex % (sizeof(lineColors) / sizeof(lineColors[0]))];
-                        lineColorIndex++;
-
-                        for (entt::entity station_ent : lineComponent.stops) {
-                            if (registry.valid(station_ent) && registry.all_of<StationComponent>(station_ent)) {
-                                auto& stationComp = registry.get<StationComponent>(station_ent);
-                                stationComp.connectedLines.push_back(lineEntity);
-                                LOG_DEBUG("Game", "Connected line %u to station %u", static_cast<unsigned int>(lineEntity), static_cast<unsigned int>(station_ent));
-                            } 
-                        }
-
-                        m_stationsForNewLine.clear();
-                        LOG_INFO("Game", "Created line entity with ID: %u", static_cast<unsigned int>(lineEntity));
-                    }
-                    else {
-                        LOG_WARN("Game", "Not enough stations to finalize line.");
-                    }
-                }
             case InputEventType::None:
             default:
                 break;
@@ -169,15 +116,19 @@ void Game::run() {
         }
         
         m_inputHandler->update(dt);
-
         processInputCommands();
 
-        m_ui->update(dt, m_stationsForNewLine.size());
+        m_ui->update(dt, m_lineCreationSystem->getActiveLineStations().size());
+
+        m_lineCreationSystem->processEvents(m_inputHandler->getGameEvents(), m_ui->getUIEvents());
+
+        m_inputHandler->clearGameEvents();
+        m_ui->clearUIEvents();
 
         update(dt);
         LOG_TRACE("Game", "Game logic updated.");
 
-        m_renderer->render(registry, camera.getView(), dt, m_stationsForNewLine, m_ui->getInteractionMode());
+        m_renderer->render(registry, camera.getView(), dt, m_ui->getInteractionMode());
         LOG_TRACE("Game", "Frame rendered.");
 
         m_ui->render();

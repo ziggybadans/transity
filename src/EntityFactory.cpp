@@ -1,6 +1,7 @@
 #include "EntityFactory.h"
 #include "Logger.h"
 #include <SFML/Graphics/Color.hpp>
+#include <vector>
 
 EntityFactory::EntityFactory(entt::registry& registry)
     : m_registry(registry) {
@@ -53,5 +54,21 @@ entt::entity EntityFactory::createStation(const sf::Vector2f& position, const st
     m_registry.emplace<ClickableComponent>(entity, clickRadius);
     
     LOG_DEBUG("EntityFactory", "Station entity (ID: %u) created successfully using archetype.", static_cast<unsigned int>(entity));
+    return entity;
+}
+
+entt::entity EntityFactory::createLine(const std::vector<entt::entity>& stops, const sf::Color& color) {
+    LOG_INFO("EntityFactory", "Request to create line entity with %zu stops.", stops.size());
+    if (stops.size() < 2) {
+        LOG_ERROR("EntityFactory", "Cannot create line with less than 2 stops.");
+        return entt::null;
+    }
+    
+    auto entity = m_registry.create();
+    auto& lineComponent = m_registry.emplace<LineComponent>(entity);
+    lineComponent.stops = stops;
+    lineComponent.color = color;
+
+    LOG_DEBUG("EntityFactory", "Line entity (ID: %u) created successfully with %zu stops.", static_cast<unsigned int>(entity), stops.size());
     return entity;
 }
