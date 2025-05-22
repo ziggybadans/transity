@@ -113,3 +113,8 @@ void InputHandler::clearCommands() {
     m_commands.clear();
     LOG_TRACE("Input", "Input commands cleared.");
 }
+
+void InputHandler::addCommand(const InputCommand& command) {
+    m_commands.push_back(command);
+    LOG_TRACE("Input", "Input command added: %d", static_cast<int>(command.type));
+}

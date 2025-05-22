@@ -71,10 +71,10 @@ void Renderer::render(entt::registry& registry, const sf::View& view, sf::Time d
             const auto& pos2_comp = registry.get<PositionComponent>(station2);
 
             sf::Vertex line[] = {
-                sf::Vertex(pos1_comp.coordinates, lineComp.color),
-                sf::Vertex(pos2_comp.coordinates, lineComp.color)
+                sf::Vertex{pos1_comp.coordinates, lineComp.color, sf::Vector2f()},
+                sf::Vertex{pos2_comp.coordinates, lineComp.color, sf::Vector2f()}
             };
-            m_windowInstance.draw(line, 2, sf::Lines);
+            m_windowInstance.draw(line, 2, sf::PrimitiveType::Lines);
         }
         finalizedLineCount++;
     }
@@ -99,10 +99,10 @@ void Renderer::render(entt::registry& registry, const sf::View& view, sf::Time d
                 const auto& pos2_comp = registry.get<PositionComponent>(station_entity2);
 
                 sf::Vertex line_segment[] = { // Use a different variable name to avoid conflict
-                    sf::Vertex(pos1_comp.coordinates, sf::Color::Yellow), // Changed to Yellow for active line
-                    sf::Vertex(pos2_comp.coordinates, sf::Color::Yellow)
+                    sf::Vertex{pos1_comp.coordinates, sf::Color::Yellow, sf::Vector2f()}, // Changed to Yellow for active line
+                    sf::Vertex{pos2_comp.coordinates, sf::Color::Yellow, sf::Vector2f()}
                 };
-                m_windowInstance.draw(line_segment, 2, sf::Lines);
+                m_windowInstance.draw(line_segment, 2, sf::PrimitiveType::Lines);
                 LOG_TRACE("Renderer", "Drew active line segment between selected stations.");
             }
         }
@@ -117,10 +117,10 @@ void Renderer::render(entt::registry& registry, const sf::View& view, sf::Time d
                 sf::Vector2f p2_mouse = m_windowInstance.mapPixelToCoords(currentMousePixelPos, view); // Use the view passed to render
 
                 sf::Vertex lineToMouse[] = {
-                    sf::Vertex(p1, sf::Color::Yellow), 
-                    sf::Vertex(p2_mouse, sf::Color::Yellow)
+                    sf::Vertex{p1, sf::Color::Yellow, sf::Vector2f()},
+                    sf::Vertex{p2_mouse, sf::Color::Yellow, sf::Vector2f()}
                 };
-                m_windowInstance.draw(lineToMouse, 2, sf::Lines);
+                m_windowInstance.draw(lineToMouse, 2, sf::PrimitiveType::Lines);
                 LOG_TRACE("Renderer", "Drew active line segment from last station to mouse.");
             }
         }

@@ -40,6 +40,7 @@ public:
 
     const std::vector<InputCommand>& getCommands() const;
     void clearCommands();
+    void addCommand(const InputCommand& command);
 
 private:
     std::vector<InputCommand> m_commands;

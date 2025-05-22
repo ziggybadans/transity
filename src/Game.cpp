@@ -59,6 +59,17 @@ void Game::init() {
 }
 
 void Game::processInputCommands() {
+    if (m_ui->wasFinalizeLineClicked()) {
+        if (m_ui->getInteractionMode() == InteractionMode::CREATE_LINE && m_stationsForNewLine.size() >= 2) {
+            InputCommand finalizeLineCommand;
+            finalizeLineCommand.type = InputEventType::FinalizeLineIntent;
+            m_inputHandler->addCommand(finalizeLineCommand);
+            LOG_DEBUG("Game", "FinalizeLineIntent command added.");
+        } else {
+            LOG_WARN("Game", "FinalizeLineIntent command not added due to insufficient stations.");
+        }
+    }
+
     const auto& commands = m_inputHandler->getCommands();
     for (const auto& command : commands) {
         switch (command.type) {
@@ -138,6 +149,7 @@ void Game::processInputCommands() {
                 break;
         }
     }
+    
     m_inputHandler->clearCommands();
 }
 
@@ -160,7 +172,7 @@ void Game::run() {
 
         processInputCommands();
 
-        m_ui->update(dt);
+        m_ui->update(dt, m_stationsForNewLine.size());
 
         update(dt);
         LOG_TRACE("Game", "Game logic updated.");

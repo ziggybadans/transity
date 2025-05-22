@@ -11,12 +11,14 @@ public:
     ~UI();
     void init();
     void processEvent(const sf::Event& event);
-    void update(sf::Time deltaTime);
+    void update(sf::Time deltaTime, size_t numStationsInActiveLine);
     void render();
     void cleanup();
     InteractionMode getInteractionMode() const;
+    bool wasFinalizeLineClicked() const;
 
 private:
     sf::RenderWindow& m_window;
     InteractionMode m_currentInteractionMode;
+    bool m_finalizeLineClicked = false;
 };
