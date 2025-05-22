@@ -20,6 +20,7 @@ struct StationComponent {
 struct LineComponent {
     sf::Color color;
     std::vector<entt::entity> stops;
+    std::vector<sf::Vector2f> pathPoints;
 };
 
 struct ClickableComponent {
