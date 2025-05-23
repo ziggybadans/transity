@@ -17,6 +17,6 @@ public:
         FinalizeLineEvent>>& gameEvents, const std::vector<FinalizeLineEvent>& uiEvents);
 
 private:
-    entt::registry& m_registry;
-    EntityFactory m_entityFactory;
+    entt::registry& _registry;
+    EntityFactory _entityFactory;
 };

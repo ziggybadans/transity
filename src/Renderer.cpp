@@ -7,42 +7,42 @@
 #include <cstdlib>
 
 Renderer::Renderer()
-    : m_windowInstance(sf::VideoMode({800, 600}), "Transity Predev")
-    , m_clearColor(173, 216, 230) {
+    : _windowInstance(sf::VideoMode({800, 600}), "Transity Predev")
+    , _clearColor(173, 216, 230) {
     LOG_INFO("Renderer", "Renderer created and window initialized.");
-    m_windowInstance.setFramerateLimit(144);
+    _windowInstance.setFramerateLimit(144);
 }
 
 Renderer::~Renderer() {
     LOG_INFO("Renderer", "Renderer destroyed.");
 }
 
-void Renderer::init() {
+void Renderer::initialize() {
     LOG_INFO("Renderer", "Initializing Renderer.");
-    m_landShape.setSize({100, 100});
-    m_landShape.setFillColor(sf::Color::White);
-    m_landShape.setOrigin(m_landShape.getSize() / 2.0f);
-    m_landShape.setPosition({50, 50});
-    LOG_DEBUG("Renderer", "Land shape created at (%.1f, %.1f) with size (%.1f, %.1f).", m_landShape.getPosition().x, m_landShape.getPosition().y, m_landShape.getSize().x, m_landShape.getSize().y);
+    _landShape.setSize({100, 100});
+    _landShape.setFillColor(sf::Color::White);
+    _landShape.setOrigin(_landShape.getSize() / 2.0f);
+    _landShape.setPosition({50, 50});
+    LOG_DEBUG("Renderer", "Land shape created at (%.1f, %.1f) with size (%.1f, %.1f).", _landShape.getPosition().x, _landShape.getPosition().y, _landShape.getSize().x, _landShape.getSize().y);
     LOG_INFO("Renderer", "Renderer initialized.");
 }
 
-void Renderer::render(entt::registry& registry, const sf::View& view, sf::Time dt, InteractionMode currentMode) {
+void Renderer::renderFrame(entt::registry& registry, const sf::View& view, sf::Time dt, InteractionMode currentMode) {
     LOG_TRACE("Renderer", "Beginning render pass.");
-    m_windowInstance.setView(view);
-    m_windowInstance.clear(m_clearColor);
+    _windowInstance.setView(view);
+    _windowInstance.clear(_clearColor);
 
-    m_windowInstance.draw(m_landShape);
+    _windowInstance.draw(_landShape);
     LOG_TRACE("Renderer", "Land shape drawn.");
 
-    auto view_registry = registry.view<PositionComponent, RenderableComponent>();
+    auto viewRegistry = registry.view<PositionComponent, RenderableComponent>();
     int entityCount = 0;
-    for (auto entity : view_registry) {
-        auto& position = view_registry.get<PositionComponent>(entity);
-        auto& renderable = view_registry.get<RenderableComponent>(entity);
+    for (auto entity : viewRegistry) {
+        auto& position = viewRegistry.get<PositionComponent>(entity);
+        auto& renderable = viewRegistry.get<RenderableComponent>(entity);
 
         renderable.shape.setPosition(position.coordinates);
-        m_windowInstance.draw(renderable.shape);
+        _windowInstance.draw(renderable.shape);
         entityCount++;
     }
     LOG_TRACE("Renderer", "Rendered %d entities.", entityCount);
@@ -61,20 +61,20 @@ void Renderer::render(entt::registry& registry, const sf::View& view, sf::Time d
             entt::entity station1 = lineComp.stops[i];
             entt::entity station2 = lineComp.stops[i + 1];
 
-            if (!registry.valid(station1) || !registry.all_of<PositionComponent>(station1) || 
+            if (!registry.valid(station1) || !registry.all_of<PositionComponent>(station1) ||
                 !registry.valid(station2) || !registry.all_of<PositionComponent>(station2)) {
                 LOG_WARN("Renderer", "Invalid entity in line stops.");
                 continue;
             }
 
-            const auto& pos1_comp = registry.get<PositionComponent>(station1);
-            const auto& pos2_comp = registry.get<PositionComponent>(station2);
+            const auto& pos1Comp = registry.get<PositionComponent>(station1);
+            const auto& pos2Comp = registry.get<PositionComponent>(station2);
 
             sf::Vertex line[] = {
-                sf::Vertex{pos1_comp.coordinates, lineComp.color, sf::Vector2f()},
-                sf::Vertex{pos2_comp.coordinates, lineComp.color, sf::Vector2f()}
+                sf::Vertex{pos1Comp.coordinates, lineComp.color, sf::Vector2f()},
+                sf::Vertex{pos2Comp.coordinates, lineComp.color, sf::Vector2f()}
             };
-            m_windowInstance.draw(line, 2, sf::PrimitiveType::Lines);
+            _windowInstance.draw(line, 2, sf::PrimitiveType::Lines);
         }
         finalizedLineCount++;
     }
@@ -100,22 +100,22 @@ void Renderer::render(entt::registry& registry, const sf::View& view, sf::Time d
             }
             if (activeLineStationsInOrder.size() >= 2) {
                 for (size_t i = 0; i < activeLineStationsInOrder.size() - 1; ++i) {
-                    entt::entity station_entity1 = activeLineStationsInOrder[i];
-                    entt::entity station_entity2 = activeLineStationsInOrder[i+1];
+                    entt::entity stationEntity1 = activeLineStationsInOrder[i];
+                    entt::entity stationEntity2 = activeLineStationsInOrder[i+1];
 
-                    if (!registry.valid(station_entity1) || !registry.all_of<PositionComponent>(station_entity1) ||
-                        !registry.valid(station_entity2) || !registry.all_of<PositionComponent>(station_entity2)) {
+                    if (!registry.valid(stationEntity1) || !registry.all_of<PositionComponent>(stationEntity1) ||
+                        !registry.valid(stationEntity2) || !registry.all_of<PositionComponent>(stationEntity2)) {
                         LOG_WARN("Renderer", "Skipping active line segment due to invalid station or missing PositionComponent.");
                         continue;
                     }
-                    const auto& pos1_comp = registry.get<PositionComponent>(station_entity1);
-                    const auto& pos2_comp = registry.get<PositionComponent>(station_entity2);
+                    const auto& pos1Comp = registry.get<PositionComponent>(stationEntity1);
+                    const auto& pos2Comp = registry.get<PositionComponent>(stationEntity2);
 
-                    sf::Vertex line_segment[] = { // Use a different variable name to avoid conflict
-                        sf::Vertex{pos1_comp.coordinates, sf::Color::Yellow, sf::Vector2f()}, // Changed to Yellow for active line
-                        sf::Vertex{pos2_comp.coordinates, sf::Color::Yellow, sf::Vector2f()}
+                    sf::Vertex lineSegment[] = { // Use a different variable name to avoid conflict
+                        sf::Vertex{pos1Comp.coordinates, sf::Color::Yellow, sf::Vector2f()}, // Changed to Yellow for active line
+                        sf::Vertex{pos2Comp.coordinates, sf::Color::Yellow, sf::Vector2f()}
                     };
-                    m_windowInstance.draw(line_segment, 2, sf::PrimitiveType::Lines);
+                    _windowInstance.draw(lineSegment, 2, sf::PrimitiveType::Lines);
                     LOG_TRACE("Renderer", "Drew active line segment between selected stations.");
                 }
             }
@@ -123,14 +123,14 @@ void Renderer::render(entt::registry& registry, const sf::View& view, sf::Time d
                 const auto& lastStationPosComp = registry.get<PositionComponent>(activeLineStationsInOrder.back());
                 sf::Vector2f p1 = lastStationPosComp.coordinates;
                 
-                sf::Vector2i currentMousePixelPos = sf::Mouse::getPosition(m_windowInstance); // Get current mouse pos
-                sf::Vector2f p2_mouse = m_windowInstance.mapPixelToCoords(currentMousePixelPos, view); // Use the view passed to render
+                sf::Vector2i currentMousePixelPos = sf::Mouse::getPosition(_windowInstance); // Get current mouse pos
+                sf::Vector2f p2Mouse = _windowInstance.mapPixelToCoords(currentMousePixelPos, view); // Use the view passed to render
 
                 sf::Vertex lineToMouse[] = {
                     sf::Vertex{p1, sf::Color::Yellow, sf::Vector2f()},
-                    sf::Vertex{p2_mouse, sf::Color::Yellow, sf::Vector2f()}
+                    sf::Vertex{p2Mouse, sf::Color::Yellow, sf::Vector2f()}
                 };
-                m_windowInstance.draw(lineToMouse, 2, sf::PrimitiveType::Lines);
+                _windowInstance.draw(lineToMouse, 2, sf::PrimitiveType::Lines);
                 LOG_TRACE("Renderer", "Drew active line segment from last station to mouse.");
             }
         }
@@ -139,38 +139,38 @@ void Renderer::render(entt::registry& registry, const sf::View& view, sf::Time d
     LOG_TRACE("Renderer", "Render pass complete.");
 }
 
-void Renderer::display() {
-    m_windowInstance.display();
+void Renderer::displayFrame() {
+    _windowInstance.display();
 }
 
-void Renderer::cleanup() {
+void Renderer::cleanupResources() {
     LOG_INFO("Renderer", "Renderer cleanup initiated.");
     LOG_INFO("Renderer", "Renderer cleaned up.");
 }
 
-bool Renderer::isOpen() const {
-    return m_windowInstance.isOpen();
+bool Renderer::isWindowOpen() const {
+    return _windowInstance.isOpen();
 }
 
-sf::RenderWindow& Renderer::getWindow(){
-    return m_windowInstance;
+sf::RenderWindow& Renderer::getWindowInstance(){
+    return _windowInstance;
 }
 
 void Renderer::setClearColor(const sf::Color& color) {
-    m_clearColor = color;
+    _clearColor = color;
     LOG_DEBUG("Renderer", "Clear color set to R:%d G:%d B:%d A:%d", color.r, color.g, color.b, color.a);
 }
 
 const sf::Color& Renderer::getClearColor() const {
-    return m_clearColor;
+    return _clearColor;
 }
 
 sf::Vector2f Renderer::getLandCenter() const {
     LOG_TRACE("Renderer", "Getting land center.");
-    return m_landShape.getPosition();
+    return _landShape.getPosition();
 }
 
 sf::Vector2f Renderer::getLandSize() const {
     LOG_TRACE("Renderer", "Getting land size.");
-    return m_landShape.getSize();
+    return _landShape.getSize();
 }

@@ -10,15 +10,15 @@ class UI {
 public:
     UI(sf::RenderWindow& window);
     ~UI();
-    void init();
+    void initialize();
     void processEvent(const sf::Event& event);
     void update(sf::Time deltaTime, size_t numStationsInActiveLine);
-    void render();
-    void cleanup();
+    void renderFrame();
+    void cleanupResources();
     InteractionMode getInteractionMode() const;
 
-    const std::vector<FinalizeLineEvent>& getUIEvents() const;
-    void clearUIEvents();
+    const std::vector<FinalizeLineEvent>& getUiEvents() const;
+    void clearUiEvents();
 
 private:
     sf::RenderWindow& m_window;

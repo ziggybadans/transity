@@ -3,14 +3,14 @@
 #include <SFML/Window/Event.hpp>
 
 Camera::Camera() {
-    LOG_INFO("Camera", "Camera created. Initial view size: (%.1f, %.1f), center: (%.1f, %.1f)", view.getSize().x, view.getSize().y, view.getCenter().x, view.getCenter().y);
-    view.setSize({800, 600});
-    view.setCenter({400, 300});
+    LOG_INFO("Camera", "Camera created. Initial view size: (%.1f, %.1f), center: (%.1f, %.1f)", _view.getSize().x, _view.getSize().y, _view.getCenter().x, _view.getCenter().y);
+    _view.setSize({800, 600});
+    _view.setCenter({400, 300});
 }
 
 void Camera::setInitialView(const sf::RenderWindow& window, const sf::Vector2f& landCenter, const sf::Vector2f& landSize) {
     LOG_INFO("Camera", "Setting initial view. Land center: (%.1f, %.1f), Land size: (%.1f, %.1f)", landCenter.x, landCenter.y, landSize.x, landSize.y);
-    view.setCenter(landCenter);
+    _view.setCenter(landCenter);
 
     sf::Vector2u windowSizeU = window.getSize();
     sf::Vector2f windowSizeF(static_cast<float>(windowSizeU.x), static_cast<float>(windowSizeU.y));
@@ -18,8 +18,8 @@ void Camera::setInitialView(const sf::RenderWindow& window, const sf::Vector2f& 
 
     if (windowSizeF.y == 0.0f) {
         LOG_ERROR("Camera", "Window height is zero, cannot calculate aspect ratio. Using default view settings.");
-        view.setSize(sf::Vector2f(800.f, 600.f)); // Default size
-        view.setCenter(landCenter); // Still center on land if possible
+        _view.setSize(sf::Vector2f(800.f, 600.f)); // Default size
+        _view.setCenter(landCenter); // Still center on land if possible
         return;
     }
 
@@ -43,25 +43,25 @@ void Camera::setInitialView(const sf::RenderWindow& window, const sf::Vector2f& 
         viewSize.x = landSize.x * paddingFactor;
         viewSize.y = viewSize.x / windowAspectRatio;
     }
-    view.setSize(viewSize);
-    LOG_INFO("Camera", "Initial view set. View size: (%.1f, %.1f), View center: (%.1f, %.1f)", view.getSize().x, view.getSize().y, view.getCenter().x, view.getCenter().y);
+    _view.setSize(viewSize);
+    LOG_INFO("Camera", "Initial view set. View size: (%.1f, %.1f), View center: (%.1f, %.1f)", _view.getSize().x, _view.getSize().y, _view.getCenter().x, _view.getCenter().y);
 }
 
 sf::View& Camera::getViewToModify() {
-    return view;
+    return _view;
 }
 
 void Camera::moveView(const sf::Vector2f& offset) {
-    view.move(offset);
-    LOG_TRACE("Camera", "View moved by (%.1f, %.1f). New center: (%.1f, %.1f)", offset.x, offset.y, view.getCenter().x, view.getCenter().y);
+    _view.move(offset);
+    LOG_TRACE("Camera", "View moved by (%.1f, %.1f). New center: (%.1f, %.1f)", offset.x, offset.y, _view.getCenter().x, _view.getCenter().y);
 }
 
 void Camera::zoomView(float factor) {
-    view.zoom(factor);
-    LOG_TRACE("Camera", "View zoomed by factor %.2f. New size: (%.1f, %.1f)", factor, view.getSize().x, view.getSize().y);
+    _view.zoom(factor);
+    LOG_TRACE("Camera", "View zoomed by factor %.2f. New size: (%.1f, %.1f)", factor, _view.getSize().x, _view.getSize().y);
 }
 
 const sf::View& Camera::getView() const {
-    LOG_TRACE("Camera", "Getting view. Center: (%.1f, %.1f), Size: (%.1f, %.1f)", view.getCenter().x, view.getCenter().y, view.getSize().x, view.getSize().y);
-    return view;
+    LOG_TRACE("Camera", "Getting view. Center: (%.1f, %.1f), Size: (%.1f, %.1f)", _view.getCenter().x, _view.getCenter().y, _view.getSize().x, _view.getSize().y);
+    return _view;
 }

@@ -10,7 +10,7 @@ struct PositionComponent {
 
 struct RenderableComponent {
     sf::CircleShape shape;
-    int z_order;
+    int zOrder;
 };
 
 struct StationComponent {
@@ -20,7 +20,7 @@ struct StationComponent {
 struct LineComponent {
     sf::Color color;
     std::vector<entt::entity> stops;
-    std::vector<sf::Vector2f> path_points;
+    std::vector<sf::Vector2f> pathPoints;
     float thickness = 5.0f;
 };
 

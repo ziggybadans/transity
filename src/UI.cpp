@@ -14,7 +14,7 @@ UI::~UI() {
     LOG_INFO("UI", "UI instance destroyed.");
 }
 
-void UI::init() {
+void UI::initialize() {
     LOG_INFO("UI", "Initializing ImGui.");
     ImGui::CreateContext();
     if (!ImGui::SFML::Init(m_window)) {
@@ -25,34 +25,34 @@ void UI::init() {
     LOG_INFO("UI", "ImGui initialized successfully.");
 }
 
-void UI::processEvent(const sf::Event& event) {
-    ImGui::SFML::ProcessEvent(m_window, event);
+void UI::processEvent(const sf::Event& sfEvent) {
+    ImGui::SFML::ProcessEvent(m_window, sfEvent);
 }
 
-void UI::update(sf::Time deltaTime, size_t numStationsInActiveLine) {
+void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
     ImGui::SFML::Update(m_window, deltaTime);
 
     ImGui::Begin("Interaction Modes");
-        int mode = static_cast<int>(m_currentInteractionMode);
+        int currentMode = static_cast<int>(m_currentInteractionMode);
 
-        if (ImGui::RadioButton("None", &mode, static_cast<int>(InteractionMode::SELECT))) {
+        if (ImGui::RadioButton("None", &currentMode, static_cast<int>(InteractionMode::SELECT))) {
             m_currentInteractionMode = InteractionMode::SELECT;
             LOG_INFO("UI", "Interaction mode changed to: None");
         }
         ImGui::SameLine();
-        if (ImGui::RadioButton("Station Placement", &mode, static_cast<int>(InteractionMode::CREATE_STATION))) {
+        if (ImGui::RadioButton("Station Placement", &currentMode, static_cast<int>(InteractionMode::CREATE_STATION))) {
             m_currentInteractionMode = InteractionMode::CREATE_STATION;
             LOG_INFO("UI", "Interaction mode changed to: StationPlacement");
         }
         ImGui::SameLine();
-        if (ImGui::RadioButton("Line Creation", &mode, static_cast<int>(InteractionMode::CREATE_LINE))) {
+        if (ImGui::RadioButton("Line Creation", &currentMode, static_cast<int>(InteractionMode::CREATE_LINE))) {
             m_currentInteractionMode = InteractionMode::CREATE_LINE;
             LOG_INFO("UI", "Interaction mode changed to: LineCreation");
         }
-        if (m_currentInteractionMode == InteractionMode::CREATE_LINE && numStationsInActiveLine >= 2) {
+        if (m_currentInteractionMode == InteractionMode::CREATE_LINE && numberOfStationsInActiveLine >= 2) {
             if (ImGui::Button("Finalize Line")) {
-                FinalizeLineEvent event;
-                m_uiEvents.emplace_back(event);
+                FinalizeLineEvent finalizeLineEvent;
+                m_uiEvents.emplace_back(finalizeLineEvent);
                 LOG_INFO("UI", "Finalize Line button clicked.");
             }
         }
@@ -63,11 +63,11 @@ void UI::update(sf::Time deltaTime, size_t numStationsInActiveLine) {
     ImGui::End();
 }
 
-void UI::render() {
+void UI::renderFrame() {
     ImGui::SFML::Render(m_window);
 }
 
-void UI::cleanup() {
+void UI::cleanupResources() {
     LOG_INFO("UI", "Shutting down ImGui.");
     ImGui::SFML::Shutdown();
     LOG_INFO("UI", "ImGui shutdown complete.");
@@ -77,11 +77,11 @@ InteractionMode UI::getInteractionMode() const {
     return m_currentInteractionMode;
 }
 
-const std::vector<FinalizeLineEvent>& UI::getUIEvents() const {
+const std::vector<FinalizeLineEvent>& UI::getUiEvents() const {
     return m_uiEvents;
 }
 
-void UI::clearUIEvents() {
+void UI::clearUiEvents() {
     m_uiEvents.clear();
-    LOG_DEBUG("UI", "UI events cleared.");
+    LOG_INFO("UI", "UI events cleared.");
 }

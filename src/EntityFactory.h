@@ -9,7 +9,7 @@
 
 #include "Components.h" 
 
-namespace EntityArchetypeData {
+namespace entityArchetypeData {
     struct RenderableData {
         float radius;
         sf::Color color;
@@ -24,8 +24,8 @@ class EntityFactory {
 public:
     struct Archetype {
         std::string id;
-        std::optional<EntityArchetypeData::RenderableData> renderable_data;
-        std::optional<EntityArchetypeData::ClickableData> clickable_data;
+        std::optional<entityArchetypeData::RenderableData> renderableData;
+        std::optional<entityArchetypeData::ClickableData> clickableData;
     };
 
     EntityFactory(entt::registry& registry);
@@ -34,9 +34,9 @@ public:
     entt::entity createLine(const std::vector<entt::entity>& stops, const sf::Color& color);
 
 private:
-    void registerArchetypes(); 
+    void registerArchetypes();
     void applyArchetype(entt::entity entity, const Archetype& archetype, const sf::Vector2f& position, const std::string& name);
 
-    entt::registry& m_registry;
-    std::map<std::string, Archetype> m_archetypes;
+    entt::registry& _registry;
+    std::map<std::string, Archetype> _archetypes;
 };

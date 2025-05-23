@@ -11,13 +11,13 @@
 #include "LineEvents.h"
 
 enum class InputEventType {
-    WindowClose,
-    CameraZoom,
-    CameraPan,
-    TryPlaceStation,
-    AddStationToLineIntent,
-    FinalizeLineIntent,
-    None
+    WINDOW_CLOSE,
+    CAMERA_ZOOM,
+    CAMERA_PAN,
+    TRY_PLACE_STATION,
+    ADD_STATION_TO_LINE_INTENT,
+    FINALIZE_LINE_INTENT,
+    NONE
 };
 
 struct InputData {
@@ -29,7 +29,7 @@ struct InputData {
 };
 
 struct InputCommand {
-    InputEventType type = InputEventType::None;
+    InputEventType type = InputEventType::NONE;
     InputData data;
 };
 
@@ -47,11 +47,11 @@ public:
     void clearGameEvents();
 
 private:
-    std::vector<InputCommand> m_commands;
+    std::vector<InputCommand> _commands;
 
-    float cameraSpeed;
-    float zoomFactor;
-    float unzoomFactor;
+    float _cameraSpeed;
+    float _zoomFactor;
+    float _unzoomFactor;
 
-    std::vector<std::variant<AddStationToLineEvent, FinalizeLineEvent>> m_gameEvents;
+    std::vector<std::variant<AddStationToLineEvent, FinalizeLineEvent>> _gameEvents;
 };

@@ -17,5 +17,5 @@ public:
     void zoomView(float factor);
 
 private:
-    sf::View view;
+    sf::View _view;
 };
