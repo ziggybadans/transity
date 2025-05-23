@@ -1,6 +1,6 @@
 #include "Game.h"
-#include "Renderer.h"
-#include "InputHandler.h"
+#include "graphics/Renderer.h"
+#include "input/InputHandler.h"
 #include "Logger.h"
 #include <cstdlib> // For exit()
 #include <memory>

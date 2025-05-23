@@ -1,6 +1,6 @@
 #include "Renderer.h"
-#include "Components.h"
-#include "Logger.h"
+#include "../core/Components.h"
+#include "../Logger.h"
 #include <entt/entt.hpp>
 #include <SFML/Graphics.hpp>
 #include <iostream>

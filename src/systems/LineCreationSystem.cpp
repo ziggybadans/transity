@@ -1,6 +1,6 @@
 #include "LineCreationSystem.h"
-#include "Components.h"
-#include "Logger.h"
+#include "../core/Components.h"
+#include "../Logger.h"
 #include <algorithm>
 #include <utility>
 #include <variant>

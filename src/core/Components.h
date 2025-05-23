@@ -3,7 +3,7 @@
 #include <SFML/System.hpp>
 #include <SFML/Graphics.hpp>
 #include <string>
-#include "TerrainType.h"
+#include "../world/TerrainType.h"
 
 struct PositionComponent {
     sf::Vector2f coordinates;

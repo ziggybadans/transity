@@ -1,7 +1,7 @@
 #pragma once
 
 #include "WorldGrid.h"
-#include "Components.h"
+#include "../core/Components.h"
 
 class WorldGenerationSystem {
 public:

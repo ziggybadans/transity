@@ -3,7 +3,7 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/System.hpp>
 #include <entt/entt.hpp>
-#include "InteractionMode.h"
+#include "../input/InteractionMode.h"
 
 class Renderer {
 public:

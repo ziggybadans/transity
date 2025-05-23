@@ -3,8 +3,8 @@
 #include <SFML/System/Time.hpp>
 #include <SFML/Window/Event.hpp>
 #include <SFML/Graphics/RenderWindow.hpp>
-#include "InteractionMode.h"
-#include "LineEvents.h"
+#include "../input/InteractionMode.h"
+#include "../event/LineEvents.h"
 
 class UI {
 public:

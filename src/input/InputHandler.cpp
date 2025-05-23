@@ -1,6 +1,6 @@
 #include "InputHandler.h"
-#include "Logger.h"
-#include "Components.h"
+#include "../Logger.h"
+#include "../core/Components.h"
 #include <iostream>
 #include <string>
 #include <vector>

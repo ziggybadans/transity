@@ -60,13 +60,13 @@ FetchContent_MakeAvailable(ImGuiSFML)
 add_executable(main
     src/main.cpp
     src/Game.cpp
-    src/Camera.cpp
-    src/InputHandler.cpp
-    src/Renderer.cpp
-    src/EntityFactory.cpp
+    src/core/Camera.cpp
+    src/input/InputHandler.cpp
+    src/graphics/Renderer.cpp
+    src/core/EntityFactory.cpp
     src/Logger.cpp
-    src/UI.cpp
-    src/LineCreationSystem.cpp
+    src/graphics/UI.cpp
+    src/systems/LineCreationSystem.cpp
 )
 target_compile_features(main PRIVATE cxx_std_17)
 

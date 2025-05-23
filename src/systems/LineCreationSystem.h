@@ -2,8 +2,8 @@
 
 #include <vector>
 #include <entt/entt.hpp>
-#include "LineEvents.h"
-#include "EntityFactory.h"
+#include "../event/LineEvents.h"
+#include "../core/EntityFactory.h"
 
 class LineCreationSystem {
 public:

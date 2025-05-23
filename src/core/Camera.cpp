@@ -1,5 +1,5 @@
 #include "Camera.h"
-#include "Logger.h"
+#include "../Logger.h"
 #include <SFML/Window/Event.hpp>
 
 Camera::Camera() {

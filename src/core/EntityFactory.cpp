@@ -1,5 +1,5 @@
 #include "EntityFactory.h"
-#include "Logger.h"
+#include "../Logger.h"
 #include <SFML/Graphics/Color.hpp>
 #include <vector>
 

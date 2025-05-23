@@ -6,9 +6,9 @@
 #include <optional>
 #include <vector>
 #include <variant>
-#include "Camera.h"
-#include "InteractionMode.h"
-#include "LineEvents.h"
+#include "../core/Camera.h"
+#include "../input/InteractionMode.h"
+#include "../event/LineEvents.h"
 
 enum class InputEventType {
     WINDOW_CLOSE,

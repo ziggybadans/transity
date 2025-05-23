@@ -4,14 +4,14 @@
 #include <SFML/System/Clock.hpp> // For sf::Clock
 #include <SFML/System/Time.hpp> // For sf::Time
 #include <optional>
-#include "Camera.h"
+#include "core/Camera.h"
 #include <entt/entt.hpp>
-#include "InputHandler.h"
+#include "input/InputHandler.h"
 #include <memory>
-#include "EntityFactory.h"
-#include "UI.h"
-#include "InteractionMode.h"
-#include "LineCreationSystem.h"
+#include "core/EntityFactory.h"
+#include "graphics/UI.h"
+#include "input/InteractionMode.h"
+#include "systems/LineCreationSystem.h"
 
 class Renderer;
 

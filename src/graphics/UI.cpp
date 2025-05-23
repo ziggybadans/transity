@@ -1,8 +1,8 @@
 #include "UI.h"
 #include "imgui.h"
 #include "imgui-SFML.h"
-#include "Logger.h"
-#include "InteractionMode.h"
+#include "../Logger.h"
+#include "../input/InteractionMode.h"
 #include <cstdlib> // For EXIT_FAILURE
 
 UI::UI(sf::RenderWindow& window)
