@@ -35,18 +35,6 @@ void Renderer::renderFrame(entt::registry& registry, const sf::View& view, sf::T
     _windowInstance.draw(_landShape);
     LOG_TRACE("Renderer", "Land shape drawn.");
 
-    auto viewRegistry = registry.view<PositionComponent, RenderableComponent>();
-    int entityCount = 0;
-    for (auto entity : viewRegistry) {
-        auto& position = viewRegistry.get<PositionComponent>(entity);
-        auto& renderable = viewRegistry.get<RenderableComponent>(entity);
-
-        renderable.shape.setPosition(position.coordinates);
-        _windowInstance.draw(renderable.shape);
-        entityCount++;
-    }
-    LOG_TRACE("Renderer", "Rendered %d entities.", entityCount);
-
     LOG_TRACE("Renderer", "Rendering finalized lines.");
     auto lineView = registry.view<LineComponent>();
     int finalizedLineCount = 0;
@@ -135,6 +123,18 @@ void Renderer::renderFrame(entt::registry& registry, const sf::View& view, sf::T
             }
         }
     }
+
+    auto viewRegistry = registry.view<PositionComponent, RenderableComponent>();
+    int entityCount = 0;
+    for (auto entity : viewRegistry) {
+        auto& position = viewRegistry.get<PositionComponent>(entity);
+        auto& renderable = viewRegistry.get<RenderableComponent>(entity);
+
+        renderable.shape.setPosition(position.coordinates);
+        _windowInstance.draw(renderable.shape);
+        entityCount++;
+    }
+    LOG_TRACE("Renderer", "Rendered %d entities.", entityCount);
 
     LOG_TRACE("Renderer", "Render pass complete.");
 }
