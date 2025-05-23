@@ -3,6 +3,7 @@
 #include <SFML/System.hpp>
 #include <SFML/Graphics.hpp>
 #include <string>
+#include "TerrainType.h"
 
 struct PositionComponent {
     sf::Vector2f coordinates;
@@ -30,4 +31,8 @@ struct ClickableComponent {
 
 struct ActiveLineStationTag {
     int order = 0;
+};
+
+struct GridCellComponent {
+    TerrainType type = TerrainType::WATER;
 };
