@@ -85,8 +85,15 @@ void WorldGenerationSystem::generateWorld(int numChunksX, int numChunksY) {
     } else {
         worldGridEntity = worldView.front();
     }
+
+    std::cout << "Clearing existing chunk entities..." << std::endl;
+    auto chunkView = _registry.view<ChunkComponent>();
+    for (auto entity : chunkView) {
+        _registry.destroy(entity);
+    }
+    std::cout << "Existing chunk entities cleared." << std::endl;
     
-    std::cout << "Generating initial world of " << numChunksX << "x" << numChunksY << " chunks." << std::endl;
+    std::cout << "Generating world of " << numChunksX << "x" << numChunksY << " chunks." << std::endl;
 
     for (int cy = 0; cy < numChunksY; ++cy) {
         for (int cx = 0; cx < numChunksX; ++cx) {
