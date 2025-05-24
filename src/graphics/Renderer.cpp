@@ -19,11 +19,6 @@ Renderer::~Renderer() {
 
 void Renderer::initialize() {
     LOG_INFO("Renderer", "Initializing Renderer.");
-    _landShape.setSize({100, 100});
-    _landShape.setFillColor(sf::Color::White);
-    _landShape.setOrigin(_landShape.getSize() / 2.0f);
-    _landShape.setPosition({50, 50});
-    LOG_DEBUG("Renderer", "Land shape created at (%.1f, %.1f) with size (%.1f, %.1f).", _landShape.getPosition().x, _landShape.getPosition().y, _landShape.getSize().x, _landShape.getSize().y);
     LOG_INFO("Renderer", "Renderer initialized.");
 }
 
@@ -32,8 +27,8 @@ void Renderer::renderFrame(entt::registry& registry, const sf::View& view, sf::T
     _windowInstance.setView(view);
     _windowInstance.clear(_clearColor);
 
-    _windowInstance.draw(_landShape);
-    LOG_TRACE("Renderer", "Land shape drawn.");
+    _terrainRenderSystem.render(registry, _windowInstance);
+    LOG_TRACE("Renderer", "Terrain rendered.");
 
     LOG_TRACE("Renderer", "Rendering finalized lines.");
     auto lineView = registry.view<LineComponent>();
@@ -163,14 +158,4 @@ void Renderer::setClearColor(const sf::Color& color) {
 
 const sf::Color& Renderer::getClearColor() const {
     return _clearColor;
-}
-
-sf::Vector2f Renderer::getLandCenter() const {
-    LOG_TRACE("Renderer", "Getting land center.");
-    return _landShape.getPosition();
-}
-
-sf::Vector2f Renderer::getLandSize() const {
-    LOG_TRACE("Renderer", "Getting land size.");
-    return _landShape.getSize();
 }

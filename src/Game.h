@@ -12,6 +12,7 @@
 #include "graphics/UI.h"
 #include "input/InteractionMode.h"
 #include "systems/LineCreationSystem.h"
+#include "world/WorldGenerationSystem.h"
 
 class Renderer;
 
@@ -40,4 +41,5 @@ private:
     std::unique_ptr<UI> _ui;
     GameMode _currentGameMode;
     std::unique_ptr<LineCreationSystem> _lineCreationSystem;
+    WorldGenerationSystem _worldGenerationSystem;
 };

@@ -4,6 +4,7 @@
 #include <SFML/System.hpp>
 #include <entt/entt.hpp>
 #include "../input/InteractionMode.h"
+#include "../world/TerrainRenderSystem.h"
 
 class Renderer {
 public:
@@ -20,11 +21,8 @@ public:
     void setClearColor(const sf::Color& color);
     const sf::Color& getClearColor() const;
 
-    sf::Vector2f getLandCenter() const;
-    sf::Vector2f getLandSize() const;
-
 private:
     sf::RenderWindow _windowInstance;
     sf::Color _clearColor;
-    sf::RectangleShape _landShape;
+    TerrainRenderSystem _terrainRenderSystem;
 };

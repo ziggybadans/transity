@@ -3,6 +3,7 @@ project(CMakeSFMLProject LANGUAGES CXX)
 
 # Where the final binaries will be placed
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # ---- pull SFML 2.6.1 from GitHub -------------------------------------------
 include(FetchContent)
@@ -67,12 +68,15 @@ add_executable(main
     src/Logger.cpp
     src/graphics/UI.cpp
     src/systems/LineCreationSystem.cpp
+    src/world/WorldGenerationSystem.cpp
+    src/World/TerrainRenderSystem.cpp
 )
 target_compile_features(main PRIVATE cxx_std_17)
 
 # Add include directory
 target_include_directories(main PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib
     ${entt_SOURCE_DIR}/src
     ${imgui_SOURCE_DIR}          # For ImGui headers
     ${imgui_SOURCE_DIR}/backends # For ImGui backend headers (if needed directly)

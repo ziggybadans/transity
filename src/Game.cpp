@@ -8,7 +8,7 @@
 // SFML includes for specific types like sf::Time, sf::Clock are in Game.h
 
 Game::Game()
-    : _entityFactory(_registry) {
+    : _entityFactory(_registry), _worldGenerationSystem(_worldGenerationSystem) {
     _lineCreationSystem = std::make_unique<LineCreationSystem>(_registry, _entityFactory);
     
     LOG_INFO("Game", "Game instance creating.");
@@ -52,9 +52,8 @@ void Game::init() {
         exit(EXIT_FAILURE);
     }
 
-    sf::Vector2f landCenter = _renderer->getLandCenter();
-    sf::Vector2f landSize = _renderer->getLandSize();
-    _camera.setInitialView(_renderer->getWindowInstance(), landCenter, landSize);
+    _worldGenerationSystem.generateWorld(_registry, 3, 3);
+
     Logging::Logger::getInstance().setLogLevelDelay(Logging::LogLevel::TRACE, 2000);
     LOG_INFO("Main", "TRACE log delay set to: %ums", Logging::Logger::getInstance().getLogLevelDelay(Logging::LogLevel::TRACE));
     LOG_INFO("Game", "Game initialization completed.");

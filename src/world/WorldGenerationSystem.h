@@ -1,14 +1,28 @@
 #pragma once
 
-#include "WorldGrid.h"
+#include <entt/entt.hpp>
+
+#include "FastNoiseLite.h"
 #include "../core/Components.h"
 
 class WorldGenerationSystem {
 public:
-    WorldGenerationSystem(WorldGrid& worldGrid);
-    void generateWorld(int worldWidth, int worldHeight, unsigned int seed = 0);
-    void initializeGrid(int worldWidth, int worldHeight);
-    void generateIslands(int worldWidth, int worldHeight, unsigned int seed);
-    void generateRivers(int worldWidth, int worldHeight, unsigned int seed);
-    WorldGrid& _worldGrid;
+    WorldGenerationSystem();
+
+    void configureNoise (
+        int seed, 
+        float frequency, 
+        FastNoiseLite::NoiseType noiseType,
+        FastNoiseLite::FractalType fractalType,
+        int octaves,
+        float lacunarity,
+        float gain);
+
+    void generateChunk(entt::registry& registry, entt::entity chunkEntity);
+    void generateWorld(entt::registry& registry, int numChunksX, int numChunksY);
+
+private:
+    FastNoiseLite _noiseGenerator;
+    
+    const WorldGridComponent& getWorldGridSettings(entt::registry& registry);
 };
