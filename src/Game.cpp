@@ -8,7 +8,8 @@
 // SFML includes for specific types like sf::Time, sf::Clock are in Game.h
 
 Game::Game()
-    : _entityFactory(_registry), _worldGenerationSystem(_worldGenerationSystem) {
+    : _entityFactory(_registry),
+    _worldGenerationSystem(_registry) {
     _lineCreationSystem = std::make_unique<LineCreationSystem>(_registry, _entityFactory);
     
     LOG_INFO("Game", "Game instance creating.");
@@ -28,7 +29,7 @@ void Game::init() {
         }
         _renderer->initialize();
 
-        _ui = std::make_unique<UI>(_renderer->getWindowInstance());
+        _ui = std::make_unique<UI>(_renderer->getWindowInstance(), &_worldGenerationSystem);
         if (!_ui) {
             LOG_FATAL("Game", "Failed to create UI instance (_ui is null).");
             exit(EXIT_FAILURE);
@@ -51,8 +52,6 @@ void Game::init() {
         LOG_FATAL("Game", "An unknown exception occurred during core system creation.");
         exit(EXIT_FAILURE);
     }
-
-    _worldGenerationSystem.generateWorld(_registry, 3, 3);
 
     Logging::Logger::getInstance().setLogLevelDelay(Logging::LogLevel::TRACE, 2000);
     LOG_INFO("Main", "TRACE log delay set to: %ums", Logging::Logger::getInstance().getLogLevelDelay(Logging::LogLevel::TRACE));
@@ -127,7 +126,7 @@ void Game::run() {
         update(dt);
         LOG_TRACE("Game", "Game logic updated.");
 
-        _renderer->renderFrame(_registry, _camera.getView(), dt, _ui->getInteractionMode());
+        _renderer->renderFrame(_registry, _camera.getView(), dt, _ui->getInteractionMode(), _ui->getVisualizeNoiseState());
         LOG_TRACE("Game", "Frame rendered.");
 
         _ui->renderFrame();

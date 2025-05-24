@@ -22,10 +22,16 @@ void Renderer::initialize() {
     LOG_INFO("Renderer", "Renderer initialized.");
 }
 
-void Renderer::renderFrame(entt::registry& registry, const sf::View& view, sf::Time dt, InteractionMode currentMode) {
+void Renderer::renderFrame(entt::registry& registry, 
+    const sf::View& view, 
+    sf::Time dt, 
+    InteractionMode currentMode,
+    bool visualizeNoise) {
     LOG_TRACE("Renderer", "Beginning render pass.");
     _windowInstance.setView(view);
     _windowInstance.clear(_clearColor);
+
+    _terrainRenderSystem.setVisualizeNoise(visualizeNoise);
 
     _terrainRenderSystem.render(registry, _windowInstance);
     LOG_TRACE("Renderer", "Terrain rendered.");

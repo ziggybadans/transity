@@ -1,36 +1,32 @@
 #include "WorldGenerationSystem.h"
 #include <iostream>
 
-WorldGenerationSystem::WorldGenerationSystem() {
-    _noiseGenerator.SetSeed(1337);
-    _noiseGenerator.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
-    _noiseGenerator.SetFrequency(0.01f);
-    _noiseGenerator.SetFractalType(FastNoiseLite::FractalType_FBm);
-    _noiseGenerator.SetFractalOctaves(5);
-    _noiseGenerator.SetFractalLacunarity(2.0f);
-    _noiseGenerator.SetFractalGain(0.5f);
+WorldGenerationSystem::WorldGenerationSystem(entt::registry& registry) : _registry(registry) {
+    _seed = 1337;
+    _frequency = 0.01f;
+    _noiseType = FastNoiseLite::NoiseType_OpenSimplex2;
+    _fractalType = FastNoiseLite::FractalType_FBm;
+    _octaves = 5;
+    _lacunarity = 2.0f;
+    _gain = 0.5f;
+
+    configureNoise();
 }
 
-void WorldGenerationSystem::configureNoise(
-    int seed, 
-    float frequency, 
-    FastNoiseLite::NoiseType noiseType,
-    FastNoiseLite::FractalType fractalType,
-    int octaves,
-    float lacunarity,
-    float gain) {
-    
-    _noiseGenerator.SetSeed(seed);
-    _noiseGenerator.SetFrequency(frequency);
-    _noiseGenerator.SetNoiseType(noiseType);
-    _noiseGenerator.SetFractalType(fractalType);
-    _noiseGenerator.SetFractalOctaves(octaves);
-    _noiseGenerator.SetFractalLacunarity(lacunarity);
-    _noiseGenerator.SetFractalGain(gain);
+void WorldGenerationSystem::configureNoise() {
+    _noiseGenerator.SetSeed(_seed);
+    _noiseGenerator.SetFrequency(_frequency);
+    _noiseGenerator.SetNoiseType(_noiseType);
+    _noiseGenerator.SetFractalType(_fractalType);
+    _noiseGenerator.SetFractalOctaves(_octaves);
+    _noiseGenerator.SetFractalLacunarity(_lacunarity);
+    _noiseGenerator.SetFractalGain(_gain);
+
+    generateWorld(3, 3);
 }
 
-const WorldGridComponent& WorldGenerationSystem::getWorldGridSettings(entt::registry& registry) {
-    auto view = registry.view<WorldGridComponent>();
+const WorldGridComponent& WorldGenerationSystem::getWorldGridSettings() {
+    auto view = _registry.view<WorldGridComponent>();
     if (view.empty()) {
         throw std::runtime_error("No WorldGridComponent found in the registry.");
     }
@@ -38,15 +34,15 @@ const WorldGridComponent& WorldGenerationSystem::getWorldGridSettings(entt::regi
 }
 
 // Implementation for generateChunk
-void WorldGenerationSystem::generateChunk(entt::registry& registry, entt::entity chunkEntity) {
-    if (!registry.all_of<ChunkComponent>(chunkEntity)) {
+void WorldGenerationSystem::generateChunk(entt::entity chunkEntity) {
+    if (!_registry.all_of<ChunkComponent>(chunkEntity)) {
         // Log error or handle: entity does not have a ChunkComponent
         std::cerr << "Error: Entity does not have a ChunkComponent for generation." << std::endl;
         return;
     }
 
-    ChunkComponent& chunk = registry.get<ChunkComponent>(chunkEntity);
-    const WorldGridComponent& worldGrid = getWorldGridSettings(registry);
+    ChunkComponent& chunk = _registry.get<ChunkComponent>(chunkEntity);
+    const WorldGridComponent& worldGrid = getWorldGridSettings();
 
     // Ensure cells vector is correctly sized (constructor should handle this)
     // chunk.cells.resize(worldGrid.chunkDimensionsInCells.x * worldGrid.chunkDimensionsInCells.y);
@@ -60,6 +56,9 @@ void WorldGenerationSystem::generateChunk(entt::registry& registry, entt::entity
 
             float noiseValue = _noiseGenerator.GetNoise(worldX, worldY);
             int cellIndex = y * worldGrid.chunkDimensionsInCells.x + x;
+
+            chunk.noiseValues[cellIndex] = noiseValue;
+
             float landThreshold = -0.0001f;
 
             if (noiseValue > landThreshold) {
@@ -75,13 +74,13 @@ void WorldGenerationSystem::generateChunk(entt::registry& registry, entt::entity
 }
 
 // Implementation for generateInitialWorld (Example)
-void WorldGenerationSystem::generateWorld(entt::registry& registry, int numChunksX, int numChunksY) {
+void WorldGenerationSystem::generateWorld(int numChunksX, int numChunksY) {
     // Ensure WorldGridComponent exists
     entt::entity worldGridEntity = entt::null;
-    auto worldView = registry.view<WorldGridComponent>();
+    auto worldView = _registry.view<WorldGridComponent>();
     if (worldView.empty()) {
-        worldGridEntity = registry.create();
-        registry.emplace<WorldGridComponent>(worldGridEntity); // Default settings
+        worldGridEntity = _registry.create();
+        _registry.emplace<WorldGridComponent>(worldGridEntity); // Default settings
         std::cout << "Created WorldGridComponent entity." << std::endl;
     } else {
         worldGridEntity = worldView.front();
@@ -91,15 +90,15 @@ void WorldGenerationSystem::generateWorld(entt::registry& registry, int numChunk
 
     for (int cy = 0; cy < numChunksY; ++cy) {
         for (int cx = 0; cx < numChunksX; ++cx) {
-            entt::entity newChunkEntity = registry.create();
-            ChunkComponent& chunkComp = registry.emplace<ChunkComponent>(newChunkEntity);
+            entt::entity newChunkEntity = _registry.create();
+            ChunkComponent& chunkComp = _registry.emplace<ChunkComponent>(newChunkEntity);
             chunkComp.chunkGridPosition = {cx, cy};
             // The ChunkComponent constructor already initializes cells to WATER.
             
             // Add PositionComponent for the chunk entity itself if needed for spatial queries or rendering chunk boundaries
             // registry.emplace<PositionComponent>(newChunkEntity, sf::Vector2f{cx * CHUNK_SIZE_X * worldGrid.cellSize, cy * CHUNK_SIZE_Y * worldGrid.cellSize});
 
-            generateChunk(registry, newChunkEntity);
+            generateChunk(newChunkEntity);
         }
     }
     std::cout << "Initial world generation finished." << std::endl;

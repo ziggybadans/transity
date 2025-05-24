@@ -45,7 +45,9 @@ struct GridCellComponent {
 struct ChunkComponent {
     sf::Vector2i chunkGridPosition;
     std::vector<TerrainType> cells;
-    ChunkComponent() : cells(CHUNK_SIZE_X * CHUNK_SIZE_Y, TerrainType::WATER) {}
+    std::vector<float> noiseValues;
+    ChunkComponent() : cells(CHUNK_SIZE_X * CHUNK_SIZE_Y, TerrainType::WATER), 
+        noiseValues(CHUNK_SIZE_X * CHUNK_SIZE_Y, 0.0f) {}
 };
 
 struct WorldGridComponent {

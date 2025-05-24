@@ -12,7 +12,11 @@ public:
     ~Renderer();
 
     void initialize();
-    void renderFrame(entt::registry& registry, const sf::View& view, sf::Time dt, InteractionMode currentMode);
+    void renderFrame(entt::registry& registry, 
+        const sf::View& view, 
+        sf::Time dt, 
+        InteractionMode currentMode,
+        bool visualizeNoise);
     void displayFrame();
     void cleanupResources();
     bool isWindowOpen() const;

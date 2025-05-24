@@ -1,7 +1,9 @@
 #include "TerrainRenderSystem.h"
 #include <iostream> // For debugging if needed
+#include <algorithm>
+#include <cstdint>
 
-TerrainRenderSystem::TerrainRenderSystem() {
+TerrainRenderSystem::TerrainRenderSystem() : _visualizeNoise(false) {
     // Initialize cellShape once. Its size will be set from WorldGridComponent.
     // Its position and color will be set per cell.
 }
@@ -36,19 +38,27 @@ void TerrainRenderSystem::render(entt::registry& registry, sf::RenderTarget& tar
                 
                 _cellShape.setPosition({screenX, screenY});
 
-                switch (type) {
-                    case TerrainType::WATER:
-                        _cellShape.setFillColor(sf::Color::Blue);
-                        break;
-                    case TerrainType::LAND:
-                        _cellShape.setFillColor(sf::Color(34, 139, 34)); // Forest Green
-                        break;
-                    case TerrainType::RIVER: // We'll add this later, but good to have a case
-                        _cellShape.setFillColor(sf::Color(100, 149, 237)); // Cornflower Blue
-                        break;
-                    default:
-                        _cellShape.setFillColor(sf::Color::Magenta); // Error/Unknown
-                        break;
+                if (_visualizeNoise) {
+                    float rawNoiseValue = chunk.noiseValues[cellIndex];
+                    float normalizedNoise = (rawNoiseValue + 1.0f) / 2.0f; // Normalize to [0, 1]
+                    normalizedNoise = std::max(0.0f, std::min(1.0f, normalizedNoise)); // Clamp to [0, 1]
+                    std::uint8_t gray = static_cast<std::uint8_t>(normalizedNoise * 255);
+                    _cellShape.setFillColor(sf::Color(gray, gray, gray)); // Grayscale based on noise value
+                } else {
+                    switch (type) {
+                        case TerrainType::WATER:
+                            _cellShape.setFillColor(sf::Color::Blue);
+                            break;
+                        case TerrainType::LAND:
+                            _cellShape.setFillColor(sf::Color(34, 139, 34)); // Forest Green
+                            break;
+                        case TerrainType::RIVER: // We'll add this later, but good to have a case
+                            _cellShape.setFillColor(sf::Color(100, 149, 237)); // Cornflower Blue
+                            break;
+                        default:
+                            _cellShape.setFillColor(sf::Color::Magenta); // Error/Unknown
+                            break;
+                    }
                 }
                 target.draw(_cellShape);
             }

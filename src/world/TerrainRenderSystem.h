@@ -10,8 +10,10 @@ public:
     TerrainRenderSystem();
 
     void render(entt::registry& registry, sf::RenderTarget& target);
+    void setVisualizeNoise(bool visualize) { _visualizeNoise = visualize; }
 private:
     sf::RectangleShape _cellShape;
+    bool _visualizeNoise;
 
     const WorldGridComponent& getWorldGridSettings(entt::registry& registry);
 };

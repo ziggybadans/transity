@@ -5,9 +5,21 @@
 #include "../input/InteractionMode.h"
 #include <cstdlib> // For EXIT_FAILURE
 
-UI::UI(sf::RenderWindow& window)
-    : m_window(window), m_currentInteractionMode(InteractionMode::SELECT) {
+UI::UI(sf::RenderWindow& window, WorldGenerationSystem* worldGenSystem)
+    : m_window(window), 
+    m_currentInteractionMode(InteractionMode::SELECT), 
+    _worldGenerationSystem(worldGenSystem) {
     LOG_INFO("UI", "UI instance created.");
+
+    if (_worldGenerationSystem) {
+        _worldGenSeed = _worldGenerationSystem->getSeed();
+        _worldGenFrequency = _worldGenerationSystem->getFrequency();
+        _worldGenNoiseType = static_cast<int>(_worldGenerationSystem->getNoiseType());
+        _worldGenFractalType = static_cast<int>(_worldGenerationSystem->getFractalType());
+        _worldGenOctaves = _worldGenerationSystem->getOctaves();
+        _worldGenLacunarity = _worldGenerationSystem->getLacunarity();
+        _worldGenGain = _worldGenerationSystem->getGain();
+    }
 }
 
 UI::~UI() {
@@ -56,6 +68,81 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
                 LOG_INFO("UI", "Finalize Line button clicked.");
             }
         }
+    ImGui::End();
+
+    ImGui::Begin("World Generation Settings");
+        bool valueChanged = false;
+
+        if (ImGui::InputInt("Seed", &_worldGenSeed)) {
+            LOG_INFO("UI", "World generation seed changed to: %d", _worldGenSeed);
+            if (_worldGenerationSystem) {
+                _worldGenerationSystem->setSeed(_worldGenSeed);
+                valueChanged = true;
+            }
+        };
+        if (ImGui::InputFloat("Frequency", &_worldGenFrequency, 0.001f, 0.1f, "%.4f")) {
+            LOG_INFO("UI", "World generation frequency changed to: %.4f", _worldGenFrequency);
+            if (_worldGenerationSystem) {
+                _worldGenerationSystem->setFrequency(_worldGenFrequency);
+                valueChanged = true;
+            }
+        };
+        const char* noiseTypes[] = { "OpenSimplex2", "OpenSimplex2S", "Cellular", "Perlin", "ValueCubic", "Value" };
+        if (ImGui::Combo("Noise Type", &_worldGenNoiseType, noiseTypes, IM_ARRAYSIZE(noiseTypes))) {
+            LOG_INFO("UI", "World generation noise type changed to: %s", noiseTypes[_worldGenNoiseType]);
+            if (_worldGenerationSystem) {
+                _worldGenerationSystem->setNoiseType(static_cast<FastNoiseLite::NoiseType>(_worldGenNoiseType));
+                valueChanged = true;
+            }
+        };
+
+        const char* fractalTypes[] = { "None", "FBm", "Ridged", "PingPong", "DomainWarpProgressive", "DomainWarpIndependent" };
+        if (ImGui::Combo("Fractal Type", &_worldGenFractalType, fractalTypes, IM_ARRAYSIZE(fractalTypes))) {
+            LOG_INFO("UI", "World generation fractal type changed to: %s", fractalTypes[_worldGenFractalType]);
+            if (_worldGenerationSystem) {
+                _worldGenerationSystem->setFractalType(static_cast<FastNoiseLite::FractalType>(_worldGenFractalType));
+                valueChanged = true;
+            }
+        };
+
+        if (ImGui::SliderInt("Octaves", &_worldGenOctaves, 1, 10)) {
+            LOG_INFO("UI", "World generation octaves changed to: %d", _worldGenOctaves);
+            if (_worldGenerationSystem) {
+                _worldGenerationSystem->setOctaves(_worldGenOctaves);
+                valueChanged = true;
+            }
+        };
+        if (ImGui::SliderFloat("Lacunarity", &_worldGenLacunarity, 0.1f, 4.0f)) {
+            LOG_INFO("UI", "World generation lacunarity changed to: %.2f", _worldGenLacunarity);
+            if (_worldGenerationSystem) {
+                _worldGenerationSystem->setLacunarity(_worldGenLacunarity);
+                valueChanged = true;
+            }
+        };
+        if (ImGui::SliderFloat("Gain", &_worldGenGain, 0.1f, 1.0f)) {
+            LOG_INFO("UI", "World generation gain changed to: %.2f", _worldGenGain);
+            if (_worldGenerationSystem) {
+                _worldGenerationSystem->setGain(_worldGenGain);
+                valueChanged = true;
+            }
+        };
+
+        if (valueChanged && _autoRegenerate && _worldGenerationSystem) {
+            LOG_INFO("UI", "World generation settings changed, auto-regenerating world.");
+            _worldGenerationSystem->configureNoise();
+        }
+
+        ImGui::Separator();
+
+        if (ImGui::Button("Regenerate World")) {
+            LOG_INFO("UI", "Regenerate World button clicked.");
+            if (_worldGenerationSystem) {
+                _worldGenerationSystem->configureNoise();
+            }
+        }
+
+        ImGui::Checkbox("Visualize Noise", &_visualizeNoise);
+        ImGui::Checkbox("Auto Regenerate", &_autoRegenerate);
     ImGui::End();
 
     ImGui::Begin("Debug Window");
