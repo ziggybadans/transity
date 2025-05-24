@@ -44,33 +44,25 @@ void UI::processEvent(const sf::Event& sfEvent) {
 void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
     ImGui::SFML::Update(m_window, deltaTime);
 
-    ImGui::Begin("Interaction Modes");
-        int currentMode = static_cast<int>(m_currentInteractionMode);
+    const float windowPadding = 10.0f;
+    ImGuiIO& io = ImGui::GetIO();
+    ImVec2 displaySize = io.DisplaySize;
 
-        if (ImGui::RadioButton("None", &currentMode, static_cast<int>(InteractionMode::SELECT))) {
-            m_currentInteractionMode = InteractionMode::SELECT;
-            LOG_INFO("UI", "Interaction mode changed to: None");
-        }
-        ImGui::SameLine();
-        if (ImGui::RadioButton("Station Placement", &currentMode, static_cast<int>(InteractionMode::CREATE_STATION))) {
-            m_currentInteractionMode = InteractionMode::CREATE_STATION;
-            LOG_INFO("UI", "Interaction mode changed to: StationPlacement");
-        }
-        ImGui::SameLine();
-        if (ImGui::RadioButton("Line Creation", &currentMode, static_cast<int>(InteractionMode::CREATE_LINE))) {
-            m_currentInteractionMode = InteractionMode::CREATE_LINE;
-            LOG_INFO("UI", "Interaction mode changed to: LineCreation");
-        }
-        if (m_currentInteractionMode == InteractionMode::CREATE_LINE && numberOfStationsInActiveLine >= 2) {
-            if (ImGui::Button("Finalize Line")) {
-                FinalizeLineEvent finalizeLineEvent;
-                m_uiEvents.emplace_back(finalizeLineEvent);
-                LOG_INFO("UI", "Finalize Line button clicked.");
-            }
-        }
+    ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize;
+    ImGuiWindowFlags size_flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | 
+        ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse;
+
+    ImVec2 debugWindowPos = ImVec2(windowPadding, windowPadding);
+    ImGui::SetNextWindowPos(debugWindowPos, ImGuiCond_Always);
+        ImGui::Begin("Profiling", nullptr, size_flags);
+        ImGui::Text("FPS: %.1f", 1.f / deltaTime.asSeconds());
     ImGui::End();
 
-    ImGui::Begin("World Generation Settings");
+    float worldGenSettingsWidth = 300.0f;
+    ImVec2 worldGenSettingsPos = ImVec2(displaySize.x - worldGenSettingsWidth - windowPadding, windowPadding);
+    ImGui::SetNextWindowPos(worldGenSettingsPos, ImGuiCond_Always);
+    ImGui::SetNextWindowSize(ImVec2(worldGenSettingsWidth, 0.0f), ImGuiCond_Always);
+    ImGui::Begin("World Generation Settings", nullptr, window_flags);
         bool valueChanged = false;
 
         if (ImGui::InputInt("Seed", &_worldGenSeed)) {
@@ -143,10 +135,38 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
 
         ImGui::Checkbox("Visualize Noise", &_visualizeNoise);
         ImGui::Checkbox("Auto Regenerate", &_autoRegenerate);
+
     ImGui::End();
 
-    ImGui::Begin("Debug Window");
-    ImGui::Text("FPS: %.1f", 1.f / deltaTime.asSeconds());
+    float interactionModesWidth = 400.0f;
+    float interactionModesHeight = 100.0f;
+    ImVec2 interactionModesPos = ImVec2((displaySize.x - interactionModesWidth) * 0.5f, 
+        displaySize.y - interactionModesHeight - windowPadding);
+    ImGui::SetNextWindowPos(interactionModesPos, ImGuiCond_Always);
+    ImGui::Begin("Interaction Modes", nullptr, size_flags);
+        int currentMode = static_cast<int>(m_currentInteractionMode);
+
+        if (ImGui::RadioButton("None", &currentMode, static_cast<int>(InteractionMode::SELECT))) {
+            m_currentInteractionMode = InteractionMode::SELECT;
+            LOG_INFO("UI", "Interaction mode changed to: None");
+        }
+        ImGui::SameLine();
+        if (ImGui::RadioButton("Station Placement", &currentMode, static_cast<int>(InteractionMode::CREATE_STATION))) {
+            m_currentInteractionMode = InteractionMode::CREATE_STATION;
+            LOG_INFO("UI", "Interaction mode changed to: StationPlacement");
+        }
+        ImGui::SameLine();
+        if (ImGui::RadioButton("Line Creation", &currentMode, static_cast<int>(InteractionMode::CREATE_LINE))) {
+            m_currentInteractionMode = InteractionMode::CREATE_LINE;
+            LOG_INFO("UI", "Interaction mode changed to: LineCreation");
+        }
+        if (m_currentInteractionMode == InteractionMode::CREATE_LINE && numberOfStationsInActiveLine >= 2) {
+            if (ImGui::Button("Finalize Line")) {
+                FinalizeLineEvent finalizeLineEvent;
+                m_uiEvents.emplace_back(finalizeLineEvent);
+                LOG_INFO("UI", "Finalize Line button clicked.");
+            }
+        }
     ImGui::End();
 }
 
