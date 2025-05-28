@@ -1,5 +1,5 @@
 #include "WorldGenerationSystem.h"
-#include <iostream>
+#include "../Logger.h"
 
 WorldGenerationSystem::WorldGenerationSystem(entt::registry& registry) : _registry(registry) {
     _seed = 1337;
@@ -37,7 +37,7 @@ const WorldGridComponent& WorldGenerationSystem::getWorldGridSettings() {
 void WorldGenerationSystem::generateChunk(entt::entity chunkEntity) {
     if (!_registry.all_of<ChunkComponent>(chunkEntity)) {
         // Log error or handle: entity does not have a ChunkComponent
-        std::cerr << "Error: Entity does not have a ChunkComponent for generation." << std::endl;
+        LOG_ERROR("WorldGenerationSystem", "Error: Entity does not have a ChunkComponent for generation.");
         return;
     }
 
@@ -47,7 +47,7 @@ void WorldGenerationSystem::generateChunk(entt::entity chunkEntity) {
     // Ensure cells vector is correctly sized (constructor should handle this)
     // chunk.cells.resize(worldGrid.chunkDimensionsInCells.x * worldGrid.chunkDimensionsInCells.y);
 
-    std::cout << "Generating chunk at: (" << chunk.chunkGridPosition.x << ", " << chunk.chunkGridPosition.y << ")" << std::endl;
+    LOG_INFO("WorldGenerationSystem", "Generating chunk at: (%d, %d)", chunk.chunkGridPosition.x, chunk.chunkGridPosition.y);
 
     for (int y = 0; y < worldGrid.chunkDimensionsInCells.y; ++y) {
         for (int x = 0; x < worldGrid.chunkDimensionsInCells.x; ++x) {
@@ -70,7 +70,7 @@ void WorldGenerationSystem::generateChunk(entt::entity chunkEntity) {
     }
     // Optionally, mark the chunk as generated, e.g., by adding a GeneratedTag or setting a flag.
     // registry.emplace_or_replace<ChunkGeneratedTag>(chunkEntity);
-    std::cout << "Chunk generation complete for: (" << chunk.chunkGridPosition.x << ", " << chunk.chunkGridPosition.y << ")" << std::endl;
+    LOG_INFO("WorldGenerationSystem", "Chunk generation complete for: (%d, %d)", chunk.chunkGridPosition.x, chunk.chunkGridPosition.y);
 }
 
 // Implementation for generateInitialWorld (Example)
@@ -81,19 +81,19 @@ void WorldGenerationSystem::generateWorld(int numChunksX, int numChunksY) {
     if (worldView.empty()) {
         worldGridEntity = _registry.create();
         _registry.emplace<WorldGridComponent>(worldGridEntity); // Default settings
-        std::cout << "Created WorldGridComponent entity." << std::endl;
+        LOG_INFO("WorldGenerationSystem", "Created WorldGridComponent entity.");
     } else {
         worldGridEntity = worldView.front();
     }
 
-    std::cout << "Clearing existing chunk entities..." << std::endl;
+    LOG_INFO("WorldGenerationSystem", "Clearing existing chunk entities...");
     auto chunkView = _registry.view<ChunkComponent>();
     for (auto entity : chunkView) {
         _registry.destroy(entity);
     }
-    std::cout << "Existing chunk entities cleared." << std::endl;
+    LOG_INFO("WorldGenerationSystem", "Existing chunk entities cleared.");
     
-    std::cout << "Generating world of " << numChunksX << "x" << numChunksY << " chunks." << std::endl;
+    LOG_INFO("WorldGenerationSystem", "Generating world of %dx%d chunks.", numChunksX, numChunksY);
 
     for (int cy = 0; cy < numChunksY; ++cy) {
         for (int cx = 0; cx < numChunksX; ++cx) {
@@ -108,5 +108,5 @@ void WorldGenerationSystem::generateWorld(int numChunksX, int numChunksY) {
             generateChunk(newChunkEntity);
         }
     }
-    std::cout << "Initial world generation finished." << std::endl;
+    LOG_INFO("WorldGenerationSystem", "Initial world generation finished.");
 }

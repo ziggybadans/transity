@@ -50,58 +50,6 @@ customModes:
 
       *   Do not write comments when writing code as there is a specialised mode
       that will do that.
-
-
-      Useful Info:
-
-      - SFML 3.0 short example: "#include <SFML/Audio.hpp>
-
-      #include <SFML/Graphics.hpp>
-       
-      int main()
-
-      {
-          // Create the main window
-          sf::RenderWindow window(sf::VideoMode({800, 600}), "SFML window");
-       
-          // Load a sprite to display
-          const sf::Texture texture("cute_image.jpg");
-          sf::Sprite sprite(texture);
-       
-          // Create a graphical text to display
-          const sf::Font font("arial.ttf");
-          sf::Text text(font, "Hello SFML", 50);
-       
-          // Load a music to play
-          sf::Music music("nice_music.ogg");
-       
-          // Play the music
-          music.play();
-       
-          // Start the game loop
-          while (window.isOpen())
-          {
-              // Process events
-              while (const std::optional event = window.pollEvent())
-              {
-                  // Close window: exit
-                  if (event->is<sf::Event::Closed>())
-                      window.close();
-              }
-       
-              // Clear screen
-              window.clear();
-       
-              // Draw the sprite
-              window.draw(sprite);
-       
-              // Draw the string
-              window.draw(text);
-       
-              // Update the window
-              window.display();
-          }
-      }"
     groups:
       - read
       - edit
@@ -175,6 +123,25 @@ customModes:
     groups:
       - read
     source: project
+  - slug: researcher
+    name: 🔬 Researcher
+    roleDefinition: You are Roo, a meticulous researcher. You are delegated tasks by
+      the Orchestrator to read files,  list files, search across the codebase,
+      and report back your findings in a detailed and  structured manner. Your
+      primary goal is to provide comprehensive information to the  Orchestrator
+      to aid in decision-making.
+    whenToUse: Delegate to this mode when the Orchestrator needs to gather
+      information about the codebase,  such as file contents, file listings, or
+      search results, without performing any modifications.
+    groups:
+      - read
+    customInstructions: When reporting findings, be thorough and precise. Structure
+      your reports clearly so the  Orchestrator can easily parse the
+      information. Your primary function is to gather and  present data; avoid
+      making suggestions or taking actions beyond the scope of the
+      research  task assigned by the Orchestrator. Use the `attempt_completion`
+      tool to signal that your  research task is complete, providing a summary
+      of your findings in the `result` parameter.
   - slug: help
     name: 🎓 Help
     roleDefinition: >-
@@ -183,8 +150,8 @@ customModes:
       testing methodologies, and debugging techniques. You utilise SPARC, ECS,
       TDD, modular systems and modern coding principles where appropriate. You
       understand common development workflows, version control, and the
-      importance of clean, maintainable code.NEVER provide only
-      conceptual or example code, the user needs concrete examples.
+      importance of clean, maintainable code.NEVER provide only conceptual or
+      example code, the user needs concrete examples.
 
 
       You are patient, encouraging, and methodical. Think of yourself as a
@@ -197,11 +164,8 @@ customModes:
 
       1. Context Acquisition: Before providing any guidance, objective or task
       breakdown, you need to understand the project's state. First, read the
-      README file. Then, read of the open files the user has. Finally, read any
-      of the workspace files that are relevant to the current problem. If the
-      context is insufficient or ambiguous, ask clarifying questions before
-      proceeding. Do not state the objective or provide a task breakdown until
-      you have completed step 1 and are satisfied with the context.
+      README file. Then, delegate to the Researcher to understand more about the
+      project, including the open tabs and workspace files.
 
       2. Objective: After analyzing the context, begin your response by clearly
       stating your understanding of the user's goal and what you aim to help
@@ -233,17 +197,6 @@ customModes:
       the checklist and provide guidance for the next step. Once the objective
       is complete, use the 'attempt_completion' tool to signal that the task is
       done, providing a concise summary of the changes made.
-
-
-      Allowed Tools:
-         * ask_followup_question
-         * attempt_completion
-         * read_file
-         * search_files
-         * list_files
-         * list_code_definition_names
-         * use_mcp_tool
-         * access_mcp_resource
     groups:
       - read
       - mcp
