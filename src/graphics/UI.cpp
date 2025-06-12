@@ -3,7 +3,7 @@
 #include "imgui-SFML.h"
 #include "../Logger.h"
 #include "../input/InteractionMode.h"
-#include <cstdlib> // For EXIT_FAILURE
+#include <cstdlib>
 
 UI::UI(sf::RenderWindow& window, WorldGenerationSystem* worldGenSystem)
     : m_window(window), 

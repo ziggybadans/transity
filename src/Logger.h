@@ -2,10 +2,10 @@
 
 #include <string>
 #include <cstdarg>
-#include <utility> // For std::forward
-#include <array>   // For std::array
-#include <fstream> // For std::ofstream
-#include <chrono>  // For std::chrono::steady_clock
+#include <utility>
+#include <array>
+#include <fstream>
+#include <chrono>
 
 namespace Logging {
 
@@ -57,7 +57,7 @@ private:
     std::string m_currentLogFileName;
 };
 
-} // namespace Logging
+}
 
 namespace LoggerMacrosImpl {
 
@@ -121,7 +121,7 @@ inline void log_fatal_proxy(unsigned int delayMs, const char* system, const char
     Logging::Logger::getInstance().logMessage(Logging::LogLevel::FATAL, system, delayMs, format, std::forward<Args>(args)...);
 }
 
-} // namespace LoggerMacrosImpl
+}
 
 #define LOG_TRACE(...) LoggerMacrosImpl::log_trace_proxy(__VA_ARGS__)
 #define LOG_DEBUG(...) LoggerMacrosImpl::log_debug_proxy(__VA_ARGS__)

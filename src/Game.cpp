@@ -2,10 +2,9 @@
 #include "graphics/Renderer.h"
 #include "input/InputHandler.h"
 #include "Logger.h"
-#include <cstdlib> // For exit()
+#include <cstdlib>
 #include <memory>
-#include <string> // Required for std::to_string in EntityFactory if not included there
-// SFML includes for specific types like sf::Time, sf::Clock are in Game.h
+#include <string>
 
 Game::Game()
     : _entityFactory(_registry),

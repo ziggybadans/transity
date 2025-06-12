@@ -33,10 +33,8 @@ const WorldGridComponent& WorldGenerationSystem::getWorldGridSettings() {
     return view.get<WorldGridComponent>(view.front());
 }
 
-// Implementation for generateChunk
 void WorldGenerationSystem::generateChunk(entt::entity chunkEntity) {
     if (!_registry.all_of<ChunkComponent>(chunkEntity)) {
-        // Log error or handle: entity does not have a ChunkComponent
         LOG_ERROR("WorldGenerationSystem", "Error: Entity does not have a ChunkComponent for generation.");
         return;
     }
@@ -73,14 +71,12 @@ void WorldGenerationSystem::generateChunk(entt::entity chunkEntity) {
     LOG_INFO("WorldGenerationSystem", "Chunk generation complete for: (%d, %d)", chunk.chunkGridPosition.x, chunk.chunkGridPosition.y);
 }
 
-// Implementation for generateInitialWorld (Example)
 void WorldGenerationSystem::generateWorld(int numChunksX, int numChunksY) {
-    // Ensure WorldGridComponent exists
     entt::entity worldGridEntity = entt::null;
     auto worldView = _registry.view<WorldGridComponent>();
     if (worldView.empty()) {
         worldGridEntity = _registry.create();
-        _registry.emplace<WorldGridComponent>(worldGridEntity); // Default settings
+        _registry.emplace<WorldGridComponent>(worldGridEntity);
         LOG_INFO("WorldGenerationSystem", "Created WorldGridComponent entity.");
     } else {
         worldGridEntity = worldView.front();

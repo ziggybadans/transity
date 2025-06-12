@@ -1,8 +1,8 @@
 #pragma once
 
-#include <SFML/Graphics/RenderWindow.hpp> // Keep for sf::Time if not included elsewhere, or be more specific
-#include <SFML/System/Clock.hpp> // For sf::Clock
-#include <SFML/System/Time.hpp> // For sf::Time
+#include <SFML/Graphics/RenderWindow.hpp>
+#include <SFML/System/Clock.hpp>
+#include <SFML/System/Time.hpp>
 #include <optional>
 #include "core/Camera.h"
 #include <entt/entt.hpp>
@@ -28,7 +28,7 @@ public:
     void run();
 
 private:
-    void processInputCommands(); // New method to handle commands from InputHandler
+    void processInputCommands();
     void update(sf::Time dt);
 
     Camera _camera;

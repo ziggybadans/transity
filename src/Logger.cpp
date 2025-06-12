@@ -6,11 +6,11 @@
 #include <iomanip>
 #include <cstdarg>
 #include <vector>
-#include <cstdio> // For vsnprintf
+#include <cstdio>
 #include <array>
-#include <algorithm> // For std::max
-#include <filesystem> // For std::filesystem::create_directory
-#include <fstream> // For std::ofstream
+#include <algorithm>
+#include <filesystem>
+#include <fstream>
 
 namespace Logging {
 
@@ -99,7 +99,7 @@ void Logger::enableFileLogging(bool enable) {
                 m_isFileLoggingEnabled = true;
             } else {
                 std::cerr << "Error: Could not open log file: " << m_currentLogFileName << std::endl;
-                m_isFileLoggingEnabled = false; // Ensure it's false if open failed
+                m_isFileLoggingEnabled = false;
             }
         } catch (const std::filesystem::filesystem_error& e) {
             std::cerr << "Filesystem error: " << e.what() << std::endl;
@@ -199,4 +199,4 @@ void Logger::logMessage(LogLevel level, const char* system, unsigned int message
     m_lastLogTime = std::chrono::steady_clock::now();
 }
 
-} // namespace Logging
+}

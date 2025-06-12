@@ -22,7 +22,7 @@ void EntityFactory::registerArchetypes() {
     if (stationArchetype.renderableData) {
         stationClickableData.boundingRadius = stationArchetype.renderableData->radius * 1.5f;
     } else {
-        stationClickableData.boundingRadius = 5.0f; // Default value if no renderable data
+        stationClickableData.boundingRadius = 5.0f;
     }
     stationArchetype.clickableData = stationClickableData;
 

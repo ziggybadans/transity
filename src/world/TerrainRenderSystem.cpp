@@ -22,7 +22,7 @@ void TerrainRenderSystem::render(entt::registry& registry, sf::RenderTarget& tar
     _cellShape.setSize(sf::Vector2f(worldGrid.cellSize, worldGrid.cellSize));
     _cellShape.setOutlineThickness(0); // Or a small value if you want grid lines
 
-    auto chunkView = registry.view<ChunkComponent>(); // Get all entities with a ChunkComponent
+    auto chunkView = registry.view<ChunkComponent>();
 
     for (auto entity : chunkView) {
         const ChunkComponent& chunk = chunkView.get<ChunkComponent>(entity);
@@ -43,20 +43,20 @@ void TerrainRenderSystem::render(entt::registry& registry, sf::RenderTarget& tar
                     float normalizedNoise = (rawNoiseValue + 1.0f) / 2.0f; // Normalize to [0, 1]
                     normalizedNoise = std::max(0.0f, std::min(1.0f, normalizedNoise)); // Clamp to [0, 1]
                     std::uint8_t gray = static_cast<std::uint8_t>(normalizedNoise * 255);
-                    _cellShape.setFillColor(sf::Color(gray, gray, gray)); // Grayscale based on noise value
+                    _cellShape.setFillColor(sf::Color(gray, gray, gray));
                 } else {
                     switch (type) {
                         case TerrainType::WATER:
                             _cellShape.setFillColor(sf::Color::Blue);
                             break;
                         case TerrainType::LAND:
-                            _cellShape.setFillColor(sf::Color(34, 139, 34)); // Forest Green
+                            _cellShape.setFillColor(sf::Color(34, 139, 34));
                             break;
-                        case TerrainType::RIVER: // We'll add this later, but good to have a case
-                            _cellShape.setFillColor(sf::Color(100, 149, 237)); // Cornflower Blue
+                        case TerrainType::RIVER:
+                            _cellShape.setFillColor(sf::Color(100, 149, 237));
                             break;
                         default:
-                            _cellShape.setFillColor(sf::Color::Magenta); // Error/Unknown
+                            _cellShape.setFillColor(sf::Color::Magenta);
                             break;
                     }
                 }
