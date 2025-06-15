@@ -28,6 +28,9 @@ void Game::init() {
         }
         _renderer->initialize();
 
+        sf::Vector2u windowSize = _renderer->getWindowInstance().getSize();
+        _camera.onWindowResize(windowSize.x, windowSize.y);
+
         _ui = std::make_unique<UI>(_renderer->getWindowInstance(), &_worldGenerationSystem);
         if (!_ui) {
             LOG_FATAL("Game", "Failed to create UI instance (_ui is null).");
@@ -40,7 +43,6 @@ void Game::init() {
             LOG_FATAL("Game", "Failed to create InputHandler instance (_inputHandler is null).");
             exit(EXIT_FAILURE);
         }
-
     } catch (const std::bad_alloc& e) {
         LOG_FATAL("Game", "Failed to allocate memory for core systems: %s", e.what());
         exit(EXIT_FAILURE);
@@ -107,6 +109,10 @@ void Game::run() {
         while (auto optEvent = _renderer->getWindowInstance().pollEvent()) {
             if (optEvent) {
                 const sf::Event& currentEvent = *optEvent;
+                if (optEvent->is<sf::Event::Resized>()) {
+                    const auto* resizedEvent = optEvent->getIf<sf::Event::Resized>();
+                    _camera.onWindowResize(resizedEvent->size.x, resizedEvent->size.y);
+                }
                 _ui->processEvent(currentEvent);
                 _inputHandler->handleGameEvent(currentEvent, _ui->getInteractionMode(), _camera, _renderer->getWindowInstance(), _registry);
             }

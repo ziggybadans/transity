@@ -21,6 +21,7 @@ public:
     int getOctaves() const { return _octaves; }
     float getLacunarity() const { return _lacunarity; }
     float getGain() const { return _gain; }
+    float getLandThreshold() const { return _landThreshold; }
 
     void setSeed(int seed) { _seed = seed; }
     void setFrequency(float frequency) { _frequency = frequency; }
@@ -29,6 +30,7 @@ public:
     void setOctaves(int octaves) { _octaves = octaves; }
     void setLacunarity(float lacunarity) { _lacunarity = lacunarity; }
     void setGain(float gain) { _gain = gain; }
+    void setLandThreshold(float landThreshold) { _landThreshold = landThreshold; }
 
 private:
     entt::registry& _registry;

@@ -69,7 +69,7 @@ add_executable(main
     src/graphics/UI.cpp
     src/systems/LineCreationSystem.cpp
     src/world/WorldGenerationSystem.cpp
-    src/World/TerrainRenderSystem.cpp
+    src/world/TerrainRenderSystem.cpp
 )
 target_compile_features(main PRIVATE cxx_std_17)
 

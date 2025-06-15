@@ -43,6 +43,14 @@ void WorldGenerationSystem::generateChunk(entt::entity chunkEntity) {
     ChunkComponent& chunk = _registry.get<ChunkComponent>(chunkEntity);
     const WorldGridComponent& worldGrid = getWorldGridSettings();
 
+    float worldWidth = worldGrid.worldDimensionsInChunks.x 
+        * worldGrid.chunkDimensionsInCells.x * worldGrid.cellSize;
+    float worldHeight = worldGrid.worldDimensionsInChunks.y
+        * worldGrid.chunkDimensionsInCells.y * worldGrid.cellSize;
+    float worldCenterX = worldWidth / 2.0f;
+    float worldCenterY = worldHeight / 2.0f;
+    float maxWorldDimension = std::max(worldWidth, worldHeight);
+
     // Ensure cells vector is correctly sized (constructor should handle this)
     // chunk.cells.resize(worldGrid.chunkDimensionsInCells.x * worldGrid.chunkDimensionsInCells.y);
 
@@ -53,11 +61,19 @@ void WorldGenerationSystem::generateChunk(entt::entity chunkEntity) {
             float worldX = (chunk.chunkGridPosition.x * worldGrid.chunkDimensionsInCells.x + x) * worldGrid.cellSize + (worldGrid.cellSize / 2.0f);
             float worldY = (chunk.chunkGridPosition.y * worldGrid.chunkDimensionsInCells.y + y) * worldGrid.cellSize + (worldGrid.cellSize / 2.0f);
 
+            float dx = worldX - worldCenterX;
+            float dy = worldY - worldCenterY;
+            float distance = std::sqrt(dx * dx + dy * dy);
+
+            float falloff = distance / (maxWorldDimension / 2.0f);
             float noiseValue = _noiseGenerator.GetNoise(worldX, worldY);
+            float normalizedNoise = (noiseValue + 1.0f) / 2.0f;
+            float finalValue = normalizedNoise - falloff;
+
             int cellIndex = y * worldGrid.chunkDimensionsInCells.x + x;
             chunk.noiseValues[cellIndex] = noiseValue;
 
-            if (noiseValue > _landThreshold) {
+            if (finalValue > _landThreshold) {
                 chunk.cells[cellIndex] = TerrainType::LAND;
             } else {
                 chunk.cells[cellIndex] = TerrainType::WATER;

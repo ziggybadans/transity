@@ -19,6 +19,7 @@ UI::UI(sf::RenderWindow& window, WorldGenerationSystem* worldGenSystem)
         _worldGenOctaves = _worldGenerationSystem->getOctaves();
         _worldGenLacunarity = _worldGenerationSystem->getLacunarity();
         _worldGenGain = _worldGenerationSystem->getGain();
+        _worldGenLandThreshold = _worldGenerationSystem->getLandThreshold();
     }
 }
 
@@ -118,6 +119,14 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
                 valueChanged = true;
             }
         };
+
+        if (ImGui::SliderFloat("Land Threshold", &_worldGenLandThreshold, -1.0f, 1.0f, "%.2f")) {
+            LOG_INFO("UI", "World generation land threshold changed to: %.2f", _worldGenLandThreshold);
+            if (_worldGenerationSystem) {
+                _worldGenerationSystem->setLandThreshold(_worldGenLandThreshold);
+                valueChanged = true;
+            }
+        }
 
         if (valueChanged && _autoRegenerate && _worldGenerationSystem) {
             LOG_INFO("UI", "World generation settings changed, auto-regenerating world.");

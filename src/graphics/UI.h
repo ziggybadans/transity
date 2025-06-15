@@ -36,6 +36,7 @@ private:
     int _worldGenOctaves;
     float _worldGenLacunarity;
     float _worldGenGain;
+    float _worldGenLandThreshold;
 
     bool _visualizeNoise;
     bool _autoRegenerate;

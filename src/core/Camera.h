@@ -16,6 +16,8 @@ public:
     void moveView(const sf::Vector2f& offset);
     void zoomView(float factor);
 
+    void onWindowResize(unsigned int width, unsigned int height);
+
 private:
     sf::View _view;
 };
