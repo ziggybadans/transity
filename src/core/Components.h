@@ -51,6 +51,7 @@ struct ChunkComponent {
 };
 
 struct WorldGridComponent {
-    float cellSize = 16.0f;
+    sf::Vector2i worldDimensionsInChunks = { 3, 3 };
     sf::Vector2i chunkDimensionsInCells = { CHUNK_SIZE_X, CHUNK_SIZE_Y };
+    float cellSize = 16.0f;
 };

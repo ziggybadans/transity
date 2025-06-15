@@ -41,6 +41,7 @@ private:
     int _octaves;
     float _lacunarity;
     float _gain;
+    float _landThreshold;
     
     const WorldGridComponent& getWorldGridSettings();
 };

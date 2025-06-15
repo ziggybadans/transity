@@ -7,7 +7,7 @@
 #include <cstdlib>
 
 Renderer::Renderer()
-    : _windowInstance(sf::VideoMode({2160, 3840}), "Transity Predev")
+    : _windowInstance(sf::VideoMode({1920, 1080}), "Transity Predev")
     , _clearColor(173, 216, 230) {
     LOG_INFO("Renderer", "Renderer created and window initialized.");
     _windowInstance.setFramerateLimit(144);

@@ -9,6 +9,7 @@ WorldGenerationSystem::WorldGenerationSystem(entt::registry& registry) : _regist
     _octaves = 5;
     _lacunarity = 2.0f;
     _gain = 0.5f;
+    _landThreshold = 0.1f;
 
     configureNoise();
 }
@@ -54,12 +55,9 @@ void WorldGenerationSystem::generateChunk(entt::entity chunkEntity) {
 
             float noiseValue = _noiseGenerator.GetNoise(worldX, worldY);
             int cellIndex = y * worldGrid.chunkDimensionsInCells.x + x;
-
             chunk.noiseValues[cellIndex] = noiseValue;
 
-            float landThreshold = -0.0001f;
-
-            if (noiseValue > landThreshold) {
+            if (noiseValue > _landThreshold) {
                 chunk.cells[cellIndex] = TerrainType::LAND;
             } else {
                 chunk.cells[cellIndex] = TerrainType::WATER;
@@ -82,6 +80,9 @@ void WorldGenerationSystem::generateWorld(int numChunksX, int numChunksY) {
         worldGridEntity = worldView.front();
     }
 
+    auto& worldGrid = _registry.get<WorldGridComponent>(worldGridEntity);
+    worldGrid.worldDimensionsInChunks = {numChunksX, numChunksY};
+
     LOG_INFO("WorldGenerationSystem", "Clearing existing chunk entities...");
     auto chunkView = _registry.view<ChunkComponent>();
     for (auto entity : chunkView) {
@@ -89,10 +90,9 @@ void WorldGenerationSystem::generateWorld(int numChunksX, int numChunksY) {
     }
     LOG_INFO("WorldGenerationSystem", "Existing chunk entities cleared.");
     
-    LOG_INFO("WorldGenerationSystem", "Generating world of %dx%d chunks.", numChunksX, numChunksY);
-
-    for (int cy = 0; cy < numChunksY; ++cy) {
-        for (int cx = 0; cx < numChunksX; ++cx) {
+    LOG_INFO("WorldGenerationSystem", "Generating world of %dx%d chunks.", worldGrid.worldDimensionsInChunks.x, worldGrid.worldDimensionsInChunks.y);
+    for (int cy = 0; cy < worldGrid.worldDimensionsInChunks.y; ++cy) {
+        for (int cx = 0; cx < worldGrid.worldDimensionsInChunks.x; ++cx) {
             entt::entity newChunkEntity = _registry.create();
             ChunkComponent& chunkComp = _registry.emplace<ChunkComponent>(newChunkEntity);
             chunkComp.chunkGridPosition = {cx, cy};
