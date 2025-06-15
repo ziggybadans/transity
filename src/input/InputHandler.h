@@ -37,7 +37,7 @@ class InputHandler {
 public:
     InputHandler();
     void handleGameEvent(const sf::Event& event, InteractionMode currentMode, Camera& camera, sf::RenderWindow& window, entt::registry& registry);
-    void update(sf::Time dt);
+    void update(sf::Time dt, const Camera& camera);
 
     const std::vector<InputCommand>& getCommands() const;
     void clearCommands();

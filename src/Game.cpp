@@ -134,7 +134,7 @@ void Game::run() {
         }
         
         if (_isWindowFocused) {
-            _inputHandler->update(dt);
+            _inputHandler->update(dt, _camera);
         }
         processInputCommands();
 

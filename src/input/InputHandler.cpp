@@ -76,7 +76,7 @@ void InputHandler::handleGameEvent(const sf::Event& event, InteractionMode curre
     }
 }
 
-void InputHandler::update(sf::Time dt) {
+void InputHandler::update(sf::Time dt, const Camera& camera) {
     sf::Vector2f panDirection(0.f, 0.f);
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W)) {
         panDirection.y -= 1.0f;
@@ -96,8 +96,13 @@ void InputHandler::update(sf::Time dt) {
     }
 
     if (panDirection.x != 0.f || panDirection.y != 0.f) {
+        const sf::View& view = camera.getView();
+        sf::Vector2f viewSize = view.getSize();
+
+        float dynamicCameraSpeed = viewSize.y * 0.5f;
+
         InputData data;
-        data.panDirection = panDirection * _cameraSpeed * dt.asSeconds();
+        data.panDirection = panDirection * dynamicCameraSpeed * dt.asSeconds();
         _commands.push_back({InputEventType::CAMERA_PAN, data});
         LOG_TRACE("Input", "CameraPan command generated with direction (%.1f, %.1f).", data.panDirection.x, data.panDirection.y);
     }
