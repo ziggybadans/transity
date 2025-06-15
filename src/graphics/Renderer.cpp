@@ -33,7 +33,7 @@ void Renderer::renderFrame(entt::registry& registry,
 
     _terrainRenderSystem.setVisualizeNoise(visualizeNoise);
 
-    _terrainRenderSystem.render(registry, _windowInstance);
+    _terrainRenderSystem.render(registry, _windowInstance, view);
     LOG_TRACE("Renderer", "Terrain rendered.");
 
     LOG_TRACE("Renderer", "Rendering finalized lines.");

@@ -16,52 +16,105 @@ const WorldGridComponent& TerrainRenderSystem::getWorldGridSettings(entt::regist
     return view.get<WorldGridComponent>(view.front());
 }
 
-void TerrainRenderSystem::render(entt::registry& registry, sf::RenderTarget& target) {
+void TerrainRenderSystem::render(entt::registry& registry, sf::RenderTarget& target, const sf::View& view) {
     const WorldGridComponent& worldGrid = getWorldGridSettings(registry);
-    
-    _cellShape.setSize(sf::Vector2f(worldGrid.cellSize, worldGrid.cellSize));
-    _cellShape.setOutlineThickness(0); // Or a small value if you want grid lines
-
     auto chunkView = registry.view<ChunkComponent>();
 
+    // Calculate the view's bounding box using the SFML 3 API
+    sf::FloatRect viewBounds({view.getCenter() - view.getSize() / 2.f, view.getSize()});
+
+    // Optional: Inflate the view bounds slightly to prevent pop-in at the edges
+    viewBounds.position.x -= worldGrid.cellSize;
+    viewBounds.position.y -= worldGrid.cellSize;
+    viewBounds.size.x += worldGrid.cellSize * 2;
+    viewBounds.size.y += worldGrid.cellSize * 2;
+
+    if (_visualizeNoiseStateChanged) {
+        for (auto entity : chunkView) {
+            chunkView.get<ChunkComponent>(entity).isMeshDirty = true;
+        }
+        _visualizeNoiseStateChanged = false;
+    }
+
+    int renderedChunkCount = 0;
     for (auto entity : chunkView) {
-        const ChunkComponent& chunk = chunkView.get<ChunkComponent>(entity);
+        auto& chunk = chunkView.get<ChunkComponent>(entity);
 
-        for (int y = 0; y < worldGrid.chunkDimensionsInCells.y; ++y) {
-            for (int x = 0; x < worldGrid.chunkDimensionsInCells.x; ++x) {
-                int cellIndex = y * worldGrid.chunkDimensionsInCells.x + x;
-                TerrainType type = chunk.cells[cellIndex];
+        // Calculate the chunk's bounding box
+        float chunkWidthPixels = worldGrid.chunkDimensionsInCells.x * worldGrid.cellSize;
+        float chunkHeightPixels = worldGrid.chunkDimensionsInCells.y * worldGrid.cellSize;
+        sf::FloatRect chunkBounds(
+            {chunk.chunkGridPosition.x * chunkWidthPixels, chunk.chunkGridPosition.y * chunkHeightPixels},
+            {chunkWidthPixels, chunkHeightPixels}
+        );
 
-                // Calculate screen position for the cell
-                float screenX = (chunk.chunkGridPosition.x * worldGrid.chunkDimensionsInCells.x + x) * worldGrid.cellSize;
-                float screenY = (chunk.chunkGridPosition.y * worldGrid.chunkDimensionsInCells.y + y) * worldGrid.cellSize;
-                
-                _cellShape.setPosition({screenX, screenY});
+        // The culling check remains the same, as intersects() is still the correct method
+        if (!viewBounds.findIntersection(chunkBounds)) {
+            continue;
+        }
 
-                if (_visualizeNoise) {
-                    float rawNoiseValue = chunk.noiseValues[cellIndex];
-                    float normalizedNoise = (rawNoiseValue + 1.0f) / 2.0f; // Normalize to [0, 1]
-                    normalizedNoise = std::max(0.0f, std::min(1.0f, normalizedNoise)); // Clamp to [0, 1]
-                    std::uint8_t gray = static_cast<std::uint8_t>(normalizedNoise * 255);
-                    _cellShape.setFillColor(sf::Color(gray, gray, gray));
-                } else {
-                    switch (type) {
-                        case TerrainType::WATER:
-                            _cellShape.setFillColor(sf::Color(173, 216, 230));
-                            break;
-                        case TerrainType::LAND:
-                            _cellShape.setFillColor(sf::Color(34, 139, 34));
-                            break;
-                        case TerrainType::RIVER:
-                            _cellShape.setFillColor(sf::Color(100, 149, 237));
-                            break;
-                        default:
-                            _cellShape.setFillColor(sf::Color::Magenta);
-                            break;
-                    }
+        // If the chunk is visible, proceed with rendering
+        if (chunk.isMeshDirty) {
+            buildChunkMesh(chunk, worldGrid);
+        }
+        target.draw(chunk.vertexArray);
+        renderedChunkCount++;
+    }
+    // LOG_TRACE("TerrainRenderSystem", "Rendered %d visible chunks.", renderedChunkCount);
+}
+
+void TerrainRenderSystem::buildChunkMesh(ChunkComponent& chunk, const WorldGridComponent& worldGrid) {
+    chunk.vertexArray.clear();
+    // We now need 6 vertices for every cell (2 triangles)
+    chunk.vertexArray.resize(worldGrid.chunkDimensionsInCells.x * worldGrid.chunkDimensionsInCells.y * 6);
+
+    for (int y = 0; y < worldGrid.chunkDimensionsInCells.y; ++y) {
+        for (int x = 0; x < worldGrid.chunkDimensionsInCells.x; ++x) {
+            int cellIndex = y * worldGrid.chunkDimensionsInCells.x + x;
+            // Get a pointer to the first vertex of the first triangle
+            sf::Vertex* tri = &chunk.vertexArray[cellIndex * 6];
+
+            float screenX = (chunk.chunkGridPosition.x * worldGrid.chunkDimensionsInCells.x + x) * worldGrid.cellSize;
+            float screenY = (chunk.chunkGridPosition.y * worldGrid.chunkDimensionsInCells.y + y) * worldGrid.cellSize;
+
+            // Define the 4 corners of the cell
+            sf::Vector2f topLeft(screenX, screenY);
+            sf::Vector2f topRight(screenX + worldGrid.cellSize, screenY);
+            sf::Vector2f bottomLeft(screenX, screenY + worldGrid.cellSize);
+            sf::Vector2f bottomRight(screenX + worldGrid.cellSize, screenY + worldGrid.cellSize);
+
+            // Triangle 1
+            tri[0].position = topLeft;
+            tri[1].position = topRight;
+            tri[2].position = bottomLeft;
+
+            // Triangle 2
+            tri[3].position = topRight;
+            tri[4].position = bottomRight;
+            tri[5].position = bottomLeft;
+
+            // Determine the color for this cell
+            sf::Color color;
+            if (_visualizeNoise) {
+                float rawNoiseValue = chunk.noiseValues[cellIndex];
+                float normalizedNoise = (rawNoiseValue + 1.0f) / 2.0f;
+                normalizedNoise = std::max(0.0f, std::min(1.0f, normalizedNoise));
+                uint8_t gray = static_cast<uint8_t>(normalizedNoise * 255);
+                color = sf::Color(gray, gray, gray);
+            } else {
+                switch (chunk.cells[cellIndex]) {
+                    case TerrainType::WATER: color = sf::Color(173, 216, 230); break;
+                    case TerrainType::LAND: color = sf::Color(34, 139, 34); break;
+                    case TerrainType::RIVER: color = sf::Color(100, 149, 237); break;
+                    default: color = sf::Color::Magenta; break;
                 }
-                target.draw(_cellShape);
+            }
+
+            // Apply the color to all 6 vertices
+            for (int i = 0; i < 6; ++i) {
+                tri[i].color = color;
             }
         }
     }
+    chunk.isMeshDirty = false;
 }

@@ -43,8 +43,13 @@ struct ChunkComponent {
     sf::Vector2i chunkGridPosition;
     std::vector<TerrainType> cells;
     std::vector<float> noiseValues;
+    sf::VertexArray vertexArray;
+    bool isMeshDirty = true;
+
     ChunkComponent(int chunkWidth, int chunkHeight) : cells(chunkWidth * chunkHeight, TerrainType::WATER),
-        noiseValues(chunkWidth * chunkHeight, 0.0f) {}
+        noiseValues(chunkWidth * chunkHeight, 0.0f) {
+        vertexArray.setPrimitiveType(sf::PrimitiveType::Triangles);
+        }
 };
 
 struct WorldGridComponent {
