@@ -28,6 +28,10 @@ void Game::init() {
         }
         _renderer->initialize();
 
+        sf::Vector2f worldSize = _worldGenerationSystem.getWorldSize();
+        sf::Vector2f worldCenter = { worldSize.x / 2.0f, worldSize.y / 2.0f };
+        _camera.setInitialView(_renderer->getWindowInstance(), worldCenter, worldSize);
+
         sf::Vector2u windowSize = _renderer->getWindowInstance().getSize();
         _camera.onWindowResize(windowSize.x, windowSize.y);
 

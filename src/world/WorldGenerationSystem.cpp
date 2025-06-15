@@ -38,6 +38,18 @@ const WorldGridComponent& WorldGenerationSystem::getWorldGridSettings() {
     return view.get<WorldGridComponent>(view.front());
 }
 
+sf::Vector2f WorldGenerationSystem::getWorldSize() {
+    try {
+        const WorldGridComponent& worldGrid = getWorldGridSettings();
+        float worldWidth = static_cast<float>(worldGrid.worldDimensionsInChunks.x * worldGrid.chunkDimensionsInCells.x) * worldGrid.cellSize;
+        float worldHeight = static_cast<float>(worldGrid.worldDimensionsInChunks.y * worldGrid.chunkDimensionsInCells.y) * worldGrid.cellSize;
+        return {worldWidth, worldHeight};
+    } catch (const std::runtime_error& e) {
+        LOG_ERROR("WorldGenerationSystem", "Cannot get world size: %s", e.what());
+        return {0.0f, 0.0f};
+    }
+}
+
 bool isInside(const sf::Vector2f& point, const std::vector<sf::Vector2f>& polygon) {
     if (polygon.empty()) {
         return false;

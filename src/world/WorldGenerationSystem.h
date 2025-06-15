@@ -13,6 +13,7 @@ public:
 
     void generateChunk(entt::entity chunkEntity);
     void generateWorld(int numChunksX, int numChunksY);
+    sf::Vector2f getWorldSize();
 
     entt::registry& getRegistry() { return _registry; }
 
