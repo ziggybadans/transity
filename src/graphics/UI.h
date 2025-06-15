@@ -37,9 +37,18 @@ private:
     float _worldGenLacunarity;
     float _worldGenGain;
     float _worldGenLandThreshold;
+    bool _worldGenDistortCoastline;
+
+    int _worldChunksX;
+    int _worldChunksY;
+    int _chunkSizeX;
+    int _chunkSizeY;
+    float _cellSize;
 
     bool _visualizeNoise;
     bool _autoRegenerate;
 
     WorldGenerationSystem* _worldGenerationSystem;
+
+    void syncWithWorldState();
 };

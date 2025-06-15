@@ -7,9 +7,6 @@
 
 #include "../world/TerrainType.h"
 
-const int CHUNK_SIZE_X = 32;
-const int CHUNK_SIZE_Y = 32;
-
 struct PositionComponent {
     sf::Vector2f coordinates;
 };
@@ -46,12 +43,12 @@ struct ChunkComponent {
     sf::Vector2i chunkGridPosition;
     std::vector<TerrainType> cells;
     std::vector<float> noiseValues;
-    ChunkComponent() : cells(CHUNK_SIZE_X * CHUNK_SIZE_Y, TerrainType::WATER), 
-        noiseValues(CHUNK_SIZE_X * CHUNK_SIZE_Y, 0.0f) {}
+    ChunkComponent(int chunkWidth, int chunkHeight) : cells(chunkWidth * chunkHeight, TerrainType::WATER),
+        noiseValues(chunkWidth * chunkHeight, 0.0f) {}
 };
 
 struct WorldGridComponent {
     sf::Vector2i worldDimensionsInChunks = { 3, 3 };
-    sf::Vector2i chunkDimensionsInCells = { CHUNK_SIZE_X, CHUNK_SIZE_Y };
+    sf::Vector2i chunkDimensionsInCells = { 32, 32 };
     float cellSize = 16.0f;
 };

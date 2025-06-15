@@ -1,6 +1,10 @@
 #include "WorldGenerationSystem.h"
 #include "../Logger.h"
 
+#include <random>
+#include <algorithm>
+#include <vector>
+
 WorldGenerationSystem::WorldGenerationSystem(entt::registry& registry) : _registry(registry) {
     _seed = 1337;
     _frequency = 0.01f;
@@ -34,6 +38,21 @@ const WorldGridComponent& WorldGenerationSystem::getWorldGridSettings() {
     return view.get<WorldGridComponent>(view.front());
 }
 
+bool isInside(const sf::Vector2f& point, const std::vector<sf::Vector2f>& polygon) {
+    if (polygon.empty()) {
+        return false;
+    }
+    int n = polygon.size();
+    bool inside = false;
+    for (int i = 0, j = n - 1; i < n; j = i++) {
+        if (((polygon[i].y > point.y) != (polygon[j].y > point.y)) &&
+            (point.x < (polygon[j].x - polygon[i].x) * (point.y - polygon[i].y) / (polygon[j].y - polygon[i].y) + polygon[i].x)) {
+            inside = !inside;
+        }
+    }
+    return inside;
+}
+
 void WorldGenerationSystem::generateChunk(entt::entity chunkEntity) {
     if (!_registry.all_of<ChunkComponent>(chunkEntity)) {
         LOG_ERROR("WorldGenerationSystem", "Error: Entity does not have a ChunkComponent for generation.");
@@ -58,26 +77,22 @@ void WorldGenerationSystem::generateChunk(entt::entity chunkEntity) {
 
     for (int y = 0; y < worldGrid.chunkDimensionsInCells.y; ++y) {
         for (int x = 0; x < worldGrid.chunkDimensionsInCells.x; ++x) {
-            float worldX = (chunk.chunkGridPosition.x * worldGrid.chunkDimensionsInCells.x + x) * worldGrid.cellSize + (worldGrid.cellSize / 2.0f);
-            float worldY = (chunk.chunkGridPosition.y * worldGrid.chunkDimensionsInCells.y + y) * worldGrid.cellSize + (worldGrid.cellSize / 2.0f);
-
-            float dx = worldX - worldCenterX;
-            float dy = worldY - worldCenterY;
-            float distance = std::sqrt(dx * dx + dy * dy);
-
-            float falloff = distance / (maxWorldDimension / 2.0f);
-            float noiseValue = _noiseGenerator.GetNoise(worldX, worldY);
-            float normalizedNoise = (noiseValue + 1.0f) / 2.0f;
-            float finalValue = normalizedNoise - falloff;
+            float worldX = (chunk.chunkGridPosition.x * worldGrid.chunkDimensionsInCells.x + x) 
+                * worldGrid.cellSize + (worldGrid.cellSize / 2.0f);
+            float worldY = (chunk.chunkGridPosition.y * worldGrid.chunkDimensionsInCells.y + y) 
+                * worldGrid.cellSize + (worldGrid.cellSize / 2.0f);
 
             int cellIndex = y * worldGrid.chunkDimensionsInCells.x + x;
-            chunk.noiseValues[cellIndex] = noiseValue;
 
-            if (finalValue > _landThreshold) {
+            if (isInside({worldX, worldY}, _islandShape)) {
+                // If the point is inside the island shape, we generate land
                 chunk.cells[cellIndex] = TerrainType::LAND;
             } else {
+                // Otherwise, we generate water
                 chunk.cells[cellIndex] = TerrainType::WATER;
             }
+
+            chunk.noiseValues[cellIndex] = 0.0f;
         }
     }
     // Optionally, mark the chunk as generated, e.g., by adding a GeneratedTag or setting a flag.
@@ -99,6 +114,13 @@ void WorldGenerationSystem::generateWorld(int numChunksX, int numChunksY) {
     auto& worldGrid = _registry.get<WorldGridComponent>(worldGridEntity);
     worldGrid.worldDimensionsInChunks = {numChunksX, numChunksY};
 
+    std::vector<sf::Vector2f> baseShape = generateIslandBaseShape();
+    if (_distortCoastline) {
+        _islandShape = distortCoastline(baseShape);
+    } else {
+        _islandShape = baseShape;
+    }
+
     LOG_INFO("WorldGenerationSystem", "Clearing existing chunk entities...");
     auto chunkView = _registry.view<ChunkComponent>();
     for (auto entity : chunkView) {
@@ -110,7 +132,8 @@ void WorldGenerationSystem::generateWorld(int numChunksX, int numChunksY) {
     for (int cy = 0; cy < worldGrid.worldDimensionsInChunks.y; ++cy) {
         for (int cx = 0; cx < worldGrid.worldDimensionsInChunks.x; ++cx) {
             entt::entity newChunkEntity = _registry.create();
-            ChunkComponent& chunkComp = _registry.emplace<ChunkComponent>(newChunkEntity);
+            ChunkComponent& chunkComp = _registry.emplace<ChunkComponent>(newChunkEntity,
+                worldGrid.chunkDimensionsInCells.x, worldGrid.chunkDimensionsInCells.y);
             chunkComp.chunkGridPosition = {cx, cy};
             // The ChunkComponent constructor already initializes cells to WATER.
             
@@ -121,4 +144,76 @@ void WorldGenerationSystem::generateWorld(int numChunksX, int numChunksY) {
         }
     }
     LOG_INFO("WorldGenerationSystem", "Initial world generation finished.");
+}
+
+std::vector<sf::Vector2f> WorldGenerationSystem::generateIslandBaseShape() {
+    const auto& worldGrid = getWorldGridSettings();
+    float worldWidth = worldGrid.worldDimensionsInChunks.x * worldGrid.chunkDimensionsInCells.x * worldGrid.cellSize;
+    float worldHeight = worldGrid.worldDimensionsInChunks.y * worldGrid.chunkDimensionsInCells.y * worldGrid.cellSize;
+
+    std::vector<sf::Vector2f> points;
+    std::mt19937 rng(static_cast<unsigned int>(_seed));
+    std::uniform_real_distribution<float> distX(worldWidth * 0.2f, worldWidth * 0.8f);
+    std::uniform_real_distribution<float> distY(worldHeight * 0.2f, worldHeight * 0.8f);
+
+    // Generate a set of random points
+    int numPoints = 8; // More points = more complex base shape
+    for (int i = 0; i < numPoints; ++i) {
+        points.push_back({distX(rng), distY(rng)});
+    }
+
+    // Find the centroid
+    sf::Vector2f centroid(0, 0);
+    for (const auto& p : points) {
+        centroid += p;
+    }
+    centroid.x /= numPoints;
+    centroid.y /= numPoints;
+
+    // Sort points by angle around the centroid to form a simple (non-self-intersecting) polygon
+    std::sort(points.begin(), points.end(), [&](const sf::Vector2f& a, const sf::Vector2f& b) {
+        return atan2(a.y - centroid.y, a.x - centroid.x) < atan2(b.y - centroid.y, b.x - centroid.x);
+    });
+
+    return points;
+}
+
+std::vector<sf::Vector2f> WorldGenerationSystem::distortCoastline(const std::vector<sf::Vector2f>& baseShape) {
+    std::vector<sf::Vector2f> distortedShape;
+    if (baseShape.size() < 2) {
+        return baseShape;
+    }
+
+    // Noise parameters for distortion. These should be different from the main generation
+    // to ensure the distortion feels like a separate, finer detail.
+    float distortionFrequency = 0.05f; // Higher frequency for more jaggedness
+    float distortionStrength = 15.0f;  // How far vertices can be pushed, in world units
+
+    for (size_t i = 0; i < baseShape.size(); ++i) {
+        const sf::Vector2f& p1 = baseShape[i];
+        const sf::Vector2f& p2 = baseShape[(i + 1) % baseShape.size()]; // Wrap around to close the loop
+
+        distortedShape.push_back(p1);
+
+        sf::Vector2f segment = p2 - p1;
+        float segmentLength = std::sqrt(segment.x * segment.x + segment.y * segment.y);
+        sf::Vector2f direction = segment / segmentLength;
+        sf::Vector2f normal = {-direction.y, direction.x}; // Perpendicular vector
+
+        // Subdivide the segment to add detail
+        int subdivisions = static_cast<int>(segmentLength / 20.0f); // Create a vertex roughly every 20 pixels
+        for (int j = 1; j < subdivisions; ++j) {
+            float t = static_cast<float>(j) / subdivisions;
+            sf::Vector2f pointOnEdge = p1 + direction * (segmentLength * t);
+
+            // Get noise value for this point
+            float noiseValue = _noiseGenerator.GetNoise(pointOnEdge.x * distortionFrequency, pointOnEdge.y * distortionFrequency);
+
+            // Displace the point along the normal
+            sf::Vector2f displacedPoint = pointOnEdge + normal * noiseValue * distortionStrength;
+            distortedShape.push_back(displacedPoint);
+        }
+    }
+
+    return distortedShape;
 }
