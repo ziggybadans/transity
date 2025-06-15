@@ -109,16 +109,29 @@ void Game::run() {
         while (auto optEvent = _renderer->getWindowInstance().pollEvent()) {
             if (optEvent) {
                 const sf::Event& currentEvent = *optEvent;
-                if (optEvent->is<sf::Event::Resized>()) {
-                    const auto* resizedEvent = optEvent->getIf<sf::Event::Resized>();
+
+                if (currentEvent.is<sf::Event::FocusLost>()) {
+                    LOG_DEBUG("Game", "Window focus lost.");
+                    _isWindowFocused = false;
+                } else if (currentEvent.is<sf::Event::FocusGained>()) {
+                    LOG_DEBUG("Game", "Window focus gained.");
+                    _isWindowFocused = true;
+                }
+
+                if (const auto* resizedEvent = currentEvent.getIf<sf::Event::Resized>()) {
                     _camera.onWindowResize(resizedEvent->size.x, resizedEvent->size.y);
                 }
+
                 _ui->processEvent(currentEvent);
-                _inputHandler->handleGameEvent(currentEvent, _ui->getInteractionMode(), _camera, _renderer->getWindowInstance(), _registry);
+                if (_isWindowFocused) {
+                    _inputHandler->handleGameEvent(currentEvent, _ui->getInteractionMode(), _camera, _renderer->getWindowInstance(), _registry);
+                }
             }
         }
         
-        _inputHandler->update(dt);
+        if (_isWindowFocused) {
+            _inputHandler->update(dt);
+        }
         processInputCommands();
 
         _ui->update(dt, _lineCreationSystem->getActiveLineStations().size());

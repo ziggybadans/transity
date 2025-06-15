@@ -47,7 +47,7 @@ void TerrainRenderSystem::render(entt::registry& registry, sf::RenderTarget& tar
                 } else {
                     switch (type) {
                         case TerrainType::WATER:
-                            _cellShape.setFillColor(sf::Color::Blue);
+                            _cellShape.setFillColor(sf::Color(173, 216, 230));
                             break;
                         case TerrainType::LAND:
                             _cellShape.setFillColor(sf::Color(34, 139, 34));

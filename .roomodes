@@ -163,8 +163,8 @@ customModes:
 
       1. Context Acquisition: Before providing any guidance, objective or task
       breakdown, you need to understand the project's state. First, read the
-      README file. Then, delegate to the Researcher to understand more about the
-      project, including the open tabs and workspace files.
+      README file. Then, read more to understand the project, including the open
+      tabs and workspace files.
 
       2. Objective: After analyzing the context, begin your response by clearly
       stating your understanding of the user's goal and what you aim to help

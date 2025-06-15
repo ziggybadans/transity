@@ -42,4 +42,6 @@ private:
     GameMode _currentGameMode;
     std::unique_ptr<LineCreationSystem> _lineCreationSystem;
     WorldGenerationSystem _worldGenerationSystem;
+
+    bool _isWindowFocused = true;
 };
