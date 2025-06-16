@@ -17,6 +17,7 @@
 #include "systems/StationPlacementSystem.h"
 
 class Renderer;
+#include "graphics/ColorManager.h"
 
 enum GameMode {
     PLAY
@@ -38,6 +39,7 @@ private:
 
     entt::registry _registry;
     EntityFactory _entityFactory;
+    ColorManager _colorManager;
     std::unique_ptr<Renderer> _renderer;
     std::unique_ptr<InputHandler> _inputHandler;
     std::unique_ptr<UI> _ui;

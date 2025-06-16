@@ -12,7 +12,7 @@ Game::Game()
     _worldGenerationSystem(_registry),
     _cameraSystem(std::make_unique<CameraSystem>()),
     _stationPlacementSystem(std::make_unique<StationPlacementSystem>()) {
-    _lineCreationSystem = std::make_unique<LineCreationSystem>(_registry, _entityFactory);
+    _lineCreationSystem = std::make_unique<LineCreationSystem>(_registry, _entityFactory, _colorManager);
     
     LOG_INFO("Game", "Game instance creating.");
     LOG_INFO("Game", "Game instance created successfully.");
@@ -130,7 +130,7 @@ void Game::run() {
         update(dt);
         LOG_TRACE("Game", "Game logic updated.");
 
-        _renderer->renderFrame(_registry, _camera.getView(), dt, _ui->getInteractionMode(), _ui->getVisualizeNoiseState());
+        _renderer->renderFrame(_registry, _camera.getView(), dt, _ui->getVisualizeNoiseState());
         LOG_TRACE("Game", "Frame rendered.");
 
         _ui->renderFrame();

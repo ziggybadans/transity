@@ -3,8 +3,8 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/System.hpp>
 #include <entt/entt.hpp>
-#include "../input/InteractionMode.h"
 #include "../world/TerrainRenderSystem.h"
+#include "LineRenderSystem.h"
 
 class Renderer {
 public:
@@ -12,10 +12,9 @@ public:
     ~Renderer();
 
     void initialize();
-    void renderFrame(entt::registry& registry, 
-        const sf::View& view, 
-        sf::Time dt, 
-        InteractionMode currentMode,
+    void renderFrame(entt::registry& registry,
+        const sf::View& view,
+        sf::Time dt,
         bool visualizeNoise);
     void displayFrame();
     void cleanupResources();
@@ -29,4 +28,5 @@ private:
     sf::RenderWindow _windowInstance;
     sf::Color _clearColor;
     TerrainRenderSystem _terrainRenderSystem;
+    LineRenderSystem _lineRenderSystem;
 };

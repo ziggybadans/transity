@@ -30,6 +30,18 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(EnTT)
 
+# ---- pull nlohmann/json from GitHub ----------------------------------------
+include(FetchContent)
+FetchContent_Declare(
+    nlohmann_json
+    GIT_REPOSITORY https://github.com/nlohmann/json.git
+    GIT_TAG        v3.11.2 # Or a recent stable version
+    GIT_SHALLOW    ON
+    EXCLUDE_FROM_ALL
+    SYSTEM
+)
+FetchContent_MakeAvailable(nlohmann_json)
+
 # ---- pull ImGui from GitHub --------------------------------------------------
 include(FetchContent)
 FetchContent_Declare(
@@ -67,12 +79,15 @@ add_executable(main
     src/core/EntityFactory.cpp
     src/Logger.cpp
     src/graphics/UI.cpp
+    src/graphics/ColorManager.cpp
     src/systems/LineCreationSystem.cpp
     src/world/WorldGenerationSystem.cpp
     src/world/TerrainRenderSystem.cpp
     src/systems/CameraSystem.cpp
     src/systems/StationPlacementSystem.cpp
+    src/graphics/LineRenderSystem.cpp
 )
+file(COPY data DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 target_compile_features(main PRIVATE cxx_std_17)
 
 # Add include directory
@@ -83,6 +98,7 @@ target_include_directories(main PRIVATE
     ${imgui_SOURCE_DIR}          # For ImGui headers
     ${imgui_SOURCE_DIR}/backends # For ImGui backend headers (if needed directly)
     ${ImGuiSFML_SOURCE_DIR}      # For ImGui-SFML headers
+    ${nlohmann_json_SOURCE_DIR}/include
 )
 
 target_link_libraries(main PRIVATE

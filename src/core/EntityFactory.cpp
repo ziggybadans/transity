@@ -2,72 +2,88 @@
 #include "../Logger.h"
 #include <SFML/Graphics/Color.hpp>
 #include <vector>
+#include <fstream>
+#include <filesystem>
 
 EntityFactory::EntityFactory(entt::registry& registry)
     : _registry(registry) {
     LOG_INFO("EntityFactory", "EntityFactory created.");
-    registerArchetypes();
+    loadArchetypes("data/archetypes");
 }
 
-void EntityFactory::registerArchetypes() {
-    Archetype stationArchetype;
-    stationArchetype.id = "station";
-
-    entityArchetypeData::RenderableData stationRenderData;
-    stationRenderData.radius = 2.0f;
-    stationRenderData.color = sf::Color::Blue;
-    stationArchetype.renderableData = stationRenderData;
-
-    entityArchetypeData::ClickableData stationClickableData;
-    if (stationArchetype.renderableData) {
-        stationClickableData.boundingRadius = stationArchetype.renderableData->radius * 1.5f;
-    } else {
-        stationClickableData.boundingRadius = 5.0f;
+void EntityFactory::loadArchetypes(const std::string& directoryPath) {
+    LOG_INFO("EntityFactory", "Loading archetypes from directory: %s", directoryPath.c_str());
+    for (const auto& entry : std::filesystem::directory_iterator(directoryPath)) {
+        if (entry.is_regular_file() && entry.path().extension() == ".json") {
+            std::ifstream file(entry.path());
+            if (file.is_open()) {
+                try {
+                    nlohmann::json archetypeJson;
+                    file >> archetypeJson;
+                    if (archetypeJson.contains("id") && archetypeJson["id"].is_string()) {
+                        _archetypes[archetypeJson["id"]] = archetypeJson;
+                        LOG_INFO("EntityFactory", "Loaded archetype: %s", archetypeJson["id"].get<std::string>().c_str());
+                    } else {
+                        LOG_ERROR("EntityFactory", "Archetype file %s is missing 'id' field or it's not a string.", entry.path().string().c_str());
+                    }
+                } catch (const nlohmann::json::exception& e) {
+                    LOG_ERROR("EntityFactory", "Error parsing JSON from %s: %s", entry.path().string().c_str(), e.what());
+                }
+                file.close();
+            } else {
+                LOG_ERROR("EntityFactory", "Could not open archetype file: %s", entry.path().string().c_str());
+            }
+        }
     }
-    stationArchetype.clickableData = stationClickableData;
-
-    _archetypes[stationArchetype.id] = stationArchetype;
-    LOG_INFO("EntityFactory", "Registered archetype: %s", stationArchetype.id.c_str());
 }
 
-void EntityFactory::applyArchetype(entt::entity entity, const Archetype& archetype, const sf::Vector2f& position, const std::string& name) {
-    _registry.emplace<PositionComponent>(entity, position);
-
-    if (archetype.renderableData) {
-        auto& renderable = _registry.emplace<RenderableComponent>(entity);
-        const auto& data = archetype.renderableData.value();
-        renderable.shape.setRadius(data.radius);
-        renderable.shape.setFillColor(data.color);
-        renderable.shape.setOrigin(sf::Vector2f(data.radius, data.radius));
-    }
-
-    if (archetype.clickableData) {
-        auto& clickable = _registry.emplace<ClickableComponent>(entity);
-        clickable.boundingRadius = archetype.clickableData->boundingRadius;
-    }
-
-    LOG_DEBUG("EntityFactory", "Applied archetype '%s' to entity (ID: %u).", archetype.id.c_str(), static_cast<unsigned int>(entity));
-}
-
-entt::entity EntityFactory::createStation(const sf::Vector2f& position, const std::string& name) {
-    LOG_INFO("EntityFactory", "Request to create station entity with name '%s' at (%.1f, %.1f).", name.c_str(), position.x, position.y);
+entt::entity EntityFactory::createEntity(const std::string& archetypeId, const sf::Vector2f& position, const std::string& name) {
+    LOG_INFO("EntityFactory", "Request to create entity with archetype '%s' and name '%s' at (%.1f, %.1f).", archetypeId.c_str(), name.c_str(), position.x, position.y);
     
-    auto it = _archetypes.find("station");
+    auto it = _archetypes.find(archetypeId);
     if (it == _archetypes.end()) {
-        LOG_ERROR("EntityFactory", "Archetype 'station' not found. Cannot create station entity.");
+        LOG_ERROR("EntityFactory", "Archetype '%s' not found. Cannot create entity.", archetypeId.c_str());
         return entt::null;
     }
 
-    const Archetype& stationArchetype = it->second;
+    const nlohmann::json& archetypeJson = it->second;
     auto entity = _registry.create();
-    applyArchetype(entity, stationArchetype, position, name);
+    _registry.emplace<PositionComponent>(entity, position);
 
-    _registry.emplace<StationComponent>(entity);
+    if (archetypeJson.contains("components") && archetypeJson["components"].is_object()) {
+        const auto& components = archetypeJson["components"];
+        for (auto& [componentName, componentData] : components.items()) {
+            if (componentName == "renderable") {
+                auto& renderable = _registry.emplace<RenderableComponent>(entity);
+                if (componentData.contains("radius")) {
+                    renderable.shape.setRadius(componentData["radius"].get<float>());
+                }
+                if (componentData.contains("color") && componentData["color"].is_array() && componentData["color"].size() == 4) {
+                    renderable.shape.setFillColor(sf::Color(
+                        static_cast<unsigned char>(componentData["color"][0].get<int>()),
+                        static_cast<unsigned char>(componentData["color"][1].get<int>()),
+                        static_cast<unsigned char>(componentData["color"][2].get<int>()),
+                        static_cast<unsigned char>(componentData["color"][3].get<int>())
+                    ));
+                }
+                if (componentData.contains("zOrder")) {
+                    renderable.zOrder = componentData["zOrder"].get<int>();
+                }
+                renderable.shape.setOrigin(sf::Vector2f(renderable.shape.getRadius(), renderable.shape.getRadius()));
+            } else if (componentName == "clickable") {
+                auto& clickable = _registry.emplace<ClickableComponent>(entity);
+                if (componentData.contains("boundingRadius")) {
+                    clickable.boundingRadius = componentData["boundingRadius"].get<float>();
+                }
+            } else if (componentName == "station") {
+                _registry.emplace<StationComponent>(entity);
+            }
+        }
+    }
     
-    LOG_DEBUG("EntityFactory", "Station entity (ID: %u) created successfully using archetype.", static_cast<unsigned int>(entity));
+    LOG_DEBUG("EntityFactory", "Entity (ID: %u) created successfully using archetype '%s'.", static_cast<unsigned int>(entity), archetypeId.c_str());
     return entity;
 }
-
 entt::entity EntityFactory::createLine(const std::vector<entt::entity>& stops, const sf::Color& color) {
     LOG_INFO("EntityFactory", "Request to create line entity with %zu stops.", stops.size());
     if (stops.size() < 2) {

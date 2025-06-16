@@ -12,7 +12,7 @@ void StationPlacementSystem::update(InputHandler& inputHandler, UI& ui, entt::re
             if (ui.getInteractionMode() == InteractionMode::CREATE_STATION) {
                 LOG_DEBUG("StationPlacementSystem", "Processing TryPlaceStation command at (%.1f, %.1f)", command.data.worldPosition.x, command.data.worldPosition.y);
                 int nextStationId = static_cast<int>(registry.storage<entt::entity>().size());
-                entityFactory.createStation(command.data.worldPosition, "New Station " + std::to_string(nextStationId));
+                entityFactory.createEntity("station", command.data.worldPosition, "New Station " + std::to_string(nextStationId));
             }
         }
     }

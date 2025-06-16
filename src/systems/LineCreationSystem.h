@@ -5,9 +5,11 @@
 #include "../event/LineEvents.h"
 #include "../core/EntityFactory.h"
 
+class ColorManager;
+
 class LineCreationSystem {
 public:
-    LineCreationSystem(entt::registry& registry, EntityFactory& entityFactory);
+    LineCreationSystem(entt::registry& registry, EntityFactory& entityFactory, ColorManager& colorManager);
     
     void addStationToLine(entt::entity stationEntity);
     void finalizeLine();
@@ -19,4 +21,5 @@ public:
 private:
     entt::registry& _registry;
     EntityFactory _entityFactory;
+    ColorManager& _colorManager;
 };

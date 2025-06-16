@@ -1,13 +1,14 @@
 #include "LineCreationSystem.h"
 #include "../core/Components.h"
 #include "../Logger.h"
+#include "../graphics/ColorManager.h"
 #include <algorithm>
 #include <utility>
 #include <variant>
 #include <type_traits>
 
-LineCreationSystem::LineCreationSystem(entt::registry& registry, EntityFactory& entityFactory)
-    : _registry(registry), _entityFactory(entityFactory) {
+LineCreationSystem::LineCreationSystem(entt::registry& registry, EntityFactory& entityFactory, ColorManager& colorManager)
+    : _registry(registry), _entityFactory(entityFactory), _colorManager(colorManager) {
     LOG_INFO("LineCreationSystem", "LineCreationSystem created.");
 }
 
@@ -64,10 +65,7 @@ void LineCreationSystem::finalizeLine() {
     }
 
     // Color cycling logic (can be kept here or moved to EntityFactory later)
-    static int lineColorIndex = 0;
-    sf::Color lineColors[] = { sf::Color::Red, sf::Color::Green, sf::Color::Blue, sf::Color::Yellow, sf::Color::Magenta, sf::Color::Cyan };
-    sf::Color chosenColor = lineColors[lineColorIndex % (sizeof(lineColors) / sizeof(lineColors[0]))];
-    lineColorIndex++;
+    sf::Color chosenColor = _colorManager.getNextLineColor();
 
     entt::entity lineEntity = _entityFactory.createLine(stopsInOrder, chosenColor);
 
