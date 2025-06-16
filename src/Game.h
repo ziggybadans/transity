@@ -1,53 +1,47 @@
 #pragma once
 
-#include <SFML/Graphics/RenderWindow.hpp>
-#include <SFML/System/Clock.hpp>
-#include <SFML/System/Time.hpp>
-#include <optional>
-#include "core/Camera.h"
 #include <entt/entt.hpp>
-#include "input/InputHandler.h"
 #include <memory>
+#include "core/Camera.h"
 #include "core/EntityFactory.h"
-#include "graphics/UI.h"
-#include "input/InteractionMode.h"
+#include "graphics/ColorManager.h"
 #include "systems/LineCreationSystem.h"
 #include "world/WorldGenerationSystem.h"
 #include "systems/CameraSystem.h"
 #include "systems/StationPlacementSystem.h"
+#include <SFML/System/Time.hpp>
 
+// Forward declarations
 class Renderer;
-#include "graphics/ColorManager.h"
-
-enum GameMode {
-    PLAY
-};
+class InputHandler;
+class UI;
 
 class Game {
 public:
-    Game();
+    Game(Renderer& renderer, InputHandler& inputHandler);
     ~Game();
+
     void init();
-    void run();
+    void update(sf::Time dt, InputHandler& inputHandler, UI& ui);
+    void onWindowResize(unsigned int width, unsigned int height);
+
+    entt::registry& getRegistry() { return _registry; }
+    Camera& getCamera() { return _camera; }
+    WorldGenerationSystem& getWorldGenerationSystem() { return _worldGenerationSystem; }
+    size_t getActiveStationCount();
 
 private:
-    void processInputCommands();
-    void update(sf::Time dt);
+    void processInputCommands(InputHandler& inputHandler);
 
-    Camera _camera;
-    sf::Clock _deltaClock;
-
+    Renderer& _renderer; // Store a reference to the renderer
     entt::registry _registry;
     EntityFactory _entityFactory;
     ColorManager _colorManager;
-    std::unique_ptr<Renderer> _renderer;
-    std::unique_ptr<InputHandler> _inputHandler;
-    std::unique_ptr<UI> _ui;
-    GameMode _currentGameMode;
-    std::unique_ptr<LineCreationSystem> _lineCreationSystem;
+    Camera _camera;
+    
+    // Systems
     WorldGenerationSystem _worldGenerationSystem;
+    std::unique_ptr<LineCreationSystem> _lineCreationSystem;
     std::unique_ptr<CameraSystem> _cameraSystem;
     std::unique_ptr<StationPlacementSystem> _stationPlacementSystem;
-
-    bool _isWindowFocused = true;
 };

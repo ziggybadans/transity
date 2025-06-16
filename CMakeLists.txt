@@ -73,6 +73,7 @@ FetchContent_MakeAvailable(ImGuiSFML)
 add_executable(main
     src/main.cpp
     src/Game.cpp
+    src/Application.cpp
     src/core/Camera.cpp
     src/input/InputHandler.cpp
     src/graphics/Renderer.cpp
