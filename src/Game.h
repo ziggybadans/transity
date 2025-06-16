@@ -13,6 +13,8 @@
 #include "input/InteractionMode.h"
 #include "systems/LineCreationSystem.h"
 #include "world/WorldGenerationSystem.h"
+#include "systems/CameraSystem.h"
+#include "systems/StationPlacementSystem.h"
 
 class Renderer;
 
@@ -42,6 +44,8 @@ private:
     GameMode _currentGameMode;
     std::unique_ptr<LineCreationSystem> _lineCreationSystem;
     WorldGenerationSystem _worldGenerationSystem;
+    std::unique_ptr<CameraSystem> _cameraSystem;
+    std::unique_ptr<StationPlacementSystem> _stationPlacementSystem;
 
     bool _isWindowFocused = true;
 };

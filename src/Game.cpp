@@ -9,7 +9,9 @@
 
 Game::Game()
     : _entityFactory(_registry),
-    _worldGenerationSystem(_registry) {
+    _worldGenerationSystem(_registry),
+    _cameraSystem(std::make_unique<CameraSystem>()),
+    _stationPlacementSystem(std::make_unique<StationPlacementSystem>()) {
     _lineCreationSystem = std::make_unique<LineCreationSystem>(_registry, _entityFactory);
     
     LOG_INFO("Game", "Game instance creating.");
@@ -72,29 +74,6 @@ void Game::processInputCommands() {
                 LOG_INFO("Game", "Processing WindowClose command.");
                 _renderer->getWindowInstance().close();
                 break;
-            case InputEventType::CAMERA_ZOOM:
-                {
-                    LOG_DEBUG("Game", "Processing CameraZoom command with delta: %.2f", command.data.zoomDelta);
-                    sf::View& view = _camera.getViewToModify();
-                    sf::Vector2f worldPosBeforeZoom = _renderer->getWindowInstance().mapPixelToCoords(command.data.mousePixelPosition, view);
-                    _camera.zoomView(command.data.zoomDelta);
-                    sf::Vector2f worldPosAfterZoom = _renderer->getWindowInstance().mapPixelToCoords(command.data.mousePixelPosition, view);
-                    sf::Vector2f offset = worldPosBeforeZoom - worldPosAfterZoom;
-                    _camera.moveView(offset);
-                    LOG_TRACE("Game", "View moved by (%.1f, %.1f) to maintain zoom focus.", offset.x, offset.y);
-                }
-                break;
-            case InputEventType::CAMERA_PAN:
-                LOG_DEBUG("Game", "Processing CameraPan command with direction: (%.1f, %.1f)", command.data.panDirection.x, command.data.panDirection.y);
-                _camera.moveView(command.data.panDirection);
-                break;
-            case InputEventType::TRY_PLACE_STATION:
-                if (_ui->getInteractionMode() == InteractionMode::CREATE_STATION) {
-                    LOG_DEBUG("Game", "Processing TryPlaceStation command at (%.1f, %.1f)", command.data.worldPosition.x, command.data.worldPosition.y);
-                    int nextStationId = _registry.alive() ? static_cast<int>(_registry.size()) : 0;
-                    _entityFactory.createStation(command.data.worldPosition, "New Station " + std::to_string(nextStationId));
-                }
-                break;
             case InputEventType::NONE:
             default:
                 break;
@@ -136,6 +115,8 @@ void Game::run() {
         
         if (_isWindowFocused) {
             _inputHandler->update(dt, _camera);
+            _cameraSystem->update(*_inputHandler, _camera, _renderer->getWindowInstance());
+            _stationPlacementSystem->update(*_inputHandler, *_ui, _registry, _entityFactory);
         }
         processInputCommands();
 

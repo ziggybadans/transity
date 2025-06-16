@@ -70,6 +70,8 @@ add_executable(main
     src/systems/LineCreationSystem.cpp
     src/world/WorldGenerationSystem.cpp
     src/world/TerrainRenderSystem.cpp
+    src/systems/CameraSystem.cpp
+    src/systems/StationPlacementSystem.cpp
 )
 target_compile_features(main PRIVATE cxx_std_17)
 
