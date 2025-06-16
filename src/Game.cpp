@@ -37,8 +37,10 @@ void Game::processInputCommands(InputHandler& inputHandler) {
 }
 
 void Game::update(sf::Time dt, InputHandler& inputHandler, UI& ui) {
-    // Pass the registry and entity factory to the system manager's update function
-    _systemManager->update(dt, inputHandler, ui, _camera, _renderer, _registry, _entityFactory);
+    // Get the mode from the UI here and pass it down
+    InteractionMode currentMode = ui.getInteractionMode();
+    _systemManager->update(dt, inputHandler, currentMode, _camera, _renderer, _registry, _entityFactory);
+    
     _systemManager->processEvents(inputHandler, ui);
 
     processInputCommands(inputHandler);

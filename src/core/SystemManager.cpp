@@ -10,11 +10,10 @@ SystemManager::SystemManager(entt::registry& registry, EntityFactory& entityFact
     _stationPlacementSystem = std::make_unique<StationPlacementSystem>();
 }
 
-// The implementation now uses the passed-in registry and factory
-void SystemManager::update(sf::Time dt, InputHandler& inputHandler, UI& ui, Camera& camera, Renderer& renderer, entt::registry& registry, EntityFactory& entityFactory) {
+// Pass the mode down to the placement system
+void SystemManager::update(sf::Time dt, InputHandler& inputHandler, InteractionMode mode, Camera& camera, Renderer& renderer, entt::registry& registry, EntityFactory& entityFactory) {
     _cameraSystem->update(inputHandler, camera, renderer.getWindowInstance());
-    // Correctly use the dependencies passed from Game
-    _stationPlacementSystem->update(inputHandler, ui, registry, entityFactory);
+    _stationPlacementSystem->update(inputHandler, mode, registry, entityFactory);
 }
 
 void SystemManager::processEvents(InputHandler& inputHandler, UI& ui) {

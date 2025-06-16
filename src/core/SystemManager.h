@@ -8,6 +8,7 @@
 #include "../systems/StationPlacementSystem.h"
 #include "../graphics/ColorManager.h"
 #include "EntityFactory.h"
+#include "../input/InteractionMode.h" // Include enum
 
 // Forward declarations
 class InputHandler;
@@ -19,8 +20,8 @@ class SystemManager {
 public:
     SystemManager(entt::registry& registry, EntityFactory& entityFactory, ColorManager& colorManager);
 
-    // Update the signature to accept the registry and entity factory
-    void update(sf::Time dt, InputHandler& inputHandler, UI& ui, Camera& camera, Renderer& renderer, entt::registry& registry, EntityFactory& entityFactory);
+    // Update signature to take InteractionMode
+    void update(sf::Time dt, InputHandler& inputHandler, InteractionMode mode, Camera& camera, Renderer& renderer, entt::registry& registry, EntityFactory& entityFactory);
     void processEvents(InputHandler& inputHandler, UI& ui);
 
     LineCreationSystem& getLineCreationSystem() { return *_lineCreationSystem; }
