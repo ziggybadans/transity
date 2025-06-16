@@ -2,6 +2,7 @@
 #include "graphics/Renderer.h"
 #include "input/InputHandler.h"
 #include "Logger.h"
+#include "core/Constants.h"
 #include <cstdlib>
 #include <memory>
 #include <string>
@@ -58,7 +59,7 @@ void Game::init() {
         exit(EXIT_FAILURE);
     }
 
-    Logging::Logger::getInstance().setLogLevelDelay(Logging::LogLevel::TRACE, 2000);
+    Logging::Logger::getInstance().setLogLevelDelay(Logging::LogLevel::TRACE, Constants::TRACE_LOG_DELAY_MS);
     LOG_INFO("Main", "TRACE log delay set to: %ums", Logging::Logger::getInstance().getLogLevelDelay(Logging::LogLevel::TRACE));
     LOG_INFO("Game", "Game initialization completed.");
 }

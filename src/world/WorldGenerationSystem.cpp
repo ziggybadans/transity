@@ -1,5 +1,6 @@
 #include "WorldGenerationSystem.h"
 #include "../Logger.h"
+#include "../core/Constants.h"
 
 #include <random>
 #include <algorithm>
@@ -169,7 +170,7 @@ std::vector<sf::Vector2f> WorldGenerationSystem::generateIslandBaseShape() {
     std::uniform_real_distribution<float> distY(worldHeight * 0.2f, worldHeight * 0.8f);
 
     // Generate a set of random points
-    int numPoints = 8; // More points = more complex base shape
+    int numPoints = Constants::ISLAND_BASE_SHAPE_POINTS; // More points = more complex base shape
     for (int i = 0; i < numPoints; ++i) {
         points.push_back({distX(rng), distY(rng)});
     }
@@ -198,8 +199,8 @@ std::vector<sf::Vector2f> WorldGenerationSystem::distortCoastline(const std::vec
 
     // Noise parameters for distortion. These should be different from the main generation
     // to ensure the distortion feels like a separate, finer detail.
-    float distortionFrequency = 0.05f; // Higher frequency for more jaggedness
-    float distortionStrength = 15.0f;  // How far vertices can be pushed, in world units
+    float distortionFrequency = Constants::COASTLINE_DISTORTION_FREQUENCY; // Higher frequency for more jaggedness
+    float distortionStrength = Constants::COASTLINE_DISTORTION_STRENGTH;  // How far vertices can be pushed, in world units
 
     for (size_t i = 0; i < baseShape.size(); ++i) {
         const sf::Vector2f& p1 = baseShape[i];
@@ -213,7 +214,7 @@ std::vector<sf::Vector2f> WorldGenerationSystem::distortCoastline(const std::vec
         sf::Vector2f normal = {-direction.y, direction.x}; // Perpendicular vector
 
         // Subdivide the segment to add detail
-        int subdivisions = static_cast<int>(segmentLength / 20.0f); // Create a vertex roughly every 20 pixels
+        int subdivisions = static_cast<int>(segmentLength / Constants::COASTLINE_SUBDIVISION_LENGTH); // Create a vertex roughly every 20 pixels
         for (int j = 1; j < subdivisions; ++j) {
             float t = static_cast<float>(j) / subdivisions;
             sf::Vector2f pointOnEdge = p1 + direction * (segmentLength * t);

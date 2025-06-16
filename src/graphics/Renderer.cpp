@@ -5,12 +5,13 @@
 #include <SFML/Graphics.hpp>
 #include <iostream>
 #include <cstdlib>
+#include "../core/Constants.h"
 
 Renderer::Renderer()
-    : _windowInstance(sf::VideoMode({1920, 1080}), "Transity Predev")
-    , _clearColor(173, 216, 230) {
+    : _windowInstance(sf::VideoMode({Constants::WINDOW_WIDTH, Constants::WINDOW_HEIGHT}), Constants::WINDOW_TITLE)
+    , _clearColor(Constants::CLEAR_COLOR_R, Constants::CLEAR_COLOR_G, Constants::CLEAR_COLOR_B) {
     LOG_INFO("Renderer", "Renderer created and window initialized.");
-    _windowInstance.setFramerateLimit(144);
+    _windowInstance.setFramerateLimit(Constants::FRAMERATE_LIMIT);
 }
 
 Renderer::~Renderer() {
@@ -63,7 +64,7 @@ void Renderer::renderFrame(entt::registry& registry,
                 sf::Vertex{pos1Comp.coordinates, lineComp.color, sf::Vector2f()},
                 sf::Vertex{pos2Comp.coordinates, lineComp.color, sf::Vector2f()}
             };
-            _windowInstance.draw(line, 2, sf::PrimitiveType::Lines);
+            _windowInstance.draw(line, Constants::LINE_VERTEX_COUNT, sf::PrimitiveType::Lines);
         }
         finalizedLineCount++;
     }
@@ -104,7 +105,7 @@ void Renderer::renderFrame(entt::registry& registry,
                         sf::Vertex{pos1Comp.coordinates, sf::Color::Yellow, sf::Vector2f()}, // Changed to Yellow for active line
                         sf::Vertex{pos2Comp.coordinates, sf::Color::Yellow, sf::Vector2f()}
                     };
-                    _windowInstance.draw(lineSegment, 2, sf::PrimitiveType::Lines);
+                    _windowInstance.draw(lineSegment, Constants::LINE_VERTEX_COUNT, sf::PrimitiveType::Lines);
                     LOG_TRACE("Renderer", "Drew active line segment between selected stations.");
                 }
             }
@@ -119,7 +120,7 @@ void Renderer::renderFrame(entt::registry& registry,
                     sf::Vertex{p1, sf::Color::Yellow, sf::Vector2f()},
                     sf::Vertex{p2Mouse, sf::Color::Yellow, sf::Vector2f()}
                 };
-                _windowInstance.draw(lineToMouse, 2, sf::PrimitiveType::Lines);
+                _windowInstance.draw(lineToMouse, Constants::LINE_VERTEX_COUNT, sf::PrimitiveType::Lines);
                 LOG_TRACE("Renderer", "Drew active line segment from last station to mouse.");
             }
         }

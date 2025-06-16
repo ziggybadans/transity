@@ -5,11 +5,12 @@
 #include <string>
 #include <vector>
 #include <variant>
+#include "../core/Constants.h"
 
 InputHandler::InputHandler()
-    : _cameraSpeed(200.0f)
-    , _zoomFactor(0.9f)
-    , _unzoomFactor(1.0f / _zoomFactor) {
+    : _cameraSpeed(Constants::CAMERA_SPEED)
+    , _zoomFactor(Constants::ZOOM_FACTOR)
+    , _unzoomFactor(Constants::UNZOOM_FACTOR) {
     LOG_INFO("Input", "InputHandler created.");
 }
 
@@ -99,7 +100,7 @@ void InputHandler::update(sf::Time dt, const Camera& camera) {
         const sf::View& view = camera.getView();
         sf::Vector2f viewSize = view.getSize();
 
-        float dynamicCameraSpeed = viewSize.y * 0.5f;
+        float dynamicCameraSpeed = viewSize.y * Constants::DYNAMIC_CAMERA_SPEED_MULTIPLIER;
 
         InputData data;
         data.panDirection = panDirection * dynamicCameraSpeed * dt.asSeconds();

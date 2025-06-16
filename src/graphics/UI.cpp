@@ -4,6 +4,7 @@
 #include "../Logger.h"
 #include "../input/InteractionMode.h"
 #include <cstdlib>
+#include "../core/Constants.h"
 
 UI::UI(sf::RenderWindow& window, WorldGenerationSystem* worldGenSystem)
     : m_window(window), 
@@ -35,7 +36,7 @@ void UI::processEvent(const sf::Event& sfEvent) {
 void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
     ImGui::SFML::Update(m_window, deltaTime);
 
-    const float windowPadding = 10.0f;
+    const float windowPadding = Constants::UI_WINDOW_PADDING;
     ImGuiIO& io = ImGui::GetIO();
     ImVec2 displaySize = io.DisplaySize;
 
@@ -49,7 +50,7 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
         ImGui::Text("FPS: %.1f", 1.f / deltaTime.asSeconds());
     ImGui::End();
 
-    float worldGenSettingsWidth = 300.0f;
+    float worldGenSettingsWidth = Constants::UI_WORLD_GEN_SETTINGS_WIDTH;
     ImVec2 worldGenSettingsPos = ImVec2(displaySize.x - worldGenSettingsWidth - windowPadding, windowPadding);
     ImGui::SetNextWindowPos(worldGenSettingsPos, ImGuiCond_Always);
     ImGui::SetNextWindowSize(ImVec2(worldGenSettingsWidth, 0.0f), ImGuiCond_Always);
@@ -159,9 +160,9 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
 
     ImGui::End();
 
-    float interactionModesWidth = 400.0f;
-    float interactionModesHeight = 100.0f;
-    ImVec2 interactionModesPos = ImVec2((displaySize.x - interactionModesWidth) * 0.5f, 
+    float interactionModesWidth = Constants::UI_INTERACTION_MODES_WIDTH;
+    float interactionModesHeight = Constants::UI_INTERACTION_MODES_HEIGHT;
+    ImVec2 interactionModesPos = ImVec2((displaySize.x - interactionModesWidth) * 0.5f,
         displaySize.y - interactionModesHeight - windowPadding);
     ImGui::SetNextWindowPos(interactionModesPos, ImGuiCond_Always);
     ImGui::Begin("Interaction Modes", nullptr, size_flags);
