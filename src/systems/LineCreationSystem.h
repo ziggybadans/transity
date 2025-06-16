@@ -20,6 +20,6 @@ public:
 
 private:
     entt::registry& _registry;
-    EntityFactory _entityFactory;
+    EntityFactory& _entityFactory;
     ColorManager& _colorManager;
 };

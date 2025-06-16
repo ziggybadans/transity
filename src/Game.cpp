@@ -9,7 +9,18 @@ Game::Game(Renderer& renderer, InputHandler& inputHandler)
     : _renderer(renderer),
       _entityFactory(_registry),
       _worldGenerationSystem(_registry) {
-    _systemManager = std::make_unique<SystemManager>(_registry, _entityFactory, _colorManager);
+    // 1. Create instances of the systems, injecting their dependencies.
+    auto cameraSystem = std::make_unique<CameraSystem>(inputHandler, _camera, _renderer.getWindowInstance());
+    auto lineCreationSystem = std::make_unique<LineCreationSystem>(_registry, _entityFactory, _colorManager);
+    auto stationPlacementSystem = std::make_unique<StationPlacementSystem>(inputHandler, _registry, _entityFactory);
+
+    // 2. Create the SystemManager, passing ownership of the systems.
+    _systemManager = std::make_unique<SystemManager>(
+        std::move(cameraSystem),
+        std::move(lineCreationSystem),
+        std::move(stationPlacementSystem)
+    );
+
     LOG_INFO("Game", "Game instance created.");
 }
 
@@ -39,7 +50,9 @@ void Game::processInputCommands(InputHandler& inputHandler) {
 void Game::update(sf::Time dt, InputHandler& inputHandler, UI& ui) {
     // Get the mode from the UI here and pass it down
     InteractionMode currentMode = ui.getInteractionMode();
-    _systemManager->update(dt, inputHandler, currentMode, _camera, _renderer, _registry, _entityFactory);
+    
+    // 3. Call the simplified update method.
+    _systemManager->update(dt, currentMode);
     
     _systemManager->processEvents(inputHandler, ui);
 

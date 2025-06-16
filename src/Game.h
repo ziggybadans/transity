@@ -7,6 +7,9 @@
 #include "graphics/ColorManager.h"
 #include "world/WorldGenerationSystem.h"
 #include "core/SystemManager.h" // Include the new manager
+#include "systems/CameraSystem.h"
+#include "systems/LineCreationSystem.h"
+#include "systems/StationPlacementSystem.h"
 
 // Forward declarations
 class Renderer;

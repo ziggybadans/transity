@@ -1,33 +1,34 @@
 #pragma once
 
 #include <memory>
-#include <entt/entt.hpp>
 #include <SFML/System/Time.hpp>
-#include "../systems/CameraSystem.h"
-#include "../systems/LineCreationSystem.h"
-#include "../systems/StationPlacementSystem.h"
-#include "../graphics/ColorManager.h"
-#include "EntityFactory.h"
-#include "../input/InteractionMode.h" // Include enum
+#include "../input/InteractionMode.h"
 
-// Forward declarations
+// Forward declarations for systems and other dependencies
+class CameraSystem;
+class LineCreationSystem;
+class StationPlacementSystem;
 class InputHandler;
 class UI;
-class Renderer;
-class Camera;
 
 class SystemManager {
 public:
-    SystemManager(entt::registry& registry, EntityFactory& entityFactory, ColorManager& colorManager);
+    // The constructor now takes ownership of the systems via unique_ptr
+    SystemManager(
+        std::unique_ptr<CameraSystem> cameraSystem,
+        std::unique_ptr<LineCreationSystem> lineCreationSystem,
+        std::unique_ptr<StationPlacementSystem> stationPlacementSystem
+    );
 
-    // Update signature to take InteractionMode
-    void update(sf::Time dt, InputHandler& inputHandler, InteractionMode mode, Camera& camera, Renderer& renderer, entt::registry& registry, EntityFactory& entityFactory);
+    // The update signature is now much simpler
+    void update(sf::Time dt, InteractionMode mode);
     void processEvents(InputHandler& inputHandler, UI& ui);
 
-    LineCreationSystem& getLineCreationSystem() { return *_lineCreationSystem; }
+    // Getter remains the same
+    LineCreationSystem& getLineCreationSystem();
 
 private:
-    std::unique_ptr<CameraSystem> _cameraSystem;
-    std::unique_ptr<LineCreationSystem> _lineCreationSystem;
-    std::unique_ptr<StationPlacementSystem> _stationPlacementSystem;
+    std::unique_ptr<CameraSystem> m_cameraSystem;
+    std::unique_ptr<LineCreationSystem> m_lineCreationSystem;
+    std::unique_ptr<StationPlacementSystem> m_stationPlacementSystem;
 };

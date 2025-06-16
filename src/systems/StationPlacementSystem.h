@@ -8,6 +8,11 @@ class EntityFactory;
 
 class StationPlacementSystem {
 public:
-    // The signature now takes the enum directly
-    void update(InputHandler& inputHandler, InteractionMode mode, entt::registry& registry, EntityFactory& entityFactory);
+    StationPlacementSystem(InputHandler& inputHandler, entt::registry& registry, EntityFactory& entityFactory);
+    void update(InteractionMode mode);
+
+private:
+    InputHandler& _inputHandler;
+    entt::registry& _registry;
+    EntityFactory& _entityFactory;
 };
