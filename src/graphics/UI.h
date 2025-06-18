@@ -29,15 +29,7 @@ private:
     InteractionMode m_currentInteractionMode;
     std::vector<FinalizeLineEvent> m_uiEvents;
 
-    int _worldGenSeed;
-    float _worldGenFrequency;
-    int _worldGenNoiseType;
-    int _worldGenFractalType;
-    int _worldGenOctaves;
-    float _worldGenLacunarity;
-    float _worldGenGain;
-    float _worldGenLandThreshold;
-    bool _worldGenDistortCoastline;
+    WorldGenParams _worldGenParams;
 
     int _worldChunksX;
     int _worldChunksY;

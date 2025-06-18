@@ -7,26 +7,22 @@
 #include <vector>
 
 WorldGenerationSystem::WorldGenerationSystem(entt::registry& registry) : _registry(registry) {
-    _seed = 1337;
-    _frequency = 0.01f;
-    _noiseType = FastNoiseLite::NoiseType_OpenSimplex2;
-    _fractalType = FastNoiseLite::FractalType_FBm;
-    _octaves = 5;
-    _lacunarity = 2.0f;
-    _gain = 0.5f;
-    _landThreshold = 0.1f;
+    configureNoise();
+}
 
+void WorldGenerationSystem::setParams(const WorldGenParams& params) {
+    _params = params;
     configureNoise();
 }
 
 void WorldGenerationSystem::configureNoise() {
-    _noiseGenerator.SetSeed(_seed);
-    _noiseGenerator.SetFrequency(_frequency);
-    _noiseGenerator.SetNoiseType(_noiseType);
-    _noiseGenerator.SetFractalType(_fractalType);
-    _noiseGenerator.SetFractalOctaves(_octaves);
-    _noiseGenerator.SetFractalLacunarity(_lacunarity);
-    _noiseGenerator.SetFractalGain(_gain);
+    _noiseGenerator.SetSeed(_params.seed);
+    _noiseGenerator.SetFrequency(_params.frequency);
+    _noiseGenerator.SetNoiseType(_params.noiseType);
+    _noiseGenerator.SetFractalType(_params.fractalType);
+    _noiseGenerator.SetFractalOctaves(_params.octaves);
+    _noiseGenerator.SetFractalLacunarity(_params.lacunarity);
+    _noiseGenerator.SetFractalGain(_params.gain);
 
     generateWorld(3, 3);
 }
@@ -128,7 +124,7 @@ void WorldGenerationSystem::generateWorld(int numChunksX, int numChunksY) {
     worldGrid.worldDimensionsInChunks = {numChunksX, numChunksY};
 
     std::vector<sf::Vector2f> baseShape = generateIslandBaseShape();
-    if (_distortCoastline) {
+    if (_params.distortCoastline) {
         _islandShape = distortCoastline(baseShape);
     } else {
         _islandShape = baseShape;
@@ -165,7 +161,7 @@ std::vector<sf::Vector2f> WorldGenerationSystem::generateIslandBaseShape() {
     float worldHeight = worldGrid.worldDimensionsInChunks.y * worldGrid.chunkDimensionsInCells.y * worldGrid.cellSize;
 
     std::vector<sf::Vector2f> points;
-    std::mt19937 rng(static_cast<unsigned int>(_seed));
+    std::mt19937 rng(static_cast<unsigned int>(_params.seed));
     std::uniform_real_distribution<float> distX(worldWidth * 0.2f, worldWidth * 0.8f);
     std::uniform_real_distribution<float> distY(worldHeight * 0.2f, worldHeight * 0.8f);
 
