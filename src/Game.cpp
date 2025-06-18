@@ -48,12 +48,8 @@ void Game::processInputCommands(InputHandler& inputHandler) {
 }
 
 void Game::update(sf::Time dt, InputHandler& inputHandler, UI& ui) {
-    // Get the mode from the UI here and pass it down
-    InteractionMode currentMode = ui.getInteractionMode();
-    
-    // 3. Call the simplified update method.
-    _systemManager->update(dt, currentMode);
-    
+    _systemManager->update(dt, _gameState.currentInteractionMode);
+
     _systemManager->processEvents(inputHandler, ui);
 
     processInputCommands(inputHandler);

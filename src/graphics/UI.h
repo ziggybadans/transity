@@ -7,17 +7,17 @@
 #include "../event/LineEvents.h"
 #include "FastNoiseLite.h"
 #include "../world/WorldGenerationSystem.h"
+#include "../core/GameState.h"
 
 class UI {
 public:
-    UI(sf::RenderWindow& window, WorldGenerationSystem* worldGenSystem);
+    UI(sf::RenderWindow& window, WorldGenerationSystem* worldGenSystem, GameState& gameState);
     ~UI();
     void initialize();
     void processEvent(const sf::Event& event);
     void update(sf::Time deltaTime, size_t numStationsInActiveLine);
     void renderFrame();
     void cleanupResources();
-    InteractionMode getInteractionMode() const;
 
     const std::vector<FinalizeLineEvent>& getUiEvents() const;
     void clearUiEvents();
@@ -25,9 +25,10 @@ public:
     bool getVisualizeNoiseState() const { return _visualizeNoise; }
 
 private:
-    sf::RenderWindow& m_window;
-    InteractionMode m_currentInteractionMode;
-    std::vector<FinalizeLineEvent> m_uiEvents;
+    sf::RenderWindow& _window;
+    GameState& _gameState;
+
+    std::vector<FinalizeLineEvent> _uiEvents;
 
     WorldGenParams _worldGenParams;
 

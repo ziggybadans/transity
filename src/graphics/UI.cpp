@@ -6,10 +6,8 @@
 #include <cstdlib>
 #include "../core/Constants.h"
 
-UI::UI(sf::RenderWindow& window, WorldGenerationSystem* worldGenSystem)
-    : m_window(window), 
-    m_currentInteractionMode(InteractionMode::SELECT), 
-    _worldGenerationSystem(worldGenSystem) {
+UI::UI(sf::RenderWindow& window, WorldGenerationSystem* worldGenSystem, GameState& gameState)
+    : _window(window), _gameState(gameState), _worldGenerationSystem(worldGenSystem) {
     LOG_INFO("UI", "UI instance created.");
     syncWithWorldState();
 }
@@ -21,7 +19,7 @@ UI::~UI() {
 void UI::initialize() {
     LOG_INFO("UI", "Initializing ImGui.");
     ImGui::CreateContext();
-    if (!ImGui::SFML::Init(m_window)) {
+    if (!ImGui::SFML::Init(_window)) {
         LOG_FATAL("UI", "Failed to initialize ImGui-SFML");
         exit(EXIT_FAILURE);
     }
@@ -30,11 +28,11 @@ void UI::initialize() {
 }
 
 void UI::processEvent(const sf::Event& sfEvent) {
-    ImGui::SFML::ProcessEvent(m_window, sfEvent);
+    ImGui::SFML::ProcessEvent(_window, sfEvent);
 }
 
 void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
-    ImGui::SFML::Update(m_window, deltaTime);
+    ImGui::SFML::Update(_window, deltaTime);
 
     const float windowPadding = Constants::UI_WINDOW_PADDING;
     ImGuiIO& io = ImGui::GetIO();
@@ -117,26 +115,26 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
         displaySize.y - interactionModesHeight - windowPadding);
     ImGui::SetNextWindowPos(interactionModesPos, ImGuiCond_Always);
     ImGui::Begin("Interaction Modes", nullptr, size_flags);
-        int currentMode = static_cast<int>(m_currentInteractionMode);
+        int currentMode = static_cast<int>(_gameState.currentInteractionMode);
 
         if (ImGui::RadioButton("None", &currentMode, static_cast<int>(InteractionMode::SELECT))) {
-            m_currentInteractionMode = InteractionMode::SELECT;
+            _gameState.currentInteractionMode = InteractionMode::SELECT;
             LOG_INFO("UI", "Interaction mode changed to: None");
         }
         ImGui::SameLine();
         if (ImGui::RadioButton("Station Placement", &currentMode, static_cast<int>(InteractionMode::CREATE_STATION))) {
-            m_currentInteractionMode = InteractionMode::CREATE_STATION;
+            _gameState.currentInteractionMode = InteractionMode::CREATE_STATION;
             LOG_INFO("UI", "Interaction mode changed to: StationPlacement");
         }
         ImGui::SameLine();
         if (ImGui::RadioButton("Line Creation", &currentMode, static_cast<int>(InteractionMode::CREATE_LINE))) {
-            m_currentInteractionMode = InteractionMode::CREATE_LINE;
+            _gameState.currentInteractionMode = InteractionMode::CREATE_LINE;
             LOG_INFO("UI", "Interaction mode changed to: LineCreation");
         }
-        if (m_currentInteractionMode == InteractionMode::CREATE_LINE && numberOfStationsInActiveLine >= 2) {
+        if (_gameState.currentInteractionMode == InteractionMode::CREATE_LINE && numberOfStationsInActiveLine >= 2) {
             if (ImGui::Button("Finalize Line")) {
                 FinalizeLineEvent finalizeLineEvent;
-                m_uiEvents.emplace_back(finalizeLineEvent);
+                _uiEvents.emplace_back(finalizeLineEvent);
                 LOG_INFO("UI", "Finalize Line button clicked.");
             }
         }
@@ -144,7 +142,7 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
 }
 
 void UI::renderFrame() {
-    ImGui::SFML::Render(m_window);
+    ImGui::SFML::Render(_window);
 }
 
 void UI::cleanupResources() {
@@ -153,16 +151,12 @@ void UI::cleanupResources() {
     LOG_INFO("UI", "ImGui shutdown complete.");
 }
 
-InteractionMode UI::getInteractionMode() const {
-    return m_currentInteractionMode;
-}
-
 const std::vector<FinalizeLineEvent>& UI::getUiEvents() const {
-    return m_uiEvents;
+    return _uiEvents;
 }
 
 void UI::clearUiEvents() {
-    m_uiEvents.clear();
+    _uiEvents.clear();
     LOG_INFO("UI", "UI events cleared.");
 }
 

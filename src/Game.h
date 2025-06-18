@@ -10,6 +10,7 @@
 #include "systems/CameraSystem.h"
 #include "systems/LineCreationSystem.h"
 #include "systems/StationPlacementSystem.h"
+#include "core/GameState.h"
 
 // Forward declarations
 class Renderer;
@@ -29,6 +30,7 @@ public:
     Camera& getCamera() { return _camera; }
     WorldGenerationSystem& getWorldGenerationSystem() { return _worldGenerationSystem; }
     size_t getActiveStationCount();
+    GameState& getGameState() { return _gameState; }
 
 private:
     void processInputCommands(InputHandler& inputHandler);
@@ -38,6 +40,7 @@ private:
     EntityFactory _entityFactory;
     ColorManager _colorManager;
     Camera _camera;
+    GameState _gameState;
     
     // Systems are now managed by SystemManager
     WorldGenerationSystem _worldGenerationSystem;

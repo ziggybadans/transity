@@ -15,7 +15,7 @@ Application::Application() {
         _game->init();
 
         // Correctly pass a pointer to the UI constructor using the address-of operator (&)
-        _ui = std::make_unique<UI>(_renderer->getWindowInstance(), &_game->getWorldGenerationSystem());
+        _ui = std::make_unique<UI>(_renderer->getWindowInstance(), &_game->getWorldGenerationSystem(), _game->getGameState());
         _ui->initialize();
 
     } catch (const std::exception& e) {
@@ -64,7 +64,7 @@ void Application::processEvents() {
 
             _ui->processEvent(currentEvent);
             if (_isWindowFocused) {
-                _inputHandler->handleGameEvent(currentEvent, _ui->getInteractionMode(), _game->getCamera(), _renderer->getWindowInstance(), _game->getRegistry());
+                _inputHandler->handleGameEvent(currentEvent, _game->getGameState().currentInteractionMode, _game->getCamera(), _renderer->getWindowInstance(), _game->getRegistry());
             }
         }
     }
