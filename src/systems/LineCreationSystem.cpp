@@ -1,16 +1,18 @@
 #include "LineCreationSystem.h"
 #include "../core/Components.h"
-#include "../Logger.h"
+#include "../core/ServiceLocator.h"
+#include "../core/EntityFactory.h"
 #include "../graphics/ColorManager.h"
+#include "../Logger.h"
 #include <algorithm>
 #include <utility>
-#include <variant>
-#include <type_traits>
 
-LineCreationSystem::LineCreationSystem(entt::registry& registry, EntityFactory& entityFactory, ColorManager& colorManager, EventBus& eventBus)
-    : _registry(registry), _entityFactory(entityFactory), _colorManager(colorManager) {
-    m_addStationConnection = eventBus.sink<AddStationToLineEvent>().connect<&LineCreationSystem::onAddStationToLine>(this);
-    m_finalizeLineConnection = eventBus.sink<FinalizeLineEvent>().connect<&LineCreationSystem::onFinalizeLine>(this);
+LineCreationSystem::LineCreationSystem(ServiceLocator& serviceLocator)
+    : _registry(serviceLocator.registry),
+      _entityFactory(serviceLocator.entityFactory),
+      _colorManager(serviceLocator.colorManager) {
+    m_addStationConnection = serviceLocator.eventBus->sink<AddStationToLineEvent>().connect<&LineCreationSystem::onAddStationToLine>(this);
+    m_finalizeLineConnection = serviceLocator.eventBus->sink<FinalizeLineEvent>().connect<&LineCreationSystem::onFinalizeLine>(this);
     LOG_INFO("LineCreationSystem", "LineCreationSystem created and connected to EventBus.");
 }
 
@@ -21,11 +23,10 @@ LineCreationSystem::~LineCreationSystem() {
 }
 
 void LineCreationSystem::addStationToLine(entt::entity stationEntity) {
-    if (_registry.valid(stationEntity) && _registry.all_of<PositionComponent>(stationEntity)) {
-        // Check if it's already the last station (has the highest order tag)
+    if (_registry->valid(stationEntity) && _registry->all_of<PositionComponent>(stationEntity)) {
         int currentHighestOrder = -1;
         entt::entity lastStationEntity = entt::null;
-        auto view = _registry.view<ActiveLineStationTag>();
+        auto view = _registry->view<ActiveLineStationTag>();
         for (auto entity : view) {
             const auto& tag = view.get<ActiveLineStationTag>(entity);
             if (tag.order > currentHighestOrder) {
@@ -39,8 +40,7 @@ void LineCreationSystem::addStationToLine(entt::entity stationEntity) {
             return;
         }
 
-        // If not, add or update the tag with the next order
-        _registry.emplace_or_replace<ActiveLineStationTag>(stationEntity, currentHighestOrder + 1);
+        _registry->emplace_or_replace<ActiveLineStationTag>(stationEntity, currentHighestOrder + 1);
         LOG_DEBUG("LineCreationSystem", "Station %u tagged for active line with order %d.", static_cast<unsigned int>(stationEntity), currentHighestOrder + 1);
     } else {
         LOG_WARN("LineCreationSystem", "Attempted to add invalid station entity: %u", static_cast<unsigned int>(stationEntity));
@@ -49,7 +49,7 @@ void LineCreationSystem::addStationToLine(entt::entity stationEntity) {
 
 void LineCreationSystem::finalizeLine() {
     std::vector<std::pair<int, entt::entity>> taggedStations;
-    auto view = _registry.view<ActiveLineStationTag>();
+    auto view = _registry->view<ActiveLineStationTag>();
     for (auto entity : view) {
         taggedStations.push_back({view.get<ActiveLineStationTag>(entity).order, entity});
     }
@@ -58,9 +58,8 @@ void LineCreationSystem::finalizeLine() {
 
     if (taggedStations.size() < 2) {
         LOG_WARN("LineCreationSystem", "Not enough stations tagged to finalize line. Need at least 2, have %zu.", taggedStations.size());
-        // Also clear any stray tags if desired, though clearCurrentLine will do it
         for (const auto& pair : taggedStations) {
-            _registry.remove<ActiveLineStationTag>(pair.second);
+            _registry->remove<ActiveLineStationTag>(pair.second);
         }
         return;
     }
@@ -72,24 +71,22 @@ void LineCreationSystem::finalizeLine() {
         stopsInOrder.push_back(pair.second);
     }
 
-    // Color cycling logic (can be kept here or moved to EntityFactory later)
-    sf::Color chosenColor = _colorManager.getNextLineColor();
-
-    entt::entity lineEntity = _entityFactory.createLine(stopsInOrder, chosenColor);
+    sf::Color chosenColor = _colorManager->getNextLineColor();
+    entt::entity lineEntity = _entityFactory->createLine(stopsInOrder, chosenColor);
 
     if (lineEntity == entt::null) {
         LOG_ERROR("LineCreationSystem", "Failed to create line entity.");
         for (entt::entity station_ent : stopsInOrder) {
-            if (_registry.valid(station_ent)) {
-                _registry.remove<ActiveLineStationTag>(station_ent);
+            if (_registry->valid(station_ent)) {
+                _registry->remove<ActiveLineStationTag>(station_ent);
             }
         }
         return;
     }
 
     for (entt::entity stationEnt : stopsInOrder) {
-        if (_registry.valid(stationEnt) && _registry.all_of<StationComponent>(stationEnt)) {
-            auto& stationComp = _registry.get<StationComponent>(stationEnt);
+        if (_registry->valid(stationEnt) && _registry->all_of<StationComponent>(stationEnt)) {
+            auto& stationComp = _registry->get<StationComponent>(stationEnt);
             stationComp.connectedLines.push_back(lineEntity);
             LOG_DEBUG("LineCreationSystem", "Connected line %u to station %u", static_cast<unsigned int>(lineEntity), static_cast<unsigned int>(stationEnt));
         } else {
@@ -98,28 +95,24 @@ void LineCreationSystem::finalizeLine() {
     }
 
     for (entt::entity stationEnt : stopsInOrder) {
-        if (_registry.valid(stationEnt)) {
-            _registry.remove<ActiveLineStationTag>(stationEnt);
+        if (_registry->valid(stationEnt)) {
+            _registry->remove<ActiveLineStationTag>(stationEnt);
         }
     }
     LOG_INFO("LineCreationSystem", "Created line entity with ID: %u and removed tags.", static_cast<unsigned int>(lineEntity));
-    // No need to call clearCurrentLine() if it only dealt with m_stationsForCurrentLine
-    // The equivalent is now removing the tags, which is done above.
     
     clearCurrentLine();
 }
 
 void LineCreationSystem::clearCurrentLine() {
     LOG_DEBUG("LineCreationSystem", "Clearing active line stations (removing ActiveLineStationTag).");
-    auto view = _registry.view<ActiveLineStationTag>();
-    // Create a list of entities to remove components from, to avoid iterator invalidation issues
-    // if on_destroy<ActiveLineStationTag> or similar were to modify the view.
+    auto view = _registry->view<ActiveLineStationTag>();
     std::vector<entt::entity> entitiesToClear;
     for (auto entity : view) {
         entitiesToClear.push_back(entity);
     }
     for (auto entity : entitiesToClear) {
-        _registry.remove<ActiveLineStationTag>(entity);
+        _registry->remove<ActiveLineStationTag>(entity);
     }
     if (!entitiesToClear.empty()) {
         LOG_DEBUG("LineCreationSystem", "Cleared %zu active line station tags.", entitiesToClear.size());
@@ -128,7 +121,7 @@ void LineCreationSystem::clearCurrentLine() {
 
 std::vector<entt::entity> LineCreationSystem::getActiveLineStations() const {
     std::vector<std::pair<int, entt::entity>> taggedStations;
-    auto view = _registry.view<PositionComponent, ActiveLineStationTag>();
+    auto view = _registry->view<PositionComponent, ActiveLineStationTag>();
     for (auto entity : view) {
         taggedStations.push_back({view.get<ActiveLineStationTag>(entity).order, entity});
     }
@@ -141,7 +134,6 @@ std::vector<entt::entity> LineCreationSystem::getActiveLineStations() const {
     return stationsInOrder;
 }
 
-// The old processEvents logic is now split into these handlers
 void LineCreationSystem::onAddStationToLine(const AddStationToLineEvent& event) {
     LOG_DEBUG("LineCreationSystem", "Processing AddStationToLineEvent for station %u.", static_cast<unsigned int>(event.stationEntity));
     addStationToLine(event.stationEntity);

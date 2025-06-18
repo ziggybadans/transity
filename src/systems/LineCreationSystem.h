@@ -3,19 +3,17 @@
 #include <entt/entt.hpp>
 #include <vector>
 #include <SFML/Graphics/Color.hpp>
-#include "../core/EntityFactory.h"
-#include "../graphics/ColorManager.h"
+#include "../core/SystemManager.h" // Include for ISystem
 #include "../event/LineEvents.h"
-#include "../event/EventBus.h"
 
-class LineCreationSystem {
+// Forward declarations
+class ServiceLocator;
+
+class LineCreationSystem : public ISystem {
 public:
-    // Constructor now takes the EventBus
-    LineCreationSystem(entt::registry& registry, EntityFactory& entityFactory, ColorManager& colorManager, EventBus& eventBus);
+    // Constructor now takes the ServiceLocator
+    explicit LineCreationSystem(ServiceLocator& serviceLocator);
     ~LineCreationSystem();
-
-    // This method is no longer needed
-    // void processEvents(const std::vector<std::variant<AddStationToLineEvent, FinalizeLineEvent>>& inputHandlerEvents, const std::vector<FinalizeLineEvent>& uiEvents);
 
     void clearCurrentLine();
     std::vector<entt::entity> getActiveLineStations() const;
@@ -28,9 +26,10 @@ private:
     void addStationToLine(entt::entity stationEntity);
     void finalizeLine();
 
-    entt::registry& _registry;
-    EntityFactory& _entityFactory;
-    ColorManager& _colorManager;
+    // Pointers to services obtained from the ServiceLocator
+    entt::registry* _registry;
+    class EntityFactory* _entityFactory;
+    class ColorManager* _colorManager;
 
     // Event connections
     entt::connection m_addStationConnection;

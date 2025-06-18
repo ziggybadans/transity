@@ -1,25 +1,28 @@
 #pragma once
 
-#include "../core/Camera.h"
-#include <SFML/Graphics/RenderWindow.hpp>
-#include "../event/EventBus.h"
+#include "../core/SystemManager.h" // Include for ISystem
 #include "../event/InputEvents.h"
+#include <entt/entt.hpp>
 
-class CameraSystem {
+// Forward declarations
+class ServiceLocator;
+class Camera;
+namespace sf { class RenderWindow; }
+
+class CameraSystem : public ISystem {
 public:
-    // The constructor now takes the EventBus and connects to it.
-    CameraSystem(EventBus& eventBus, Camera& camera, sf::RenderWindow& window);
+    // Constructor now takes the ServiceLocator
+    explicit CameraSystem(ServiceLocator& serviceLocator);
     ~CameraSystem();
-
-    // The update method is no longer needed as the system is purely event-driven.
 
 private:
     // Event handler methods
     void onCameraZoom(const CameraZoomEvent& event);
     void onCameraPan(const CameraPanEvent& event);
 
-    Camera& m_camera;
-    sf::RenderWindow& m_window;
+    // Pointers to services obtained from the ServiceLocator
+    Camera* m_camera;
+    sf::RenderWindow* m_window;
 
     // Store connections to disconnect in the destructor
     entt::connection m_zoomConnection;

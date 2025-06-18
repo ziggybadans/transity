@@ -13,19 +13,26 @@ Game::Game(Renderer& renderer)
       _eventBus(),
       _entityFactory(_registry),
       _worldGenerationSystem(_registry) {
-    // Systems will be updated in the next step to take the EventBus
-    // For now, this will cause a compile error, which we will fix.
-    auto cameraSystem = std::make_unique<CameraSystem>(_eventBus, _camera, _renderer.getWindowInstance());
-    auto lineCreationSystem = std::make_unique<LineCreationSystem>(_registry, _entityFactory, _colorManager, _eventBus);
-    auto stationPlacementSystem = std::make_unique<StationPlacementSystem>(_registry, _entityFactory, _gameState, _eventBus);
 
-    _systemManager = std::make_unique<SystemManager>(
-        std::move(cameraSystem),
-        std::move(lineCreationSystem),
-        std::move(stationPlacementSystem)
-    );
+    // 1. Populate the ServiceLocator with all the core services.
+    _serviceLocator.registry = &_registry;
+    _serviceLocator.eventBus = &_eventBus;
+    _serviceLocator.gameState = &_gameState;
+    _serviceLocator.entityFactory = &_entityFactory;
+    _serviceLocator.camera = &_camera;
+    _serviceLocator.colorManager = &_colorManager;
+    _serviceLocator.renderer = &_renderer;
 
-    LOG_INFO("Game", "Game instance created.");
+    // 2. Create the SystemManager, passing it the ServiceLocator.
+    _systemManager = std::make_unique<SystemManager>(_serviceLocator);
+
+    // 3. Add systems using the new templated method.
+    // The SystemManager will construct them using the ServiceLocator.
+    _systemManager->addSystem<CameraSystem>();
+    _systemManager->addSystem<LineCreationSystem>();
+    _systemManager->addSystem<StationPlacementSystem>();
+
+    LOG_INFO("Game", "Game instance created and systems registered.");
 }
 
 void Game::init() {
@@ -58,9 +65,16 @@ void Game::onWindowResize(unsigned int width, unsigned int height) {
     _camera.onWindowResize(width, height);
 }
 
+
 size_t Game::getActiveStationCount() {
-    return _systemManager->getLineCreationSystem().getActiveLineStations().size();
+    // Retrieve the system from the manager to get the data.
+    auto* lineCreationSystem = _systemManager->getSystem<LineCreationSystem>();
+    if (lineCreationSystem) {
+        return lineCreationSystem->getActiveLineStations().size();
+    }
+    return 0;
 }
+
 
 Game::~Game() {
     LOG_INFO("Game", "Game instance destroyed.");

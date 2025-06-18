@@ -1,32 +1,56 @@
 #pragma once
 
-#include <memory>
 #include <SFML/System/Time.hpp>
-#include "../input/InteractionMode.h"
+#include <memory>
+#include <unordered_map>
+#include <typeindex>
+#include "ServiceLocator.h"
+#include "../Logger.h"
 
-// Forward declarations
-class CameraSystem;
-class LineCreationSystem;
-class StationPlacementSystem;
+// A base class for all systems to provide a common interface.
+class ISystem {
+public:
+    virtual ~ISystem() = default;
+    // Optional update method for systems that need logic to run every frame.
+    virtual void update(sf::Time /*dt*/) {}
+};
 
 class SystemManager {
 public:
-    SystemManager(
-        std::unique_ptr<CameraSystem> cameraSystem,
-        std::unique_ptr<LineCreationSystem> lineCreationSystem,
-        std::unique_ptr<StationPlacementSystem> stationPlacementSystem
-    );
+    // The constructor now takes the ServiceLocator, which it will use to construct systems.
+    explicit SystemManager(ServiceLocator& serviceLocator);
 
-    // Update method is now simpler, only taking dt
+    // Templated method to add a new system.
+    // It constructs the system of type T, passing the ServiceLocator to its constructor,
+    // and then stores it.
+    template<typename T>
+    T* addSystem() {
+        // Ensure T is derived from ISystem
+        static_assert(std::is_base_of<ISystem, T>::value, "System must derive from ISystem");
+
+        auto system = std::make_unique<T>(m_serviceLocator);
+        T* ptr = system.get(); // Get raw pointer before moving ownership
+        m_systems[std::type_index(typeid(T))] = std::move(system);
+        LOG_INFO("SystemManager", "Added system: %s", typeid(T).name());
+        return ptr;
+    }
+
+    // Templated method to retrieve a system by its type.
+    template<typename T>
+    T* getSystem() {
+        auto it = m_systems.find(std::type_index(typeid(T)));
+        if (it != m_systems.end()) {
+            // static_cast is safe here because we know the type from the map key.
+            return static_cast<T*>(it->second.get());
+        }
+        return nullptr; // System not found
+    }
+
+    // The update method will now iterate over all registered systems and call their update method.
     void update(sf::Time dt);
-    
-    // processEvents is no longer needed
-    // void processEvents(InputHandler& inputHandler, UI& ui);
-
-    LineCreationSystem& getLineCreationSystem();
 
 private:
-    std::unique_ptr<CameraSystem> m_cameraSystem;
-    std::unique_ptr<LineCreationSystem> m_lineCreationSystem;
-    std::unique_ptr<StationPlacementSystem> m_stationPlacementSystem;
+    ServiceLocator& m_serviceLocator;
+    // The manager now holds a map of systems, keyed by their type information.
+    std::unordered_map<std::type_index, std::unique_ptr<ISystem>> m_systems;
 };

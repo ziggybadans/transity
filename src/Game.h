@@ -7,11 +7,9 @@
 #include "graphics/ColorManager.h"
 #include "world/WorldGenerationSystem.h"
 #include "core/SystemManager.h"
-#include "systems/CameraSystem.h"
-#include "systems/LineCreationSystem.h"
-#include "systems/StationPlacementSystem.h"
 #include "core/GameState.h"
 #include "event/EventBus.h"
+#include "core/ServiceLocator.h" // Include the new ServiceLocator
 
 // Forward declarations
 class Renderer;
@@ -19,12 +17,10 @@ class UI;
 
 class Game {
 public:
-    // Constructor no longer takes InputHandler
     Game(Renderer& renderer);
     ~Game();
 
     void init();
-    // Update no longer takes InputHandler
     void update(sf::Time dt, UI& ui);
     void onWindowResize(unsigned int width, unsigned int height);
 
@@ -43,6 +39,8 @@ private:
     ColorManager _colorManager;
     Camera _camera;
     GameState _gameState;
+    
+    ServiceLocator _serviceLocator; // Add the ServiceLocator instance
     
     WorldGenerationSystem _worldGenerationSystem;
     std::unique_ptr<SystemManager> _systemManager;
