@@ -2,10 +2,7 @@
 #include "../systems/CameraSystem.h"
 #include "../systems/LineCreationSystem.h"
 #include "../systems/StationPlacementSystem.h"
-#include "../input/InputHandler.h"
-#include "../graphics/UI.h"
 
-// The constructor simply moves the provided unique_ptrs into its members
 SystemManager::SystemManager(
     std::unique_ptr<CameraSystem> cameraSystem,
     std::unique_ptr<LineCreationSystem> lineCreationSystem,
@@ -14,17 +11,14 @@ SystemManager::SystemManager(
       m_lineCreationSystem(std::move(lineCreationSystem)),
       m_stationPlacementSystem(std::move(stationPlacementSystem)) {}
 
-// The update method now calls the systems' simpler update methods
-void SystemManager::update(sf::Time dt, InteractionMode mode) {
-    m_cameraSystem->update();
-    m_stationPlacementSystem->update(mode);
-    // Note: LineCreationSystem is event-driven, so it's not called in the main update loop.
+// The update method no longer needs to call individual system updates
+// as they are now event-driven. This method could be removed entirely
+// if no systems need a per-frame update. For now, we'll leave it empty.
+void SystemManager::update(sf::Time dt) {
+    // No systems currently require a per-frame update.
 }
 
-void SystemManager::processEvents(InputHandler& inputHandler, UI& ui) {
-    // This method's dependencies are passed in because they are transient and specific to event processing
-    m_lineCreationSystem->processEvents(inputHandler.getGameEvents(), ui.getUiEvents());
-}
+// The processEvents method is removed entirely.
 
 LineCreationSystem& SystemManager::getLineCreationSystem() {
     return *m_lineCreationSystem;

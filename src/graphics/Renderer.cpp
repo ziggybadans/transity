@@ -79,3 +79,11 @@ void Renderer::setClearColor(const sf::Color& color) {
 const sf::Color& Renderer::getClearColor() const {
     return _clearColor;
 }
+
+void Renderer::connectToEventBus(EventBus& eventBus) {
+    m_windowCloseConnection = eventBus.sink<WindowCloseEvent>().connect<&Renderer::onWindowClose>(this);
+}
+
+void Renderer::onWindowClose(const WindowCloseEvent& event) {
+    _windowInstance.close();
+}

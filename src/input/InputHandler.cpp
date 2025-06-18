@@ -1,37 +1,36 @@
 #include "InputHandler.h"
 #include "../Logger.h"
 #include "../core/Components.h"
+#include "../core/Constants.h"
 #include <iostream>
 #include <string>
 #include <vector>
-#include <variant>
-#include "../core/Constants.h"
 
-InputHandler::InputHandler()
-    : _cameraSpeed(Constants::CAMERA_SPEED)
-    , _zoomFactor(Constants::ZOOM_FACTOR)
-    , _unzoomFactor(Constants::UNZOOM_FACTOR) {
+// Constructor now takes and stores the EventBus reference
+InputHandler::InputHandler(EventBus& eventBus)
+    : _eventBus(eventBus),
+      _zoomFactor(Constants::ZOOM_FACTOR),
+      _unzoomFactor(Constants::UNZOOM_FACTOR) {
     LOG_INFO("Input", "InputHandler created.");
 }
 
-void InputHandler::handleGameEvent(const sf::Event& event, InteractionMode currentMode, Camera& camera, sf::RenderWindow& window, entt::registry& registry) {
+void InputHandler::handleGameEvent(const sf::Event& event, InteractionMode currentMode, const Camera& camera, sf::RenderWindow& window, entt::registry& registry) {
     if (event.is<sf::Event::Closed>()) {
         LOG_INFO("Input", "Window close event received.");
-        _commands.push_back({InputEventType::WINDOW_CLOSE, {}});
+        _eventBus.trigger<WindowCloseEvent>();
     } else if (auto* scrollData = event.getIf<sf::Event::MouseWheelScrolled>()) {
         if (scrollData->wheel == sf::Mouse::Wheel::Vertical) {
             LOG_DEBUG("Input", "Mouse wheel scrolled: delta %.1f", scrollData->delta);
-            InputData data;
-            data.mousePixelPosition = sf::Mouse::getPosition(window);
+            float zoomDelta = 0.0f;
             if (scrollData->delta > 0) {
-                data.zoomDelta = _zoomFactor;
-                LOG_TRACE("Input", "Zoom in command generated.");
+                zoomDelta = _zoomFactor;
+                LOG_TRACE("Input", "Zoom in event generated.");
             } else if (scrollData->delta < 0) {
-                data.zoomDelta = _unzoomFactor;
-                LOG_TRACE("Input", "Zoom out command generated.");
+                zoomDelta = _unzoomFactor;
+                LOG_TRACE("Input", "Zoom out event generated.");
             }
-            if (data.zoomDelta != 0.0f) {
-                 _commands.push_back({InputEventType::CAMERA_ZOOM, data});
+            if (zoomDelta != 0.0f) {
+                 _eventBus.trigger<CameraZoomEvent>({zoomDelta, sf::Mouse::getPosition(window)});
             }
         }
     } else if (auto* pressData = event.getIf<sf::Event::MouseButtonPressed>()) {
@@ -39,10 +38,8 @@ void InputHandler::handleGameEvent(const sf::Event& event, InteractionMode curre
             if (currentMode == InteractionMode::CREATE_STATION) {
                 sf::Vector2i mousePixelPos = sf::Mouse::getPosition(window);
                 sf::Vector2f worldPos = window.mapPixelToCoords(mousePixelPos, camera.getView());
-                LOG_DEBUG("Input", "Right mouse button pressed at screen ( %d, %d ), world (%.1f, %.1f). TryPlaceStation command generated.", mousePixelPos.x, mousePixelPos.y, worldPos.x, worldPos.y);
-                InputData data;
-                data.worldPosition = worldPos;
-                _commands.push_back({InputEventType::TRY_PLACE_STATION, data});
+                LOG_DEBUG("Input", "Right mouse button pressed at screen ( %d, %d ), world (%.1f, %.1f). TryPlaceStation event generated.", mousePixelPos.x, mousePixelPos.y, worldPos.x, worldPos.y);
+                _eventBus.trigger<TryPlaceStationEvent>({worldPos});
             }
         } else if (pressData->button == sf::Mouse::Button::Left) {
             sf::Vector2i pixelPos = sf::Mouse::getPosition(window);
@@ -61,9 +58,7 @@ void InputHandler::handleGameEvent(const sf::Event& event, InteractionMode curre
 
                     if (distanceSquared <= clickable.boundingRadius * clickable.boundingRadius) {
                         LOG_DEBUG("Input", "Mouse click in CREATE_LINE mode at world (%.1f, %.1f).", worldPos.x, worldPos.y);
-                        AddStationToLineEvent event;
-                        event.stationEntity = entity_id;
-                        _gameEvents.emplace_back(event);
+                        _eventBus.trigger<AddStationToLineEvent>({entity_id});
                         LOG_DEBUG("Input", "AddStationToLineEvent created for entity %u.", static_cast<unsigned int>(entity_id));
                         stationClickedThisPress = true;
                         break;
@@ -81,53 +76,23 @@ void InputHandler::update(sf::Time dt, const Camera& camera) {
     sf::Vector2f panDirection(0.f, 0.f);
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W)) {
         panDirection.y -= 1.0f;
-        LOG_TRACE("Input", "Key W pressed.");
     }
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S)) {
         panDirection.y += 1.0f;
-        LOG_TRACE("Input", "Key S pressed.");
     }
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A)) {
         panDirection.x -= 1.0f;
-        LOG_TRACE("Input", "Key A pressed.");
     }
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D)) {
         panDirection.x += 1.0f;
-        LOG_TRACE("Input", "Key D pressed.");
     }
 
     if (panDirection.x != 0.f || panDirection.y != 0.f) {
         const sf::View& view = camera.getView();
         sf::Vector2f viewSize = view.getSize();
-
         float dynamicCameraSpeed = viewSize.y * Constants::DYNAMIC_CAMERA_SPEED_MULTIPLIER;
-
-        InputData data;
-        data.panDirection = panDirection * dynamicCameraSpeed * dt.asSeconds();
-        _commands.push_back({InputEventType::CAMERA_PAN, data});
-        LOG_TRACE("Input", "CameraPan command generated with direction (%.1f, %.1f).", data.panDirection.x, data.panDirection.y);
+        sf::Vector2f panVector = panDirection * dynamicCameraSpeed * dt.asSeconds();
+        _eventBus.trigger<CameraPanEvent>({panVector});
+        LOG_TRACE("Input", "CameraPan event generated with direction (%.1f, %.1f).", panVector.x, panVector.y);
     }
-}
-
-const std::vector<InputCommand>& InputHandler::getCommands() const {
-    return _commands;
-}
-
-void InputHandler::clearCommands() {
-    _commands.clear();
-    LOG_TRACE("Input", "Input commands cleared.");
-}
-
-void InputHandler::addCommand(const InputCommand& command) {
-    _commands.push_back(command);
-    LOG_TRACE("Input", "Input command added: %d", static_cast<int>(command.type));
-}
-
-const std::vector<std::variant<AddStationToLineEvent, FinalizeLineEvent>>& InputHandler::getGameEvents() const {
-    return _gameEvents;
-}
-
-void InputHandler::clearGameEvents() {
-    _gameEvents.clear();
-    LOG_TRACE("Input", "Game events cleared.");
 }

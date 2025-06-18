@@ -6,8 +6,8 @@
 #include <cstdlib>
 #include "../core/Constants.h"
 
-UI::UI(sf::RenderWindow& window, WorldGenerationSystem* worldGenSystem, GameState& gameState)
-    : _window(window), _gameState(gameState), _worldGenerationSystem(worldGenSystem) {
+UI::UI(sf::RenderWindow& window, WorldGenerationSystem* worldGenSystem, GameState& gameState, EventBus& eventBus)
+    : _window(window), _gameState(gameState), _eventBus(eventBus), _worldGenerationSystem(worldGenSystem) {
     LOG_INFO("UI", "UI instance created.");
     syncWithWorldState();
 }
@@ -133,9 +133,9 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
         }
         if (_gameState.currentInteractionMode == InteractionMode::CREATE_LINE && numberOfStationsInActiveLine >= 2) {
             if (ImGui::Button("Finalize Line")) {
-                FinalizeLineEvent finalizeLineEvent;
-                _uiEvents.emplace_back(finalizeLineEvent);
-                LOG_INFO("UI", "Finalize Line button clicked.");
+                // Publish the event directly to the bus
+                _eventBus.trigger<FinalizeLineEvent>();
+                LOG_INFO("UI", "Finalize Line button clicked, event published.");
             }
         }
     ImGui::End();
@@ -149,15 +149,6 @@ void UI::cleanupResources() {
     LOG_INFO("UI", "Shutting down ImGui.");
     ImGui::SFML::Shutdown();
     LOG_INFO("UI", "ImGui shutdown complete.");
-}
-
-const std::vector<FinalizeLineEvent>& UI::getUiEvents() const {
-    return _uiEvents;
-}
-
-void UI::clearUiEvents() {
-    _uiEvents.clear();
-    LOG_INFO("UI", "UI events cleared.");
 }
 
 void UI::syncWithWorldState() {

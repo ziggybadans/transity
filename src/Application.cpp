@@ -9,13 +9,18 @@ Application::Application() {
         _renderer = std::make_unique<Renderer>();
         _renderer->initialize();
 
-        _inputHandler = std::make_unique<InputHandler>();
+        // Game is now created without an InputHandler
+        _game = std::make_unique<Game>(*_renderer);
+
+        _renderer->connectToEventBus(_game->getEventBus());
         
-        _game = std::make_unique<Game>(*_renderer, *_inputHandler);
+        // InputHandler is created with the EventBus from Game
+        _inputHandler = std::make_unique<InputHandler>(_game->getEventBus());
+        
+        // Game::init no longer takes an argument
         _game->init();
 
-        // Correctly pass a pointer to the UI constructor using the address-of operator (&)
-        _ui = std::make_unique<UI>(_renderer->getWindowInstance(), &_game->getWorldGenerationSystem(), _game->getGameState());
+        _ui = std::make_unique<UI>(_renderer->getWindowInstance(), &_game->getWorldGenerationSystem(), _game->getGameState(), _game->getEventBus());
         _ui->initialize();
 
     } catch (const std::exception& e) {
@@ -54,27 +59,28 @@ void Application::processEvents() {
                 _isWindowFocused = true;
             }
 
-            if (const auto* closedEvent = currentEvent.getIf<sf::Event::Closed>()) {
-                _renderer->getWindowInstance().close();
-            }
-
             if (const auto* resizedEvent = currentEvent.getIf<sf::Event::Resized>()) {
                 _game->onWindowResize(resizedEvent->size.x, resizedEvent->size.y);
             }
 
             _ui->processEvent(currentEvent);
             if (_isWindowFocused) {
+                // The camera reference is now const
                 _inputHandler->handleGameEvent(currentEvent, _game->getGameState().currentInteractionMode, _game->getCamera(), _renderer->getWindowInstance(), _game->getRegistry());
             }
         }
     }
 }
 
+
 void Application::update(sf::Time dt) {
+    // InputHandler update is now independent
     _inputHandler->update(dt, _game->getCamera());
-    _game->update(dt, *_inputHandler, *_ui);
+    // Game update no longer takes InputHandler
+    _game->update(dt, *_ui);
     _ui->update(dt, _game->getActiveStationCount());
 }
+
 
 void Application::render(sf::Time dt) {
     _renderer->renderFrame(_game->getRegistry(), _game->getCamera().getView(), dt, _ui->getVisualizeNoiseState());

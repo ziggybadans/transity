@@ -1,20 +1,27 @@
-#pragma once // Use pragma once for modern C++
+#pragma once
 
-#include "../input/InputHandler.h"
 #include "../core/Camera.h"
 #include <SFML/Graphics/RenderWindow.hpp>
+#include "../event/EventBus.h"
+#include "../event/InputEvents.h"
 
 class CameraSystem {
 public:
-    // Constructor now takes dependencies
-    CameraSystem(InputHandler& inputHandler, Camera& camera, sf::RenderWindow& window);
+    // The constructor now takes the EventBus and connects to it.
+    CameraSystem(EventBus& eventBus, Camera& camera, sf::RenderWindow& window);
+    ~CameraSystem();
 
-    // Update method no longer needs parameters
-    void update();
+    // The update method is no longer needed as the system is purely event-driven.
 
 private:
-    // Store references to dependencies
-    InputHandler& m_inputHandler;
+    // Event handler methods
+    void onCameraZoom(const CameraZoomEvent& event);
+    void onCameraPan(const CameraPanEvent& event);
+
     Camera& m_camera;
     sf::RenderWindow& m_window;
+
+    // Store connections to disconnect in the destructor
+    entt::connection m_zoomConnection;
+    entt::connection m_panConnection;
 };

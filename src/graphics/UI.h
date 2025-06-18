@@ -3,7 +3,7 @@
 #include <SFML/System/Time.hpp>
 #include <SFML/Window/Event.hpp>
 #include <SFML/Graphics/RenderWindow.hpp>
-#include "../input/InteractionMode.h"
+#include "../event/EventBus.h" // <-- Add this
 #include "../event/LineEvents.h"
 #include "FastNoiseLite.h"
 #include "../world/WorldGenerationSystem.h"
@@ -11,7 +11,8 @@
 
 class UI {
 public:
-    UI(sf::RenderWindow& window, WorldGenerationSystem* worldGenSystem, GameState& gameState);
+    // Constructor now takes EventBus
+    UI(sf::RenderWindow& window, WorldGenerationSystem* worldGenSystem, GameState& gameState, EventBus& eventBus);
     ~UI();
     void initialize();
     void processEvent(const sf::Event& event);
@@ -19,16 +20,19 @@ public:
     void renderFrame();
     void cleanupResources();
 
-    const std::vector<FinalizeLineEvent>& getUiEvents() const;
-    void clearUiEvents();
+    // These methods are no longer needed
+    // const std::vector<FinalizeLineEvent>& getUiEvents() const;
+    // void clearUiEvents();
 
     bool getVisualizeNoiseState() const { return _visualizeNoise; }
 
 private:
     sf::RenderWindow& _window;
     GameState& _gameState;
+    EventBus& _eventBus; // <-- Add this
 
-    std::vector<FinalizeLineEvent> _uiEvents;
+    // This vector is no longer needed
+    // std::vector<FinalizeLineEvent> _uiEvents;
 
     WorldGenParams _worldGenParams;
 

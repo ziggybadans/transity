@@ -1,20 +1,24 @@
 #include "Game.h"
 #include "graphics/Renderer.h"
-#include "input/InputHandler.h"
 #include "graphics/UI.h"
 #include "Logger.h"
 #include "core/Constants.h"
+#include "systems/CameraSystem.h"
+#include "systems/LineCreationSystem.h"
+#include "systems/StationPlacementSystem.h"
 
-Game::Game(Renderer& renderer, InputHandler& inputHandler)
+// Constructor no longer takes InputHandler
+Game::Game(Renderer& renderer)
     : _renderer(renderer),
+      _eventBus(),
       _entityFactory(_registry),
       _worldGenerationSystem(_registry) {
-    // 1. Create instances of the systems, injecting their dependencies.
-    auto cameraSystem = std::make_unique<CameraSystem>(inputHandler, _camera, _renderer.getWindowInstance());
-    auto lineCreationSystem = std::make_unique<LineCreationSystem>(_registry, _entityFactory, _colorManager);
-    auto stationPlacementSystem = std::make_unique<StationPlacementSystem>(inputHandler, _registry, _entityFactory);
+    // Systems will be updated in the next step to take the EventBus
+    // For now, this will cause a compile error, which we will fix.
+    auto cameraSystem = std::make_unique<CameraSystem>(_eventBus, _camera, _renderer.getWindowInstance());
+    auto lineCreationSystem = std::make_unique<LineCreationSystem>(_registry, _entityFactory, _colorManager, _eventBus);
+    auto stationPlacementSystem = std::make_unique<StationPlacementSystem>(_registry, _entityFactory, _gameState, _eventBus);
 
-    // 2. Create the SystemManager, passing ownership of the systems.
     _systemManager = std::make_unique<SystemManager>(
         std::move(cameraSystem),
         std::move(lineCreationSystem),
@@ -39,23 +43,15 @@ void Game::init() {
     LOG_INFO("Game", "Game initialization completed.");
 }
 
-void Game::processInputCommands(InputHandler& inputHandler) {
-    const auto& commands = inputHandler.getCommands();
-    for (const auto& command : commands) {
-        // Game-specific command processing
-    }
-    inputHandler.clearCommands();
-}
+// Remove the processInputCommands method entirely
 
-void Game::update(sf::Time dt, InputHandler& inputHandler, UI& ui) {
-    _systemManager->update(dt, _gameState.currentInteractionMode);
-
-    _systemManager->processEvents(inputHandler, ui);
-
-    processInputCommands(inputHandler);
-
-    inputHandler.clearGameEvents();
-    ui.clearUiEvents();
+void Game::update(sf::Time dt, UI& ui) {
+    // The system manager update now takes only dt
+    _systemManager->update(dt);
+    
+    // The event bus triggers system updates automatically.
+    // We just need to trigger the update on the dispatcher.
+    _eventBus.update();
 }
 
 void Game::onWindowResize(unsigned int width, unsigned int height) {

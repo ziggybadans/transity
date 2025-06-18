@@ -7,9 +7,17 @@
 #include <variant>
 #include <type_traits>
 
-LineCreationSystem::LineCreationSystem(entt::registry& registry, EntityFactory& entityFactory, ColorManager& colorManager)
+LineCreationSystem::LineCreationSystem(entt::registry& registry, EntityFactory& entityFactory, ColorManager& colorManager, EventBus& eventBus)
     : _registry(registry), _entityFactory(entityFactory), _colorManager(colorManager) {
-    LOG_INFO("LineCreationSystem", "LineCreationSystem created.");
+    m_addStationConnection = eventBus.sink<AddStationToLineEvent>().connect<&LineCreationSystem::onAddStationToLine>(this);
+    m_finalizeLineConnection = eventBus.sink<FinalizeLineEvent>().connect<&LineCreationSystem::onFinalizeLine>(this);
+    LOG_INFO("LineCreationSystem", "LineCreationSystem created and connected to EventBus.");
+}
+
+LineCreationSystem::~LineCreationSystem() {
+    m_addStationConnection.release();
+    m_finalizeLineConnection.release();
+    LOG_INFO("LineCreationSystem", "LineCreationSystem destroyed and disconnected from EventBus.");
 }
 
 void LineCreationSystem::addStationToLine(entt::entity stationEntity) {
@@ -133,25 +141,13 @@ std::vector<entt::entity> LineCreationSystem::getActiveLineStations() const {
     return stationsInOrder;
 }
 
-void LineCreationSystem::processEvents(
-    const std::vector<std::variant<AddStationToLineEvent, FinalizeLineEvent>>& inputHandlerEvents,
-    const std::vector<FinalizeLineEvent>& uiEvents) {
-    
-    for (const auto& eventVariant : inputHandlerEvents) {
-        std::visit([this](auto&& arg) {
-            using T = std::decay_t<decltype(arg)>;
-            if constexpr (std::is_same_v<T, AddStationToLineEvent>) {
-                LOG_DEBUG("LineCreationSystem", "Processing AddStationToLineEvent for station %u.", static_cast<unsigned int>(arg.stationEntity));
-                addStationToLine(arg.stationEntity);
-            }
-            // Add other event types from InputHandler if LineCreationSystem cares about them
-        }, eventVariant);
-    }
+// The old processEvents logic is now split into these handlers
+void LineCreationSystem::onAddStationToLine(const AddStationToLineEvent& event) {
+    LOG_DEBUG("LineCreationSystem", "Processing AddStationToLineEvent for station %u.", static_cast<unsigned int>(event.stationEntity));
+    addStationToLine(event.stationEntity);
+}
 
-    for (const auto& uiEvent : uiEvents) {
-        // Since uiEvents only contains FinalizeLineEvent for now, we can directly process.
-        // If it were a variant, you'd use std::visit here too.
-        LOG_DEBUG("LineCreationSystem", "Processing FinalizeLineEvent from UI.");
-        finalizeLine();
-    }
+void LineCreationSystem::onFinalizeLine(const FinalizeLineEvent& event) {
+    LOG_DEBUG("LineCreationSystem", "Processing FinalizeLineEvent.");
+    finalizeLine();
 }
