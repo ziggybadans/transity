@@ -6,6 +6,7 @@
 #include "systems/CameraSystem.h"
 #include "systems/LineCreationSystem.h"
 #include "systems/StationPlacementSystem.h"
+#include "input/InputHandler.h"
 
 // Constructor no longer takes InputHandler
 Game::Game(Renderer& renderer)
@@ -23,11 +24,13 @@ Game::Game(Renderer& renderer)
     _serviceLocator.colorManager = &_colorManager;
     _serviceLocator.renderer = &_renderer;
 
-    // 2. Create the SystemManager, passing it the ServiceLocator.
+    // 2. Create the InputHandler using the ServiceLocator.
+    _inputHandler = std::make_unique<InputHandler>(_serviceLocator);
+
+    // 3. Create the SystemManager, passing it the ServiceLocator.
     _systemManager = std::make_unique<SystemManager>(_serviceLocator);
 
-    // 3. Add systems using the new templated method.
-    // The SystemManager will construct them using the ServiceLocator.
+    // 4. Add systems using the new templated method.
     _systemManager->addSystem<CameraSystem>();
     _systemManager->addSystem<LineCreationSystem>();
     _systemManager->addSystem<StationPlacementSystem>();

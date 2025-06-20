@@ -1,6 +1,8 @@
+// src/Application.cpp
 #include "Application.h"
 #include "Logger.h"
 #include "core/Constants.h"
+#include "input/InputHandler.h"
 #include <stdexcept>
 
 Application::Application() {
@@ -9,15 +11,13 @@ Application::Application() {
         _renderer = std::make_unique<Renderer>();
         _renderer->initialize();
 
-        // Game is now created without an InputHandler
+        // Game is created, and it now creates its own InputHandler
         _game = std::make_unique<Game>(*_renderer);
 
         _renderer->connectToEventBus(_game->getEventBus());
         
-        // InputHandler is created with the EventBus from Game
-        _inputHandler = std::make_unique<InputHandler>(_game->getEventBus());
+        // InputHandler is no longer created here
         
-        // Game::init no longer takes an argument
         _game->init();
 
         _ui = std::make_unique<UI>(_renderer->getWindowInstance(), &_game->getWorldGenerationSystem(), _game->getGameState(), _game->getEventBus());
@@ -65,22 +65,19 @@ void Application::processEvents() {
 
             _ui->processEvent(currentEvent);
             if (_isWindowFocused) {
-                // The camera reference is now const
-                _inputHandler->handleGameEvent(currentEvent, _game->getGameState().currentInteractionMode, _game->getCamera(), _renderer->getWindowInstance(), _game->getRegistry());
+                // Get InputHandler from Game and call the simplified method
+                _game->getInputHandler().handleGameEvent(currentEvent, _renderer->getWindowInstance());
             }
         }
     }
 }
 
-
 void Application::update(sf::Time dt) {
-    // InputHandler update is now independent
-    _inputHandler->update(dt, _game->getCamera());
-    // Game update no longer takes InputHandler
+    // Get InputHandler from Game and call the simplified method
+    _game->getInputHandler().update(dt);
     _game->update(dt, *_ui);
     _ui->update(dt, _game->getActiveStationCount());
 }
-
 
 void Application::render(sf::Time dt) {
     _renderer->renderFrame(_game->getRegistry(), _game->getCamera().getView(), dt, _ui->getVisualizeNoiseState());

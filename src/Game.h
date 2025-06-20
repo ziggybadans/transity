@@ -1,3 +1,4 @@
+// src/Game.h
 #pragma once
 
 #include <entt/entt.hpp>
@@ -9,11 +10,12 @@
 #include "core/SystemManager.h"
 #include "core/GameState.h"
 #include "event/EventBus.h"
-#include "core/ServiceLocator.h" // Include the new ServiceLocator
+#include "core/ServiceLocator.h"
 
 // Forward declarations
 class Renderer;
 class UI;
+class InputHandler; // Forward-declare InputHandler
 
 class Game {
 public:
@@ -30,6 +32,7 @@ public:
     WorldGenerationSystem& getWorldGenerationSystem() { return _worldGenerationSystem; }
     size_t getActiveStationCount();
     GameState& getGameState() { return _gameState; }
+    InputHandler& getInputHandler() { return *_inputHandler; } // Add getter
 
 private:
     Renderer& _renderer;
@@ -40,8 +43,9 @@ private:
     Camera _camera;
     GameState _gameState;
     
-    ServiceLocator _serviceLocator; // Add the ServiceLocator instance
+    ServiceLocator _serviceLocator;
     
     WorldGenerationSystem _worldGenerationSystem;
     std::unique_ptr<SystemManager> _systemManager;
+    std::unique_ptr<InputHandler> _inputHandler; // Add InputHandler member
 };

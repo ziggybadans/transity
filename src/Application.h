@@ -1,8 +1,8 @@
+// src/Application.h
 #pragma once
 
 #include "Game.h"
 #include "graphics/Renderer.h"
-#include "input/InputHandler.h"
 #include "graphics/UI.h"
 #include <memory>
 #include <SFML/System/Clock.hpp>
@@ -18,7 +18,6 @@ private:
     void render(sf::Time dt);
 
     std::unique_ptr<Renderer> _renderer;
-    std::unique_ptr<InputHandler> _inputHandler;
     std::unique_ptr<UI> _ui;
     std::unique_ptr<Game> _game;
 
