@@ -7,13 +7,14 @@
 #include "systems/LineCreationSystem.h"
 #include "systems/StationPlacementSystem.h"
 #include "input/InputHandler.h"
+#include "systems/GameStateSystem.h"
 
 // Constructor no longer takes InputHandler
 Game::Game(Renderer& renderer)
     : _renderer(renderer),
       _eventBus(),
       _entityFactory(_registry),
-      _worldGenerationSystem(_registry) {
+      _worldGenerationSystem(_registry, _eventBus) {
 
     // 1. Populate the ServiceLocator with all the core services.
     _serviceLocator.registry = &_registry;
@@ -34,12 +35,15 @@ Game::Game(Renderer& renderer)
     _systemManager->addSystem<CameraSystem>();
     _systemManager->addSystem<LineCreationSystem>();
     _systemManager->addSystem<StationPlacementSystem>();
+    _systemManager->addSystem<GameStateSystem>();
 
     LOG_INFO("Game", "Game instance created and systems registered.");
 }
 
 void Game::init() {
     LOG_INFO("Game", "Game initialization started.");
+
+    _worldGenerationSystem.generateWorld(16, 16);
     
     sf::Vector2f worldSize = _worldGenerationSystem.getWorldSize();
     sf::Vector2f worldCenter = { worldSize.x / 2.0f, worldSize.y / 2.0f };

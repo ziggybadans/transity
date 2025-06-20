@@ -2,6 +2,7 @@
 
 #include "../core/SystemManager.h" // Include for ISystem
 #include "../event/InputEvents.h"
+#include "../core/ISystem.h"
 #include <entt/entt.hpp>
 
 // Forward declarations
@@ -14,6 +15,8 @@ public:
     // Constructor now takes the ServiceLocator
     explicit CameraSystem(ServiceLocator& serviceLocator);
     ~CameraSystem();
+
+    void update(sf::Time dt) override;
 
 private:
     // Event handler methods

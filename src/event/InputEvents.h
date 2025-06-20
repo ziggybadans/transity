@@ -4,6 +4,8 @@
 
 #include <SFML/System/Vector2.hpp>
 #include <entt/entt.hpp>
+#include "../input/InteractionMode.h"
+#include "../world/WorldData.h"
 
 // General Events
 struct WindowCloseEvent {};
@@ -27,6 +29,25 @@ struct CameraPanEvent {
 // Station Management Events
 struct TryPlaceStationEvent {
     sf::Vector2f worldPosition;
+};
+
+// In a relevant event header file
+struct InteractionModeChangeEvent {
+    InteractionMode newMode;
+};
+
+// In a relevant event header file
+struct RegenerateWorldRequestEvent {
+    // Could hold new parameters if needed, or be empty
+};
+
+struct WorldGenParamsChangeEvent {
+    WorldGenParams params;
+    int worldChunksX;
+    int worldChunksY;
+    int chunkSizeX;
+    int chunkSizeY;
+    float cellSize;
 };
 
 // Line Management Events (These already exist but are good to consolidate conceptually)

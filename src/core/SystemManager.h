@@ -6,14 +6,7 @@
 #include <typeindex>
 #include "ServiceLocator.h"
 #include "../Logger.h"
-
-// A base class for all systems to provide a common interface.
-class ISystem {
-public:
-    virtual ~ISystem() = default;
-    // Optional update method for systems that need logic to run every frame.
-    virtual void update(sf::Time /*dt*/) {}
-};
+#include "ISystem.h"
 
 class SystemManager {
 public:

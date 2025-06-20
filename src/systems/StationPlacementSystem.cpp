@@ -31,4 +31,6 @@ void StationPlacementSystem::onMouseButtonPressed(const MouseButtonPressedEvent&
     }
 }
 
-// The old onTryPlaceStation method can be removed entirely.
+void StationPlacementSystem::update(sf::Time dt) {
+    // This system is purely event-driven, so this can be empty.
+}

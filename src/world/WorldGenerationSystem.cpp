@@ -6,8 +6,18 @@
 #include <algorithm>
 #include <vector>
 
-WorldGenerationSystem::WorldGenerationSystem(entt::registry& registry) : _registry(registry) {
-    configureNoise();
+WorldGenerationSystem::WorldGenerationSystem(entt::registry& registry, EventBus& eventBus)
+    : _registry(registry), _eventBus(eventBus) { // <-- MODIFIED
+    // Connect to the event bus using the member variable
+    _regenerateWorldListener = _eventBus.sink<RegenerateWorldRequestEvent>().connect<&WorldGenerationSystem::onRegenerateWorldRequest>(this);
+    _worldGenParamsListener = _eventBus.sink<WorldGenParamsChangeEvent>().connect<&WorldGenerationSystem::onWorldGenParamsChange>(this);
+    LOG_INFO("WorldGenerationSystem", "System created and listening for world generation events.");
+}
+
+WorldGenerationSystem::~WorldGenerationSystem() {
+    // Disconnect using the member variable
+    _eventBus.sink<RegenerateWorldRequestEvent>().disconnect(this);
+    _eventBus.sink<WorldGenParamsChangeEvent>().disconnect(this);
 }
 
 void WorldGenerationSystem::setParams(const WorldGenParams& params) {
@@ -225,4 +235,26 @@ std::vector<sf::Vector2f> WorldGenerationSystem::distortCoastline(const std::vec
     }
 
     return distortedShape;
+}
+
+void WorldGenerationSystem::onRegenerateWorldRequest(const RegenerateWorldRequestEvent& event) {
+    LOG_INFO("WorldGenerationSystem", "Regenerate World request received.");
+    auto view = _registry.view<WorldGridComponent>();
+    if (!view.empty()) {
+        auto& worldGrid = view.get<WorldGridComponent>(view.front());
+        generateWorld(worldGrid.worldDimensionsInChunks.x, worldGrid.worldDimensionsInChunks.y);
+    }
+}
+
+void WorldGenerationSystem::onWorldGenParamsChange(const WorldGenParamsChangeEvent& event) {
+    LOG_INFO("WorldGenerationSystem", "World generation parameters updated.");
+    setParams(event.params);
+
+    auto view = _registry.view<WorldGridComponent>();
+    if (!view.empty()) {
+        auto& worldGrid = view.get<WorldGridComponent>(view.front());
+        worldGrid.worldDimensionsInChunks = {event.worldChunksX, event.worldChunksY};
+        worldGrid.chunkDimensionsInCells = {event.chunkSizeX, event.chunkSizeY};
+        worldGrid.cellSize = event.cellSize;
+    }
 }

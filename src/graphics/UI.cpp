@@ -5,6 +5,7 @@
 #include "../input/InteractionMode.h"
 #include <cstdlib>
 #include "../core/Constants.h"
+#include "../event/InputEvents.h"
 
 UI::UI(sf::RenderWindow& window, WorldGenerationSystem* worldGenSystem, GameState& gameState, EventBus& eventBus)
     : _window(window), _gameState(gameState), _eventBus(eventBus), _worldGenerationSystem(worldGenSystem) {
@@ -70,10 +71,6 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
         if (ImGui::SliderFloat("Land Threshold", &_worldGenParams.landThreshold, -1.0f, 1.0f, "%.2f")) paramsChanged = true;
         if (ImGui::Checkbox("Distort Coastline", &_worldGenParams.distortCoastline)) paramsChanged = true;
 
-        if (paramsChanged && _worldGenerationSystem) {
-            _worldGenerationSystem->setParams(_worldGenParams);
-        }
-
         ImGui::Separator();
 
         bool gridChanged = false;
@@ -83,25 +80,27 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
         if (ImGui::InputInt("Chunk Size Y", &_chunkSizeY)) gridChanged = true;
         if (ImGui::InputFloat("Cell Size", &_cellSize, 1.0f, 0.0f, "%.2f")) gridChanged = true;
 
-        if ((paramsChanged || gridChanged) && _autoRegenerate && _worldGenerationSystem) {
-            LOG_INFO("UI", "Settings changed, auto-regenerating world.");
-            auto& worldGrid = _worldGenerationSystem->getRegistry().get<WorldGridComponent>(_worldGenerationSystem->getRegistry().view<WorldGridComponent>().front());
-            worldGrid.chunkDimensionsInCells = {_chunkSizeX, _chunkSizeY};
-            worldGrid.cellSize = _cellSize;
-            _worldGenerationSystem->generateWorld(_worldChunksX, _worldChunksY);
+        if (paramsChanged || gridChanged) {
+            _eventBus.trigger(WorldGenParamsChangeEvent{
+                _worldGenParams,
+                _worldChunksX,
+                _worldChunksY,
+                _chunkSizeX,
+                _chunkSizeY,
+                _cellSize
+            });
+
+            if (_autoRegenerate) {
+                LOG_INFO("UI", "Settings changed, auto-regenerating world.");
+                _eventBus.trigger<RegenerateWorldRequestEvent>();
+            }
         }
 
         ImGui::Separator();
 
         if (ImGui::Button("Regenerate World")) {
             LOG_INFO("UI", "Regenerate World button clicked.");
-            if (_worldGenerationSystem) {
-                _worldGenerationSystem->setParams(_worldGenParams); // Ensure params are set before regeneration
-                auto& worldGrid = _worldGenerationSystem->getRegistry().get<WorldGridComponent>(_worldGenerationSystem->getRegistry().view<WorldGridComponent>().front());
-                worldGrid.chunkDimensionsInCells = {_chunkSizeX, _chunkSizeY};
-                worldGrid.cellSize = _cellSize;
-                _worldGenerationSystem->generateWorld(_worldChunksX, _worldChunksY);
-            }
+            _eventBus.trigger<RegenerateWorldRequestEvent>();
         }
 
         ImGui::Checkbox("Visualize Noise", &_visualizeNoise);
@@ -118,25 +117,18 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
         int currentMode = static_cast<int>(_gameState.currentInteractionMode);
 
         if (ImGui::RadioButton("None", &currentMode, static_cast<int>(InteractionMode::SELECT))) {
-            _gameState.currentInteractionMode = InteractionMode::SELECT;
-            LOG_INFO("UI", "Interaction mode changed to: None");
+            _eventBus.trigger(InteractionModeChangeEvent{InteractionMode::SELECT});
+            LOG_INFO("UI", "Interaction mode change requested: None");
         }
         ImGui::SameLine();
         if (ImGui::RadioButton("Station Placement", &currentMode, static_cast<int>(InteractionMode::CREATE_STATION))) {
-            _gameState.currentInteractionMode = InteractionMode::CREATE_STATION;
-            LOG_INFO("UI", "Interaction mode changed to: StationPlacement");
+            _eventBus.trigger(InteractionModeChangeEvent{InteractionMode::CREATE_STATION});
+            LOG_INFO("UI", "Interaction mode change requested: StationPlacement");
         }
         ImGui::SameLine();
         if (ImGui::RadioButton("Line Creation", &currentMode, static_cast<int>(InteractionMode::CREATE_LINE))) {
-            _gameState.currentInteractionMode = InteractionMode::CREATE_LINE;
-            LOG_INFO("UI", "Interaction mode changed to: LineCreation");
-        }
-        if (_gameState.currentInteractionMode == InteractionMode::CREATE_LINE && numberOfStationsInActiveLine >= 2) {
-            if (ImGui::Button("Finalize Line")) {
-                // Publish the event directly to the bus
-                _eventBus.trigger<FinalizeLineEvent>();
-                LOG_INFO("UI", "Finalize Line button clicked, event published.");
-            }
+            _eventBus.trigger(InteractionModeChangeEvent{InteractionMode::CREATE_LINE});
+            LOG_INFO("UI", "Interaction mode change requested: LineCreation");
         }
     ImGui::End();
 }

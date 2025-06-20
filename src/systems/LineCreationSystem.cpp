@@ -164,3 +164,7 @@ void LineCreationSystem::onFinalizeLine(const FinalizeLineEvent& event) {
     LOG_DEBUG("LineCreationSystem", "Processing FinalizeLineEvent.");
     finalizeLine();
 }
+
+void LineCreationSystem::update(sf::Time dt) {
+    // This system is purely event-driven, so this can be empty.
+}

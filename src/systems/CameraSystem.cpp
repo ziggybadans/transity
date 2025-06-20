@@ -34,3 +34,7 @@ void CameraSystem::onCameraPan(const CameraPanEvent& event) {
     LOG_DEBUG("CameraSystem", "Processing CameraPanEvent with direction: (%.1f, %.1f)", event.panDirection.x, event.panDirection.y);
     m_camera->moveView(event.panDirection);
 }
+
+void CameraSystem::update(sf::Time dt) {
+    // This system is purely event-driven, so this can be empty.
+}

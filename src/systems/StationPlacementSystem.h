@@ -5,6 +5,7 @@
 #include "entt/entt.hpp"
 #include "../core/SystemManager.h" // Include for ISystem
 #include "../event/InputEvents.h"
+#include "../core/ISystem.h"
 
 // Forward declarations
 class ServiceLocator;
@@ -13,6 +14,8 @@ class StationPlacementSystem : public ISystem {
 public:
     explicit StationPlacementSystem(ServiceLocator& serviceLocator);
     ~StationPlacementSystem();
+
+    void update(sf::Time dt) override;
 
 private:
     // This handler is replaced by onMouseButtonPressed

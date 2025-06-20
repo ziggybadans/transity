@@ -8,6 +8,7 @@
 #include "../core/SystemManager.h" // Include for ISystem
 #include "../event/LineEvents.h"
 #include "../event/InputEvents.h" // Add include for InputEvents
+#include "../core/ISystem.h"
 
 // Forward declarations
 class ServiceLocator;
@@ -17,6 +18,8 @@ class LineCreationSystem : public ISystem {
 public:
     explicit LineCreationSystem(ServiceLocator& serviceLocator);
     ~LineCreationSystem();
+
+    void update(sf::Time dt) override;
 
     void clearCurrentLine();
     std::vector<entt::entity> getActiveLineStations() const;

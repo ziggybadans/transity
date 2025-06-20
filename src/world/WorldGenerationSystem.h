@@ -5,10 +5,13 @@
 #include "FastNoiseLite.h"
 #include "../core/Components.h"
 #include "WorldData.h"
+#include "../event/InputEvents.h"
+#include "../event/EventBus.h"
 
 class WorldGenerationSystem {
 public:
-    WorldGenerationSystem(entt::registry& registry);
+    WorldGenerationSystem(entt::registry& registry, EventBus& eventBus);
+    ~WorldGenerationSystem();
 
     void configureNoise ();
 
@@ -23,11 +26,19 @@ public:
 
 private:
     entt::registry& _registry;
+    EventBus& _eventBus;
 
     FastNoiseLite _noiseGenerator;
     WorldGenParams _params;
 
     std::vector<sf::Vector2f> _islandShape;
+
+    void onRegenerateWorldRequest(const RegenerateWorldRequestEvent& event);
+    void onWorldGenParamsChange(const WorldGenParamsChangeEvent& event);
+
+    // Event Listener Connections
+    entt::connection _regenerateWorldListener; // <-- ENSURE THIS IS PRESENT
+    entt::connection _worldGenParamsListener;  // <-- ENSURE THIS IS PRESENT
     
     const WorldGridComponent& getWorldGridSettings();
     std::vector<sf::Vector2f> generateIslandBaseShape();

@@ -88,6 +88,7 @@ add_executable(main
     src/systems/StationPlacementSystem.cpp
     src/graphics/LineRenderSystem.cpp
     src/core/SystemManager.cpp
+    src/systems/GameStateSystem.cpp
 )
 file(COPY data DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 target_compile_features(main PRIVATE cxx_std_17)
