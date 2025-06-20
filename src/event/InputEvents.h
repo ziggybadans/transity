@@ -8,6 +8,12 @@
 // General Events
 struct WindowCloseEvent {};
 
+struct MouseButtonPressedEvent {
+    sf::Mouse::Button button;
+    sf::Vector2i pixelPosition;
+    sf::Vector2f worldPosition;
+};
+
 // Camera Control Events
 struct CameraZoomEvent {
     float zoomDelta;

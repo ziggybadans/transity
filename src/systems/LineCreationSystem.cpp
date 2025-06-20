@@ -10,16 +10,42 @@
 LineCreationSystem::LineCreationSystem(ServiceLocator& serviceLocator)
     : _registry(serviceLocator.registry),
       _entityFactory(serviceLocator.entityFactory),
-      _colorManager(serviceLocator.colorManager) {
-    m_addStationConnection = serviceLocator.eventBus->sink<AddStationToLineEvent>().connect<&LineCreationSystem::onAddStationToLine>(this);
+      _colorManager(serviceLocator.colorManager),
+      _gameState(serviceLocator.gameState) { // Initialize GameState
+    // m_addStationConnection = serviceLocator.eventBus->sink<AddStationToLineEvent>().connect<&LineCreationSystem::onAddStationToLine>(this); // Remove old
     m_finalizeLineConnection = serviceLocator.eventBus->sink<FinalizeLineEvent>().connect<&LineCreationSystem::onFinalizeLine>(this);
+    m_mousePressConnection = serviceLocator.eventBus->sink<MouseButtonPressedEvent>().connect<&LineCreationSystem::onMouseButtonPressed>(this); // Add new
     LOG_INFO("LineCreationSystem", "LineCreationSystem created and connected to EventBus.");
 }
 
 LineCreationSystem::~LineCreationSystem() {
-    m_addStationConnection.release();
+    // m_addStationConnection.release(); // Remove old
     m_finalizeLineConnection.release();
+    m_mousePressConnection.release(); // Release new
     LOG_INFO("LineCreationSystem", "LineCreationSystem destroyed and disconnected from EventBus.");
+}
+
+void LineCreationSystem::onMouseButtonPressed(const MouseButtonPressedEvent& event) {
+    if (_gameState->currentInteractionMode == InteractionMode::CREATE_LINE && event.button == sf::Mouse::Button::Left) {
+        LOG_DEBUG("LineCreationSystem", "Mouse click in CREATE_LINE mode at world (%.1f, %.1f).", event.worldPosition.x, event.worldPosition.y);
+        
+        auto view = _registry->view<PositionComponent, ClickableComponent>();
+        for (auto entity_id : view) {
+            const auto& pos = view.get<PositionComponent>(entity_id);
+            const auto& clickable = view.get<ClickableComponent>(entity_id);
+
+            sf::Vector2f diff = event.worldPosition - pos.coordinates;
+            float distanceSquared = (diff.x * diff.x) + (diff.y * diff.y);
+
+            if (distanceSquared <= clickable.boundingRadius * clickable.boundingRadius) {
+                LOG_DEBUG("LineCreationSystem", "Station entity %u clicked.", static_cast<unsigned int>(entity_id));
+                // Instead of triggering another event, we can just call the method directly.
+                addStationToLine(entity_id);
+                return; // Found a station, no need to check others
+            }
+        }
+        LOG_TRACE("LineCreationSystem", "Mouse click in CREATE_LINE mode at world (%.1f, %.1f) but no station found.", event.worldPosition.x, event.worldPosition.y);
+    }
 }
 
 void LineCreationSystem::addStationToLine(entt::entity stationEntity) {
@@ -132,11 +158,6 @@ std::vector<entt::entity> LineCreationSystem::getActiveLineStations() const {
         stationsInOrder.push_back(pair.second);
     }
     return stationsInOrder;
-}
-
-void LineCreationSystem::onAddStationToLine(const AddStationToLineEvent& event) {
-    LOG_DEBUG("LineCreationSystem", "Processing AddStationToLineEvent for station %u.", static_cast<unsigned int>(event.stationEntity));
-    addStationToLine(event.stationEntity);
 }
 
 void LineCreationSystem::onFinalizeLine(const FinalizeLineEvent& event) {

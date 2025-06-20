@@ -1,6 +1,5 @@
 #include "InputHandler.h"
 #include "../Logger.h"
-#include "../core/Components.h"
 #include "../core/Constants.h"
 #include <iostream>
 #include <string>
@@ -16,11 +15,9 @@ InputHandler::InputHandler(ServiceLocator& serviceLocator)
 
 void InputHandler::handleGameEvent(const sf::Event& event, sf::RenderWindow& window) {
     EventBus* eventBus = _services.eventBus;
-    GameState* gameState = _services.gameState;
     Camera* camera = _services.camera;
-    entt::registry* registry = _services.registry;
 
-    if (!eventBus || !gameState || !camera || !registry) {
+    if (!eventBus || !camera) {
         LOG_ERROR("Input", "Service locator is missing required services for InputHandler.");
         return;
     }
@@ -44,41 +41,16 @@ void InputHandler::handleGameEvent(const sf::Event& event, sf::RenderWindow& win
             }
         }
     } else if (auto* pressData = event.getIf<sf::Event::MouseButtonPressed>()) {
-        if (pressData->button == sf::Mouse::Button::Right) {
-            if (gameState->currentInteractionMode == InteractionMode::CREATE_STATION) {
-                sf::Vector2i mousePixelPos = sf::Mouse::getPosition(window);
-                sf::Vector2f worldPos = window.mapPixelToCoords(mousePixelPos, camera->getView());
-                LOG_DEBUG("Input", "Right mouse button pressed at screen ( %d, %d ), world (%.1f, %.1f). TryPlaceStation event generated.", mousePixelPos.x, mousePixelPos.y, worldPos.x, worldPos.y);
-                eventBus->trigger<TryPlaceStationEvent>({worldPos});
-            }
-        } else if (pressData->button == sf::Mouse::Button::Left) {
-            sf::Vector2i pixelPos = sf::Mouse::getPosition(window);
-            sf::Vector2f worldPos = window.mapPixelToCoords(pixelPos, camera->getView());
+        sf::Vector2i pixelPos = pressData->position;
+        sf::Vector2f worldPos = window.mapPixelToCoords(pixelPos, camera->getView());
 
-            if (gameState->currentInteractionMode == InteractionMode::CREATE_LINE) {
-                LOG_DEBUG("Input", "Mouse click in CREATE_LINE mode at world (%.1f, %.1f).", worldPos.x, worldPos.y);
-                auto view = registry->view<PositionComponent, ClickableComponent>();
-                bool stationClickedThisPress = false;
-                for (auto entity_id : view) {
-                    const auto& pos = view.get<PositionComponent>(entity_id);
-                    const auto& clickable = view.get<ClickableComponent>(entity_id);
+        eventBus->trigger<MouseButtonPressedEvent>({
+            pressData->button,
+            pixelPos,
+            worldPos
+        });
 
-                    sf::Vector2f diff = worldPos - pos.coordinates;
-                    float distanceSquared = (diff.x * diff.x) + (diff.y * diff.y);
-
-                    if (distanceSquared <= clickable.boundingRadius * clickable.boundingRadius) {
-                        LOG_DEBUG("Input", "Mouse click in CREATE_LINE mode at world (%.1f, %.1f).", worldPos.x, worldPos.y);
-                        eventBus->trigger<AddStationToLineEvent>({entity_id});
-                        LOG_DEBUG("Input", "AddStationToLineEvent created for entity %u.", static_cast<unsigned int>(entity_id));
-                        stationClickedThisPress = true;
-                        break;
-                    }
-                }
-                if (!stationClickedThisPress) {
-                    LOG_TRACE("Input", "Mouse click in CREATE_LINE mode at world (%.1f, %.1f) but no station found.", worldPos.x, worldPos.y);
-                }
-            }
-        }
+        LOG_DEBUG("Input", "MouseButtonPressedEvent generated for button %d at world (%.1f, %.1f)", pressData->button, worldPos.x, worldPos.y);
     }
 }
 
