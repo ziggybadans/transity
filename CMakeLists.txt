@@ -90,7 +90,6 @@ add_executable(main
     src/core/SystemManager.cpp
     src/systems/GameStateSystem.cpp
 )
-file(COPY data DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 target_compile_features(main PRIVATE cxx_std_17)
 
 # Add include directory
@@ -109,4 +108,11 @@ target_link_libraries(main PRIVATE
     SFML::Window
     SFML::System
     ImGui-SFML
+)
+
+add_custom_command(TARGET main POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    "${CMAKE_CURRENT_SOURCE_DIR}/data"
+    "$<TARGET_FILE_DIR:main>/data"
+    COMMENT "Copying data directory to build output"
 )
