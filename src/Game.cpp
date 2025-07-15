@@ -43,7 +43,7 @@ Game::Game(Renderer& renderer)
 void Game::init() {
     LOG_INFO("Game", "Game initialization started.");
 
-    _worldGenerationSystem.generateWorld(16, 16);
+    _worldGenerationSystem.generateWorldFromComponent();
     
     sf::Vector2f worldSize = _worldGenerationSystem.getWorldSize();
     sf::Vector2f worldCenter = { worldSize.x / 2.0f, worldSize.y / 2.0f };

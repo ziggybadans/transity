@@ -33,8 +33,6 @@ void WorldGenerationSystem::configureNoise() {
     _noiseGenerator.SetFractalOctaves(_params.octaves);
     _noiseGenerator.SetFractalLacunarity(_params.lacunarity);
     _noiseGenerator.SetFractalGain(_params.gain);
-
-    generateWorld(3, 3);
 }
 
 const WorldGridComponent& WorldGenerationSystem::getWorldGridSettings() {
@@ -257,4 +255,22 @@ void WorldGenerationSystem::onWorldGenParamsChange(const WorldGenParamsChangeEve
         worldGrid.chunkDimensionsInCells = {event.chunkSizeX, event.chunkSizeY};
         worldGrid.cellSize = event.cellSize;
     }
+}
+
+void WorldGenerationSystem::generateWorldFromComponent() {
+    // This version reads from the component instead of taking arguments.
+    // It ensures the component exists first, creating it with defaults if needed.
+    entt::entity worldGridEntity = entt::null;
+    auto worldView = _registry.view<WorldGridComponent>();
+    if (worldView.empty()) {
+        worldGridEntity = _registry.create();
+        _registry.emplace<WorldGridComponent>(worldGridEntity); // Creates with defaults from Components.h
+        LOG_INFO("WorldGenerationSystem", "Created WorldGridComponent with default values.");
+    } else {
+        worldGridEntity = worldView.front();
+    }
+    auto& worldGrid = _registry.get<WorldGridComponent>(worldGridEntity);
+
+    // Now call the main generation logic with the values FROM the component.
+    generateWorld(worldGrid.worldDimensionsInChunks.x, worldGrid.worldDimensionsInChunks.y);
 }

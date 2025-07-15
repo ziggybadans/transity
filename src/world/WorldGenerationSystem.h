@@ -24,6 +24,8 @@ public:
     const WorldGenParams& getParams() const { return _params; }
     void setParams(const WorldGenParams& params);
 
+    void generateWorldFromComponent();
+
 private:
     entt::registry& _registry;
     EventBus& _eventBus;
