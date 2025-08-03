@@ -72,12 +72,23 @@ void WorldGenerationSystem::generateChunk(entt::registry& registry, entt::entity
     auto& chunk = registry.get<ChunkComponent>(chunkEntity);
     const auto& worldGrid = registry.get<WorldGridComponent>(registry.view<WorldGridComponent>().front());
 
-    const int chunkCellSize = static_cast<int>(worldGrid.chunkDimensionsInCells.x); // CORRECTED
-    chunk.cells.resize(chunkCellSize * chunkCellSize);
+    const int chunkCellSizeX = static_cast<int>(worldGrid.chunkDimensionsInCells.x);
+    const int chunkCellSizeY = static_cast<int>(worldGrid.chunkDimensionsInCells.y);
+    const int totalCells = chunkCellSizeX * chunkCellSizeY;
 
-    for (int y = 0; y < chunkCellSize; ++y) {
-        for (int x = 0; x < chunkCellSize; ++x) {
-            chunk.cells[y * chunkCellSize + x] = TerrainType::WATER;
+    chunk.cells.resize(totalCells);
+    chunk.noiseValues.resize(totalCells);
+
+    for (int y = 0; y < chunkCellSizeY; ++y) {
+        for (int x = 0; x < chunkCellSizeX; ++x) {
+            float worldX = static_cast<float>((chunk.chunkGridPosition.x * chunkCellSizeX) + x);
+            float worldY = static_cast<float>((chunk.chunkGridPosition.y * chunkCellSizeY) + y);
+
+            float noiseValue = _noiseGenerator.GetNoise(worldX, worldY);
+            int cellIndex = y * chunkCellSizeX + x;
+
+            chunk.noiseValues[cellIndex] = noiseValue;
+            chunk.cells[cellIndex] = (noiseValue > _params.landThreshold) ? TerrainType::LAND : TerrainType::WATER;
         }
     }
 

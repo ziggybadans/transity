@@ -13,17 +13,24 @@ void ChunkManagerSystem::update(sf::Time dt) {
     const auto& worldGrid = _registry.get<WorldGridComponent>(_registry.view<WorldGridComponent>().front());
 
     sf::Vector2f cameraCenter = camera.getCenter();
+    sf::Vector2f viewSize = camera.getView().getSize();
     float cellSize = worldGrid.cellSize;
     const auto& chunkDims = worldGrid.chunkDimensionsInCells;
 
+    float chunkWidthInPixels = chunkDims.x * cellSize;
+    float chunkHeightInPixels = chunkDims.y * cellSize;
+
+    int viewDistanceX = static_cast<int>(std::ceil(viewSize.x / 2.0f / chunkWidthInPixels)) + 1;
+    int viewDistanceY = static_cast<int>(std::ceil(viewSize.y / 2.0f / chunkHeightInPixels)) + 1;
+
     sf::Vector2i centerChunk = {
-        static_cast<int>(cameraCenter.x / (chunkDims.x * cellSize)),
-        static_cast<int>(cameraCenter.y / (chunkDims.y * cellSize))
+        static_cast<int>(cameraCenter.x / chunkWidthInPixels),
+        static_cast<int>(cameraCenter.y / chunkHeightInPixels)
     };
 
     std::set<sf::Vector2i, Vector2iCompare> requiredChunks;
-    for (int y = centerChunk.y - _viewDistance; y <= centerChunk.y + _viewDistance; ++y) {
-        for (int x = centerChunk.x - _viewDistance; x <= centerChunk.x + _viewDistance; ++x) {
+    for (int y = centerChunk.y - viewDistanceY; y <= centerChunk.y + viewDistanceY; ++y) {
+        for (int x = centerChunk.x - viewDistanceX; x <= centerChunk.x + viewDistanceX; ++x) {
             requiredChunks.insert({x, y});
         }
     }

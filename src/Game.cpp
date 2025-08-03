@@ -56,7 +56,10 @@ void Game::init() {
     sf::Vector2f worldCenter = { worldSize.x / 2.0f, worldSize.y / 2.0f };
     
     auto& window = _renderer.getWindowInstance();
-    _camera.setInitialView(window, worldCenter, worldSize);
+
+    float zoomFactor = 4.0f; // Higher value means more zoomed in
+    sf::Vector2f initialViewSize = { worldSize.x / zoomFactor, worldSize.y / zoomFactor };
+    _camera.setInitialView(window, worldCenter, initialViewSize);
 
     sf::Vector2u windowSize = window.getSize();
     _camera.onWindowResize(windowSize.x, windowSize.y);
