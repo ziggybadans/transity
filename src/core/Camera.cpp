@@ -66,6 +66,10 @@ const sf::View& Camera::getView() const {
     return _view;
 }
 
+sf::Vector2f Camera::getCenter() const {
+    return _view.getCenter();
+}
+
 void Camera::onWindowResize(unsigned int width, unsigned int height) {
     LOG_INFO("Camera", "Window resized to %u x %u", width, height);
 

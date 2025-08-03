@@ -9,10 +9,12 @@
 #include "../world/WorldGenerationSystem.h"
 #include "../core/GameState.h"
 
+class TerrainRenderSystem;
+
 class UI {
 public:
     // Constructor now takes EventBus
-    UI(sf::RenderWindow& window, WorldGenerationSystem* worldGenSystem, GameState& gameState, EventBus& eventBus);
+    UI(sf::RenderWindow& window, WorldGenerationSystem* worldGenSystem, TerrainRenderSystem* terrainRenderSystem, GameState& gameState, EventBus& eventBus);
     ~UI();
     void initialize();
     void processEvent(const sf::Event& event);
@@ -46,6 +48,10 @@ private:
     bool _autoRegenerate;
 
     WorldGenerationSystem* _worldGenerationSystem;
+    TerrainRenderSystem* _terrainRenderSystem; // ADD
 
     void syncWithWorldState();
+    
+    bool _visualizeChunkBorders = false; // ADD
+    bool _visualizeCellBorders = false;  // ADD
 };

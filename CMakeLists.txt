@@ -89,6 +89,7 @@ add_executable(main
     src/graphics/LineRenderSystem.cpp
     src/core/SystemManager.cpp
     src/systems/GameStateSystem.cpp
+    src/world/ChunkManagerSystem.cpp
 )
 target_compile_features(main PRIVATE cxx_std_17)
 

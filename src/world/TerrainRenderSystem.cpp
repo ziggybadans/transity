@@ -58,6 +58,70 @@ void TerrainRenderSystem::render(entt::registry& registry, sf::RenderTarget& tar
             buildChunkMesh(chunk, worldGrid);
         }
         target.draw(chunk.vertexArray);
+
+        
+        // --- START VISUALIZATION LOGIC ---
+        if (_visualizeChunkBorders) {
+            float left = chunkBounds.position.x;
+            float top = chunkBounds.position.y;
+            float right = left + chunkBounds.size.x;
+            float bottom = top + chunkBounds.size.y;
+
+            sf::VertexArray border(sf::PrimitiveType::LineStrip, 5);
+            border[0].position = {left, top};
+            border[0].color = sf::Color::Red;
+            border[1].position = {right, top};
+            border[1].color = sf::Color::Red;
+            border[2].position = {right, bottom};
+            border[2].color = sf::Color::Red;
+            border[3].position = {left, bottom};
+            border[3].color = sf::Color::Red;
+            border[4].position = {left, top}; // Close the loop
+            border[4].color = sf::Color::Red;
+
+            target.draw(border);
+        }
+
+        if (_visualizeCellBorders) {
+            sf::VertexArray gridLines(sf::PrimitiveType::Lines);
+            float chunkLeft = chunkBounds.position.x;
+            float chunkTop = chunkBounds.position.y;
+            float chunkRight = chunkLeft + chunkBounds.size.x;
+            float chunkBottom = chunkTop + chunkBounds.size.y;
+            sf::Color gridColor(128, 128, 128, 128);
+
+            // Vertical lines
+            for (int i = 1; i < worldGrid.chunkDimensionsInCells.x; ++i) {
+                float x = chunkLeft + i * worldGrid.cellSize;
+                sf::Vertex topVertex, bottomVertex;
+                
+                topVertex.position = {x, chunkTop};
+                topVertex.color = gridColor;
+                
+                bottomVertex.position = {x, chunkBottom};
+                bottomVertex.color = gridColor;
+                
+                gridLines.append(topVertex);
+                gridLines.append(bottomVertex);
+            }
+            // Horizontal lines
+            for (int i = 1; i < worldGrid.chunkDimensionsInCells.y; ++i) {
+                float y = chunkTop + i * worldGrid.cellSize;
+                sf::Vertex leftVertex, rightVertex;
+
+                leftVertex.position = {chunkLeft, y};
+                leftVertex.color = gridColor;
+
+                rightVertex.position = {chunkRight, y};
+                rightVertex.color = gridColor;
+
+                gridLines.append(leftVertex);
+                gridLines.append(rightVertex);
+            }
+            target.draw(gridLines);
+        }
+        // --- END VISUALIZATION LOGIC ---
+
         renderedChunkCount++;
     }
     // LOG_TRACE("TerrainRenderSystem", "Rendered %d visible chunks.", renderedChunkCount);

@@ -6,9 +6,10 @@
 #include <cstdlib>
 #include "../core/Constants.h"
 #include "../event/InputEvents.h"
+#include "../world/TerrainRenderSystem.h"
 
-UI::UI(sf::RenderWindow& window, WorldGenerationSystem* worldGenSystem, GameState& gameState, EventBus& eventBus)
-    : _window(window), _gameState(gameState), _eventBus(eventBus), _worldGenerationSystem(worldGenSystem) {
+UI::UI(sf::RenderWindow& window, WorldGenerationSystem* worldGenSystem, TerrainRenderSystem* terrainRenderSystem, GameState& gameState, EventBus& eventBus)
+    : _window(window), _gameState(gameState), _eventBus(eventBus), _worldGenerationSystem(worldGenSystem), _terrainRenderSystem(terrainRenderSystem) {
     LOG_INFO("UI", "UI instance created.");
     syncWithWorldState();
 }
@@ -103,7 +104,16 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
             _eventBus.trigger<RegenerateWorldRequestEvent>();
         }
 
-        ImGui::Checkbox("Visualize Noise", &_visualizeNoise);
+        if (ImGui::Checkbox("Visualize Noise", &_visualizeNoise)) {
+            if (_terrainRenderSystem) _terrainRenderSystem->setVisualizeNoise(_visualizeNoise);
+        }
+        if (ImGui::Checkbox("Visualize Chunk Borders", &_visualizeChunkBorders)) {
+            if (_terrainRenderSystem) _terrainRenderSystem->setVisualizeChunkBorders(_visualizeChunkBorders);
+        }
+        if (ImGui::Checkbox("Visualize Cell Borders", &_visualizeCellBorders)) {
+            if (_terrainRenderSystem) _terrainRenderSystem->setVisualizeCellBorders(_visualizeCellBorders);
+        }
+
         ImGui::Checkbox("Auto Regenerate", &_autoRegenerate);
 
     ImGui::End();

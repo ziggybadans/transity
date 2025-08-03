@@ -1,0 +1,32 @@
+#pragma once
+
+#include "../core/ISystem.h"
+#include "../core/ServiceLocator.h"
+#include "WorldGenerationSystem.h"
+#include <SFML/System/Vector2.hpp>
+#include <set>
+
+struct Vector2iCompare {
+    bool operator()(const sf::Vector2i& a, const sf::Vector2i& b) const {
+        if (a.x != b.x) return a.x < b.x;
+        return a.y < b.y;
+    }
+};
+
+class ChunkManagerSystem : public ISystem {
+public:
+    explicit ChunkManagerSystem(ServiceLocator& serviceLocator, WorldGenerationSystem& worldGenSystem);
+    void update(sf::Time dt) override;
+
+private:
+    void loadChunk(const sf::Vector2i& chunkPos);
+    void unloadChunk(const sf::Vector2i& chunkPos);
+
+    ServiceLocator& _serviceLocator;
+    WorldGenerationSystem& _worldGenSystem;
+    entt::registry& _registry;
+    
+    std::set<sf::Vector2i, Vector2iCompare> _activeChunks;
+
+    int _viewDistance = 4; // In chunks
+};

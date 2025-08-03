@@ -15,16 +15,13 @@ public:
 
     void configureNoise ();
 
-    void generateChunk(entt::entity chunkEntity);
-    void generateWorld(int numChunksX, int numChunksY);
+    void generateChunk(entt::registry& registry, entt::entity chunkEntity);
     sf::Vector2f getWorldSize();
 
     entt::registry& getRegistry() { return _registry; }
 
     const WorldGenParams& getParams() const { return _params; }
     void setParams(const WorldGenParams& params);
-
-    void generateWorldFromComponent();
 
 private:
     entt::registry& _registry;
@@ -35,7 +32,6 @@ private:
 
     std::vector<sf::Vector2f> _islandShape;
 
-    void onRegenerateWorldRequest(const RegenerateWorldRequestEvent& event);
     void onWorldGenParamsChange(const WorldGenParamsChangeEvent& event);
 
     // Event Listener Connections
@@ -43,6 +39,4 @@ private:
     entt::connection _worldGenParamsListener;  // <-- ENSURE THIS IS PRESENT
     
     const WorldGridComponent& getWorldGridSettings();
-    std::vector<sf::Vector2f> generateIslandBaseShape();
-    std::vector<sf::Vector2f> distortCoastline(const std::vector<sf::Vector2f>& baseShape);
 };

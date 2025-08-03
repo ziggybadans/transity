@@ -16,8 +16,7 @@ public:
     void initialize();
     void renderFrame(entt::registry& registry,
         const sf::View& view,
-        sf::Time dt,
-        bool visualizeNoise);
+        sf::Time dt);
     void displayFrame();
     void cleanupResources();
     bool isWindowOpen() const;
@@ -27,6 +26,7 @@ public:
     const sf::Color& getClearColor() const;
 
     void connectToEventBus(EventBus& eventBus);
+    TerrainRenderSystem& getTerrainRenderSystem();
 
 private:
     sf::RenderWindow _windowInstance;

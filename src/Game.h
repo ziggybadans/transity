@@ -16,6 +16,7 @@
 class Renderer;
 class UI;
 class InputHandler; // Forward-declare InputHandler
+class ChunkManagerSystem;
 
 class Game {
 public:
@@ -46,6 +47,7 @@ private:
     ServiceLocator _serviceLocator;
     
     WorldGenerationSystem _worldGenerationSystem;
+    std::unique_ptr<ChunkManagerSystem> _chunkManagerSystem;
     std::unique_ptr<SystemManager> _systemManager;
     std::unique_ptr<InputHandler> _inputHandler; // Add InputHandler member
 };

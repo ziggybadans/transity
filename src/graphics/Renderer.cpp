@@ -23,15 +23,16 @@ void Renderer::initialize() {
     LOG_INFO("Renderer", "Renderer initialized.");
 }
 
+TerrainRenderSystem& Renderer::getTerrainRenderSystem() {
+    return _terrainRenderSystem;
+}
+
 void Renderer::renderFrame(entt::registry& registry,
     const sf::View& view,
-    sf::Time dt,
-    bool visualizeNoise) {
+    sf::Time dt) {
     LOG_TRACE("Renderer", "Beginning render pass.");
     _windowInstance.setView(view);
     _windowInstance.clear(_clearColor);
-
-    _terrainRenderSystem.setVisualizeNoise(visualizeNoise);
 
     _terrainRenderSystem.render(registry, _windowInstance, view);
     LOG_TRACE("Renderer", "Terrain rendered.");

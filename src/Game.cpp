@@ -8,6 +8,7 @@
 #include "systems/StationPlacementSystem.h"
 #include "input/InputHandler.h"
 #include "systems/GameStateSystem.h"
+#include "world/ChunkManagerSystem.h"
 
 // Constructor no longer takes InputHandler
 Game::Game(Renderer& renderer)
@@ -31,11 +32,14 @@ Game::Game(Renderer& renderer)
     // 3. Create the SystemManager, passing it the ServiceLocator.
     _systemManager = std::make_unique<SystemManager>(_serviceLocator);
 
+    _chunkManagerSystem = std::make_unique<ChunkManagerSystem>(_serviceLocator, _worldGenerationSystem);
+
     // 4. Add systems using the new templated method.
     _systemManager->addSystem<CameraSystem>();
     _systemManager->addSystem<LineCreationSystem>();
     _systemManager->addSystem<StationPlacementSystem>();
     _systemManager->addSystem<GameStateSystem>();
+    _systemManager->addSystem<ChunkManagerSystem>(_worldGenerationSystem);
 
     LOG_INFO("Game", "Game instance created and systems registered.");
 }
@@ -43,7 +47,10 @@ Game::Game(Renderer& renderer)
 void Game::init() {
     LOG_INFO("Game", "Game initialization started.");
 
-    _worldGenerationSystem.generateWorldFromComponent();
+    // Create and emplace the WorldGridComponent singleton
+    auto worldGridEntity = _registry.create();
+    _registry.emplace<WorldGridComponent>(worldGridEntity);
+    LOG_INFO("Game", "WorldGridComponent created with default values.");
     
     sf::Vector2f worldSize = _worldGenerationSystem.getWorldSize();
     sf::Vector2f worldCenter = { worldSize.x / 2.0f, worldSize.y / 2.0f };

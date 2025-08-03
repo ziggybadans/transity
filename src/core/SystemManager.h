@@ -16,12 +16,12 @@ public:
     // Templated method to add a new system.
     // It constructs the system of type T, passing the ServiceLocator to its constructor,
     // and then stores it.
-    template<typename T>
-    T* addSystem() {
+    template<typename T, typename... Args>
+    T* addSystem(Args&&... args) {
         // Ensure T is derived from ISystem
         static_assert(std::is_base_of<ISystem, T>::value, "System must derive from ISystem");
 
-        auto system = std::make_unique<T>(m_serviceLocator);
+        auto system = std::make_unique<T>(m_serviceLocator, std::forward<Args>(args)...);
         T* ptr = system.get(); // Get raw pointer before moving ownership
         m_systems[std::type_index(typeid(T))] = std::move(system);
         LOG_INFO("SystemManager", "Added system: %s", typeid(T).name());
