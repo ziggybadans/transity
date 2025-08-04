@@ -55,22 +55,26 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
     ImGui::SetNextWindowPos(worldGenSettingsPos, ImGuiCond_Always);
     ImGui::SetNextWindowSize(ImVec2(worldGenSettingsWidth, 0.0f), ImGuiCond_Always);
     ImGui::Begin("World Generation Settings", nullptr, window_flags);
+        WorldGenParams& params = _worldGenerationSystem->getParams();
         bool paramsChanged = false;
 
-        if (ImGui::InputInt("Seed", &_worldGenParams.seed)) paramsChanged = true;
-        if (ImGui::InputFloat("Frequency", &_worldGenParams.frequency, 0.001f, 0.1f, "%.4f")) paramsChanged = true;
-        
+        if (ImGui::InputInt("Seed", &params.seed)) paramsChanged = true;
+        if (ImGui::InputFloat("Frequency", &params.frequency, 0.001f, 0.1f, "%.4f")) paramsChanged = true;
+
         const char* noiseTypes[] = { "OpenSimplex2", "OpenSimplex2S", "Cellular", "Perlin", "ValueCubic", "Value" };
-        if (ImGui::Combo("Noise Type", reinterpret_cast<int*>(&_worldGenParams.noiseType), noiseTypes, IM_ARRAYSIZE(noiseTypes))) paramsChanged = true;
+        if (ImGui::Combo("Noise Type", reinterpret_cast<int*>(&params.noiseType), noiseTypes, IM_ARRAYSIZE(noiseTypes))) paramsChanged = true;
 
         const char* fractalTypes[] = { "None", "FBm", "Ridged", "PingPong", "DomainWarpProgressive", "DomainWarpIndependent" };
-        if (ImGui::Combo("Fractal Type", reinterpret_cast<int*>(&_worldGenParams.fractalType), fractalTypes, IM_ARRAYSIZE(fractalTypes))) paramsChanged = true;
+        if (ImGui::Combo("Fractal Type", reinterpret_cast<int*>(&params.fractalType), fractalTypes, IM_ARRAYSIZE(fractalTypes))) paramsChanged = true;
 
-        if (ImGui::SliderInt("Octaves", &_worldGenParams.octaves, 1, 10)) paramsChanged = true;
-        if (ImGui::SliderFloat("Lacunarity", &_worldGenParams.lacunarity, 0.1f, 4.0f)) paramsChanged = true;
-        if (ImGui::SliderFloat("Gain", &_worldGenParams.gain, 0.1f, 1.0f)) paramsChanged = true;
-        if (ImGui::SliderFloat("Land Threshold", &_worldGenParams.landThreshold, -1.0f, 1.0f, "%.2f")) paramsChanged = true;
-        if (ImGui::Checkbox("Distort Coastline", &_worldGenParams.distortCoastline)) paramsChanged = true;
+        if (ImGui::SliderInt("Octaves", &params.octaves, 1, 10)) paramsChanged = true;
+        if (ImGui::SliderFloat("Lacunarity", &params.lacunarity, 0.1f, 4.0f)) paramsChanged = true;
+        if (ImGui::SliderFloat("Gain", &params.gain, 0.1f, 1.0f)) paramsChanged = true;
+        if (ImGui::SliderFloat("Land Threshold", &params.landThreshold, -1.0f, 1.0f, "%.2f")) paramsChanged = true;
+        if (ImGui::Checkbox("Distort Coastline", &params.distortCoastline)) paramsChanged = true;
+        if (params.distortCoastline) {
+            if (ImGui::SliderFloat("Distortion Strength", &params.coastlineDistortionStrength, 0.0f, 0.5f, "%.2f")) paramsChanged = true;
+        }
 
         ImGui::Separator();
 
@@ -81,20 +85,24 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
         if (ImGui::InputInt("Chunk Size Y", &_chunkSizeY)) gridChanged = true;
         if (ImGui::InputFloat("Cell Size", &_cellSize, 1.0f, 0.0f, "%.2f")) gridChanged = true;
 
-        if (paramsChanged || gridChanged) {
-            _eventBus.trigger(WorldGenParamsChangeEvent{
-                _worldGenParams,
-                _worldChunksX,
-                _worldChunksY,
-                _chunkSizeX,
-                _chunkSizeY,
-                _cellSize
-            });
+        if (paramsChanged) {
+            _worldGenerationSystem->configureNoise();
+        }
 
-            if (_autoRegenerate) {
-                LOG_INFO("UI", "Settings changed, auto-regenerating world.");
-                _eventBus.trigger<RegenerateWorldRequestEvent>();
+        if (gridChanged) {
+            auto& registry = _worldGenerationSystem->getRegistry();
+            auto view = registry.view<WorldGridComponent>();
+            if (!view.empty()) {
+                auto& worldGrid = view.get<WorldGridComponent>(view.front());
+                worldGrid.worldDimensionsInChunks = {_worldChunksX, _worldChunksY};
+                worldGrid.chunkDimensionsInCells = {_chunkSizeX, _chunkSizeY};
+                worldGrid.cellSize = _cellSize;
             }
+        }
+
+        if ((paramsChanged || gridChanged) && _autoRegenerate) {
+            LOG_INFO("UI", "Settings changed, auto-regenerating world.");
+            _eventBus.trigger<RegenerateWorldRequestEvent>();
         }
 
         ImGui::Separator();
@@ -158,9 +166,6 @@ void UI::syncWithWorldState() {
         LOG_WARN("UI", "WorldGenerationSystem is null, cannot sync state.");
         return;
     }
-
-    // Sync noise and generation settings from the single source of truth
-    _worldGenParams = _worldGenerationSystem->getParams();
 
     // Sync grid settings
     auto& registry = _worldGenerationSystem->getRegistry();

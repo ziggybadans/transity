@@ -22,21 +22,12 @@ public:
     void renderFrame();
     void cleanupResources();
 
-    // These methods are no longer needed
-    // const std::vector<FinalizeLineEvent>& getUiEvents() const;
-    // void clearUiEvents();
-
     bool getVisualizeNoiseState() const { return _visualizeNoise; }
 
 private:
     sf::RenderWindow& _window;
     GameState& _gameState;
     EventBus& _eventBus; // <-- Add this
-
-    // This vector is no longer needed
-    // std::vector<FinalizeLineEvent> _uiEvents;
-
-    WorldGenParams _worldGenParams;
 
     int _worldChunksX;
     int _worldChunksY;

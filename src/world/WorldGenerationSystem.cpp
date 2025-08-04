@@ -7,15 +7,13 @@
 #include <vector>
 
 WorldGenerationSystem::WorldGenerationSystem(entt::registry& registry, EventBus& eventBus)
-    : _registry(registry), _eventBus(eventBus) { // <-- MODIFIED
-    // Connect to the event bus using the member variable
-    _worldGenParamsListener = _eventBus.sink<WorldGenParamsChangeEvent>().connect<&WorldGenerationSystem::onWorldGenParamsChange>(this);
-    LOG_INFO("WorldGenerationSystem", "System created and listening for world generation events.");
+    : _registry(registry), _eventBus(eventBus) {
+    LOG_INFO("WorldGenerationSystem", "System created.");
+    configureNoise();
 }
 
+
 WorldGenerationSystem::~WorldGenerationSystem() {
-    // Disconnect using the member variable
-    _eventBus.sink<WorldGenParamsChangeEvent>().disconnect(this);
 }
 
 void WorldGenerationSystem::setParams(const WorldGenParams& params) {
@@ -31,6 +29,34 @@ void WorldGenerationSystem::configureNoise() {
     _noiseGenerator.SetFractalOctaves(_params.octaves);
     _noiseGenerator.SetFractalLacunarity(_params.lacunarity);
     _noiseGenerator.SetFractalGain(_params.gain);
+
+    _coastlineDistortion.SetSeed(_params.seed + 2);
+    _coastlineDistortion.SetFrequency(_params.frequency * 4.0f);
+    _coastlineDistortion.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
+
+    generateContinentShape();
+}
+
+void WorldGenerationSystem::generateContinentShape() {
+    _params.continentShape.clear();
+    sf::Vector2f worldSize = getWorldSize();
+    sf::Vector2f center = worldSize / 2.0f;
+    float radius = std::min(worldSize.x, worldSize.y) / 3.0f;
+    int numPoints = 128;
+
+    FastNoiseLite shapeNoise;
+    shapeNoise.SetSeed(_params.seed + 1);
+    shapeNoise.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
+    shapeNoise.SetFrequency(2.0f);
+
+    for (int i = 0; i < numPoints; ++i) {
+        float angle = (float)i / (float)numPoints * 2.0f * 3.14159f;
+        float distortedRadius = radius + shapeNoise.GetNoise((float)i, 0.0f) * radius * 0.4f;
+        
+        float x = center.x + distortedRadius * cos(angle);
+        float y = center.y + distortedRadius * sin(angle);
+        _params.continentShape.push_back({x, y});
+    }
 }
 
 const WorldGridComponent& WorldGenerationSystem::getWorldGridSettings() {
@@ -53,24 +79,11 @@ sf::Vector2f WorldGenerationSystem::getWorldSize() {
     }
 }
 
-bool isInside(const sf::Vector2f& point, const std::vector<sf::Vector2f>& polygon) {
-    if (polygon.empty()) {
-        return false;
-    }
-    int n = polygon.size();
-    bool inside = false;
-    for (int i = 0, j = n - 1; i < n; j = i++) {
-        if (((polygon[i].y > point.y) != (polygon[j].y > point.y)) &&
-            (point.x < (polygon[j].x - polygon[i].x) * (point.y - polygon[i].y) / (polygon[j].y - polygon[i].y) + polygon[i].x)) {
-            inside = !inside;
-        }
-    }
-    return inside;
-}
-
 void WorldGenerationSystem::generateChunk(entt::registry& registry, entt::entity chunkEntity) {
     auto& chunk = registry.get<ChunkComponent>(chunkEntity);
     const auto& worldGrid = registry.get<WorldGridComponent>(registry.view<WorldGridComponent>().front());
+    sf::Vector2f worldSize = getWorldSize();
+    sf::Vector2f center = worldSize / 2.0f;
 
     const int chunkCellSizeX = static_cast<int>(worldGrid.chunkDimensionsInCells.x);
     const int chunkCellSizeY = static_cast<int>(worldGrid.chunkDimensionsInCells.y);
@@ -81,29 +94,35 @@ void WorldGenerationSystem::generateChunk(entt::registry& registry, entt::entity
 
     for (int y = 0; y < chunkCellSizeY; ++y) {
         for (int x = 0; x < chunkCellSizeX; ++x) {
-            float worldX = static_cast<float>((chunk.chunkGridPosition.x * chunkCellSizeX) + x);
-            float worldY = static_cast<float>((chunk.chunkGridPosition.y * chunkCellSizeY) + y);
-
-            float noiseValue = _noiseGenerator.GetNoise(worldX, worldY);
+            float worldX = static_cast<float>((chunk.chunkGridPosition.x * chunkCellSizeX) + x) * worldGrid.cellSize;
+            float worldY = static_cast<float>((chunk.chunkGridPosition.y * chunkCellSizeY) + y) * worldGrid.cellSize;
             int cellIndex = y * chunkCellSizeX + x;
 
-            chunk.noiseValues[cellIndex] = noiseValue;
-            chunk.cells[cellIndex] = (noiseValue > _params.landThreshold) ? TerrainType::LAND : TerrainType::WATER;
+            float dx = center.x - worldX;
+            float dy = center.y - worldY;
+            float distance = std::sqrt(dx * dx + dy * dy);
+
+            float maxDistance = std::min(worldSize.x, worldSize.y) / 2.5f;
+            float falloff = 1.0f - std::min(1.0f, distance / maxDistance);
+
+            float noiseX = static_cast<float>((chunk.chunkGridPosition.x * chunkCellSizeX) + x);
+            float noiseY = static_cast<float>((chunk.chunkGridPosition.y * chunkCellSizeY) + y);
+
+            float noiseValue = _noiseGenerator.GetNoise(noiseX, noiseY);
+            noiseValue = (noiseValue + 1.0f) / 2.0f; // Normalize to 0-1 range
+
+            float finalValue = noiseValue * falloff;
+            
+            float distortion = 0.0f;
+            if (_params.distortCoastline) {
+                distortion = _coastlineDistortion.GetNoise(noiseX, noiseY) * _params.coastlineDistortionStrength;
+            }
+            float distortedLandThreshold = _params.landThreshold + distortion;
+
+            chunk.noiseValues[cellIndex] = finalValue;
+            chunk.cells[cellIndex] = (finalValue > distortedLandThreshold) ? TerrainType::LAND : TerrainType::WATER;
         }
     }
 
     chunk.isMeshDirty = true;
-}
-
-void WorldGenerationSystem::onWorldGenParamsChange(const WorldGenParamsChangeEvent& event) {
-    LOG_INFO("WorldGenerationSystem", "World generation parameters updated.");
-    setParams(event.params);
-
-    auto view = _registry.view<WorldGridComponent>();
-    if (!view.empty()) {
-        auto& worldGrid = view.get<WorldGridComponent>(view.front());
-        worldGrid.worldDimensionsInChunks = {event.worldChunksX, event.worldChunksY};
-        worldGrid.chunkDimensionsInCells = {event.chunkSizeX, event.chunkSizeY};
-        worldGrid.cellSize = event.cellSize;
-    }
 }

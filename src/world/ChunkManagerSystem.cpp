@@ -2,11 +2,31 @@
 #include "../core/Components.h"
 #include "../Logger.h"
 
-ChunkManagerSystem::ChunkManagerSystem(ServiceLocator& serviceLocator, WorldGenerationSystem& worldGenSystem)
+ChunkManagerSystem::ChunkManagerSystem(ServiceLocator& serviceLocator, WorldGenerationSystem& worldGenSystem, EventBus& eventBus)
     : _serviceLocator(serviceLocator),
       _worldGenSystem(worldGenSystem),
       _registry(*serviceLocator.registry),
-      _activeChunks() {}
+      _eventBus(eventBus),
+      _activeChunks() {
+    _regenerateWorldListener = _eventBus.sink<RegenerateWorldRequestEvent>().connect<&ChunkManagerSystem::onRegenerateWorld>(this);
+}
+
+ChunkManagerSystem::~ChunkManagerSystem() {
+    _eventBus.sink<RegenerateWorldRequestEvent>().disconnect(this);
+}
+
+void ChunkManagerSystem::onRegenerateWorld(const RegenerateWorldRequestEvent& event) {
+    LOG_INFO("ChunkManagerSystem", "Regenerating world.");
+    std::vector<sf::Vector2i> chunksToUnload;
+    for (const auto& chunkPos : _activeChunks) {
+        chunksToUnload.push_back(chunkPos);
+    }
+
+    for (const auto& chunkPos : chunksToUnload) {
+        unloadChunk(chunkPos);
+    }
+    // The update method will then reload the necessary chunks.
+}
 
 void ChunkManagerSystem::update(sf::Time dt) {
     const auto& camera = *_serviceLocator.camera;

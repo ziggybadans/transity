@@ -32,14 +32,12 @@ Game::Game(Renderer& renderer)
     // 3. Create the SystemManager, passing it the ServiceLocator.
     _systemManager = std::make_unique<SystemManager>(_serviceLocator);
 
-    _chunkManagerSystem = std::make_unique<ChunkManagerSystem>(_serviceLocator, _worldGenerationSystem);
-
     // 4. Add systems using the new templated method.
     _systemManager->addSystem<CameraSystem>();
     _systemManager->addSystem<LineCreationSystem>();
     _systemManager->addSystem<StationPlacementSystem>();
     _systemManager->addSystem<GameStateSystem>();
-    _systemManager->addSystem<ChunkManagerSystem>(_worldGenerationSystem);
+    _systemManager->addSystem<ChunkManagerSystem>(_worldGenerationSystem, _eventBus);
 
     LOG_INFO("Game", "Game instance created and systems registered.");
 }

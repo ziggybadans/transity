@@ -21,6 +21,7 @@ public:
     entt::registry& getRegistry() { return _registry; }
 
     const WorldGenParams& getParams() const { return _params; }
+    WorldGenParams& getParams() { return _params; }
     void setParams(const WorldGenParams& params);
 
 private:
@@ -28,15 +29,13 @@ private:
     EventBus& _eventBus;
 
     FastNoiseLite _noiseGenerator;
+    FastNoiseLite _coastlineDistortion;
     WorldGenParams _params;
 
-    std::vector<sf::Vector2f> _islandShape;
-
-    void onWorldGenParamsChange(const WorldGenParamsChangeEvent& event);
+    void generateContinentShape();
 
     // Event Listener Connections
-    entt::connection _regenerateWorldListener; // <-- ENSURE THIS IS PRESENT
-    entt::connection _worldGenParamsListener;  // <-- ENSURE THIS IS PRESENT
+    entt::connection _regenerateWorldListener;
     
     const WorldGridComponent& getWorldGridSettings();
 };

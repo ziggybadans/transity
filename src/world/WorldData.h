@@ -1,6 +1,11 @@
 #pragma once
 
 #include "FastNoiseLite.h"
+#include <vector>
+
+struct Point {
+    float x, y;
+};
 
 struct WorldGenParams {
     int seed = 1337;
@@ -10,6 +15,8 @@ struct WorldGenParams {
     int octaves = 5;
     float lacunarity = 2.0f;
     float gain = 0.5f;
-    float landThreshold = 0.5f;
-    bool distortCoastline = true;
+    float landThreshold = 0.35f;
+    bool distortCoastline = false;
+    float coastlineDistortionStrength = 0.1f;
+    std::vector<Point> continentShape;
 };
