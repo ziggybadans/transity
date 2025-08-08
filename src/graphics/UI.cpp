@@ -61,8 +61,16 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
 
         bool paramsChanged = false;
 
-        if (ImGui::InputInt("Seed", &params.seed)) paramsChanged = true;
-        if (ImGui::InputFloat("Frequency", &params.frequency, 0.001f, 0.1f, "%.4f")) paramsChanged = true;
+        if (ImGui::Button("New Seed")) {
+            params.seed = std::rand();
+            paramsChanged = true;
+        }
+        ImGui::SameLine();
+        ImGui::Text("Seed: %d", params.seed);
+
+        if (ImGui::SliderFloat("Frequency", &params.frequency, 0.001f, 0.1f, "%.4f")) {
+            paramsChanged = true;
+        }
 
         const char* noiseTypes[] = { "OpenSimplex2", "OpenSimplex2S", "Cellular", "Perlin", "ValueCubic", "Value" };
         if (ImGui::Combo("Noise Type", reinterpret_cast<int*>(&params.noiseType), noiseTypes, IM_ARRAYSIZE(noiseTypes))) paramsChanged = true;
@@ -101,7 +109,10 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
         }
 
         if (ImGui::Checkbox("Visualize Noise", &_visualizeNoise)) {
-            if (_terrainRenderSystem) _terrainRenderSystem->setVisualizeNoise(_visualizeNoise);
+            if (_terrainRenderSystem) {
+                _terrainRenderSystem->setVisualizeNoise(_visualizeNoise);
+                _eventBus.trigger<ImmediateRedrawEvent>();
+            }
         }
         if (ImGui::Checkbox("Visualize Chunk Borders", &_visualizeChunkBorders)) {
             if (_terrainRenderSystem) _terrainRenderSystem->setVisualizeChunkBorders(_visualizeChunkBorders);

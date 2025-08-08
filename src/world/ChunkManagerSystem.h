@@ -27,6 +27,9 @@ private:
     void loadChunk(const sf::Vector2i& chunkPos);
     void unloadChunk(const sf::Vector2i& chunkPos);
 
+    void onImmediateRedraw(const ImmediateRedrawEvent& event);
+    entt::connection _immediateRedrawListener;
+
     ServiceLocator& _serviceLocator;
     WorldGenerationSystem& _worldGenSystem;
     entt::registry& _registry;

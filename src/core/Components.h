@@ -45,6 +45,7 @@ struct ChunkComponent {
     sf::Vector2i chunkGridPosition;
     std::vector<TerrainType> cells;
     std::vector<float> noiseValues;
+    std::vector<float> rawNoiseValues;
     sf::VertexArray vertexArray;
     bool isMeshDirty = true;
     std::set<int> dirtyCells;

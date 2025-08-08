@@ -10,6 +10,7 @@ ChunkManagerSystem::ChunkManagerSystem(ServiceLocator& serviceLocator, WorldGene
       _activeChunks() {
     _regenerateWorldListener = _eventBus.sink<RegenerateWorldRequestEvent>().connect<&ChunkManagerSystem::onRegenerateWorld>(this);
     _swapWorldStateListener = _eventBus.sink<SwapWorldStateEvent>().connect<&ChunkManagerSystem::onSwapWorldState>(this);
+    _immediateRedrawListener = _eventBus.sink<ImmediateRedrawEvent>().connect<&ChunkManagerSystem::onImmediateRedraw>(this);
 
     // Create the world state entity
     auto entity = _registry.create();
@@ -19,6 +20,16 @@ ChunkManagerSystem::ChunkManagerSystem(ServiceLocator& serviceLocator, WorldGene
 ChunkManagerSystem::~ChunkManagerSystem() {
     _eventBus.sink<RegenerateWorldRequestEvent>().disconnect(this);
     _eventBus.sink<SwapWorldStateEvent>().disconnect(this);
+    _eventBus.sink<ImmediateRedrawEvent>().disconnect(this);
+}
+
+void ChunkManagerSystem::onImmediateRedraw(const ImmediateRedrawEvent& event) {
+    for (auto const& [pos, entity] : _activeChunks) {
+        if (_registry.valid(entity)) {
+            auto& chunk = _registry.get<ChunkComponent>(entity);
+            chunk.isMeshDirty = true;
+        }
+    }
 }
 
 void ChunkManagerSystem::onRegenerateWorld(const RegenerateWorldRequestEvent& event) {

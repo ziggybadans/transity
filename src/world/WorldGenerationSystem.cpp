@@ -91,6 +91,7 @@ void WorldGenerationSystem::generateChunk(entt::registry& registry, entt::entity
 
     chunk.cells.resize(totalCells);
     chunk.noiseValues.resize(totalCells);
+    chunk.rawNoiseValues.resize(totalCells);
 
     for (int y = 0; y < chunkCellSizeY; ++y) {
         for (int x = 0; x < chunkCellSizeX; ++x) {
@@ -110,6 +111,8 @@ void WorldGenerationSystem::generateChunk(entt::registry& registry, entt::entity
 
             float noiseValue = _noiseGenerator.GetNoise(noiseX, noiseY);
             noiseValue = (noiseValue + 1.0f) / 2.0f; // Normalize to 0-1 range
+
+            chunk.rawNoiseValues[cellIndex] = noiseValue;
 
             float finalValue = noiseValue * falloff;
             

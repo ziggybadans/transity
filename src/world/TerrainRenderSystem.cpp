@@ -29,13 +29,6 @@ void TerrainRenderSystem::render(entt::registry& registry, sf::RenderTarget& tar
     viewBounds.size.x += worldGrid.cellSize * 2;
     viewBounds.size.y += worldGrid.cellSize * 2;
 
-    if (_visualizeNoiseStateChanged) {
-        for (auto entity : chunkView) {
-            chunkView.get<ChunkComponent>(entity).isMeshDirty = true;
-        }
-        _visualizeNoiseStateChanged = false;
-    }
-
     int renderedChunkCount = 0;
     for (auto entity : chunkView) {
         auto& chunk = chunkView.get<ChunkComponent>(entity);
@@ -59,6 +52,13 @@ void TerrainRenderSystem::render(entt::registry& registry, sf::RenderTarget& tar
         }
         target.draw(chunk.vertexArray);
 
+        if (_visualizeNoiseStateChanged) {
+            auto chunkView = registry.view<ChunkComponent>();
+            for (auto entity : chunkView) {
+                chunkView.get<ChunkComponent>(entity).isMeshDirty = true;
+            }
+            _visualizeNoiseStateChanged = false;
+        }
         
         // --- START VISUALIZATION LOGIC ---
         if (_visualizeChunkBorders) {
@@ -155,9 +155,8 @@ void TerrainRenderSystem::buildChunkMesh(ChunkComponent& chunk, const WorldGridC
 
         sf::Color color;
         if (_visualizeNoise) {
-            float rawNoiseValue = chunk.noiseValues[cellIndex];
-            float normalizedNoise = (rawNoiseValue + 1.0f) / 2.0f;
-            normalizedNoise = std::max(0.0f, std::min(1.0f, normalizedNoise));
+            float rawNoiseValue = chunk.rawNoiseValues[cellIndex];
+            float normalizedNoise = std::max(0.0f, std::min(1.0f, rawNoiseValue));
             uint8_t gray = static_cast<uint8_t>(normalizedNoise * 255);
             color = sf::Color(gray, gray, gray);
         } else {

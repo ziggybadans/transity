@@ -10,9 +10,13 @@ public:
     TerrainRenderSystem();
 
     void render(entt::registry& registry, sf::RenderTarget& target, const sf::View& view);
-    void setVisualizeNoise(bool visualize) { _visualizeNoise = visualize; }
     void setVisualizeChunkBorders(bool visualize) { _visualizeChunkBorders = visualize; } // ADD
     void setVisualizeCellBorders(bool visualize) { _visualizeCellBorders = visualize; }   // ADD
+    void setVisualizeNoise(bool visualize) { 
+        _visualizeNoise = visualize; 
+        _visualizeNoiseStateChanged = true;
+    }
+// ...
 private:
     sf::RectangleShape _cellShape;
     bool _visualizeNoise;

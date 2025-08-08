@@ -41,6 +41,12 @@ struct RegenerateWorldRequestEvent {
     // Could hold new parameters if needed, or be empty
 };
 
+struct ToggleNoiseVisualizationEvent {
+    bool show;
+};
+
+struct ImmediateRedrawEvent {};
+
 // Line Management Events (These already exist but are good to consolidate conceptually)
 // We will continue to use the existing LineEvents.h for these for now.
 // #include "LineEvents.h"
