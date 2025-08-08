@@ -20,3 +20,5 @@ struct WorldGenParams {
     float coastlineDistortionStrength = 0.1f;
     std::vector<Point> continentShape;
 };
+
+struct SwapWorldStateEvent {};

@@ -128,57 +128,63 @@ void TerrainRenderSystem::render(entt::registry& registry, sf::RenderTarget& tar
 }
 
 void TerrainRenderSystem::buildChunkMesh(ChunkComponent& chunk, const WorldGridComponent& worldGrid) {
-    chunk.vertexArray.clear();
-    // We now need 6 vertices for every cell (2 triangles)
-    chunk.vertexArray.resize(worldGrid.chunkDimensionsInCells.x * worldGrid.chunkDimensionsInCells.y * 6);
+    if (chunk.vertexArray.getVertexCount() == 0) {
+        chunk.vertexArray.resize(worldGrid.chunkDimensionsInCells.x * worldGrid.chunkDimensionsInCells.y * 6);
+    }
 
-    for (int y = 0; y < worldGrid.chunkDimensionsInCells.y; ++y) {
-        for (int x = 0; x < worldGrid.chunkDimensionsInCells.x; ++x) {
-            int cellIndex = y * worldGrid.chunkDimensionsInCells.x + x;
-            // Get a pointer to the first vertex of the first triangle
-            sf::Vertex* tri = &chunk.vertexArray[cellIndex * 6];
+    auto updateCell = [&](int cellIndex) {
+        int y = cellIndex / worldGrid.chunkDimensionsInCells.x;
+        int x = cellIndex % worldGrid.chunkDimensionsInCells.x;
 
-            float screenX = (chunk.chunkGridPosition.x * worldGrid.chunkDimensionsInCells.x + x) * worldGrid.cellSize;
-            float screenY = (chunk.chunkGridPosition.y * worldGrid.chunkDimensionsInCells.y + y) * worldGrid.cellSize;
+        sf::Vertex* tri = &chunk.vertexArray[cellIndex * 6];
 
-            // Define the 4 corners of the cell
-            sf::Vector2f topLeft(screenX, screenY);
-            sf::Vector2f topRight(screenX + worldGrid.cellSize, screenY);
-            sf::Vector2f bottomLeft(screenX, screenY + worldGrid.cellSize);
-            sf::Vector2f bottomRight(screenX + worldGrid.cellSize, screenY + worldGrid.cellSize);
+        float screenX = (chunk.chunkGridPosition.x * worldGrid.chunkDimensionsInCells.x + x) * worldGrid.cellSize;
+        float screenY = (chunk.chunkGridPosition.y * worldGrid.chunkDimensionsInCells.y + y) * worldGrid.cellSize;
 
-            // Triangle 1
-            tri[0].position = topLeft;
-            tri[1].position = topRight;
-            tri[2].position = bottomLeft;
+        sf::Vector2f topLeft(screenX, screenY);
+        sf::Vector2f topRight(screenX + worldGrid.cellSize, screenY);
+        sf::Vector2f bottomLeft(screenX, screenY + worldGrid.cellSize);
+        sf::Vector2f bottomRight(screenX + worldGrid.cellSize, screenY + worldGrid.cellSize);
 
-            // Triangle 2
-            tri[3].position = topRight;
-            tri[4].position = bottomRight;
-            tri[5].position = bottomLeft;
+        tri[0].position = topLeft;
+        tri[1].position = topRight;
+        tri[2].position = bottomLeft;
+        tri[3].position = topRight;
+        tri[4].position = bottomRight;
+        tri[5].position = bottomLeft;
 
-            // Determine the color for this cell
-            sf::Color color;
-            if (_visualizeNoise) {
-                float rawNoiseValue = chunk.noiseValues[cellIndex];
-                float normalizedNoise = (rawNoiseValue + 1.0f) / 2.0f;
-                normalizedNoise = std::max(0.0f, std::min(1.0f, normalizedNoise));
-                uint8_t gray = static_cast<uint8_t>(normalizedNoise * 255);
-                color = sf::Color(gray, gray, gray);
-            } else {
-                switch (chunk.cells[cellIndex]) {
-                    case TerrainType::WATER: color = sf::Color(173, 216, 230); break;
-                    case TerrainType::LAND: color = sf::Color(34, 139, 34); break;
-                    case TerrainType::RIVER: color = sf::Color(100, 149, 237); break;
-                    default: color = sf::Color::Magenta; break;
-                }
-            }
-
-            // Apply the color to all 6 vertices
-            for (int i = 0; i < 6; ++i) {
-                tri[i].color = color;
+        sf::Color color;
+        if (_visualizeNoise) {
+            float rawNoiseValue = chunk.noiseValues[cellIndex];
+            float normalizedNoise = (rawNoiseValue + 1.0f) / 2.0f;
+            normalizedNoise = std::max(0.0f, std::min(1.0f, normalizedNoise));
+            uint8_t gray = static_cast<uint8_t>(normalizedNoise * 255);
+            color = sf::Color(gray, gray, gray);
+        } else {
+            switch (chunk.cells[cellIndex]) {
+                case TerrainType::WATER: color = sf::Color(173, 216, 230); break;
+                case TerrainType::LAND: color = sf::Color(34, 139, 34); break;
+                case TerrainType::RIVER: color = sf::Color(100, 149, 237); break;
+                default: color = sf::Color::Magenta; break;
             }
         }
+
+        for (int i = 0; i < 6; ++i) {
+            tri[i].color = color;
+        }
+    };
+
+    if (chunk.dirtyCells.empty()) {
+        int totalCells = worldGrid.chunkDimensionsInCells.x * worldGrid.chunkDimensionsInCells.y;
+        for (int i = 0; i < totalCells; ++i) {
+            updateCell(i);
+        }
+    } else {
+        for (int cellIndex : chunk.dirtyCells) {
+            updateCell(cellIndex);
+        }
     }
+
+    chunk.dirtyCells.clear();
     chunk.isMeshDirty = false;
 }

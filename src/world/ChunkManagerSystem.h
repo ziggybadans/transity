@@ -3,10 +3,11 @@
 #include "../core/ISystem.h"
 #include "../core/ServiceLocator.h"
 #include "WorldGenerationSystem.h"
-#include <SFML/System/Vector2.hpp>
-#include <set>
 #include "../event/EventBus.h"
 #include "../event/InputEvents.h"
+#include <map>
+#include <future>
+#include <SFML/System/Vector2.hpp>
 
 struct Vector2iCompare {
     bool operator()(const sf::Vector2i& a, const sf::Vector2i& b) const {
@@ -31,8 +32,12 @@ private:
     entt::registry& _registry;
     EventBus& _eventBus;
     
-    std::set<sf::Vector2i, Vector2iCompare> _activeChunks;
+    std::map<sf::Vector2i, entt::entity, Vector2iCompare> _activeChunks;
 
     entt::connection _regenerateWorldListener;
     int _viewDistance = 4; // In chunks
+
+    void onSwapWorldState(const SwapWorldStateEvent& event);
+    entt::connection _swapWorldStateListener;
+    std::future<void> _generationFuture;
 };

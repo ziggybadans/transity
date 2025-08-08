@@ -20,7 +20,7 @@ Application::Application() {
         
         _game->init();
 
-        _ui = std::make_unique<UI>(_renderer->getWindowInstance(), &_game->getWorldGenerationSystem(), &_renderer->getTerrainRenderSystem(), _game->getGameState(), _game->getEventBus());
+        _ui = std::make_unique<UI>(_renderer->getWindowInstance(), _game->getRegistry(), &_game->getWorldGenerationSystem(), &_renderer->getTerrainRenderSystem(), _game->getGameState(), _game->getEventBus());
         _ui->initialize();
 
     } catch (const std::exception& e) {

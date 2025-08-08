@@ -8,10 +8,9 @@
 #include "../event/InputEvents.h"
 #include "../world/TerrainRenderSystem.h"
 
-UI::UI(sf::RenderWindow& window, WorldGenerationSystem* worldGenSystem, TerrainRenderSystem* terrainRenderSystem, GameState& gameState, EventBus& eventBus)
-    : _window(window), _gameState(gameState), _eventBus(eventBus), _worldGenerationSystem(worldGenSystem), _terrainRenderSystem(terrainRenderSystem) {
+UI::UI(sf::RenderWindow& window, entt::registry& registry, WorldGenerationSystem* worldGenSystem, TerrainRenderSystem* terrainRenderSystem, GameState& gameState, EventBus& eventBus)
+    : _window(window), _registry(registry), _gameState(gameState), _eventBus(eventBus), _worldGenerationSystem(worldGenSystem), _terrainRenderSystem(terrainRenderSystem) {
     LOG_INFO("UI", "UI instance created.");
-    syncWithWorldState();
 }
 
 UI::~UI() {
@@ -55,7 +54,11 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
     ImGui::SetNextWindowPos(worldGenSettingsPos, ImGuiCond_Always);
     ImGui::SetNextWindowSize(ImVec2(worldGenSettingsWidth, 0.0f), ImGuiCond_Always);
     ImGui::Begin("World Generation Settings", nullptr, window_flags);
-        WorldGenParams& params = _worldGenerationSystem->getParams();
+        
+        auto& worldState = _registry.get<WorldStateComponent>(_registry.view<WorldStateComponent>().front());
+        auto& worldGrid = _registry.get<WorldGridComponent>(_registry.view<WorldGridComponent>().front());
+        WorldGenParams& params = worldState.pendingParams;
+
         bool paramsChanged = false;
 
         if (ImGui::InputInt("Seed", &params.seed)) paramsChanged = true;
@@ -79,26 +82,11 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
         ImGui::Separator();
 
         bool gridChanged = false;
-        if (ImGui::InputInt("World Chunks X", &_worldChunksX)) gridChanged = true;
-        if (ImGui::InputInt("World Chunks Y", &_worldChunksY)) gridChanged = true;
-        if (ImGui::InputInt("Chunk Size X", &_chunkSizeX)) gridChanged = true;
-        if (ImGui::InputInt("Chunk Size Y", &_chunkSizeY)) gridChanged = true;
-        if (ImGui::InputFloat("Cell Size", &_cellSize, 1.0f, 0.0f, "%.2f")) gridChanged = true;
-
-        if (paramsChanged) {
-            _worldGenerationSystem->configureNoise();
-        }
-
-        if (gridChanged) {
-            auto& registry = _worldGenerationSystem->getRegistry();
-            auto view = registry.view<WorldGridComponent>();
-            if (!view.empty()) {
-                auto& worldGrid = view.get<WorldGridComponent>(view.front());
-                worldGrid.worldDimensionsInChunks = {_worldChunksX, _worldChunksY};
-                worldGrid.chunkDimensionsInCells = {_chunkSizeX, _chunkSizeY};
-                worldGrid.cellSize = _cellSize;
-            }
-        }
+        if (ImGui::InputInt("World Chunks X", &worldGrid.worldDimensionsInChunks.x)) gridChanged = true;
+        if (ImGui::InputInt("World Chunks Y", &worldGrid.worldDimensionsInChunks.y)) gridChanged = true;
+        if (ImGui::InputInt("Chunk Size X", &worldGrid.chunkDimensionsInCells.x)) gridChanged = true;
+        if (ImGui::InputInt("Chunk Size Y", &worldGrid.chunkDimensionsInCells.y)) gridChanged = true;
+        if (ImGui::InputFloat("Cell Size", &worldGrid.cellSize, 1.0f, 0.0f, "%.2f")) gridChanged = true;
 
         if ((paramsChanged || gridChanged) && _autoRegenerate) {
             LOG_INFO("UI", "Settings changed, auto-regenerating world.");
@@ -159,25 +147,4 @@ void UI::cleanupResources() {
     LOG_INFO("UI", "Shutting down ImGui.");
     ImGui::SFML::Shutdown();
     LOG_INFO("UI", "ImGui shutdown complete.");
-}
-
-void UI::syncWithWorldState() {
-    if (!_worldGenerationSystem) {
-        LOG_WARN("UI", "WorldGenerationSystem is null, cannot sync state.");
-        return;
-    }
-
-    // Sync grid settings
-    auto& registry = _worldGenerationSystem->getRegistry();
-    auto view = registry.view<WorldGridComponent>();
-    if (!view.empty()) {
-        auto& worldGrid = view.get<WorldGridComponent>(view.front());
-        _worldChunksX = worldGrid.worldDimensionsInChunks.x;
-        _worldChunksY = worldGrid.worldDimensionsInChunks.y;
-        _chunkSizeX = worldGrid.chunkDimensionsInCells.x;
-        _chunkSizeY = worldGrid.chunkDimensionsInCells.y;
-        _cellSize = worldGrid.cellSize;
-    } else {
-         LOG_WARN("UI", "WorldGridComponent not found, cannot sync grid state.");
-    }
 }

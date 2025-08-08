@@ -4,8 +4,10 @@
 #include <SFML/Graphics.hpp>
 #include <string>
 #include <vector>
+#include <set>
 
 #include "../world/TerrainType.h"
+#include "../world/WorldData.h"
 
 struct PositionComponent {
     sf::Vector2f coordinates;
@@ -45,6 +47,7 @@ struct ChunkComponent {
     std::vector<float> noiseValues;
     sf::VertexArray vertexArray;
     bool isMeshDirty = true;
+    std::set<int> dirtyCells;
 
     ChunkComponent(int chunkWidth, int chunkHeight) : cells(chunkWidth * chunkHeight, TerrainType::WATER),
         noiseValues(chunkWidth * chunkHeight, 0.0f) {
@@ -56,4 +59,10 @@ struct WorldGridComponent {
     sf::Vector2i worldDimensionsInChunks = { 100, 100 };
     sf::Vector2i chunkDimensionsInCells = { 32, 32 };
     float cellSize = 16.0f;
+};
+
+struct WorldStateComponent {
+    WorldGenParams activeParams;
+    WorldGenParams pendingParams;
+    WorldGenParams generatingParams;
 };

@@ -24,6 +24,8 @@ public:
     WorldGenParams& getParams() { return _params; }
     void setParams(const WorldGenParams& params);
 
+    void regenerate(const WorldGenParams& params);
+
 private:
     entt::registry& _registry;
     EventBus& _eventBus;

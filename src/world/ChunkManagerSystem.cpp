@@ -9,26 +9,57 @@ ChunkManagerSystem::ChunkManagerSystem(ServiceLocator& serviceLocator, WorldGene
       _eventBus(eventBus),
       _activeChunks() {
     _regenerateWorldListener = _eventBus.sink<RegenerateWorldRequestEvent>().connect<&ChunkManagerSystem::onRegenerateWorld>(this);
+    _swapWorldStateListener = _eventBus.sink<SwapWorldStateEvent>().connect<&ChunkManagerSystem::onSwapWorldState>(this);
+
+    // Create the world state entity
+    auto entity = _registry.create();
+    _registry.emplace<WorldStateComponent>(entity);
 }
 
 ChunkManagerSystem::~ChunkManagerSystem() {
     _eventBus.sink<RegenerateWorldRequestEvent>().disconnect(this);
+    _eventBus.sink<SwapWorldStateEvent>().disconnect(this);
 }
 
 void ChunkManagerSystem::onRegenerateWorld(const RegenerateWorldRequestEvent& event) {
+    if (_generationFuture.valid()) {
+        LOG_WARN("ChunkManagerSystem", "World regeneration is already in progress.");
+        return;
+    }
+
     LOG_INFO("ChunkManagerSystem", "Regenerating world.");
+    auto& worldState = _registry.get<WorldStateComponent>(_registry.view<WorldStateComponent>().front());
+    
+    worldState.generatingParams = worldState.pendingParams;
+    
+    _generationFuture = std::async(std::launch::async, [&, params = worldState.generatingParams]() {
+        _worldGenSystem.regenerate(params);
+    });
+}
+
+void ChunkManagerSystem::onSwapWorldState(const SwapWorldStateEvent& event) {
+    auto& worldState = _registry.get<WorldStateComponent>(_registry.view<WorldStateComponent>().front());
+    
+    // The new active state is the one that was just generated
+    std::swap(worldState.activeParams, worldState.generatingParams);
+
+    // Now, force all chunks to be re-evaluated and possibly regenerated.
     std::vector<sf::Vector2i> chunksToUnload;
-    for (const auto& chunkPos : _activeChunks) {
-        chunksToUnload.push_back(chunkPos);
+    for (const auto& pair : _activeChunks) {
+        chunksToUnload.push_back(pair.first);
     }
 
     for (const auto& chunkPos : chunksToUnload) {
         unloadChunk(chunkPos);
     }
-    // The update method will then reload the necessary chunks.
 }
 
 void ChunkManagerSystem::update(sf::Time dt) {
+    if (_generationFuture.valid() && _generationFuture.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
+        _generationFuture.get(); // To handle any exceptions
+        _eventBus.trigger(SwapWorldStateEvent{});
+    }
+
     const auto& camera = *_serviceLocator.camera;
     const auto& worldGrid = _registry.get<WorldGridComponent>(_registry.view<WorldGridComponent>().front());
 
@@ -55,11 +86,11 @@ void ChunkManagerSystem::update(sf::Time dt) {
         }
     }
 
-    // Identify chunks to unload without modifying the set
+    // Identify chunks to unload
     std::vector<sf::Vector2i> chunksToUnload;
-    for (const auto& chunkPos : _activeChunks) {
-        if (requiredChunks.find(chunkPos) == requiredChunks.end()) {
-            chunksToUnload.push_back(chunkPos);
+    for (const auto& pair : _activeChunks) {
+        if (requiredChunks.find(pair.first) == requiredChunks.end()) {
+            chunksToUnload.push_back(pair.first);
         }
     }
 
@@ -91,18 +122,15 @@ void ChunkManagerSystem::loadChunk(const sf::Vector2i& chunkPos) {
     chunk.chunkGridPosition = chunkPos;
     
     _worldGenSystem.generateChunk(_registry, entity);
-    _activeChunks.insert(chunkPos);
+    _activeChunks[chunkPos] = entity;
     LOG_INFO("ChunkManagerSystem", "Loaded chunk at (%d, %d)", chunkPos.x, chunkPos.y);
 }
 
 void ChunkManagerSystem::unloadChunk(const sf::Vector2i& chunkPos) {
-    for (auto entity : _registry.view<ChunkComponent>()) {
-        const auto& chunk = _registry.get<ChunkComponent>(entity);
-        if (chunk.chunkGridPosition == chunkPos) {
-            _registry.destroy(entity);
-            _activeChunks.erase(chunkPos);
-            LOG_INFO("ChunkManagerSystem", "Unloaded chunk at (%d, %d)", chunkPos.x, chunkPos.y);
-            return;
-        }
+    auto it = _activeChunks.find(chunkPos);
+    if (it != _activeChunks.end()) {
+        _registry.destroy(it->second);
+        _activeChunks.erase(it);
+        LOG_INFO("ChunkManagerSystem", "Unloaded chunk at (%d, %d)", chunkPos.x, chunkPos.y);
     }
 }

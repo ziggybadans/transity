@@ -94,9 +94,9 @@ void WorldGenerationSystem::generateChunk(entt::registry& registry, entt::entity
 
     for (int y = 0; y < chunkCellSizeY; ++y) {
         for (int x = 0; x < chunkCellSizeX; ++x) {
+            int cellIndex = y * chunkCellSizeX + x;
             float worldX = static_cast<float>((chunk.chunkGridPosition.x * chunkCellSizeX) + x) * worldGrid.cellSize;
             float worldY = static_cast<float>((chunk.chunkGridPosition.y * chunkCellSizeY) + y) * worldGrid.cellSize;
-            int cellIndex = y * chunkCellSizeX + x;
 
             float dx = center.x - worldX;
             float dy = center.y - worldY;
@@ -120,9 +120,18 @@ void WorldGenerationSystem::generateChunk(entt::registry& registry, entt::entity
             float distortedLandThreshold = _params.landThreshold + distortion;
 
             chunk.noiseValues[cellIndex] = finalValue;
-            chunk.cells[cellIndex] = (finalValue > distortedLandThreshold) ? TerrainType::LAND : TerrainType::WATER;
+            TerrainType newType = (finalValue > distortedLandThreshold) ? TerrainType::LAND : TerrainType::WATER;
+
+            if (chunk.cells[cellIndex] != newType) {
+                chunk.cells[cellIndex] = newType;
+                chunk.dirtyCells.insert(cellIndex);
+            }
         }
     }
 
-    chunk.isMeshDirty = true;
+    chunk.isMeshDirty = !chunk.dirtyCells.empty();
+}
+
+void WorldGenerationSystem::regenerate(const WorldGenParams& params) {
+    setParams(params);
 }
