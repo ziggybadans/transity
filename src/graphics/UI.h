@@ -3,7 +3,7 @@
 #include <SFML/System/Time.hpp>
 #include <SFML/Window/Event.hpp>
 #include <SFML/Graphics/RenderWindow.hpp>
-#include "../event/EventBus.h" // <-- Add this
+#include "../event/EventBus.h"
 #include "../event/LineEvents.h"
 #include "FastNoiseLite.h"
 #include "../world/WorldGenerationSystem.h"
@@ -13,7 +13,6 @@ class TerrainRenderSystem;
 
 class UI {
 public:
-    // Constructor now takes EventBus
     UI(sf::RenderWindow& window, entt::registry& registry, WorldGenerationSystem* worldGenSystem, TerrainRenderSystem* terrainRenderSystem, GameState& gameState, EventBus& eventBus);
     ~UI();
     void initialize();
@@ -22,20 +21,17 @@ public:
     void renderFrame();
     void cleanupResources();
 
-    bool getVisualizeNoiseState() const { return _visualizeNoise; }
-
 private:
     sf::RenderWindow& _window;
     GameState& _gameState;
-    EventBus& _eventBus; // <-- Add this
+    EventBus& _eventBus;
     entt::registry& _registry;
 
-    bool _visualizeNoise;
     bool _autoRegenerate;
 
     WorldGenerationSystem* _worldGenerationSystem;
-    TerrainRenderSystem* _terrainRenderSystem; // ADD
+    TerrainRenderSystem* _terrainRenderSystem;
     
-    bool _visualizeChunkBorders = false; // ADD
-    bool _visualizeCellBorders = false;  // ADD
+    bool _visualizeChunkBorders = false;
+    bool _visualizeCellBorders = false;
 };

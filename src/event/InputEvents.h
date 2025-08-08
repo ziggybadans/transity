@@ -38,7 +38,7 @@ struct InteractionModeChangeEvent {
 
 // In a relevant event header file
 struct RegenerateWorldRequestEvent {
-    // Could hold new parameters if needed, or be empty
+    WorldGenParams params;
 };
 
 struct ToggleNoiseVisualizationEvent {

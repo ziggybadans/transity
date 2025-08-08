@@ -9,9 +9,14 @@
 WorldGenerationSystem::WorldGenerationSystem(entt::registry& registry, EventBus& eventBus)
     : _registry(registry), _eventBus(eventBus) {
     LOG_INFO("WorldGenerationSystem", "System created.");
+
+    // Define default noise layers
+    _params.noiseLayers.push_back({"Continents", 1337, 0.005f, FastNoiseLite::NoiseType_Perlin, FastNoiseLite::FractalType_FBm, 3, 2.0f, 0.5f, 1.0f});
+    _params.noiseLayers.push_back({"Mountains", 1338, 0.02f, FastNoiseLite::NoiseType_Perlin, FastNoiseLite::FractalType_FBm, 6, 2.0f, 0.5f, 0.4f});
+    _params.noiseLayers.push_back({"Erosion", 1339, 0.08f, FastNoiseLite::NoiseType_Cellular, FastNoiseLite::FractalType_None, 1, 2.0f, 0.5f, 0.15f});
+
     configureNoise();
 }
-
 
 WorldGenerationSystem::~WorldGenerationSystem() {
 }
@@ -22,16 +27,21 @@ void WorldGenerationSystem::setParams(const WorldGenParams& params) {
 }
 
 void WorldGenerationSystem::configureNoise() {
-    _noiseGenerator.SetSeed(_params.seed);
-    _noiseGenerator.SetFrequency(_params.frequency);
-    _noiseGenerator.SetNoiseType(_params.noiseType);
-    _noiseGenerator.SetFractalType(_params.fractalType);
-    _noiseGenerator.SetFractalOctaves(_params.octaves);
-    _noiseGenerator.SetFractalLacunarity(_params.lacunarity);
-    _noiseGenerator.SetFractalGain(_params.gain);
+    _noiseGenerators.clear();
+    for (const auto& layer : _params.noiseLayers) {
+        FastNoiseLite noise;
+        noise.SetSeed(layer.seed);
+        noise.SetFrequency(layer.frequency);
+        noise.SetNoiseType(layer.noiseType);
+        noise.SetFractalType(layer.fractalType);
+        noise.SetFractalOctaves(layer.octaves);
+        noise.SetFractalLacunarity(layer.lacunarity);
+        noise.SetFractalGain(layer.gain);
+        _noiseGenerators.push_back(noise);
+    }
 
-    _coastlineDistortion.SetSeed(_params.seed + 2);
-    _coastlineDistortion.SetFrequency(_params.frequency * 4.0f);
+    _coastlineDistortion.SetSeed(_params.noiseLayers.empty() ? 1337 : _params.noiseLayers[0].seed + 2);
+    _coastlineDistortion.SetFrequency(_params.noiseLayers.empty() ? 0.02f : _params.noiseLayers[0].frequency * 4.0f);
     _coastlineDistortion.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
 
     generateContinentShape();
@@ -45,7 +55,7 @@ void WorldGenerationSystem::generateContinentShape() {
     int numPoints = 128;
 
     FastNoiseLite shapeNoise;
-    shapeNoise.SetSeed(_params.seed + 1);
+    shapeNoise.SetSeed(_params.noiseLayers.empty() ? 1337 : _params.noiseLayers[0].seed + 1);
     shapeNoise.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
     shapeNoise.SetFrequency(2.0f);
 
@@ -109,12 +119,23 @@ void WorldGenerationSystem::generateChunk(entt::registry& registry, entt::entity
             float noiseX = static_cast<float>((chunk.chunkGridPosition.x * chunkCellSizeX) + x);
             float noiseY = static_cast<float>((chunk.chunkGridPosition.y * chunkCellSizeY) + y);
 
-            float noiseValue = _noiseGenerator.GetNoise(noiseX, noiseY);
-            noiseValue = (noiseValue + 1.0f) / 2.0f; // Normalize to 0-1 range
+            float combinedNoise = 0.0f;
+            float totalWeight = 0.0f;
 
-            chunk.rawNoiseValues[cellIndex] = noiseValue;
+            for (size_t i = 0; i < _noiseGenerators.size(); ++i) {
+                float noiseValue = _noiseGenerators[i].GetNoise(noiseX, noiseY);
+                noiseValue = (noiseValue + 1.0f) / 2.0f; // Normalize to 0-1 range
+                combinedNoise += noiseValue * _params.noiseLayers[i].weight;
+                totalWeight += _params.noiseLayers[i].weight;
+            }
 
-            float finalValue = noiseValue * falloff;
+            if (totalWeight > 0) {
+                combinedNoise /= totalWeight;
+            }
+
+            chunk.rawNoiseValues[cellIndex] = combinedNoise;
+
+            float finalValue = combinedNoise * falloff;
             
             float distortion = 0.0f;
             if (_params.distortCoastline) {

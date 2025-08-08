@@ -7,7 +7,8 @@ struct Point {
     float x, y;
 };
 
-struct WorldGenParams {
+struct NoiseLayer {
+    std::string name = "Layer";
     int seed = 1337;
     float frequency = 0.02f;
     FastNoiseLite::NoiseType noiseType = FastNoiseLite::NoiseType_Perlin;
@@ -15,6 +16,11 @@ struct WorldGenParams {
     int octaves = 5;
     float lacunarity = 2.0f;
     float gain = 0.5f;
+    float weight = 1.0f; // Contribution of this layer to the final noise
+};
+
+struct WorldGenParams {
+    std::vector<NoiseLayer> noiseLayers;
     float landThreshold = 0.35f;
     bool distortCoastline = false;
     float coastlineDistortionStrength = 0.1f;

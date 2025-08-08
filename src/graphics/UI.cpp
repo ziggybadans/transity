@@ -57,30 +57,44 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
         
         auto& worldState = _registry.get<WorldStateComponent>(_registry.view<WorldStateComponent>().front());
         auto& worldGrid = _registry.get<WorldGridComponent>(_registry.view<WorldGridComponent>().front());
-        WorldGenParams& params = worldState.pendingParams;
+        WorldGenParams& params = _worldGenerationSystem->getParams();
 
         bool paramsChanged = false;
 
         if (ImGui::Button("New Seed")) {
-            params.seed = std::rand();
-            paramsChanged = true;
-        }
-        ImGui::SameLine();
-        ImGui::Text("Seed: %d", params.seed);
-
-        if (ImGui::SliderFloat("Frequency", &params.frequency, 0.001f, 0.1f, "%.4f")) {
+            for (auto& layer : params.noiseLayers) {
+                layer.seed = std::rand();
+            }
             paramsChanged = true;
         }
 
-        const char* noiseTypes[] = { "OpenSimplex2", "OpenSimplex2S", "Cellular", "Perlin", "ValueCubic", "Value" };
-        if (ImGui::Combo("Noise Type", reinterpret_cast<int*>(&params.noiseType), noiseTypes, IM_ARRAYSIZE(noiseTypes))) paramsChanged = true;
+        ImGui::Separator();
 
-        const char* fractalTypes[] = { "None", "FBm", "Ridged", "PingPong", "DomainWarpProgressive", "DomainWarpIndependent" };
-        if (ImGui::Combo("Fractal Type", reinterpret_cast<int*>(&params.fractalType), fractalTypes, IM_ARRAYSIZE(fractalTypes))) paramsChanged = true;
+        for (int i = 0; i < params.noiseLayers.size(); ++i) {
+            auto& layer = params.noiseLayers[i];
+            std::string layerHeader = layer.name;
+            if (ImGui::CollapsingHeader(layerHeader.c_str())) {
+                ImGui::PushID(i);
 
-        if (ImGui::SliderInt("Octaves", &params.octaves, 1, 10)) paramsChanged = true;
-        if (ImGui::SliderFloat("Lacunarity", &params.lacunarity, 0.1f, 4.0f)) paramsChanged = true;
-        if (ImGui::SliderFloat("Gain", &params.gain, 0.1f, 1.0f)) paramsChanged = true;
+                if (ImGui::SliderFloat("Frequency", &layer.frequency, 0.001f, 0.1f, "%.4f")) paramsChanged = true;
+
+                const char* noiseTypes[] = { "OpenSimplex2", "OpenSimplex2S", "Cellular", "Perlin", "ValueCubic", "Value" };
+                if (ImGui::Combo("Noise Type", reinterpret_cast<int*>(&layer.noiseType), noiseTypes, IM_ARRAYSIZE(noiseTypes))) paramsChanged = true;
+
+                const char* fractalTypes[] = { "None", "FBm", "Ridged", "PingPong", "DomainWarpProgressive", "DomainWarpIndependent" };
+                if (ImGui::Combo("Fractal Type", reinterpret_cast<int*>(&layer.fractalType), fractalTypes, IM_ARRAYSIZE(fractalTypes))) paramsChanged = true;
+
+                if (ImGui::SliderInt("Octaves", &layer.octaves, 1, 10)) paramsChanged = true;
+                if (ImGui::SliderFloat("Lacunarity", &layer.lacunarity, 0.1f, 4.0f)) paramsChanged = true;
+                if (ImGui::SliderFloat("Gain", &layer.gain, 0.1f, 1.0f)) paramsChanged = true;
+                if (ImGui::SliderFloat("Weight", &layer.weight, 0.0f, 2.0f)) paramsChanged = true;
+
+                ImGui::PopID();
+            }
+        }
+
+        ImGui::Separator();
+
         if (ImGui::SliderFloat("Land Threshold", &params.landThreshold, -1.0f, 1.0f, "%.2f")) paramsChanged = true;
         if (ImGui::Checkbox("Distort Coastline", &params.distortCoastline)) paramsChanged = true;
         if (params.distortCoastline) {
@@ -98,22 +112,16 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
 
         if ((paramsChanged || gridChanged) && _autoRegenerate) {
             LOG_INFO("UI", "Settings changed, auto-regenerating world.");
-            _eventBus.trigger<RegenerateWorldRequestEvent>();
+            _eventBus.trigger<RegenerateWorldRequestEvent>({params}); // Pass params
         }
 
         ImGui::Separator();
 
         if (ImGui::Button("Regenerate World")) {
             LOG_INFO("UI", "Regenerate World button clicked.");
-            _eventBus.trigger<RegenerateWorldRequestEvent>();
+            _eventBus.trigger<RegenerateWorldRequestEvent>({params}); // Pass params
         }
 
-        if (ImGui::Checkbox("Visualize Noise", &_visualizeNoise)) {
-            if (_terrainRenderSystem) {
-                _terrainRenderSystem->setVisualizeNoise(_visualizeNoise);
-                _eventBus.trigger<ImmediateRedrawEvent>();
-            }
-        }
         if (ImGui::Checkbox("Visualize Chunk Borders", &_visualizeChunkBorders)) {
             if (_terrainRenderSystem) _terrainRenderSystem->setVisualizeChunkBorders(_visualizeChunkBorders);
         }

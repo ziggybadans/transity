@@ -41,7 +41,8 @@ void ChunkManagerSystem::onRegenerateWorld(const RegenerateWorldRequestEvent& ev
     LOG_INFO("ChunkManagerSystem", "Regenerating world.");
     auto& worldState = _registry.get<WorldStateComponent>(_registry.view<WorldStateComponent>().front());
     
-    worldState.generatingParams = worldState.pendingParams;
+    // Use the params from the event
+    worldState.generatingParams = event.params; 
     
     _generationFuture = std::async(std::launch::async, [&, params = worldState.generatingParams]() {
         _worldGenSystem.regenerate(params);

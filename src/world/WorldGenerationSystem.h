@@ -1,6 +1,7 @@
 #pragma once
 
 #include <entt/entt.hpp>
+#include <vector>
 
 #include "FastNoiseLite.h"
 #include "../core/Components.h"
@@ -13,7 +14,7 @@ public:
     WorldGenerationSystem(entt::registry& registry, EventBus& eventBus);
     ~WorldGenerationSystem();
 
-    void configureNoise ();
+    void configureNoise();
 
     void generateChunk(entt::registry& registry, entt::entity chunkEntity);
     sf::Vector2f getWorldSize();
@@ -30,7 +31,7 @@ private:
     entt::registry& _registry;
     EventBus& _eventBus;
 
-    FastNoiseLite _noiseGenerator;
+    std::vector<FastNoiseLite> _noiseGenerators; // Changed from single generator
     FastNoiseLite _coastlineDistortion;
     WorldGenParams _params;
 

@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <cstdint>
 
-TerrainRenderSystem::TerrainRenderSystem() : _visualizeNoise(false) {
+TerrainRenderSystem::TerrainRenderSystem() {
     // Initialize cellShape once. Its size will be set from WorldGridComponent.
     // Its position and color will be set per cell.
 }
@@ -51,14 +51,6 @@ void TerrainRenderSystem::render(entt::registry& registry, sf::RenderTarget& tar
             buildChunkMesh(chunk, worldGrid);
         }
         target.draw(chunk.vertexArray);
-
-        if (_visualizeNoiseStateChanged) {
-            auto chunkView = registry.view<ChunkComponent>();
-            for (auto entity : chunkView) {
-                chunkView.get<ChunkComponent>(entity).isMeshDirty = true;
-            }
-            _visualizeNoiseStateChanged = false;
-        }
         
         // --- START VISUALIZATION LOGIC ---
         if (_visualizeChunkBorders) {
@@ -154,18 +146,11 @@ void TerrainRenderSystem::buildChunkMesh(ChunkComponent& chunk, const WorldGridC
         tri[5].position = bottomLeft;
 
         sf::Color color;
-        if (_visualizeNoise) {
-            float rawNoiseValue = chunk.rawNoiseValues[cellIndex];
-            float normalizedNoise = std::max(0.0f, std::min(1.0f, rawNoiseValue));
-            uint8_t gray = static_cast<uint8_t>(normalizedNoise * 255);
-            color = sf::Color(gray, gray, gray);
-        } else {
-            switch (chunk.cells[cellIndex]) {
-                case TerrainType::WATER: color = sf::Color(173, 216, 230); break;
-                case TerrainType::LAND: color = sf::Color(34, 139, 34); break;
-                case TerrainType::RIVER: color = sf::Color(100, 149, 237); break;
-                default: color = sf::Color::Magenta; break;
-            }
+        switch (chunk.cells[cellIndex]) {
+            case TerrainType::WATER: color = sf::Color(173, 216, 230); break;
+            case TerrainType::LAND: color = sf::Color(34, 139, 34); break;
+            case TerrainType::RIVER: color = sf::Color(100, 149, 237); break;
+            default: color = sf::Color::Magenta; break;
         }
 
         for (int i = 0; i < 6; ++i) {
