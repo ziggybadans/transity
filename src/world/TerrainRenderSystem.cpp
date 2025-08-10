@@ -124,49 +124,82 @@ void TerrainRenderSystem::buildAllChunkMeshes(ChunkComponent& chunk, const World
 
     for (int lod = 0; lod < static_cast<int>(LODLevel::Count); ++lod) {
         int step = 1 << lod;
-        
         sf::VertexArray& vertexArray = chunk.lodVertexArrays[lod];
         vertexArray.clear();
 
-        // The rest of the mesh generation logic is the same, just inside this loop
-        int numCellsX = (cellsPerDimension + step - 1) / step;
-        int numCellsY = (cellsPerDimension + step - 1) / step;
-        vertexArray.resize(numCellsX * numCellsY * 6);
+        int numCellsX = cellsPerDimension / step;
+        int numCellsY = cellsPerDimension / step;
+        std::vector<bool> visited(numCellsX * numCellsY, false);
 
-        int vertexIndex = 0;
-        for (int y = 0; y < cellsPerDimension; y += step) {
-            for (int x = 0; x < cellsPerDimension; x += step) {
-                int cellIndex = y * cellsPerDimension + x;
-                sf::Vertex* tri = &vertexArray[vertexIndex * 6];
+        for (int y = 0; y < numCellsY; ++y) {
+            for (int x = 0; x < numCellsX; ++x) {
+                if (visited[y * numCellsX + x]) {
+                    continue;
+                }
 
-                float screenX = (chunk.chunkGridPosition.x * cellsPerDimension + x) * worldGrid.cellSize;
-                float screenY = (chunk.chunkGridPosition.y * cellsPerDimension + y) * worldGrid.cellSize;
-                float quadSize = worldGrid.cellSize * step;
+                int originalCellIndex = (y * step) * cellsPerDimension + (x * step);
+                TerrainType currentType = chunk.cells[originalCellIndex];
 
-                sf::Vector2f topLeft(screenX, screenY);
-                sf::Vector2f topRight(screenX + quadSize, screenY);
-                sf::Vector2f bottomLeft(screenX, screenY + quadSize);
-                sf::Vector2f bottomRight(screenX + quadSize, screenY + quadSize);
+                // Find width of the rectangle
+                int rectWidth = 1;
+                while (x + rectWidth < numCellsX) {
+                    int nextCellIndex = (y * step) * cellsPerDimension + ((x + rectWidth) * step);
+                    if (visited[y * numCellsX + (x + rectWidth)] || chunk.cells[nextCellIndex] != currentType) {
+                        break;
+                    }
+                    rectWidth++;
+                }
 
-                tri[0].position = topLeft;
-                tri[1].position = topRight;
-                tri[2].position = bottomLeft;
-                tri[3].position = topRight;
-                tri[4].position = bottomRight;
-                tri[5].position = bottomLeft;
+                // Find height of the rectangle
+                int rectHeight = 1;
+                while (y + rectHeight < numCellsY) {
+                    bool canExtend = true;
+                    for (int i = 0; i < rectWidth; ++i) {
+                        int nextCellIndex = ((y + rectHeight) * step) * cellsPerDimension + ((x + i) * step);
+                        if (visited[(y + rectHeight) * numCellsX + (x + i)] || chunk.cells[nextCellIndex] != currentType) {
+                            canExtend = false;
+                            break;
+                        }
+                    }
+                    if (!canExtend) {
+                        break;
+                    }
+                    rectHeight++;
+                }
+
+                // Mark all cells in the rectangle as visited
+                for (int ry = 0; ry < rectHeight; ++ry) {
+                    for (int rx = 0; rx < rectWidth; ++rx) {
+                        visited[(y + ry) * numCellsX + (x + rx)] = true;
+                    }
+                }
+
+                // Add the quad for the rectangle
+                float screenX = (chunk.chunkGridPosition.x * cellsPerDimension + (x * step)) * worldGrid.cellSize;
+                float screenY = (chunk.chunkGridPosition.y * cellsPerDimension + (y * step)) * worldGrid.cellSize;
+                float quadWidth = rectWidth * worldGrid.cellSize * step;
+                float quadHeight = rectHeight * worldGrid.cellSize * step;
+
+                sf::Vertex quad[6];
+                quad[0].position = {screenX, screenY};
+                quad[1].position = {screenX + quadWidth, screenY};
+                quad[2].position = {screenX, screenY + quadHeight};
+                quad[3].position = {screenX + quadWidth, screenY};
+                quad[4].position = {screenX + quadWidth, screenY + quadHeight};
+                quad[5].position = {screenX, screenY + quadHeight};
 
                 sf::Color color;
-                switch (chunk.cells[cellIndex]) {
+                switch (currentType) {
                     case TerrainType::WATER: color = sf::Color(173, 216, 230); break;
-                    case TerrainType::LAND: color = sf::Color(34, 139, 34); break;
+                    case TerrainType::LAND:  color = sf::Color(34, 139, 34); break;
                     case TerrainType::RIVER: color = sf::Color(100, 149, 237); break;
-                    default: color = sf::Color::Magenta; break;
+                    default:                 color = sf::Color::Magenta; break;
                 }
 
                 for (int i = 0; i < 6; ++i) {
-                    tri[i].color = color;
+                    quad[i].color = color;
+                    vertexArray.append(quad[i]);
                 }
-                vertexIndex++;
             }
         }
     }
