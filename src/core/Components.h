@@ -9,6 +9,13 @@
 #include "../world/TerrainType.h"
 #include "../world/WorldData.h"
 
+enum class LODLevel {
+    LOD0, // Highest detail
+    LOD1,
+    LOD2,
+    LOD3  // Lowest detail
+};
+
 struct PositionComponent {
     sf::Vector2f coordinates;
 };
@@ -49,6 +56,8 @@ struct ChunkComponent {
     sf::VertexArray vertexArray;
     bool isMeshDirty = true;
     std::set<int> dirtyCells;
+    LODLevel lodLevel = LODLevel::LOD0;
+    LODLevel lastLODLevel = LODLevel::LOD0;
 
     ChunkComponent(int chunkWidth, int chunkHeight) : cells(chunkWidth * chunkHeight, TerrainType::WATER),
         noiseValues(chunkWidth * chunkHeight, 0.0f) {

@@ -8,12 +8,13 @@
 #include "FastNoiseLite.h"
 #include "../world/WorldGenerationSystem.h"
 #include "../core/GameState.h"
+#include "../core/Camera.h"
 
 class TerrainRenderSystem;
 
 class UI {
 public:
-    UI(sf::RenderWindow& window, entt::registry& registry, WorldGenerationSystem* worldGenSystem, TerrainRenderSystem* terrainRenderSystem, GameState& gameState, EventBus& eventBus);
+    UI(sf::RenderWindow& window, entt::registry& registry, WorldGenerationSystem* worldGenSystem, TerrainRenderSystem* terrainRenderSystem, GameState& gameState, EventBus& eventBus, Camera& camera);
     ~UI();
     void initialize();
     void processEvent(const sf::Event& event);
@@ -26,6 +27,7 @@ private:
     GameState& _gameState;
     EventBus& _eventBus;
     entt::registry& _registry;
+    Camera& _camera;
 
     bool _autoRegenerate;
 

@@ -75,6 +75,30 @@ void ChunkManagerSystem::update(sf::Time dt) {
     const auto& camera = *_serviceLocator.camera;
     const auto& worldGrid = _registry.get<WorldGridComponent>(_registry.view<WorldGridComponent>().front());
 
+    float zoom = camera.getZoom();
+    LODLevel currentLOD = LODLevel::LOD0;
+    if (zoom < 0.15f) {
+        currentLOD = LODLevel::LOD3;
+    } else if (zoom < 0.4f) {
+        currentLOD = LODLevel::LOD2;
+    } else if (zoom < 0.8f) {
+        currentLOD = LODLevel::LOD1;
+    } else {
+        currentLOD = LODLevel::LOD0;
+    }
+
+    for (auto const& [pos, entity] : _activeChunks) {
+        if (_registry.valid(entity)) {
+            auto& chunk = _registry.get<ChunkComponent>(entity);
+            chunk.lastLODLevel = chunk.lodLevel;
+            chunk.lodLevel = currentLOD;
+
+            if (chunk.lodLevel != chunk.lastLODLevel) {
+                chunk.isMeshDirty = true;
+            }
+        }
+    }
+
     sf::Vector2f cameraCenter = camera.getCenter();
     sf::Vector2f viewSize = camera.getView().getSize();
     float cellSize = worldGrid.cellSize;

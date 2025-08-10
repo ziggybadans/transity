@@ -7,9 +7,10 @@
 #include "../core/Constants.h"
 #include "../event/InputEvents.h"
 #include "../world/TerrainRenderSystem.h"
+#include "../world/ChunkManagerSystem.h"
 
-UI::UI(sf::RenderWindow& window, entt::registry& registry, WorldGenerationSystem* worldGenSystem, TerrainRenderSystem* terrainRenderSystem, GameState& gameState, EventBus& eventBus)
-    : _window(window), _registry(registry), _gameState(gameState), _eventBus(eventBus), _worldGenerationSystem(worldGenSystem), _terrainRenderSystem(terrainRenderSystem) {
+UI::UI(sf::RenderWindow& window, entt::registry& registry, WorldGenerationSystem* worldGenSystem, TerrainRenderSystem* terrainRenderSystem, GameState& gameState, EventBus& eventBus, Camera& camera)
+    : _window(window), _registry(registry), _gameState(gameState), _eventBus(eventBus), _worldGenerationSystem(worldGenSystem), _terrainRenderSystem(terrainRenderSystem), _camera(camera) {
     LOG_INFO("UI", "UI instance created.");
 }
 
@@ -47,6 +48,7 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
     ImGui::SetNextWindowPos(debugWindowPos, ImGuiCond_Always);
     ImGui::Begin("Profiling", nullptr, size_flags);
     ImGui::Text("FPS: %.1f", 1.f / deltaTime.asSeconds());
+    ImGui::Text("Zoom: %.2f", _camera.getZoom());
     ImGui::End();
 
     float worldGenSettingsWidth = Constants::UI_WORLD_GEN_SETTINGS_WIDTH;

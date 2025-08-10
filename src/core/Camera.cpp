@@ -97,3 +97,8 @@ void Camera::onWindowResize(unsigned int width, unsigned int height) {
 
     LOG_DEBUG("Camera", "View size adjusted for new aspect ratio. New size: (%.1f, %.1f)", _view.getSize().x, _view.getSize().y);
 }
+
+float Camera::getZoom() const {
+    // Assuming a baseline view height of 600.0f corresponds to a zoom of 1.0f
+    return 600.0f / _view.getSize().y;
+}

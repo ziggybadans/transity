@@ -120,55 +120,50 @@ void TerrainRenderSystem::render(entt::registry& registry, sf::RenderTarget& tar
 }
 
 void TerrainRenderSystem::buildChunkMesh(ChunkComponent& chunk, const WorldGridComponent& worldGrid) {
-    if (chunk.vertexArray.getVertexCount() == 0) {
-        chunk.vertexArray.resize(worldGrid.chunkDimensionsInCells.x * worldGrid.chunkDimensionsInCells.y * 6);
-    }
+    int step = 1 << static_cast<int>(chunk.lodLevel);
+    int cellsPerDimension = worldGrid.chunkDimensionsInCells.x;
+    int numCellsX = (cellsPerDimension + step - 1) / step;
+    int numCellsY = (cellsPerDimension + step - 1) / step;
 
-    auto updateCell = [&](int cellIndex) {
-        int y = cellIndex / worldGrid.chunkDimensionsInCells.x;
-        int x = cellIndex % worldGrid.chunkDimensionsInCells.x;
+    chunk.vertexArray.clear();
+    chunk.vertexArray.resize(numCellsX * numCellsY * 6);
 
-        sf::Vertex* tri = &chunk.vertexArray[cellIndex * 6];
+    int vertexIndex = 0;
+    for (int y = 0; y < cellsPerDimension; y += step) {
+        for (int x = 0; x < cellsPerDimension; x += step) {
+            int cellIndex = y * cellsPerDimension + x;
+            sf::Vertex* tri = &chunk.vertexArray[vertexIndex * 6];
 
-        float screenX = (chunk.chunkGridPosition.x * worldGrid.chunkDimensionsInCells.x + x) * worldGrid.cellSize;
-        float screenY = (chunk.chunkGridPosition.y * worldGrid.chunkDimensionsInCells.y + y) * worldGrid.cellSize;
+            float screenX = (chunk.chunkGridPosition.x * cellsPerDimension + x) * worldGrid.cellSize;
+            float screenY = (chunk.chunkGridPosition.y * cellsPerDimension + y) * worldGrid.cellSize;
+            float quadSize = worldGrid.cellSize * step;
 
-        sf::Vector2f topLeft(screenX, screenY);
-        sf::Vector2f topRight(screenX + worldGrid.cellSize, screenY);
-        sf::Vector2f bottomLeft(screenX, screenY + worldGrid.cellSize);
-        sf::Vector2f bottomRight(screenX + worldGrid.cellSize, screenY + worldGrid.cellSize);
+            sf::Vector2f topLeft(screenX, screenY);
+            sf::Vector2f topRight(screenX + quadSize, screenY);
+            sf::Vector2f bottomLeft(screenX, screenY + quadSize);
+            sf::Vector2f bottomRight(screenX + quadSize, screenY + quadSize);
 
-        tri[0].position = topLeft;
-        tri[1].position = topRight;
-        tri[2].position = bottomLeft;
-        tri[3].position = topRight;
-        tri[4].position = bottomRight;
-        tri[5].position = bottomLeft;
+            tri[0].position = topLeft;
+            tri[1].position = topRight;
+            tri[2].position = bottomLeft;
+            tri[3].position = topRight;
+            tri[4].position = bottomRight;
+            tri[5].position = bottomLeft;
 
-        sf::Color color;
-        switch (chunk.cells[cellIndex]) {
-            case TerrainType::WATER: color = sf::Color(173, 216, 230); break;
-            case TerrainType::LAND: color = sf::Color(34, 139, 34); break;
-            case TerrainType::RIVER: color = sf::Color(100, 149, 237); break;
-            default: color = sf::Color::Magenta; break;
-        }
+            sf::Color color;
+            switch (chunk.cells[cellIndex]) {
+                case TerrainType::WATER: color = sf::Color(173, 216, 230); break;
+                case TerrainType::LAND: color = sf::Color(34, 139, 34); break;
+                case TerrainType::RIVER: color = sf::Color(100, 149, 237); break;
+                default: color = sf::Color::Magenta; break;
+            }
 
-        for (int i = 0; i < 6; ++i) {
-            tri[i].color = color;
-        }
-    };
-
-    if (chunk.dirtyCells.empty()) {
-        int totalCells = worldGrid.chunkDimensionsInCells.x * worldGrid.chunkDimensionsInCells.y;
-        for (int i = 0; i < totalCells; ++i) {
-            updateCell(i);
-        }
-    } else {
-        for (int cellIndex : chunk.dirtyCells) {
-            updateCell(cellIndex);
+            for (int i = 0; i < 6; ++i) {
+                tri[i].color = color;
+            }
+            vertexIndex++;
         }
     }
 
-    chunk.dirtyCells.clear();
     chunk.isMeshDirty = false;
 }

@@ -16,6 +16,7 @@ public:
     void setInitialView(const sf::RenderWindow& window, const sf::Vector2f& landCenter, const sf::Vector2f& landSize);
     void moveView(const sf::Vector2f& offset);
     void zoomView(float factor);
+    float getZoom() const;
 
     void onWindowResize(unsigned int width, unsigned int height);
 
