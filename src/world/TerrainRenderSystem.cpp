@@ -120,7 +120,12 @@ void TerrainRenderSystem::render(entt::registry& registry, sf::RenderTarget& tar
 }
 
 void TerrainRenderSystem::buildChunkMesh(ChunkComponent& chunk, const WorldGridComponent& worldGrid) {
-    int step = 1 << static_cast<int>(chunk.lodLevel);
+    int step;
+    if (_isLodEnabled) {
+        step = 1 << static_cast<int>(chunk.lodLevel);
+    } else {
+        step = 1;
+    }
     int cellsPerDimension = worldGrid.chunkDimensionsInCells.x;
     int numCellsX = (cellsPerDimension + step - 1) / step;
     int numCellsY = (cellsPerDimension + step - 1) / step;
@@ -166,4 +171,16 @@ void TerrainRenderSystem::buildChunkMesh(ChunkComponent& chunk, const WorldGridC
     }
 
     chunk.isMeshDirty = false;
+}
+
+void TerrainRenderSystem::setLodEnabled(entt::registry& registry, bool enabled) {
+    if (_isLodEnabled == enabled) return;
+
+    _isLodEnabled = enabled;
+
+    auto chunkView = registry.view<ChunkComponent>();
+    for (auto entity : chunkView) {
+        auto& chunk = chunkView.get<ChunkComponent>(entity);
+        chunk.isMeshDirty = true;
+    }
 }

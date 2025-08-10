@@ -36,4 +36,5 @@ private:
     
     bool _visualizeChunkBorders = false;
     bool _visualizeCellBorders = false;
+    bool _isLodEnabled = true;
 };

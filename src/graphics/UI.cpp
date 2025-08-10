@@ -130,6 +130,11 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
         if (ImGui::Checkbox("Visualize Cell Borders", &_visualizeCellBorders)) {
             if (_terrainRenderSystem) _terrainRenderSystem->setVisualizeCellBorders(_visualizeCellBorders);
         }
+        if (ImGui::Checkbox("Enable LOD", &_isLodEnabled)) {
+            if (_terrainRenderSystem) {
+                _terrainRenderSystem->setLodEnabled(_registry, _isLodEnabled);
+            }
+        }
 
         ImGui::Checkbox("Auto Regenerate", &_autoRegenerate);
 
