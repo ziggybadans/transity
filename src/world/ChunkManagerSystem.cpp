@@ -72,6 +72,18 @@ void ChunkManagerSystem::update(sf::Time dt) {
         _eventBus.trigger(SwapWorldStateEvent{});
     }
 
+    _chunkLoadFutures.erase(std::remove_if(_chunkLoadFutures.begin(), _chunkLoadFutures.end(),
+        [this](std::future<ChunkComponent>& f) {
+            if (f.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
+                std::lock_guard<std::mutex> lock(_completedChunksMutex);
+                _completedChunks.push(f.get());
+                return true; // Remove the future
+            }
+            return false;
+        }), _chunkLoadFutures.end());
+
+    processCompletedChunks();
+
     const auto& camera = *_serviceLocator.camera;
     const auto& worldGrid = _registry.get<WorldGridComponent>(_registry.view<WorldGridComponent>().front());
 
@@ -133,29 +145,28 @@ void ChunkManagerSystem::update(sf::Time dt) {
 
     // Load new chunks
     for (const auto& chunkPos : requiredChunks) {
-        if (_activeChunks.find(chunkPos) == _activeChunks.end()) {
+        if (_activeChunks.find(chunkPos) == _activeChunks.end() && _chunksBeingLoaded.find(chunkPos) == _chunksBeingLoaded.end()) {
             loadChunk(chunkPos);
         }
     }
 }
 
 void ChunkManagerSystem::loadChunk(const sf::Vector2i& chunkPos) {
-    if (_activeChunks.count(chunkPos)) return;
-
     const auto& worldGrid = _registry.get<WorldGridComponent>(_registry.view<WorldGridComponent>().front());
     const auto& worldDims = worldGrid.worldDimensionsInChunks;
 
     if (chunkPos.x < 0 || chunkPos.x >= worldDims.x || chunkPos.y < 0 || chunkPos.y >= worldDims.y) {
-        return; // Out of world bounds
+        return;
     }
 
-    auto entity = _registry.create();
-    auto& chunk = _registry.emplace<ChunkComponent>(entity, worldGrid.chunkDimensionsInCells.x, worldGrid.chunkDimensionsInCells.y);
-    chunk.chunkGridPosition = chunkPos;
-    
-    _worldGenSystem.generateChunk(_registry, entity);
-    _activeChunks[chunkPos] = entity;
-    LOG_INFO("ChunkManagerSystem", "Loaded chunk at (%d, %d)", chunkPos.x, chunkPos.y);
+    _chunksBeingLoaded.insert(chunkPos);
+
+    _chunkLoadFutures.emplace_back(std::async(std::launch::async, [this, chunkPos, &worldGrid]() {
+        ChunkComponent chunk(worldGrid.chunkDimensionsInCells.x, worldGrid.chunkDimensionsInCells.y);
+        chunk.chunkGridPosition = chunkPos;
+        _worldGenSystem.generateChunkData(chunk);
+        return chunk;
+    }));
 }
 
 void ChunkManagerSystem::unloadChunk(const sf::Vector2i& chunkPos) {
@@ -164,5 +175,22 @@ void ChunkManagerSystem::unloadChunk(const sf::Vector2i& chunkPos) {
         _registry.destroy(it->second);
         _activeChunks.erase(it);
         LOG_INFO("ChunkManagerSystem", "Unloaded chunk at (%d, %d)", chunkPos.x, chunkPos.y);
+    }
+}
+
+void ChunkManagerSystem::processCompletedChunks() {
+    std::lock_guard<std::mutex> lock(_completedChunksMutex);
+    while (!_completedChunks.empty()) {
+        ChunkComponent chunkData = std::move(_completedChunks.front());
+        _completedChunks.pop();
+
+        sf::Vector2i chunkPos = chunkData.chunkGridPosition;
+
+        auto entity = _registry.create();
+        _registry.emplace<ChunkComponent>(entity, std::move(chunkData));
+        
+        _activeChunks[chunkPos] = entity;
+        _chunksBeingLoaded.erase(chunkPos);
+        LOG_INFO("ChunkManagerSystem", "Finalized loaded chunk at (%d, %d)", chunkPos.x, chunkPos.y);
     }
 }

@@ -49,6 +49,8 @@ struct GridCellComponent {
     TerrainType type = TerrainType::WATER;
 };
 
+struct ChunkLoadingTag {};
+
 struct ChunkComponent {
     sf::Vector2i chunkGridPosition;
     std::vector<TerrainType> cells;

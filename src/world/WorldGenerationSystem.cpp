@@ -69,7 +69,7 @@ void WorldGenerationSystem::generateContinentShape() {
     }
 }
 
-const WorldGridComponent& WorldGenerationSystem::getWorldGridSettings() {
+const WorldGridComponent& WorldGenerationSystem::getWorldGridSettings() const {
     auto view = _registry.view<WorldGridComponent>();
     if (view.empty()) {
         throw std::runtime_error("No WorldGridComponent found in the registry.");
@@ -91,8 +91,15 @@ sf::Vector2f WorldGenerationSystem::getWorldSize() {
 
 void WorldGenerationSystem::generateChunk(entt::registry& registry, entt::entity chunkEntity) {
     auto& chunk = registry.get<ChunkComponent>(chunkEntity);
-    const auto& worldGrid = registry.get<WorldGridComponent>(registry.view<WorldGridComponent>().front());
-    sf::Vector2f worldSize = getWorldSize();
+    generateChunkData(chunk); // Call the new function
+}
+
+void WorldGenerationSystem::generateChunkData(ChunkComponent& chunk) const {
+    const auto& worldGrid = getWorldGridSettings();
+    sf::Vector2f worldSize = {
+        static_cast<float>(worldGrid.worldDimensionsInChunks.x * worldGrid.chunkDimensionsInCells.x) * worldGrid.cellSize,
+        static_cast<float>(worldGrid.worldDimensionsInChunks.y * worldGrid.chunkDimensionsInCells.y) * worldGrid.cellSize
+    };
     sf::Vector2f center = worldSize / 2.0f;
 
     const int chunkCellSizeX = static_cast<int>(worldGrid.chunkDimensionsInCells.x);
@@ -134,7 +141,6 @@ void WorldGenerationSystem::generateChunk(entt::registry& registry, entt::entity
             }
 
             chunk.rawNoiseValues[cellIndex] = combinedNoise;
-
             float finalValue = combinedNoise * falloff;
             
             float distortion = 0.0f;
@@ -144,16 +150,10 @@ void WorldGenerationSystem::generateChunk(entt::registry& registry, entt::entity
             float distortedLandThreshold = _params.landThreshold + distortion;
 
             chunk.noiseValues[cellIndex] = finalValue;
-            TerrainType newType = (finalValue > distortedLandThreshold) ? TerrainType::LAND : TerrainType::WATER;
-
-            if (chunk.cells[cellIndex] != newType) {
-                chunk.cells[cellIndex] = newType;
-                chunk.dirtyCells.insert(cellIndex);
-            }
+            chunk.cells[cellIndex] = (finalValue > distortedLandThreshold) ? TerrainType::LAND : TerrainType::WATER;
         }
     }
-
-    chunk.isMeshDirty = !chunk.dirtyCells.empty();
+    chunk.isMeshDirty = true; // Always mark dirty after generation
 }
 
 void WorldGenerationSystem::regenerate(const WorldGenParams& params) {

@@ -50,7 +50,9 @@ void TerrainRenderSystem::render(entt::registry& registry, sf::RenderTarget& tar
         if (chunk.isMeshDirty) {
             buildAllChunkMeshes(chunk, worldGrid); // Call the new function
         }
-        target.draw(chunk.lodVertexArrays[static_cast<int>(chunk.lodLevel)]);
+
+        LODLevel levelToRender = _isLodEnabled ? chunk.lodLevel : LODLevel::LOD0;
+        target.draw(chunk.lodVertexArrays[static_cast<int>(levelToRender)]);
         
         // --- START VISUALIZATION LOGIC ---
         if (_visualizeChunkBorders) {
@@ -207,13 +209,7 @@ void TerrainRenderSystem::buildAllChunkMeshes(ChunkComponent& chunk, const World
 }
 
 void TerrainRenderSystem::setLodEnabled(entt::registry& registry, bool enabled) {
-    if (_isLodEnabled == enabled) return;
-
+    // This function no longer needs to dirty meshes.
+    // It just toggles the internal flag.
     _isLodEnabled = enabled;
-
-    auto chunkView = registry.view<ChunkComponent>();
-    for (auto entity : chunkView) {
-        auto& chunk = chunkView.get<ChunkComponent>(entity);
-        chunk.isMeshDirty = true;
-    }
 }

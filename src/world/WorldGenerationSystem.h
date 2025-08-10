@@ -17,6 +17,7 @@ public:
     void configureNoise();
 
     void generateChunk(entt::registry& registry, entt::entity chunkEntity);
+    void generateChunkData(ChunkComponent& chunk) const;
     sf::Vector2f getWorldSize();
 
     entt::registry& getRegistry() { return _registry; }
@@ -40,5 +41,5 @@ private:
     // Event Listener Connections
     entt::connection _regenerateWorldListener;
     
-    const WorldGridComponent& getWorldGridSettings();
+    const WorldGridComponent& getWorldGridSettings() const;
 };

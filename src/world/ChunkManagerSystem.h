@@ -7,6 +7,10 @@
 #include "../event/InputEvents.h"
 #include <map>
 #include <future>
+#include <queue>
+#include <vector>
+#include <mutex>
+#include <condition_variable>
 #include <SFML/System/Vector2.hpp>
 
 struct Vector2iCompare {
@@ -26,6 +30,8 @@ private:
     void onRegenerateWorld(const RegenerateWorldRequestEvent& event);
     void loadChunk(const sf::Vector2i& chunkPos);
     void unloadChunk(const sf::Vector2i& chunkPos);
+    void processLoadingQueue();
+    void processCompletedChunks();
 
     void onImmediateRedraw(const ImmediateRedrawEvent& event);
     entt::connection _immediateRedrawListener;
@@ -36,6 +42,11 @@ private:
     EventBus& _eventBus;
     
     std::map<sf::Vector2i, entt::entity, Vector2iCompare> _activeChunks;
+    std::set<sf::Vector2i, Vector2iCompare> _chunksBeingLoaded;
+    std::vector<std::future<ChunkComponent>> _chunkLoadFutures;
+
+    std::mutex _completedChunksMutex;
+    std::queue<ChunkComponent> _completedChunks;
 
     entt::connection _regenerateWorldListener;
     int _viewDistance = 4; // In chunks
