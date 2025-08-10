@@ -21,5 +21,5 @@ private:
     bool _isLodEnabled = true;
 
     const WorldGridComponent& getWorldGridSettings(entt::registry& registry);
-    void buildChunkMesh(ChunkComponent& chunk, const WorldGridComponent& worldGrid);
+    void buildAllChunkMeshes(ChunkComponent& chunk, const WorldGridComponent& worldGrid);
 };

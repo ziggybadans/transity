@@ -13,7 +13,8 @@ enum class LODLevel {
     LOD0, // Highest detail
     LOD1,
     LOD2,
-    LOD3  // Lowest detail
+    LOD3, // Lowest detail
+    Count // Add this to get the number of LOD levels
 };
 
 struct PositionComponent {
@@ -53,16 +54,18 @@ struct ChunkComponent {
     std::vector<TerrainType> cells;
     std::vector<float> noiseValues;
     std::vector<float> rawNoiseValues;
-    sf::VertexArray vertexArray;
+    std::vector<sf::VertexArray> lodVertexArrays;
     bool isMeshDirty = true;
     std::set<int> dirtyCells;
     LODLevel lodLevel = LODLevel::LOD0;
-    LODLevel lastLODLevel = LODLevel::LOD0;
 
     ChunkComponent(int chunkWidth, int chunkHeight) : cells(chunkWidth * chunkHeight, TerrainType::WATER),
         noiseValues(chunkWidth * chunkHeight, 0.0f) {
-        vertexArray.setPrimitiveType(sf::PrimitiveType::Triangles);
+        lodVertexArrays.resize(static_cast<size_t>(LODLevel::Count)); // Resize the vector
+        for (auto& va : lodVertexArrays) {
+            va.setPrimitiveType(sf::PrimitiveType::Triangles);
         }
+    }
 };
 
 struct WorldGridComponent {

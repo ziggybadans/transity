@@ -48,9 +48,9 @@ void TerrainRenderSystem::render(entt::registry& registry, sf::RenderTarget& tar
 
         // If the chunk is visible, proceed with rendering
         if (chunk.isMeshDirty) {
-            buildChunkMesh(chunk, worldGrid);
+            buildAllChunkMeshes(chunk, worldGrid); // Call the new function
         }
-        target.draw(chunk.vertexArray);
+        target.draw(chunk.lodVertexArrays[static_cast<int>(chunk.lodLevel)]);
         
         // --- START VISUALIZATION LOGIC ---
         if (_visualizeChunkBorders) {
@@ -119,57 +119,57 @@ void TerrainRenderSystem::render(entt::registry& registry, sf::RenderTarget& tar
     // LOG_TRACE("TerrainRenderSystem", "Rendered %d visible chunks.", renderedChunkCount);
 }
 
-void TerrainRenderSystem::buildChunkMesh(ChunkComponent& chunk, const WorldGridComponent& worldGrid) {
-    int step;
-    if (_isLodEnabled) {
-        step = 1 << static_cast<int>(chunk.lodLevel);
-    } else {
-        step = 1;
-    }
+void TerrainRenderSystem::buildAllChunkMeshes(ChunkComponent& chunk, const WorldGridComponent& worldGrid) {
     int cellsPerDimension = worldGrid.chunkDimensionsInCells.x;
-    int numCellsX = (cellsPerDimension + step - 1) / step;
-    int numCellsY = (cellsPerDimension + step - 1) / step;
 
-    chunk.vertexArray.clear();
-    chunk.vertexArray.resize(numCellsX * numCellsY * 6);
+    for (int lod = 0; lod < static_cast<int>(LODLevel::Count); ++lod) {
+        int step = 1 << lod;
+        
+        sf::VertexArray& vertexArray = chunk.lodVertexArrays[lod];
+        vertexArray.clear();
 
-    int vertexIndex = 0;
-    for (int y = 0; y < cellsPerDimension; y += step) {
-        for (int x = 0; x < cellsPerDimension; x += step) {
-            int cellIndex = y * cellsPerDimension + x;
-            sf::Vertex* tri = &chunk.vertexArray[vertexIndex * 6];
+        // The rest of the mesh generation logic is the same, just inside this loop
+        int numCellsX = (cellsPerDimension + step - 1) / step;
+        int numCellsY = (cellsPerDimension + step - 1) / step;
+        vertexArray.resize(numCellsX * numCellsY * 6);
 
-            float screenX = (chunk.chunkGridPosition.x * cellsPerDimension + x) * worldGrid.cellSize;
-            float screenY = (chunk.chunkGridPosition.y * cellsPerDimension + y) * worldGrid.cellSize;
-            float quadSize = worldGrid.cellSize * step;
+        int vertexIndex = 0;
+        for (int y = 0; y < cellsPerDimension; y += step) {
+            for (int x = 0; x < cellsPerDimension; x += step) {
+                int cellIndex = y * cellsPerDimension + x;
+                sf::Vertex* tri = &vertexArray[vertexIndex * 6];
 
-            sf::Vector2f topLeft(screenX, screenY);
-            sf::Vector2f topRight(screenX + quadSize, screenY);
-            sf::Vector2f bottomLeft(screenX, screenY + quadSize);
-            sf::Vector2f bottomRight(screenX + quadSize, screenY + quadSize);
+                float screenX = (chunk.chunkGridPosition.x * cellsPerDimension + x) * worldGrid.cellSize;
+                float screenY = (chunk.chunkGridPosition.y * cellsPerDimension + y) * worldGrid.cellSize;
+                float quadSize = worldGrid.cellSize * step;
 
-            tri[0].position = topLeft;
-            tri[1].position = topRight;
-            tri[2].position = bottomLeft;
-            tri[3].position = topRight;
-            tri[4].position = bottomRight;
-            tri[5].position = bottomLeft;
+                sf::Vector2f topLeft(screenX, screenY);
+                sf::Vector2f topRight(screenX + quadSize, screenY);
+                sf::Vector2f bottomLeft(screenX, screenY + quadSize);
+                sf::Vector2f bottomRight(screenX + quadSize, screenY + quadSize);
 
-            sf::Color color;
-            switch (chunk.cells[cellIndex]) {
-                case TerrainType::WATER: color = sf::Color(173, 216, 230); break;
-                case TerrainType::LAND: color = sf::Color(34, 139, 34); break;
-                case TerrainType::RIVER: color = sf::Color(100, 149, 237); break;
-                default: color = sf::Color::Magenta; break;
+                tri[0].position = topLeft;
+                tri[1].position = topRight;
+                tri[2].position = bottomLeft;
+                tri[3].position = topRight;
+                tri[4].position = bottomRight;
+                tri[5].position = bottomLeft;
+
+                sf::Color color;
+                switch (chunk.cells[cellIndex]) {
+                    case TerrainType::WATER: color = sf::Color(173, 216, 230); break;
+                    case TerrainType::LAND: color = sf::Color(34, 139, 34); break;
+                    case TerrainType::RIVER: color = sf::Color(100, 149, 237); break;
+                    default: color = sf::Color::Magenta; break;
+                }
+
+                for (int i = 0; i < 6; ++i) {
+                    tri[i].color = color;
+                }
+                vertexIndex++;
             }
-
-            for (int i = 0; i < 6; ++i) {
-                tri[i].color = color;
-            }
-            vertexIndex++;
         }
     }
-
     chunk.isMeshDirty = false;
 }
 

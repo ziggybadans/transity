@@ -87,15 +87,11 @@ void ChunkManagerSystem::update(sf::Time dt) {
         currentLOD = LODLevel::LOD0;
     }
 
+    // This loop is now much simpler
     for (auto const& [pos, entity] : _activeChunks) {
         if (_registry.valid(entity)) {
             auto& chunk = _registry.get<ChunkComponent>(entity);
-            chunk.lastLODLevel = chunk.lodLevel;
             chunk.lodLevel = currentLOD;
-
-            if (chunk.lodLevel != chunk.lastLODLevel) {
-                chunk.isMeshDirty = true;
-            }
         }
     }
 
