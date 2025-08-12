@@ -14,10 +14,7 @@
 
 namespace Logging {
 
-Logger &Logger::getInstance() {
-    static Logger instance;
-    return instance;
-}
+Logger* g_logger = nullptr;
 
 Logger::Logger() : m_lastLogTime(std::chrono::steady_clock::now()) {}
 

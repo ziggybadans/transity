@@ -2,24 +2,25 @@
 #include "Logger.h"
 #include <cstdlib>
 #include <exception>
+#include <iostream>
 
 int main() {
-    Logging::Logger::getInstance().setLoggingEnabled(true);
-    Logging::Logger::getInstance().setMinLogLevel(Logging::LogLevel::DEBUG);
-    Logging::Logger::getInstance().enableFileLogging(true);
+    Logging::Logger logger; // Create the logger instance
+    Logging::g_logger = &logger; // Set the global pointer
+
+    LOG_INFO("Main", "Logger initialized.");
+    logger.setLoggingEnabled(true);
+    logger.setMinLogLevel(Logging::LogLevel::DEBUG);
+    logger.enableFileLogging(true);
 
     try {
         Application app;
         app.run();
-    } catch (const std::exception &e) {
-        LOG_FATAL("Main",
-                  "Unhandled exception during game initialization or execution: %s. Application "
-                  "will terminate.",
-                  e.what());
+    } catch (const std::exception& e) {
+        LOG_FATAL("Main", "Unhandled exception: %s.", e.what());
         return EXIT_FAILURE;
     } catch (...) {
-        LOG_FATAL("Main", "Unknown unhandled exception during game initialization or execution. "
-                          "Application will terminate.");
+        LOG_FATAL("Main", "Unknown unhandled exception.");
         return EXIT_FAILURE;
     }
 
