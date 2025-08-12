@@ -6,6 +6,7 @@
 #include "Camera.h"
 #include "EntityFactory.h"
 #include "GameState.h"
+#include "ThreadPool.h"
 #include <entt/entt.hpp>
 
 class Renderer;
@@ -18,4 +19,5 @@ struct ServiceLocator {
     Camera *camera = nullptr;
     ColorManager *colorManager = nullptr;
     Renderer *renderer = nullptr;
+    ThreadPool *threadPool = nullptr;
 };

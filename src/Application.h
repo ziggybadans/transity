@@ -2,6 +2,7 @@
 #pragma once
 
 #include "Game.h"
+#include "core/ThreadPool.h"
 #include "graphics/Renderer.h"
 #include "graphics/UI.h"
 #include <SFML/System/Clock.hpp>
@@ -20,6 +21,7 @@ private:
     std::unique_ptr<Renderer> _renderer;
     std::unique_ptr<UI> _ui;
     std::unique_ptr<Game> _game;
+    std::unique_ptr<ThreadPool> _threadPool;
 
     sf::Clock _deltaClock;
     sf::Time _timeAccumulator;

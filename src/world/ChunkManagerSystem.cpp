@@ -164,13 +164,15 @@ void ChunkManagerSystem::loadChunk(const sf::Vector2i &chunkPos) {
 
     _chunksBeingLoaded.insert(chunkPos);
 
-    _chunkLoadFutures.emplace_back(std::async(std::launch::async, [this, chunkPos, &worldGrid]() {
+    auto task = [this, chunkPos, &worldGrid]() {
         ChunkComponent chunk(worldGrid.chunkDimensionsInCells.x,
                              worldGrid.chunkDimensionsInCells.y);
         chunk.chunkGridPosition = chunkPos;
         _worldGenSystem.generateChunkData(chunk);
         return chunk;
-    }));
+    };
+
+    _chunkLoadFutures.emplace_back(_serviceLocator.threadPool->enqueue(task));
 }
 
 void ChunkManagerSystem::unloadChunk(const sf::Vector2i &chunkPos) {

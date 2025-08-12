@@ -16,10 +16,11 @@ class Renderer;
 class UI;
 class InputHandler;
 class ChunkManagerSystem;
+class ThreadPool;
 
 class Game {
 public:
-    Game(Renderer &renderer);
+    Game(Renderer &renderer, ThreadPool &threadPool);
     ~Game();
 
     void init();

@@ -4,14 +4,19 @@
 #include "core/Constants.h"
 #include "input/InputHandler.h"
 #include <stdexcept>
+#include <thread>
 
 Application::Application() {
     LOG_INFO("Application", "Application creation started.");
     try {
+        unsigned int numThreads = std::thread::hardware_concurrency();
+        _threadPool = std::make_unique<ThreadPool>(numThreads > 0 ? numThreads : 1);
+        LOG_INFO("Application", "ThreadPool created with %u threads.", numThreads);
+
         _renderer = std::make_unique<Renderer>();
         _renderer->initialize();
 
-        _game = std::make_unique<Game>(*_renderer);
+        _game = std::make_unique<Game>(*_renderer, *_threadPool);
 
         _renderer->connectToEventBus(_game->getEventBus());
 

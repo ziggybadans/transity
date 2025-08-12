@@ -125,6 +125,8 @@ static const int LOG_LEVEL_WIDTH = 7;
 
 void Logger::logMessage(LogLevel level, const char *system, unsigned int messageSpecificDelayMs,
                         const char *format, ...) {
+    std::lock_guard<std::mutex> lock(m_logMutex);
+    
     if (!m_isLoggingEnabled || level < m_currentLogLevel) {
         return;
     }

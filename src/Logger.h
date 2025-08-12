@@ -6,6 +6,7 @@
 #include <fstream>
 #include <string>
 #include <utility>
+#include <mutex>
 
 namespace Logging {
 
@@ -33,6 +34,7 @@ public:
     void enableFileLogging(bool enable);
 
 private:
+    std::mutex m_logMutex;
     bool m_isLoggingEnabled = true;
     LogLevel m_currentLogLevel = LogLevel::TRACE;
     unsigned int m_logDelayMs = 0;

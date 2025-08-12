@@ -9,8 +9,9 @@
 #include "systems/LineCreationSystem.h"
 #include "systems/StationPlacementSystem.h"
 #include "world/ChunkManagerSystem.h"
+#include "core/ThreadPool.h"
 
-Game::Game(Renderer &renderer)
+Game::Game(Renderer &renderer, ThreadPool &threadPool)
     : _renderer(renderer), _eventBus(), _entityFactory(_registry),
       _worldGenerationSystem(_registry, _eventBus) {
 
@@ -21,6 +22,7 @@ Game::Game(Renderer &renderer)
     _serviceLocator.camera = &_camera;
     _serviceLocator.colorManager = &_colorManager;
     _serviceLocator.renderer = &_renderer;
+    _serviceLocator.threadPool = &threadPool;
 
     _inputHandler = std::make_unique<InputHandler>(_serviceLocator);
 
