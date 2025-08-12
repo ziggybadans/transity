@@ -1,16 +1,18 @@
 #include "ChunkManagerSystem.h"
-#include "../core/Components.h"
 #include "../Logger.h"
+#include "../core/Components.h"
 
-ChunkManagerSystem::ChunkManagerSystem(ServiceLocator& serviceLocator, WorldGenerationSystem& worldGenSystem, EventBus& eventBus)
-    : _serviceLocator(serviceLocator),
-      _worldGenSystem(worldGenSystem),
-      _registry(*serviceLocator.registry),
-      _eventBus(eventBus),
-      _activeChunks() {
-    _regenerateWorldListener = _eventBus.sink<RegenerateWorldRequestEvent>().connect<&ChunkManagerSystem::onRegenerateWorld>(this);
-    _swapWorldStateListener = _eventBus.sink<SwapWorldStateEvent>().connect<&ChunkManagerSystem::onSwapWorldState>(this);
-    _immediateRedrawListener = _eventBus.sink<ImmediateRedrawEvent>().connect<&ChunkManagerSystem::onImmediateRedraw>(this);
+ChunkManagerSystem::ChunkManagerSystem(ServiceLocator &serviceLocator,
+                                       WorldGenerationSystem &worldGenSystem, EventBus &eventBus)
+    : _serviceLocator(serviceLocator), _worldGenSystem(worldGenSystem),
+      _registry(*serviceLocator.registry), _eventBus(eventBus), _activeChunks() {
+    _regenerateWorldListener = _eventBus.sink<RegenerateWorldRequestEvent>()
+                                   .connect<&ChunkManagerSystem::onRegenerateWorld>(this);
+    _swapWorldStateListener =
+        _eventBus.sink<SwapWorldStateEvent>().connect<&ChunkManagerSystem::onSwapWorldState>(this);
+    _immediateRedrawListener =
+        _eventBus.sink<ImmediateRedrawEvent>().connect<&ChunkManagerSystem::onImmediateRedraw>(
+            this);
 
     // Create the world state entity
     auto entity = _registry.create();
@@ -23,69 +25,75 @@ ChunkManagerSystem::~ChunkManagerSystem() {
     _eventBus.sink<ImmediateRedrawEvent>().disconnect(this);
 }
 
-void ChunkManagerSystem::onImmediateRedraw(const ImmediateRedrawEvent& event) {
-    for (auto const& [pos, entity] : _activeChunks) {
+void ChunkManagerSystem::onImmediateRedraw(const ImmediateRedrawEvent &event) {
+    for (auto const &[pos, entity] : _activeChunks) {
         if (_registry.valid(entity)) {
-            auto& chunk = _registry.get<ChunkComponent>(entity);
+            auto &chunk = _registry.get<ChunkComponent>(entity);
             chunk.isMeshDirty = true;
         }
     }
 }
 
-void ChunkManagerSystem::onRegenerateWorld(const RegenerateWorldRequestEvent& event) {
+void ChunkManagerSystem::onRegenerateWorld(const RegenerateWorldRequestEvent &event) {
     if (_generationFuture.valid()) {
         LOG_WARN("ChunkManagerSystem", "World regeneration is already in progress.");
         return;
     }
 
     LOG_INFO("ChunkManagerSystem", "Regenerating world.");
-    auto& worldState = _registry.get<WorldStateComponent>(_registry.view<WorldStateComponent>().front());
-    
+    auto &worldState =
+        _registry.get<WorldStateComponent>(_registry.view<WorldStateComponent>().front());
+
     // Use the params from the event
-    worldState.generatingParams = event.params; 
-    
+    worldState.generatingParams = event.params;
+
     _generationFuture = std::async(std::launch::async, [&, params = worldState.generatingParams]() {
         _worldGenSystem.regenerate(params);
     });
 }
 
-void ChunkManagerSystem::onSwapWorldState(const SwapWorldStateEvent& event) {
-    auto& worldState = _registry.get<WorldStateComponent>(_registry.view<WorldStateComponent>().front());
-    
+void ChunkManagerSystem::onSwapWorldState(const SwapWorldStateEvent &event) {
+    auto &worldState =
+        _registry.get<WorldStateComponent>(_registry.view<WorldStateComponent>().front());
+
     // The new active state is the one that was just generated
     std::swap(worldState.activeParams, worldState.generatingParams);
 
     // Now, force all chunks to be re-evaluated and possibly regenerated.
     std::vector<sf::Vector2i> chunksToUnload;
-    for (const auto& pair : _activeChunks) {
+    for (const auto &pair : _activeChunks) {
         chunksToUnload.push_back(pair.first);
     }
 
-    for (const auto& chunkPos : chunksToUnload) {
+    for (const auto &chunkPos : chunksToUnload) {
         unloadChunk(chunkPos);
     }
 }
 
 void ChunkManagerSystem::update(sf::Time dt) {
-    if (_generationFuture.valid() && _generationFuture.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
-        _generationFuture.get(); // To handle any exceptions
+    if (_generationFuture.valid()
+        && _generationFuture.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
+        _generationFuture.get();  // To handle any exceptions
         _eventBus.trigger(SwapWorldStateEvent{});
     }
 
-    _chunkLoadFutures.erase(std::remove_if(_chunkLoadFutures.begin(), _chunkLoadFutures.end(),
-        [this](std::future<ChunkComponent>& f) {
-            if (f.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
-                std::lock_guard<std::mutex> lock(_completedChunksMutex);
-                _completedChunks.push(f.get());
-                return true; // Remove the future
-            }
-            return false;
-        }), _chunkLoadFutures.end());
+    _chunkLoadFutures.erase(
+        std::remove_if(_chunkLoadFutures.begin(), _chunkLoadFutures.end(),
+                       [this](std::future<ChunkComponent> &f) {
+                           if (f.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
+                               std::lock_guard<std::mutex> lock(_completedChunksMutex);
+                               _completedChunks.push(f.get());
+                               return true;  // Remove the future
+                           }
+                           return false;
+                       }),
+        _chunkLoadFutures.end());
 
     processCompletedChunks();
 
-    const auto& camera = *_serviceLocator.camera;
-    const auto& worldGrid = _registry.get<WorldGridComponent>(_registry.view<WorldGridComponent>().front());
+    const auto &camera = *_serviceLocator.camera;
+    const auto &worldGrid =
+        _registry.get<WorldGridComponent>(_registry.view<WorldGridComponent>().front());
 
     float zoom = camera.getZoom();
     LODLevel currentLOD = LODLevel::LOD0;
@@ -100,9 +108,9 @@ void ChunkManagerSystem::update(sf::Time dt) {
     }
 
     // This loop is now much simpler
-    for (auto const& [pos, entity] : _activeChunks) {
+    for (auto const &[pos, entity] : _activeChunks) {
         if (_registry.valid(entity)) {
-            auto& chunk = _registry.get<ChunkComponent>(entity);
+            auto &chunk = _registry.get<ChunkComponent>(entity);
             chunk.lodLevel = currentLOD;
         }
     }
@@ -110,7 +118,7 @@ void ChunkManagerSystem::update(sf::Time dt) {
     sf::Vector2f cameraCenter = camera.getCenter();
     sf::Vector2f viewSize = camera.getView().getSize();
     float cellSize = worldGrid.cellSize;
-    const auto& chunkDims = worldGrid.chunkDimensionsInCells;
+    const auto &chunkDims = worldGrid.chunkDimensionsInCells;
 
     float chunkWidthInPixels = chunkDims.x * cellSize;
     float chunkHeightInPixels = chunkDims.y * cellSize;
@@ -118,10 +126,8 @@ void ChunkManagerSystem::update(sf::Time dt) {
     int viewDistanceX = static_cast<int>(std::ceil(viewSize.x / 2.0f / chunkWidthInPixels)) + 1;
     int viewDistanceY = static_cast<int>(std::ceil(viewSize.y / 2.0f / chunkHeightInPixels)) + 1;
 
-    sf::Vector2i centerChunk = {
-        static_cast<int>(cameraCenter.x / chunkWidthInPixels),
-        static_cast<int>(cameraCenter.y / chunkHeightInPixels)
-    };
+    sf::Vector2i centerChunk = {static_cast<int>(cameraCenter.x / chunkWidthInPixels),
+                                static_cast<int>(cameraCenter.y / chunkHeightInPixels)};
 
     std::set<sf::Vector2i, Vector2iCompare> requiredChunks;
     for (int y = centerChunk.y - viewDistanceY; y <= centerChunk.y + viewDistanceY; ++y) {
@@ -132,44 +138,48 @@ void ChunkManagerSystem::update(sf::Time dt) {
 
     // Identify chunks to unload
     std::vector<sf::Vector2i> chunksToUnload;
-    for (const auto& pair : _activeChunks) {
+    for (const auto &pair : _activeChunks) {
         if (requiredChunks.find(pair.first) == requiredChunks.end()) {
             chunksToUnload.push_back(pair.first);
         }
     }
 
     // Unload the identified chunks
-    for (const auto& chunkPos : chunksToUnload) {
+    for (const auto &chunkPos : chunksToUnload) {
         unloadChunk(chunkPos);
     }
 
     // Load new chunks
-    for (const auto& chunkPos : requiredChunks) {
-        if (_activeChunks.find(chunkPos) == _activeChunks.end() && _chunksBeingLoaded.find(chunkPos) == _chunksBeingLoaded.end()) {
+    for (const auto &chunkPos : requiredChunks) {
+        if (_activeChunks.find(chunkPos) == _activeChunks.end()
+            && _chunksBeingLoaded.find(chunkPos) == _chunksBeingLoaded.end()) {
             loadChunk(chunkPos);
         }
     }
 }
 
-void ChunkManagerSystem::loadChunk(const sf::Vector2i& chunkPos) {
-    const auto& worldGrid = _registry.get<WorldGridComponent>(_registry.view<WorldGridComponent>().front());
-    const auto& worldDims = worldGrid.worldDimensionsInChunks;
+void ChunkManagerSystem::loadChunk(const sf::Vector2i &chunkPos) {
+    const auto &worldGrid =
+        _registry.get<WorldGridComponent>(_registry.view<WorldGridComponent>().front());
+    const auto &worldDims = worldGrid.worldDimensionsInChunks;
 
-    if (chunkPos.x < 0 || chunkPos.x >= worldDims.x || chunkPos.y < 0 || chunkPos.y >= worldDims.y) {
+    if (chunkPos.x < 0 || chunkPos.x >= worldDims.x || chunkPos.y < 0
+        || chunkPos.y >= worldDims.y) {
         return;
     }
 
     _chunksBeingLoaded.insert(chunkPos);
 
     _chunkLoadFutures.emplace_back(std::async(std::launch::async, [this, chunkPos, &worldGrid]() {
-        ChunkComponent chunk(worldGrid.chunkDimensionsInCells.x, worldGrid.chunkDimensionsInCells.y);
+        ChunkComponent chunk(worldGrid.chunkDimensionsInCells.x,
+                             worldGrid.chunkDimensionsInCells.y);
         chunk.chunkGridPosition = chunkPos;
         _worldGenSystem.generateChunkData(chunk);
         return chunk;
     }));
 }
 
-void ChunkManagerSystem::unloadChunk(const sf::Vector2i& chunkPos) {
+void ChunkManagerSystem::unloadChunk(const sf::Vector2i &chunkPos) {
     auto it = _activeChunks.find(chunkPos);
     if (it != _activeChunks.end()) {
         _registry.destroy(it->second);
@@ -189,9 +199,10 @@ void ChunkManagerSystem::processCompletedChunks() {
         auto entity = _registry.create();
         _registry.emplace<ChunkComponent>(entity, std::move(chunkData));
         _registry.emplace<ChunkMeshComponent>(entity);
-        
+
         _activeChunks[chunkPos] = entity;
         _chunksBeingLoaded.erase(chunkPos);
-        LOG_INFO("ChunkManagerSystem", "Finalized loaded chunk at (%d, %d)", chunkPos.x, chunkPos.y);
+        LOG_INFO("ChunkManagerSystem", "Finalized loaded chunk at (%d, %d)", chunkPos.x,
+                 chunkPos.y);
     }
 }

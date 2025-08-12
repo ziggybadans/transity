@@ -2,19 +2,19 @@
 
 #include "../core/ISystem.h"
 #include "../core/ServiceLocator.h"
-#include "WorldGenerationSystem.h"
 #include "../event/EventBus.h"
 #include "../event/InputEvents.h"
-#include <map>
+#include "WorldGenerationSystem.h"
+#include <SFML/System/Vector2.hpp>
+#include <condition_variable>
 #include <future>
+#include <map>
+#include <mutex>
 #include <queue>
 #include <vector>
-#include <mutex>
-#include <condition_variable>
-#include <SFML/System/Vector2.hpp>
 
 struct Vector2iCompare {
-    bool operator()(const sf::Vector2i& a, const sf::Vector2i& b) const {
+    bool operator()(const sf::Vector2i &a, const sf::Vector2i &b) const {
         if (a.x != b.x) return a.x < b.x;
         return a.y < b.y;
     }
@@ -22,25 +22,26 @@ struct Vector2iCompare {
 
 class ChunkManagerSystem : public ISystem {
 public:
-    explicit ChunkManagerSystem(ServiceLocator& serviceLocator, WorldGenerationSystem& worldGenSystem, EventBus& eventBus);
+    explicit ChunkManagerSystem(ServiceLocator &serviceLocator,
+                                WorldGenerationSystem &worldGenSystem, EventBus &eventBus);
     ~ChunkManagerSystem();
     void update(sf::Time dt) override;
 
 private:
-    void onRegenerateWorld(const RegenerateWorldRequestEvent& event);
-    void loadChunk(const sf::Vector2i& chunkPos);
-    void unloadChunk(const sf::Vector2i& chunkPos);
+    void onRegenerateWorld(const RegenerateWorldRequestEvent &event);
+    void loadChunk(const sf::Vector2i &chunkPos);
+    void unloadChunk(const sf::Vector2i &chunkPos);
     void processLoadingQueue();
     void processCompletedChunks();
 
-    void onImmediateRedraw(const ImmediateRedrawEvent& event);
+    void onImmediateRedraw(const ImmediateRedrawEvent &event);
     entt::connection _immediateRedrawListener;
 
-    ServiceLocator& _serviceLocator;
-    WorldGenerationSystem& _worldGenSystem;
-    entt::registry& _registry;
-    EventBus& _eventBus;
-    
+    ServiceLocator &_serviceLocator;
+    WorldGenerationSystem &_worldGenSystem;
+    entt::registry &_registry;
+    EventBus &_eventBus;
+
     std::map<sf::Vector2i, entt::entity, Vector2iCompare> _activeChunks;
     std::set<sf::Vector2i, Vector2iCompare> _chunksBeingLoaded;
     std::vector<std::future<ChunkComponent>> _chunkLoadFutures;
@@ -49,9 +50,9 @@ private:
     std::queue<ChunkComponent> _completedChunks;
 
     entt::connection _regenerateWorldListener;
-    int _viewDistance = 4; // In chunks
+    int _viewDistance = 4;  // In chunks
 
-    void onSwapWorldState(const SwapWorldStateEvent& event);
+    void onSwapWorldState(const SwapWorldStateEvent &event);
     entt::connection _swapWorldStateListener;
     std::future<void> _generationFuture;
 };

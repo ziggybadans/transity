@@ -1,12 +1,12 @@
 #include "TerrainRenderSystem.h"
-#include <iostream>
 #include <algorithm>
 #include <cstdint>
+#include <iostream>
 
-TerrainRenderSystem::TerrainRenderSystem() {
-}
+TerrainRenderSystem::TerrainRenderSystem() {}
 
-const WorldGridComponent& TerrainRenderSystem::getWorldGridSettings(const entt::registry& registry) {
+const WorldGridComponent &
+TerrainRenderSystem::getWorldGridSettings(const entt::registry &registry) {
     auto view = registry.view<const WorldGridComponent>();
     if (view.empty()) {
         throw std::runtime_error("TerrainRenderSystem: WorldGridComponent not found in registry!");
@@ -14,22 +14,23 @@ const WorldGridComponent& TerrainRenderSystem::getWorldGridSettings(const entt::
     return view.get<const WorldGridComponent>(view.front());
 }
 
-void TerrainRenderSystem::updateMeshes(entt::registry& registry) {
-    const auto& worldGrid = getWorldGridSettings(registry);
+void TerrainRenderSystem::updateMeshes(entt::registry &registry) {
+    const auto &worldGrid = getWorldGridSettings(registry);
     auto view = registry.view<ChunkComponent, ChunkMeshComponent>();
 
     for (auto entity : view) {
-        auto& chunk = view.get<ChunkComponent>(entity);
+        auto &chunk = view.get<ChunkComponent>(entity);
         if (chunk.isMeshDirty) {
-            auto& chunkMesh = view.get<ChunkMeshComponent>(entity);
+            auto &chunkMesh = view.get<ChunkMeshComponent>(entity);
             buildAllChunkMeshes(chunk, chunkMesh, worldGrid);
-            chunk.isMeshDirty = false; // The state modification happens here
+            chunk.isMeshDirty = false;  // The state modification happens here
         }
     }
 }
 
-void TerrainRenderSystem::render(const entt::registry& registry, sf::RenderTarget& target, const sf::View& view) {
-    const WorldGridComponent& worldGrid = getWorldGridSettings(registry);
+void TerrainRenderSystem::render(const entt::registry &registry, sf::RenderTarget &target,
+                                 const sf::View &view) {
+    const WorldGridComponent &worldGrid = getWorldGridSettings(registry);
     auto chunkView = registry.view<const ChunkComponent, const ChunkMeshComponent>();
 
     sf::FloatRect viewBounds({view.getCenter() - view.getSize() / 2.f, view.getSize()});
@@ -39,15 +40,14 @@ void TerrainRenderSystem::render(const entt::registry& registry, sf::RenderTarge
     viewBounds.size.y += worldGrid.cellSize * 2;
 
     for (auto entity : chunkView) {
-        const auto& chunk = chunkView.get<const ChunkComponent>(entity);
-        const auto& chunkMesh = chunkView.get<const ChunkMeshComponent>(entity);
+        const auto &chunk = chunkView.get<const ChunkComponent>(entity);
+        const auto &chunkMesh = chunkView.get<const ChunkMeshComponent>(entity);
 
         float chunkWidthPixels = worldGrid.chunkDimensionsInCells.x * worldGrid.cellSize;
         float chunkHeightPixels = worldGrid.chunkDimensionsInCells.y * worldGrid.cellSize;
-        sf::FloatRect chunkBounds(
-            {chunk.chunkGridPosition.x * chunkWidthPixels, chunk.chunkGridPosition.y * chunkHeightPixels},
-            {chunkWidthPixels, chunkHeightPixels}
-        );
+        sf::FloatRect chunkBounds({chunk.chunkGridPosition.x * chunkWidthPixels,
+                                   chunk.chunkGridPosition.y * chunkHeightPixels},
+                                  {chunkWidthPixels, chunkHeightPixels});
 
         if (!viewBounds.findIntersection(chunkBounds)) {
             continue;
@@ -55,7 +55,7 @@ void TerrainRenderSystem::render(const entt::registry& registry, sf::RenderTarge
 
         LODLevel levelToRender = _isLodEnabled ? chunk.lodLevel : LODLevel::LOD0;
         target.draw(chunkMesh.lodVertexArrays[static_cast<int>(levelToRender)]);
-        
+
         if (_visualizeChunkBorders) {
             float left = chunkBounds.position.x;
             float top = chunkBounds.position.y;
@@ -100,12 +100,14 @@ void TerrainRenderSystem::render(const entt::registry& registry, sf::RenderTarge
     }
 }
 
-void TerrainRenderSystem::buildAllChunkMeshes(const ChunkComponent& chunk, ChunkMeshComponent& chunkMesh, const WorldGridComponent& worldGrid) {
+void TerrainRenderSystem::buildAllChunkMeshes(const ChunkComponent &chunk,
+                                              ChunkMeshComponent &chunkMesh,
+                                              const WorldGridComponent &worldGrid) {
     int cellsPerDimension = worldGrid.chunkDimensionsInCells.x;
 
     for (int lod = 0; lod < static_cast<int>(LODLevel::Count); ++lod) {
         int step = 1 << lod;
-        sf::VertexArray& vertexArray = chunkMesh.lodVertexArrays[lod];
+        sf::VertexArray &vertexArray = chunkMesh.lodVertexArrays[lod];
         vertexArray.clear();
 
         int numCellsX = cellsPerDimension / step;
@@ -124,7 +126,8 @@ void TerrainRenderSystem::buildAllChunkMeshes(const ChunkComponent& chunk, Chunk
                 int rectWidth = 1;
                 while (x + rectWidth < numCellsX) {
                     int nextCellIndex = (y * step) * cellsPerDimension + ((x + rectWidth) * step);
-                    if (visited[y * numCellsX + (x + rectWidth)] || chunk.cells[nextCellIndex] != currentType) {
+                    if (visited[y * numCellsX + (x + rectWidth)]
+                        || chunk.cells[nextCellIndex] != currentType) {
                         break;
                     }
                     rectWidth++;
@@ -134,8 +137,10 @@ void TerrainRenderSystem::buildAllChunkMeshes(const ChunkComponent& chunk, Chunk
                 while (y + rectHeight < numCellsY) {
                     bool canExtend = true;
                     for (int i = 0; i < rectWidth; ++i) {
-                        int nextCellIndex = ((y + rectHeight) * step) * cellsPerDimension + ((x + i) * step);
-                        if (visited[(y + rectHeight) * numCellsX + (x + i)] || chunk.cells[nextCellIndex] != currentType) {
+                        int nextCellIndex =
+                            ((y + rectHeight) * step) * cellsPerDimension + ((x + i) * step);
+                        if (visited[(y + rectHeight) * numCellsX + (x + i)]
+                            || chunk.cells[nextCellIndex] != currentType) {
                             canExtend = false;
                             break;
                         }
@@ -152,8 +157,10 @@ void TerrainRenderSystem::buildAllChunkMeshes(const ChunkComponent& chunk, Chunk
                     }
                 }
 
-                float screenX = (chunk.chunkGridPosition.x * cellsPerDimension + (x * step)) * worldGrid.cellSize;
-                float screenY = (chunk.chunkGridPosition.y * cellsPerDimension + (y * step)) * worldGrid.cellSize;
+                float screenX = (chunk.chunkGridPosition.x * cellsPerDimension + (x * step))
+                                * worldGrid.cellSize;
+                float screenY = (chunk.chunkGridPosition.y * cellsPerDimension + (y * step))
+                                * worldGrid.cellSize;
                 float quadWidth = rectWidth * worldGrid.cellSize * step;
                 float quadHeight = rectHeight * worldGrid.cellSize * step;
 
@@ -167,10 +174,18 @@ void TerrainRenderSystem::buildAllChunkMeshes(const ChunkComponent& chunk, Chunk
 
                 sf::Color color;
                 switch (currentType) {
-                    case TerrainType::WATER: color = sf::Color(173, 216, 230); break;
-                    case TerrainType::LAND:  color = sf::Color(34, 139, 34); break;
-                    case TerrainType::RIVER: color = sf::Color(100, 149, 237); break;
-                    default:                 color = sf::Color::Magenta; break;
+                case TerrainType::WATER:
+                    color = sf::Color(173, 216, 230);
+                    break;
+                case TerrainType::LAND:
+                    color = sf::Color(34, 139, 34);
+                    break;
+                case TerrainType::RIVER:
+                    color = sf::Color(100, 149, 237);
+                    break;
+                default:
+                    color = sf::Color::Magenta;
+                    break;
                 }
 
                 for (int i = 0; i < 6; ++i) {

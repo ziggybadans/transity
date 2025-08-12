@@ -4,8 +4,8 @@
 #include "Game.h"
 #include "graphics/Renderer.h"
 #include "graphics/UI.h"
-#include <memory>
 #include <SFML/System/Clock.hpp>
+#include <memory>
 
 class Application {
 public:

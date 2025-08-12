@@ -1,20 +1,20 @@
 #include "Logger.h"
+#include <algorithm>
+#include <array>
+#include <chrono>
+#include <cstdarg>
+#include <cstdio>
+#include <filesystem>
+#include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <string>
-#include <chrono>
-#include <iomanip>
-#include <cstdarg>
 #include <vector>
-#include <cstdio>
-#include <array>
-#include <algorithm>
-#include <filesystem>
-#include <fstream>
 
 namespace Logging {
 
-Logger& Logger::getInstance() {
+Logger &Logger::getInstance() {
     static Logger instance;
     return instance;
 }
@@ -64,15 +64,22 @@ unsigned int Logger::getLogDelay() const {
     return m_logDelayMs;
 }
 
-const char* Logger::logLevelToString(LogLevel level) const {
+const char *Logger::logLevelToString(LogLevel level) const {
     switch (level) {
-        case LogLevel::TRACE: return "TRACE";
-        case LogLevel::DEBUG: return "DEBUG";
-        case LogLevel::INFO:  return "INFO";
-        case LogLevel::WARN:  return "WARN";
-        case LogLevel::ERROR: return "ERROR";
-        case LogLevel::FATAL: return "FATAL";
-        default:              return "UNKNOWN";
+    case LogLevel::TRACE:
+        return "TRACE";
+    case LogLevel::DEBUG:
+        return "DEBUG";
+    case LogLevel::INFO:
+        return "INFO";
+    case LogLevel::WARN:
+        return "WARN";
+    case LogLevel::ERROR:
+        return "ERROR";
+    case LogLevel::FATAL:
+        return "FATAL";
+    default:
+        return "UNKNOWN";
     }
 }
 
@@ -92,16 +99,18 @@ void Logger::enableFileLogging(bool enable) {
             localtime_r(&in_time_t, &buf);
 #endif
             std::ostringstream filename_ss;
-            filename_ss << m_logDirectory << "/" << std::put_time(&buf, "%Y-%m-%d_%H-%M-%S") << ".log";
+            filename_ss << m_logDirectory << "/" << std::put_time(&buf, "%Y-%m-%d_%H-%M-%S")
+                        << ".log";
             m_currentLogFileName = filename_ss.str();
             m_logFileStream.open(m_currentLogFileName, std::ios::out | std::ios::app);
             if (m_logFileStream.is_open()) {
                 m_isFileLoggingEnabled = true;
             } else {
-                std::cerr << "Error: Could not open log file: " << m_currentLogFileName << std::endl;
+                std::cerr << "Error: Could not open log file: " << m_currentLogFileName
+                          << std::endl;
                 m_isFileLoggingEnabled = false;
             }
-        } catch (const std::filesystem::filesystem_error& e) {
+        } catch (const std::filesystem::filesystem_error &e) {
             std::cerr << "Filesystem error: " << e.what() << std::endl;
             m_isFileLoggingEnabled = false;
         }
@@ -117,7 +126,8 @@ void Logger::enableFileLogging(bool enable) {
 static const int SYSTEM_NAME_WIDTH = 13;
 static const int LOG_LEVEL_WIDTH = 7;
 
-void Logger::logMessage(LogLevel level, const char* system, unsigned int messageSpecificDelayMs, const char* format, ...) {
+void Logger::logMessage(LogLevel level, const char *system, unsigned int messageSpecificDelayMs,
+                        const char *format, ...) {
     if (!m_isLoggingEnabled || level < m_currentLogLevel) {
         return;
     }
@@ -136,7 +146,8 @@ void Logger::logMessage(LogLevel level, const char* system, unsigned int message
 
     if (actualDelayToApply > 0) {
         auto currentTime = std::chrono::steady_clock::now();
-        auto timeSinceLastLog = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - m_lastLogTime);
+        auto timeSinceLastLog =
+            std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - m_lastLogTime);
         if (timeSinceLastLog.count() < actualDelayToApply) {
             return;
         }
@@ -166,11 +177,9 @@ void Logger::logMessage(LogLevel level, const char* system, unsigned int message
     }
 
     std::ostringstream formatted_log_prefix_ss;
-    formatted_log_prefix_ss << timestamp_str << " ["
-                            << std::left << std::setw(SYSTEM_NAME_WIDTH) << system_name_for_padding
-                            << "] ["
-                            << std::left << std::setw(LOG_LEVEL_WIDTH) << log_level_for_padding
-                            << "] ";
+    formatted_log_prefix_ss << timestamp_str << " [" << std::left << std::setw(SYSTEM_NAME_WIDTH)
+                            << system_name_for_padding << "] [" << std::left
+                            << std::setw(LOG_LEVEL_WIDTH) << log_level_for_padding << "] ";
     std::string formatted_log_prefix = formatted_log_prefix_ss.str();
 
     std::ostringstream message_ss;
@@ -199,4 +208,4 @@ void Logger::logMessage(LogLevel level, const char* system, unsigned int message
     m_lastLogTime = std::chrono::steady_clock::now();
 }
 
-}
+}  // namespace Logging

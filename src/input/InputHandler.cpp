@@ -6,16 +6,15 @@
 #include <vector>
 
 // Constructor now takes and stores the EventBus reference
-InputHandler::InputHandler(ServiceLocator& serviceLocator)
-    : _services(serviceLocator),
-      _zoomFactor(Constants::ZOOM_FACTOR),
+InputHandler::InputHandler(ServiceLocator &serviceLocator)
+    : _services(serviceLocator), _zoomFactor(Constants::ZOOM_FACTOR),
       _unzoomFactor(Constants::UNZOOM_FACTOR) {
     LOG_INFO("Input", "InputHandler created.");
 }
 
-void InputHandler::handleGameEvent(const sf::Event& event, sf::RenderWindow& window) {
-    EventBus* eventBus = _services.eventBus;
-    Camera* camera = _services.camera;
+void InputHandler::handleGameEvent(const sf::Event &event, sf::RenderWindow &window) {
+    EventBus *eventBus = _services.eventBus;
+    Camera *camera = _services.camera;
 
     if (!eventBus || !camera) {
         LOG_ERROR("Input", "Service locator is missing required services for InputHandler.");
@@ -25,7 +24,7 @@ void InputHandler::handleGameEvent(const sf::Event& event, sf::RenderWindow& win
     if (event.is<sf::Event::Closed>()) {
         LOG_INFO("Input", "Window close event received.");
         eventBus->trigger<WindowCloseEvent>();
-    } else if (auto* scrollData = event.getIf<sf::Event::MouseWheelScrolled>()) {
+    } else if (auto *scrollData = event.getIf<sf::Event::MouseWheelScrolled>()) {
         if (scrollData->wheel == sf::Mouse::Wheel::Vertical) {
             LOG_DEBUG("Input", "Mouse wheel scrolled: delta %.1f", scrollData->delta);
             float zoomDelta = 0.0f;
@@ -37,26 +36,23 @@ void InputHandler::handleGameEvent(const sf::Event& event, sf::RenderWindow& win
                 LOG_TRACE("Input", "Zoom out event generated.");
             }
             if (zoomDelta != 0.0f) {
-                 eventBus->trigger<CameraZoomEvent>({zoomDelta, sf::Mouse::getPosition(window)});
+                eventBus->trigger<CameraZoomEvent>({zoomDelta, sf::Mouse::getPosition(window)});
             }
         }
-    } else if (auto* pressData = event.getIf<sf::Event::MouseButtonPressed>()) {
+    } else if (auto *pressData = event.getIf<sf::Event::MouseButtonPressed>()) {
         sf::Vector2i pixelPos = pressData->position;
         sf::Vector2f worldPos = window.mapPixelToCoords(pixelPos, camera->getView());
 
-        eventBus->trigger<MouseButtonPressedEvent>({
-            pressData->button,
-            pixelPos,
-            worldPos
-        });
+        eventBus->trigger<MouseButtonPressedEvent>({pressData->button, pixelPos, worldPos});
 
-        LOG_DEBUG("Input", "MouseButtonPressedEvent generated for button %d at world (%.1f, %.1f)", pressData->button, worldPos.x, worldPos.y);
+        LOG_DEBUG("Input", "MouseButtonPressedEvent generated for button %d at world (%.1f, %.1f)",
+                  pressData->button, worldPos.x, worldPos.y);
     }
 }
 
 void InputHandler::update(sf::Time dt) {
-    EventBus* eventBus = _services.eventBus;
-    Camera* camera = _services.camera;
+    EventBus *eventBus = _services.eventBus;
+    Camera *camera = _services.camera;
 
     if (!eventBus || !camera) {
         LOG_ERROR("Input", "Service locator is missing required services for InputHandler update.");
@@ -78,11 +74,12 @@ void InputHandler::update(sf::Time dt) {
     }
 
     if (panDirection.x != 0.f || panDirection.y != 0.f) {
-        const sf::View& view = camera->getView();
+        const sf::View &view = camera->getView();
         sf::Vector2f viewSize = view.getSize();
         float dynamicCameraSpeed = viewSize.y * Constants::DYNAMIC_CAMERA_SPEED_MULTIPLIER;
         sf::Vector2f panVector = panDirection * dynamicCameraSpeed * dt.asSeconds();
         eventBus->trigger<CameraPanEvent>({panVector});
-        LOG_TRACE("Input", "CameraPan event generated with direction (%.1f, %.1f).", panVector.x, panVector.y);
+        LOG_TRACE("Input", "CameraPan event generated with direction (%.1f, %.1f).", panVector.x,
+                  panVector.y);
     }
 }

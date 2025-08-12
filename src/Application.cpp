@@ -15,15 +15,18 @@ Application::Application() {
         _game = std::make_unique<Game>(*_renderer);
 
         _renderer->connectToEventBus(_game->getEventBus());
-        
+
         // InputHandler is no longer created here
-        
+
         _game->init();
 
-        _ui = std::make_unique<UI>(_renderer->getWindowInstance(), _game->getRegistry(), &_game->getWorldGenerationSystem(), &_renderer->getTerrainRenderSystem(), _game->getGameState(), _game->getEventBus(), _game->getCamera());
+        _ui = std::make_unique<UI>(_renderer->getWindowInstance(), _game->getRegistry(),
+                                   &_game->getWorldGenerationSystem(),
+                                   &_renderer->getTerrainRenderSystem(), _game->getGameState(),
+                                   _game->getEventBus(), _game->getCamera());
         _ui->initialize();
 
-    } catch (const std::exception& e) {
+    } catch (const std::exception &e) {
         LOG_FATAL("Application", "Failed during initialization: %s", e.what());
         throw;
     }
@@ -36,11 +39,11 @@ void Application::run() {
         sf::Time dt = _deltaClock.restart();
 
         processEvents();
-        
+
         if (_isWindowFocused) {
             update(dt);
         }
-        
+
         render(dt);
     }
     LOG_INFO("Application", "Main loop ended.");
@@ -51,7 +54,7 @@ void Application::run() {
 void Application::processEvents() {
     while (auto optEvent = _renderer->getWindowInstance().pollEvent()) {
         if (optEvent) {
-            const sf::Event& currentEvent = *optEvent;
+            const sf::Event &currentEvent = *optEvent;
 
             if (currentEvent.is<sf::Event::FocusLost>()) {
                 _isWindowFocused = false;
@@ -59,14 +62,15 @@ void Application::processEvents() {
                 _isWindowFocused = true;
             }
 
-            if (const auto* resizedEvent = currentEvent.getIf<sf::Event::Resized>()) {
+            if (const auto *resizedEvent = currentEvent.getIf<sf::Event::Resized>()) {
                 _game->onWindowResize(resizedEvent->size.x, resizedEvent->size.y);
             }
 
             _ui->processEvent(currentEvent);
             if (_isWindowFocused) {
                 // Get InputHandler from Game and call the simplified method
-                _game->getInputHandler().handleGameEvent(currentEvent, _renderer->getWindowInstance());
+                _game->getInputHandler().handleGameEvent(currentEvent,
+                                                         _renderer->getWindowInstance());
             }
         }
     }

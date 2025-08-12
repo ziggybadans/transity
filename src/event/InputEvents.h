@@ -2,10 +2,10 @@
 
 #pragma once
 
-#include <SFML/System/Vector2.hpp>
-#include <entt/entt.hpp>
 #include "../input/InteractionMode.h"
 #include "../world/WorldData.h"
+#include <SFML/System/Vector2.hpp>
+#include <entt/entt.hpp>
 
 // General Events
 struct WindowCloseEvent {};

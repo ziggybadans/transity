@@ -1,20 +1,18 @@
 #include "Game.h"
-#include "graphics/Renderer.h"
-#include "graphics/UI.h"
 #include "Logger.h"
 #include "core/Constants.h"
+#include "graphics/Renderer.h"
+#include "graphics/UI.h"
+#include "input/InputHandler.h"
 #include "systems/CameraSystem.h"
+#include "systems/GameStateSystem.h"
 #include "systems/LineCreationSystem.h"
 #include "systems/StationPlacementSystem.h"
-#include "input/InputHandler.h"
-#include "systems/GameStateSystem.h"
 #include "world/ChunkManagerSystem.h"
 
 // Constructor no longer takes InputHandler
-Game::Game(Renderer& renderer)
-    : _renderer(renderer),
-      _eventBus(),
-      _entityFactory(_registry),
+Game::Game(Renderer &renderer)
+    : _renderer(renderer), _eventBus(), _entityFactory(_registry),
       _worldGenerationSystem(_registry, _eventBus) {
 
     // 1. Populate the ServiceLocator with all the core services.
@@ -49,14 +47,14 @@ void Game::init() {
     auto worldGridEntity = _registry.create();
     _registry.emplace<WorldGridComponent>(worldGridEntity);
     LOG_INFO("Game", "WorldGridComponent created with default values.");
-    
-    sf::Vector2f worldSize = _worldGenerationSystem.getWorldSize();
-    sf::Vector2f worldCenter = { worldSize.x / 2.0f, worldSize.y / 2.0f };
-    
-    auto& window = _renderer.getWindowInstance();
 
-    float zoomFactor = 4.0f; // Higher value means more zoomed in
-    sf::Vector2f initialViewSize = { worldSize.x / zoomFactor, worldSize.y / zoomFactor };
+    sf::Vector2f worldSize = _worldGenerationSystem.getWorldSize();
+    sf::Vector2f worldCenter = {worldSize.x / 2.0f, worldSize.y / 2.0f};
+
+    auto &window = _renderer.getWindowInstance();
+
+    float zoomFactor = 4.0f;  // Higher value means more zoomed in
+    sf::Vector2f initialViewSize = {worldSize.x / zoomFactor, worldSize.y / zoomFactor};
     _camera.setInitialView(window, worldCenter, initialViewSize);
 
     sf::Vector2u windowSize = window.getSize();
@@ -65,10 +63,10 @@ void Game::init() {
     LOG_INFO("Game", "Game initialization completed.");
 }
 
-void Game::update(sf::Time dt, UI& ui) {
+void Game::update(sf::Time dt, UI &ui) {
     // The system manager update now takes only dt
     _systemManager->update(dt);
-    
+
     // Update terrain meshes if they are dirty
     _renderer.getTerrainRenderSystem().updateMeshes(_registry);
 
@@ -83,7 +81,7 @@ void Game::onWindowResize(unsigned int width, unsigned int height) {
 
 size_t Game::getActiveStationCount() {
     // Retrieve the system from the manager to get the data.
-    auto* lineCreationSystem = _systemManager->getSystem<LineCreationSystem>();
+    auto *lineCreationSystem = _systemManager->getSystem<LineCreationSystem>();
     if (lineCreationSystem) {
         return lineCreationSystem->getActiveLineStations().size();
     }
