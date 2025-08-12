@@ -4,6 +4,7 @@
 #include "../core/ServiceLocator.h"
 #include "../event/EventBus.h"
 #include "../event/InputEvents.h"
+#include "WorldData.h"
 #include "WorldGenerationSystem.h"
 #include <SFML/System/Vector2.hpp>
 #include <condition_variable>
@@ -44,10 +45,10 @@ private:
 
     std::map<sf::Vector2i, entt::entity, Vector2iCompare> _activeChunks;
     std::set<sf::Vector2i, Vector2iCompare> _chunksBeingLoaded;
-    std::vector<std::future<ChunkComponent>> _chunkLoadFutures;
+    std::vector<std::future<GeneratedChunkData>> _chunkLoadFutures;
 
     std::mutex _completedChunksMutex;
-    std::queue<ChunkComponent> _completedChunks;
+    std::queue<GeneratedChunkData> _completedChunks;
 
     entt::connection _regenerateWorldListener;
     int _viewDistance = 4;

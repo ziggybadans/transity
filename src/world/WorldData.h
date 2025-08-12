@@ -1,6 +1,8 @@
 #pragma once
 
 #include "FastNoiseLite.h"
+#include "TerrainType.h"
+#include <SFML/System/Vector2.hpp>
 #include <vector>
 
 struct Point {
@@ -28,3 +30,10 @@ struct WorldGenParams {
 };
 
 struct SwapWorldStateEvent {};
+
+struct GeneratedChunkData {
+    sf::Vector2i chunkGridPosition;
+    std::vector<TerrainType> cells;
+    std::vector<float> noiseValues;
+    std::vector<float> rawNoiseValues;
+};

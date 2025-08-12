@@ -16,8 +16,8 @@ public:
 
     void configureNoise();
 
-    void generateChunk(entt::registry &registry, entt::entity chunkEntity);
-    void generateChunkData(ChunkComponent &chunk) const;
+    GeneratedChunkData generateChunkData(const sf::Vector2i& chunkGridPosition) const;
+    
     sf::Vector2f getWorldSize();
 
     entt::registry &getRegistry() { return _registry; }

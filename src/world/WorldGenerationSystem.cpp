@@ -96,12 +96,7 @@ sf::Vector2f WorldGenerationSystem::getWorldSize() {
     }
 }
 
-void WorldGenerationSystem::generateChunk(entt::registry &registry, entt::entity chunkEntity) {
-    auto &chunk = registry.get<ChunkComponent>(chunkEntity);
-    generateChunkData(chunk);
-}
-
-void WorldGenerationSystem::generateChunkData(ChunkComponent &chunk) const {
+GeneratedChunkData WorldGenerationSystem::generateChunkData(const sf::Vector2i& chunkGridPosition) const {
     const auto &worldGrid = getWorldGridSettings();
     sf::Vector2f worldSize = {
         static_cast<float>(worldGrid.worldDimensionsInChunks.x * worldGrid.chunkDimensionsInCells.x)
@@ -114,16 +109,18 @@ void WorldGenerationSystem::generateChunkData(ChunkComponent &chunk) const {
     const int chunkCellSizeY = static_cast<int>(worldGrid.chunkDimensionsInCells.y);
     const int totalCells = chunkCellSizeX * chunkCellSizeY;
 
-    chunk.cells.resize(totalCells);
-    chunk.noiseValues.resize(totalCells);
-    chunk.rawNoiseValues.resize(totalCells);
+    GeneratedChunkData chunkData;
+    chunkData.chunkGridPosition = chunkGridPosition;
+    chunkData.cells.resize(totalCells);
+    chunkData.noiseValues.resize(totalCells);
+    chunkData.rawNoiseValues.resize(totalCells);
 
     for (int y = 0; y < chunkCellSizeY; ++y) {
         for (int x = 0; x < chunkCellSizeX; ++x) {
             int cellIndex = y * chunkCellSizeX + x;
-            float worldX = static_cast<float>((chunk.chunkGridPosition.x * chunkCellSizeX) + x)
+            float worldX = static_cast<float>((chunkGridPosition.x * chunkCellSizeX) + x)
                            * worldGrid.cellSize;
-            float worldY = static_cast<float>((chunk.chunkGridPosition.y * chunkCellSizeY) + y)
+            float worldY = static_cast<float>((chunkGridPosition.y * chunkCellSizeY) + y)
                            * worldGrid.cellSize;
 
             float dx = center.x - worldX;
@@ -133,8 +130,8 @@ void WorldGenerationSystem::generateChunkData(ChunkComponent &chunk) const {
             float maxDistance = std::min(worldSize.x, worldSize.y) / 2.5f;
             float falloff = 1.0f - std::min(1.0f, distance / maxDistance);
 
-            float noiseX = static_cast<float>((chunk.chunkGridPosition.x * chunkCellSizeX) + x);
-            float noiseY = static_cast<float>((chunk.chunkGridPosition.y * chunkCellSizeY) + y);
+            float noiseX = static_cast<float>((chunkGridPosition.x * chunkCellSizeX) + x);
+            float noiseY = static_cast<float>((chunkGridPosition.y * chunkCellSizeY) + y);
 
             float combinedNoise = 0.0f;
             float totalWeight = 0.0f;
@@ -150,7 +147,7 @@ void WorldGenerationSystem::generateChunkData(ChunkComponent &chunk) const {
                 combinedNoise /= totalWeight;
             }
 
-            chunk.rawNoiseValues[cellIndex] = combinedNoise;
+            chunkData.rawNoiseValues[cellIndex] = combinedNoise;
             float finalValue = combinedNoise * falloff;
 
             float distortion = 0.0f;
@@ -160,12 +157,12 @@ void WorldGenerationSystem::generateChunkData(ChunkComponent &chunk) const {
             }
             float distortedLandThreshold = _params.landThreshold + distortion;
 
-            chunk.noiseValues[cellIndex] = finalValue;
-            chunk.cells[cellIndex] =
+            chunkData.noiseValues[cellIndex] = finalValue;
+            chunkData.cells[cellIndex] =
                 (finalValue > distortedLandThreshold) ? TerrainType::LAND : TerrainType::WATER;
         }
     }
-    chunk.isMeshDirty = true;
+    return chunkData;
 }
 
 void WorldGenerationSystem::regenerate(const WorldGenParams &params) {

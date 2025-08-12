@@ -16,14 +16,16 @@ TerrainRenderSystem::getWorldGridSettings(const entt::registry &registry) {
 
 void TerrainRenderSystem::updateMeshes(entt::registry &registry) {
     const auto &worldGrid = getWorldGridSettings(registry);
-    auto view = registry.view<ChunkComponent, ChunkMeshComponent>();
+    auto view = registry.view<ChunkPositionComponent, ChunkTerrainComponent, ChunkStateComponent, ChunkMeshComponent>();
 
     for (auto entity : view) {
-        auto &chunk = view.get<ChunkComponent>(entity);
-        if (chunk.isMeshDirty) {
+        auto &chunkState = view.get<ChunkStateComponent>(entity);
+        if (chunkState.isMeshDirty) {
+            auto &chunkPos = view.get<ChunkPositionComponent>(entity);
+            auto &chunkTerrain = view.get<ChunkTerrainComponent>(entity);
             auto &chunkMesh = view.get<ChunkMeshComponent>(entity);
-            buildAllChunkMeshes(chunk, chunkMesh, worldGrid);
-            chunk.isMeshDirty = false;
+            buildAllChunkMeshes(chunkPos, chunkTerrain, chunkMesh, worldGrid);
+            chunkState.isMeshDirty = false;
         }
     }
 }
@@ -31,7 +33,7 @@ void TerrainRenderSystem::updateMeshes(entt::registry &registry) {
 void TerrainRenderSystem::render(const entt::registry &registry, sf::RenderTarget &target,
                                  const sf::View &view) {
     const WorldGridComponent &worldGrid = getWorldGridSettings(registry);
-    auto chunkView = registry.view<const ChunkComponent, const ChunkMeshComponent>();
+    auto chunkView = registry.view<const ChunkPositionComponent, const ChunkStateComponent, const ChunkMeshComponent>();
 
     sf::FloatRect viewBounds({view.getCenter() - view.getSize() / 2.f, view.getSize()});
     viewBounds.position.x -= worldGrid.cellSize;
@@ -40,20 +42,21 @@ void TerrainRenderSystem::render(const entt::registry &registry, sf::RenderTarge
     viewBounds.size.y += worldGrid.cellSize * 2;
 
     for (auto entity : chunkView) {
-        const auto &chunk = chunkView.get<const ChunkComponent>(entity);
+        const auto &chunkPos = chunkView.get<const ChunkPositionComponent>(entity);
+        const auto &chunkState = chunkView.get<const ChunkStateComponent>(entity);
         const auto &chunkMesh = chunkView.get<const ChunkMeshComponent>(entity);
 
         float chunkWidthPixels = worldGrid.chunkDimensionsInCells.x * worldGrid.cellSize;
         float chunkHeightPixels = worldGrid.chunkDimensionsInCells.y * worldGrid.cellSize;
-        sf::FloatRect chunkBounds({chunk.chunkGridPosition.x * chunkWidthPixels,
-                                   chunk.chunkGridPosition.y * chunkHeightPixels},
+        sf::FloatRect chunkBounds({chunkPos.chunkGridPosition.x * chunkWidthPixels,
+                                   chunkPos.chunkGridPosition.y * chunkHeightPixels},
                                   {chunkWidthPixels, chunkHeightPixels});
 
         if (!viewBounds.findIntersection(chunkBounds)) {
             continue;
         }
 
-        LODLevel levelToRender = _isLodEnabled ? chunk.lodLevel : LODLevel::LOD0;
+        LODLevel levelToRender = _isLodEnabled ? chunkState.lodLevel : LODLevel::LOD0;
         target.draw(chunkMesh.lodVertexArrays[static_cast<int>(levelToRender)]);
 
         if (_visualizeChunkBorders) {
@@ -85,12 +88,12 @@ void TerrainRenderSystem::render(const entt::registry &registry, sf::RenderTarge
             float chunkBottom = chunkTop + chunkBounds.size.y;
             sf::Color gridColor(128, 128, 128, 128);
 
-            for (int i = 1; i < worldGrid.chunkDimensionsInCells.x; ++i) {
+            for (unsigned int i = 1; i < worldGrid.chunkDimensionsInCells.x; ++i) {
                 float x = chunkLeft + i * worldGrid.cellSize;
                 gridLines.append({{x, chunkTop}, gridColor});
                 gridLines.append({{x, chunkBottom}, gridColor});
             }
-            for (int i = 1; i < worldGrid.chunkDimensionsInCells.y; ++i) {
+            for (unsigned int i = 1; i < worldGrid.chunkDimensionsInCells.y; ++i) {
                 float y = chunkTop + i * worldGrid.cellSize;
                 gridLines.append({{chunkLeft, y}, gridColor});
                 gridLines.append({{chunkRight, y}, gridColor});
@@ -100,7 +103,8 @@ void TerrainRenderSystem::render(const entt::registry &registry, sf::RenderTarge
     }
 }
 
-void TerrainRenderSystem::buildAllChunkMeshes(const ChunkComponent &chunk,
+void TerrainRenderSystem::buildAllChunkMeshes(const ChunkPositionComponent &chunkPos,
+                                              const ChunkTerrainComponent &chunkTerrain,
                                               ChunkMeshComponent &chunkMesh,
                                               const WorldGridComponent &worldGrid) {
     int cellsPerDimension = worldGrid.chunkDimensionsInCells.x;
@@ -121,13 +125,13 @@ void TerrainRenderSystem::buildAllChunkMeshes(const ChunkComponent &chunk,
                 }
 
                 int originalCellIndex = (y * step) * cellsPerDimension + (x * step);
-                TerrainType currentType = chunk.cells[originalCellIndex];
+                TerrainType currentType = chunkTerrain.cells[originalCellIndex];
 
                 int rectWidth = 1;
                 while (x + rectWidth < numCellsX) {
                     int nextCellIndex = (y * step) * cellsPerDimension + ((x + rectWidth) * step);
                     if (visited[y * numCellsX + (x + rectWidth)]
-                        || chunk.cells[nextCellIndex] != currentType) {
+                        || chunkTerrain.cells[nextCellIndex] != currentType) {
                         break;
                     }
                     rectWidth++;
@@ -140,7 +144,7 @@ void TerrainRenderSystem::buildAllChunkMeshes(const ChunkComponent &chunk,
                         int nextCellIndex =
                             ((y + rectHeight) * step) * cellsPerDimension + ((x + i) * step);
                         if (visited[(y + rectHeight) * numCellsX + (x + i)]
-                            || chunk.cells[nextCellIndex] != currentType) {
+                            || chunkTerrain.cells[nextCellIndex] != currentType) {
                             canExtend = false;
                             break;
                         }
@@ -157,9 +161,9 @@ void TerrainRenderSystem::buildAllChunkMeshes(const ChunkComponent &chunk,
                     }
                 }
 
-                float screenX = (chunk.chunkGridPosition.x * cellsPerDimension + (x * step))
+                float screenX = (chunkPos.chunkGridPosition.x * cellsPerDimension + (x * step))
                                 * worldGrid.cellSize;
-                float screenY = (chunk.chunkGridPosition.y * cellsPerDimension + (y * step))
+                float screenY = (chunkPos.chunkGridPosition.y * cellsPerDimension + (y * step))
                                 * worldGrid.cellSize;
                 float quadWidth = rectWidth * worldGrid.cellSize * step;
                 float quadHeight = rectHeight * worldGrid.cellSize * step;

@@ -46,18 +46,22 @@ struct GridCellComponent {
 
 struct ChunkLoadingTag {};
 
-struct ChunkComponent {
+struct ChunkPositionComponent {
     sf::Vector2i chunkGridPosition;
+};
+
+struct ChunkTerrainComponent {
     std::vector<TerrainType> cells;
+};
+
+struct ChunkNoiseComponent {
     std::vector<float> noiseValues;
     std::vector<float> rawNoiseValues;
-    bool isMeshDirty = true;
-    std::set<int> dirtyCells;
-    LODLevel lodLevel = LODLevel::LOD0;
+};
 
-    ChunkComponent(int chunkWidth, int chunkHeight)
-        : cells(chunkWidth * chunkHeight, TerrainType::WATER),
-          noiseValues(chunkWidth * chunkHeight, 0.0f) {}
+struct ChunkStateComponent {
+    bool isMeshDirty = true;
+    LODLevel lodLevel = LODLevel::LOD0;
 };
 
 struct ChunkMeshComponent {
