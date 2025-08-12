@@ -8,7 +8,7 @@
 #include "GameState.h"
 #include <entt/entt.hpp>
 
-// Forward declarations to avoid circular dependencies if needed
+
 class Renderer;
 
 struct ServiceLocator {

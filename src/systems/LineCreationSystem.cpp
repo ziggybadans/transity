@@ -10,22 +10,22 @@
 LineCreationSystem::LineCreationSystem(ServiceLocator &serviceLocator)
     : _registry(serviceLocator.registry), _entityFactory(serviceLocator.entityFactory),
       _colorManager(serviceLocator.colorManager),
-      _gameState(serviceLocator.gameState) {  // Initialize GameState
-    // m_addStationConnection =
-    // serviceLocator.eventBus->sink<AddStationToLineEvent>().connect<&LineCreationSystem::onAddStationToLine>(this);
-    // // Remove old
+      _gameState(serviceLocator.gameState) {  
+    
+    
+    
     m_finalizeLineConnection = serviceLocator.eventBus->sink<FinalizeLineEvent>()
                                    .connect<&LineCreationSystem::onFinalizeLine>(this);
     m_mousePressConnection =
         serviceLocator.eventBus->sink<MouseButtonPressedEvent>()
-            .connect<&LineCreationSystem::onMouseButtonPressed>(this);  // Add new
+            .connect<&LineCreationSystem::onMouseButtonPressed>(this);  
     LOG_INFO("LineCreationSystem", "LineCreationSystem created and connected to EventBus.");
 }
 
 LineCreationSystem::~LineCreationSystem() {
-    // m_addStationConnection.release(); // Remove old
+    
     m_finalizeLineConnection.release();
-    m_mousePressConnection.release();  // Release new
+    m_mousePressConnection.release();  
     LOG_INFO("LineCreationSystem", "LineCreationSystem destroyed and disconnected from EventBus.");
 }
 
@@ -46,9 +46,9 @@ void LineCreationSystem::onMouseButtonPressed(const MouseButtonPressedEvent &eve
             if (distanceSquared <= clickable.boundingRadius * clickable.boundingRadius) {
                 LOG_DEBUG("LineCreationSystem", "Station entity %u clicked.",
                           static_cast<unsigned int>(entity_id));
-                // Instead of triggering another event, we can just call the method directly.
+                
                 addStationToLine(entity_id);
-                return;  // Found a station, no need to check others
+                return;  
             }
         }
         LOG_TRACE("LineCreationSystem",
@@ -189,5 +189,5 @@ void LineCreationSystem::onFinalizeLine(const FinalizeLineEvent &event) {
 }
 
 void LineCreationSystem::update(sf::Time dt) {
-    // This system is purely event-driven, so this can be empty.
+    
 }

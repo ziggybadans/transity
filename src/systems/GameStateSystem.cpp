@@ -1,4 +1,4 @@
-// src/systems/GameStateSystem.cpp
+
 #include "GameStateSystem.h"
 #include "../Logger.h"
 #include "../core/GameState.h"
@@ -24,5 +24,5 @@ void GameStateSystem::onInteractionModeChange(const InteractionModeChangeEvent &
 }
 
 void GameStateSystem::update(sf::Time dt) {
-    // This system is purely event-driven, so update can be empty.
+    
 }

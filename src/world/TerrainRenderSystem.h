@@ -9,10 +9,10 @@ class TerrainRenderSystem {
 public:
     TerrainRenderSystem();
 
-    // This is now a simulation-side system that modifies the registry
+    
     void updateMeshes(entt::registry &registry);
 
-    // Render is now const-correct and does not modify the registry
+    
     void render(const entt::registry &registry, sf::RenderTarget &target, const sf::View &view);
 
     void setVisualizeChunkBorders(bool visualize) { _visualizeChunkBorders = visualize; }

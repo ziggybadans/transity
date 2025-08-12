@@ -33,7 +33,7 @@ void Camera::setInitialView(const sf::RenderWindow &window, const sf::Vector2f &
     if (landSize.y == 0.0f) {
         LOG_WARN("Camera", "Land height is zero, cannot calculate land aspect ratio. View may not "
                            "be correctly framed.");
-        // Continue with calculation, windowAspectRatio will be used, but land framing might be off.
+        
     }
 
     float landAspectRatio = landSize.x / landSize.y;
@@ -84,11 +84,11 @@ sf::Vector2f Camera::getCenter() const {
 void Camera::onWindowResize(unsigned int width, unsigned int height) {
     LOG_INFO("Camera", "Window resized to %u x %u", width, height);
 
-    // First, reset the viewport to cover the whole window.
-    // The viewport is specified in normalized coordinates (0.0 to 1.0).
+    
+    
     _view.setViewport({{0.f, 0.f}, {1.f, 1.f}});
 
-    // Get the current size of the view. This represents our current zoom level.
+    
     sf::Vector2f viewSize = _view.getSize();
 
     if (height == 0) {
@@ -96,13 +96,13 @@ void Camera::onWindowResize(unsigned int width, unsigned int height) {
         return;
     }
 
-    // Calculate the new aspect ratio of the window
+    
     float windowAspectRatio = static_cast<float>(width) / static_cast<float>(height);
 
-    // Adjust the view's size to match the new aspect ratio.
-    // We keep the view's height constant and adjust its width.
-    // This means that making the window wider will show more of the world
-    // horizontally, without changing the vertical zoom.
+    
+    
+    
+    
     viewSize.x = viewSize.y * windowAspectRatio;
     _view.setSize(viewSize);
 
@@ -111,6 +111,6 @@ void Camera::onWindowResize(unsigned int width, unsigned int height) {
 }
 
 float Camera::getZoom() const {
-    // Assuming a baseline view height of 600.0f corresponds to a zoom of 1.0f
+    
     return 600.0f / _view.getSize().y;
 }

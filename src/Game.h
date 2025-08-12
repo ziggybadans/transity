@@ -1,4 +1,4 @@
-// src/Game.h
+
 #pragma once
 
 #include "core/Camera.h"
@@ -12,10 +12,10 @@
 #include <entt/entt.hpp>
 #include <memory>
 
-// Forward declarations
+
 class Renderer;
 class UI;
-class InputHandler;  // Forward-declare InputHandler
+class InputHandler;  
 class ChunkManagerSystem;
 
 class Game {
@@ -33,7 +33,7 @@ public:
     WorldGenerationSystem &getWorldGenerationSystem() { return _worldGenerationSystem; }
     size_t getActiveStationCount();
     GameState &getGameState() { return _gameState; }
-    InputHandler &getInputHandler() { return *_inputHandler; }  // Add getter
+    InputHandler &getInputHandler() { return *_inputHandler; }  
 
 private:
     Renderer &_renderer;
@@ -49,5 +49,5 @@ private:
     WorldGenerationSystem _worldGenerationSystem;
     std::unique_ptr<ChunkManagerSystem> _chunkManagerSystem;
     std::unique_ptr<SystemManager> _systemManager;
-    std::unique_ptr<InputHandler> _inputHandler;  // Add InputHandler member
+    std::unique_ptr<InputHandler> _inputHandler;  
 };

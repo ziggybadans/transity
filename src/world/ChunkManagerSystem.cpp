@@ -14,7 +14,7 @@ ChunkManagerSystem::ChunkManagerSystem(ServiceLocator &serviceLocator,
         _eventBus.sink<ImmediateRedrawEvent>().connect<&ChunkManagerSystem::onImmediateRedraw>(
             this);
 
-    // Create the world state entity
+    
     auto entity = _registry.create();
     _registry.emplace<WorldStateComponent>(entity);
 }
@@ -44,7 +44,7 @@ void ChunkManagerSystem::onRegenerateWorld(const RegenerateWorldRequestEvent &ev
     auto &worldState =
         _registry.get<WorldStateComponent>(_registry.view<WorldStateComponent>().front());
 
-    // Use the params from the event
+    
     worldState.generatingParams = event.params;
 
     _generationFuture = std::async(std::launch::async, [&, params = worldState.generatingParams]() {
@@ -56,10 +56,10 @@ void ChunkManagerSystem::onSwapWorldState(const SwapWorldStateEvent &event) {
     auto &worldState =
         _registry.get<WorldStateComponent>(_registry.view<WorldStateComponent>().front());
 
-    // The new active state is the one that was just generated
+    
     std::swap(worldState.activeParams, worldState.generatingParams);
 
-    // Now, force all chunks to be re-evaluated and possibly regenerated.
+    
     std::vector<sf::Vector2i> chunksToUnload;
     for (const auto &pair : _activeChunks) {
         chunksToUnload.push_back(pair.first);
@@ -73,7 +73,7 @@ void ChunkManagerSystem::onSwapWorldState(const SwapWorldStateEvent &event) {
 void ChunkManagerSystem::update(sf::Time dt) {
     if (_generationFuture.valid()
         && _generationFuture.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
-        _generationFuture.get();  // To handle any exceptions
+        _generationFuture.get();  
         _eventBus.trigger(SwapWorldStateEvent{});
     }
 
@@ -83,7 +83,7 @@ void ChunkManagerSystem::update(sf::Time dt) {
                            if (f.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
                                std::lock_guard<std::mutex> lock(_completedChunksMutex);
                                _completedChunks.push(f.get());
-                               return true;  // Remove the future
+                               return true;  
                            }
                            return false;
                        }),
@@ -107,7 +107,7 @@ void ChunkManagerSystem::update(sf::Time dt) {
         currentLOD = LODLevel::LOD0;
     }
 
-    // This loop is now much simpler
+    
     for (auto const &[pos, entity] : _activeChunks) {
         if (_registry.valid(entity)) {
             auto &chunk = _registry.get<ChunkComponent>(entity);
@@ -136,7 +136,7 @@ void ChunkManagerSystem::update(sf::Time dt) {
         }
     }
 
-    // Identify chunks to unload
+    
     std::vector<sf::Vector2i> chunksToUnload;
     for (const auto &pair : _activeChunks) {
         if (requiredChunks.find(pair.first) == requiredChunks.end()) {
@@ -144,12 +144,12 @@ void ChunkManagerSystem::update(sf::Time dt) {
         }
     }
 
-    // Unload the identified chunks
+    
     for (const auto &chunkPos : chunksToUnload) {
         unloadChunk(chunkPos);
     }
 
-    // Load new chunks
+    
     for (const auto &chunkPos : requiredChunks) {
         if (_activeChunks.find(chunkPos) == _activeChunks.end()
             && _chunksBeingLoaded.find(chunkPos) == _chunksBeingLoaded.end()) {

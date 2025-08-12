@@ -10,11 +10,11 @@
 #include "../world/WorldData.h"
 
 enum class LODLevel {
-    LOD0,  // Highest detail
+    LOD0,  
     LOD1,
     LOD2,
-    LOD3,  // Lowest detail
-    Count  // Add this to get the number of LOD levels
+    LOD3,  
+    Count  
 };
 
 struct PositionComponent {

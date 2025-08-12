@@ -1,4 +1,4 @@
-// src/Application.h
+
 #pragma once
 
 #include "Game.h"

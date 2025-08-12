@@ -10,12 +10,12 @@
 #include "systems/StationPlacementSystem.h"
 #include "world/ChunkManagerSystem.h"
 
-// Constructor no longer takes InputHandler
+
 Game::Game(Renderer &renderer)
     : _renderer(renderer), _eventBus(), _entityFactory(_registry),
       _worldGenerationSystem(_registry, _eventBus) {
 
-    // 1. Populate the ServiceLocator with all the core services.
+    
     _serviceLocator.registry = &_registry;
     _serviceLocator.eventBus = &_eventBus;
     _serviceLocator.gameState = &_gameState;
@@ -24,13 +24,13 @@ Game::Game(Renderer &renderer)
     _serviceLocator.colorManager = &_colorManager;
     _serviceLocator.renderer = &_renderer;
 
-    // 2. Create the InputHandler using the ServiceLocator.
+    
     _inputHandler = std::make_unique<InputHandler>(_serviceLocator);
 
-    // 3. Create the SystemManager, passing it the ServiceLocator.
+    
     _systemManager = std::make_unique<SystemManager>(_serviceLocator);
 
-    // 4. Add systems using the new templated method.
+    
     _systemManager->addSystem<CameraSystem>();
     _systemManager->addSystem<LineCreationSystem>();
     _systemManager->addSystem<StationPlacementSystem>();
@@ -43,7 +43,7 @@ Game::Game(Renderer &renderer)
 void Game::init() {
     LOG_INFO("Game", "Game initialization started.");
 
-    // Create and emplace the WorldGridComponent singleton
+    
     auto worldGridEntity = _registry.create();
     _registry.emplace<WorldGridComponent>(worldGridEntity);
     LOG_INFO("Game", "WorldGridComponent created with default values.");
@@ -53,7 +53,7 @@ void Game::init() {
 
     auto &window = _renderer.getWindowInstance();
 
-    float zoomFactor = 4.0f;  // Higher value means more zoomed in
+    float zoomFactor = 4.0f;  
     sf::Vector2f initialViewSize = {worldSize.x / zoomFactor, worldSize.y / zoomFactor};
     _camera.setInitialView(window, worldCenter, initialViewSize);
 
@@ -64,14 +64,14 @@ void Game::init() {
 }
 
 void Game::update(sf::Time dt, UI &ui) {
-    // The system manager update now takes only dt
+    
     _systemManager->update(dt);
 
-    // Update terrain meshes if they are dirty
+    
     _renderer.getTerrainRenderSystem().updateMeshes(_registry);
 
-    // The event bus triggers system updates automatically,
-    // we just need to trigger the update on the dispatcher
+    
+    
     _eventBus.update();
 }
 
@@ -80,7 +80,7 @@ void Game::onWindowResize(unsigned int width, unsigned int height) {
 }
 
 size_t Game::getActiveStationCount() {
-    // Retrieve the system from the manager to get the data.
+    
     auto *lineCreationSystem = _systemManager->getSystem<LineCreationSystem>();
     if (lineCreationSystem) {
         return lineCreationSystem->getActiveLineStations().size();

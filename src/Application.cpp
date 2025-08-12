@@ -1,4 +1,4 @@
-// src/Application.cpp
+
 #include "Application.h"
 #include "Logger.h"
 #include "core/Constants.h"
@@ -11,12 +11,12 @@ Application::Application() {
         _renderer = std::make_unique<Renderer>();
         _renderer->initialize();
 
-        // Game is created, and it now creates its own InputHandler
+        
         _game = std::make_unique<Game>(*_renderer);
 
         _renderer->connectToEventBus(_game->getEventBus());
 
-        // InputHandler is no longer created here
+        
 
         _game->init();
 
@@ -68,7 +68,7 @@ void Application::processEvents() {
 
             _ui->processEvent(currentEvent);
             if (_isWindowFocused) {
-                // Get InputHandler from Game and call the simplified method
+                
                 _game->getInputHandler().handleGameEvent(currentEvent,
                                                          _renderer->getWindowInstance());
             }
@@ -77,7 +77,7 @@ void Application::processEvents() {
 }
 
 void Application::update(sf::Time dt) {
-    // Get InputHandler from Game and call the simplified method
+    
     _game->getInputHandler().update(dt);
     _game->update(dt, *_ui);
     _ui->update(dt, _game->getActiveStationCount());

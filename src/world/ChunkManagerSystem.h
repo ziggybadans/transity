@@ -50,7 +50,7 @@ private:
     std::queue<ChunkComponent> _completedChunks;
 
     entt::connection _regenerateWorldListener;
-    int _viewDistance = 4;  // In chunks
+    int _viewDistance = 4;  
 
     void onSwapWorldState(const SwapWorldStateEvent &event);
     entt::connection _swapWorldStateListener;

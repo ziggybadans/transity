@@ -1,4 +1,4 @@
-// src/core/ISystem.h
+
 #pragma once
 #include <SFML/System/Time.hpp>
 

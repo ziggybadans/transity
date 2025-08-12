@@ -1,4 +1,4 @@
-// src/systems/GameStateSystem.h
+
 #pragma once
 
 #include "../core/ISystem.h"

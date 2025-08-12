@@ -2,9 +2,9 @@
 #include "../Logger.h"
 #include "../core/Camera.h"
 #include "../core/ServiceLocator.h"
-#include "../graphics/Renderer.h"  // For RenderWindow access
+#include "../graphics/Renderer.h"  
 
-// The constructor now pulls its dependencies from the ServiceLocator
+
 CameraSystem::CameraSystem(ServiceLocator &serviceLocator)
     : m_camera(serviceLocator.camera), m_window(&serviceLocator.renderer->getWindowInstance()) {
     m_zoomConnection =
@@ -39,5 +39,5 @@ void CameraSystem::onCameraPan(const CameraPanEvent &event) {
 }
 
 void CameraSystem::update(sf::Time dt) {
-    // This system is purely event-driven, so this can be empty.
+    
 }

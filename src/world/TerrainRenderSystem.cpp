@@ -23,7 +23,7 @@ void TerrainRenderSystem::updateMeshes(entt::registry &registry) {
         if (chunk.isMeshDirty) {
             auto &chunkMesh = view.get<ChunkMeshComponent>(entity);
             buildAllChunkMeshes(chunk, chunkMesh, worldGrid);
-            chunk.isMeshDirty = false;  // The state modification happens here
+            chunk.isMeshDirty = false;  
         }
     }
 }

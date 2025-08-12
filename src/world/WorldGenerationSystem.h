@@ -32,13 +32,13 @@ private:
     entt::registry &_registry;
     EventBus &_eventBus;
 
-    std::vector<FastNoiseLite> _noiseGenerators;  // Changed from single generator
+    std::vector<FastNoiseLite> _noiseGenerators;  
     FastNoiseLite _coastlineDistortion;
     WorldGenParams _params;
 
     void generateContinentShape();
 
-    // Event Listener Connections
+    
     entt::connection _regenerateWorldListener;
 
     const WorldGridComponent &getWorldGridSettings() const;

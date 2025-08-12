@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-// Constructor now takes and stores the EventBus reference
+
 InputHandler::InputHandler(ServiceLocator &serviceLocator)
     : _services(serviceLocator), _zoomFactor(Constants::ZOOM_FACTOR),
       _unzoomFactor(Constants::UNZOOM_FACTOR) {
