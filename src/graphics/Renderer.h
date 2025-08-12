@@ -15,7 +15,7 @@ public:
     ~Renderer();
 
     void initialize();
-    void renderFrame(const entt::registry &registry, const sf::View &view, sf::Time dt);
+    void renderFrame(const entt::registry &registry, const sf::View &view, float interpolation);
     void displayFrame();
     void cleanupResources();
     bool isWindowOpen() const;

@@ -33,15 +33,25 @@ Application::Application() {
 void Application::run() {
     LOG_INFO("Application", "Starting main loop.");
     while (_renderer->isWindowOpen()) {
-        sf::Time dt = _deltaClock.restart();
+        sf::Time frameTime = _deltaClock.restart();
+        _timeAccumulator += frameTime;
 
         processEvents();
 
+        // Update UI with real frame time once per frame
+        _ui->update(frameTime, _game->getActiveStationCount());
+
+        // Perform fixed updates if focused
         if (_isWindowFocused) {
-            update(dt);
+            while (_timeAccumulator >= TimePerFrame) {
+                _timeAccumulator -= TimePerFrame;
+                update(TimePerFrame);
+            }
         }
 
-        render(dt);
+        // Calculate interpolation for smooth rendering
+        const float interpolation = _timeAccumulator.asSeconds() / TimePerFrame.asSeconds();
+        render(interpolation);
     }
     LOG_INFO("Application", "Main loop ended.");
     _renderer->cleanupResources();
@@ -74,14 +84,14 @@ void Application::processEvents() {
 }
 
 void Application::update(sf::Time dt) {
-
     _game->getInputHandler().update(dt);
     _game->update(dt, *_ui);
-    _ui->update(dt, _game->getActiveStationCount());
 }
 
-void Application::render(sf::Time dt) {
-    _renderer->renderFrame(_game->getRegistry(), _game->getCamera().getView(), dt);
+
+void Application::render(float interpolation) {
+    // Pass interpolation to the renderer
+    _renderer->renderFrame(_game->getRegistry(), _game->getCamera().getView(), interpolation);
     _ui->renderFrame();
     _renderer->displayFrame();
 }

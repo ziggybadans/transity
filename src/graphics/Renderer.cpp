@@ -28,7 +28,7 @@ TerrainRenderSystem &Renderer::getTerrainRenderSystem() {
     return _terrainRenderSystem;
 }
 
-void Renderer::renderFrame(const entt::registry &registry, const sf::View &view, sf::Time dt) {
+void Renderer::renderFrame(const entt::registry &registry, const sf::View &view, float interpolation) {
     LOG_TRACE("Renderer", "Beginning render pass.");
     _windowInstance.setView(view);
     _windowInstance.clear(_clearColor);
