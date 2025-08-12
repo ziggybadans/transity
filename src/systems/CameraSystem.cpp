@@ -2,8 +2,7 @@
 #include "../Logger.h"
 #include "../core/Camera.h"
 #include "../core/ServiceLocator.h"
-#include "../graphics/Renderer.h"  
-
+#include "../graphics/Renderer.h"
 
 CameraSystem::CameraSystem(ServiceLocator &serviceLocator)
     : m_camera(serviceLocator.camera), m_window(&serviceLocator.renderer->getWindowInstance()) {
@@ -38,6 +37,4 @@ void CameraSystem::onCameraPan(const CameraPanEvent &event) {
     m_camera->moveView(event.panDirection);
 }
 
-void CameraSystem::update(sf::Time dt) {
-    
-}
+void CameraSystem::update(sf::Time dt) {}

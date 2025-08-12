@@ -27,4 +27,4 @@ constexpr float UI_WINDOW_PADDING = 10.0f;
 constexpr float UI_WORLD_GEN_SETTINGS_WIDTH = 300.0f;
 constexpr float UI_INTERACTION_MODES_WIDTH = 400.0f;
 constexpr float UI_INTERACTION_MODES_HEIGHT = 100.0f;
-}  
+}  // namespace Constants

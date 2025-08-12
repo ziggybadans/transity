@@ -9,10 +9,8 @@ class TerrainRenderSystem {
 public:
     TerrainRenderSystem();
 
-    
     void updateMeshes(entt::registry &registry);
 
-    
     void render(const entt::registry &registry, sf::RenderTarget &target, const sf::View &view);
 
     void setVisualizeChunkBorders(bool visualize) { _visualizeChunkBorders = visualize; }

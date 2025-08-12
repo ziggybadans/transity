@@ -10,7 +10,6 @@ WorldGenerationSystem::WorldGenerationSystem(entt::registry &registry, EventBus 
     : _registry(registry), _eventBus(eventBus) {
     LOG_INFO("WorldGenerationSystem", "System created.");
 
-    
     _params.noiseLayers.push_back({"Continents", 1337, 0.005f, FastNoiseLite::NoiseType_Perlin,
                                    FastNoiseLite::FractalType_FBm, 3, 2.0f, 0.5f, 1.0f});
     _params.noiseLayers.push_back({"Mountains", 1338, 0.02f, FastNoiseLite::NoiseType_Perlin,
@@ -99,7 +98,7 @@ sf::Vector2f WorldGenerationSystem::getWorldSize() {
 
 void WorldGenerationSystem::generateChunk(entt::registry &registry, entt::entity chunkEntity) {
     auto &chunk = registry.get<ChunkComponent>(chunkEntity);
-    generateChunkData(chunk);  
+    generateChunkData(chunk);
 }
 
 void WorldGenerationSystem::generateChunkData(ChunkComponent &chunk) const {
@@ -142,7 +141,7 @@ void WorldGenerationSystem::generateChunkData(ChunkComponent &chunk) const {
 
             for (size_t i = 0; i < _noiseGenerators.size(); ++i) {
                 float noiseValue = _noiseGenerators[i].GetNoise(noiseX, noiseY);
-                noiseValue = (noiseValue + 1.0f) / 2.0f;  
+                noiseValue = (noiseValue + 1.0f) / 2.0f;
                 combinedNoise += noiseValue * _params.noiseLayers[i].weight;
                 totalWeight += _params.noiseLayers[i].weight;
             }
@@ -166,7 +165,7 @@ void WorldGenerationSystem::generateChunkData(ChunkComponent &chunk) const {
                 (finalValue > distortedLandThreshold) ? TerrainType::LAND : TerrainType::WATER;
         }
     }
-    chunk.isMeshDirty = true;  
+    chunk.isMeshDirty = true;
 }
 
 void WorldGenerationSystem::regenerate(const WorldGenParams &params) {

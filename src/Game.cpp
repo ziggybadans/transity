@@ -10,12 +10,10 @@
 #include "systems/StationPlacementSystem.h"
 #include "world/ChunkManagerSystem.h"
 
-
 Game::Game(Renderer &renderer)
     : _renderer(renderer), _eventBus(), _entityFactory(_registry),
       _worldGenerationSystem(_registry, _eventBus) {
 
-    
     _serviceLocator.registry = &_registry;
     _serviceLocator.eventBus = &_eventBus;
     _serviceLocator.gameState = &_gameState;
@@ -24,13 +22,10 @@ Game::Game(Renderer &renderer)
     _serviceLocator.colorManager = &_colorManager;
     _serviceLocator.renderer = &_renderer;
 
-    
     _inputHandler = std::make_unique<InputHandler>(_serviceLocator);
 
-    
     _systemManager = std::make_unique<SystemManager>(_serviceLocator);
 
-    
     _systemManager->addSystem<CameraSystem>();
     _systemManager->addSystem<LineCreationSystem>();
     _systemManager->addSystem<StationPlacementSystem>();
@@ -43,7 +38,6 @@ Game::Game(Renderer &renderer)
 void Game::init() {
     LOG_INFO("Game", "Game initialization started.");
 
-    
     auto worldGridEntity = _registry.create();
     _registry.emplace<WorldGridComponent>(worldGridEntity);
     LOG_INFO("Game", "WorldGridComponent created with default values.");
@@ -53,7 +47,7 @@ void Game::init() {
 
     auto &window = _renderer.getWindowInstance();
 
-    float zoomFactor = 4.0f;  
+    float zoomFactor = 4.0f;
     sf::Vector2f initialViewSize = {worldSize.x / zoomFactor, worldSize.y / zoomFactor};
     _camera.setInitialView(window, worldCenter, initialViewSize);
 
@@ -64,14 +58,11 @@ void Game::init() {
 }
 
 void Game::update(sf::Time dt, UI &ui) {
-    
+
     _systemManager->update(dt);
 
-    
     _renderer.getTerrainRenderSystem().updateMeshes(_registry);
 
-    
-    
     _eventBus.update();
 }
 
@@ -80,7 +71,7 @@ void Game::onWindowResize(unsigned int width, unsigned int height) {
 }
 
 size_t Game::getActiveStationCount() {
-    
+
     auto *lineCreationSystem = _systemManager->getSystem<LineCreationSystem>();
     if (lineCreationSystem) {
         return lineCreationSystem->getActiveLineStations().size();

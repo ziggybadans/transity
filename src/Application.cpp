@@ -11,12 +11,9 @@ Application::Application() {
         _renderer = std::make_unique<Renderer>();
         _renderer->initialize();
 
-        
         _game = std::make_unique<Game>(*_renderer);
 
         _renderer->connectToEventBus(_game->getEventBus());
-
-        
 
         _game->init();
 
@@ -68,7 +65,7 @@ void Application::processEvents() {
 
             _ui->processEvent(currentEvent);
             if (_isWindowFocused) {
-                
+
                 _game->getInputHandler().handleGameEvent(currentEvent,
                                                          _renderer->getWindowInstance());
             }
@@ -77,7 +74,7 @@ void Application::processEvents() {
 }
 
 void Application::update(sf::Time dt) {
-    
+
     _game->getInputHandler().update(dt);
     _game->update(dt, *_ui);
     _ui->update(dt, _game->getActiveStationCount());

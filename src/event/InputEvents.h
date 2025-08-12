@@ -7,7 +7,6 @@
 #include <SFML/System/Vector2.hpp>
 #include <entt/entt.hpp>
 
-
 struct WindowCloseEvent {};
 
 struct MouseButtonPressedEvent {
@@ -15,7 +14,6 @@ struct MouseButtonPressedEvent {
     sf::Vector2i pixelPosition;
     sf::Vector2f worldPosition;
 };
-
 
 struct CameraZoomEvent {
     float zoomDelta;
@@ -26,16 +24,13 @@ struct CameraPanEvent {
     sf::Vector2f panDirection;
 };
 
-
 struct TryPlaceStationEvent {
     sf::Vector2f worldPosition;
 };
 
-
 struct InteractionModeChangeEvent {
     InteractionMode newMode;
 };
-
 
 struct RegenerateWorldRequestEvent {
     WorldGenParams params;
@@ -46,7 +41,3 @@ struct ToggleNoiseVisualizationEvent {
 };
 
 struct ImmediateRedrawEvent {};
-
-
-
-

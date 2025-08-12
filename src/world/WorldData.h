@@ -16,7 +16,7 @@ struct NoiseLayer {
     int octaves = 5;
     float lacunarity = 2.0f;
     float gain = 0.5f;
-    float weight = 1.0f;  
+    float weight = 1.0f;
 };
 
 struct WorldGenParams {

@@ -12,10 +12,9 @@
 #include <entt/entt.hpp>
 #include <memory>
 
-
 class Renderer;
 class UI;
-class InputHandler;  
+class InputHandler;
 class ChunkManagerSystem;
 
 class Game {
@@ -33,7 +32,7 @@ public:
     WorldGenerationSystem &getWorldGenerationSystem() { return _worldGenerationSystem; }
     size_t getActiveStationCount();
     GameState &getGameState() { return _gameState; }
-    InputHandler &getInputHandler() { return *_inputHandler; }  
+    InputHandler &getInputHandler() { return *_inputHandler; }
 
 private:
     Renderer &_renderer;
@@ -49,5 +48,5 @@ private:
     WorldGenerationSystem _worldGenerationSystem;
     std::unique_ptr<ChunkManagerSystem> _chunkManagerSystem;
     std::unique_ptr<SystemManager> _systemManager;
-    std::unique_ptr<InputHandler> _inputHandler;  
+    std::unique_ptr<InputHandler> _inputHandler;
 };

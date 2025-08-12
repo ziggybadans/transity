@@ -8,7 +8,6 @@
 #include "GameState.h"
 #include <entt/entt.hpp>
 
-
 class Renderer;
 
 struct ServiceLocator {

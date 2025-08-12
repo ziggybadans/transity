@@ -208,4 +208,4 @@ void Logger::logMessage(LogLevel level, const char *system, unsigned int message
     m_lastLogTime = std::chrono::steady_clock::now();
 }
 
-}  
+}  // namespace Logging

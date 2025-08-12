@@ -136,14 +136,14 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
 
     if ((paramsChanged || gridChanged) && _autoRegenerate) {
         LOG_INFO("UI", "Settings changed, auto-regenerating world.");
-        _eventBus.trigger<RegenerateWorldRequestEvent>({params});  
+        _eventBus.trigger<RegenerateWorldRequestEvent>({params});
     }
 
     ImGui::Separator();
 
     if (ImGui::Button("Regenerate World")) {
         LOG_INFO("UI", "Regenerate World button clicked.");
-        _eventBus.trigger<RegenerateWorldRequestEvent>({params});  
+        _eventBus.trigger<RegenerateWorldRequestEvent>({params});
     }
 
     if (ImGui::Checkbox("Visualize Chunk Borders", &_visualizeChunkBorders)) {

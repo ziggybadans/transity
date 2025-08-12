@@ -9,13 +9,7 @@
 #include "../world/TerrainType.h"
 #include "../world/WorldData.h"
 
-enum class LODLevel {
-    LOD0,  
-    LOD1,
-    LOD2,
-    LOD3,  
-    Count  
-};
+enum class LODLevel { LOD0, LOD1, LOD2, LOD3, Count };
 
 struct PositionComponent {
     sf::Vector2f coordinates;

@@ -33,7 +33,6 @@ void Camera::setInitialView(const sf::RenderWindow &window, const sf::Vector2f &
     if (landSize.y == 0.0f) {
         LOG_WARN("Camera", "Land height is zero, cannot calculate land aspect ratio. View may not "
                            "be correctly framed.");
-        
     }
 
     float landAspectRatio = landSize.x / landSize.y;
@@ -84,11 +83,8 @@ sf::Vector2f Camera::getCenter() const {
 void Camera::onWindowResize(unsigned int width, unsigned int height) {
     LOG_INFO("Camera", "Window resized to %u x %u", width, height);
 
-    
-    
     _view.setViewport({{0.f, 0.f}, {1.f, 1.f}});
 
-    
     sf::Vector2f viewSize = _view.getSize();
 
     if (height == 0) {
@@ -96,13 +92,8 @@ void Camera::onWindowResize(unsigned int width, unsigned int height) {
         return;
     }
 
-    
     float windowAspectRatio = static_cast<float>(width) / static_cast<float>(height);
 
-    
-    
-    
-    
     viewSize.x = viewSize.y * windowAspectRatio;
     _view.setSize(viewSize);
 
@@ -111,6 +102,6 @@ void Camera::onWindowResize(unsigned int width, unsigned int height) {
 }
 
 float Camera::getZoom() const {
-    
+
     return 600.0f / _view.getSize().y;
 }

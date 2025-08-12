@@ -51,7 +51,7 @@ private:
     std::string m_currentLogFileName;
 };
 
-}  
+}  // namespace Logging
 
 namespace LoggerMacrosImpl {
 
@@ -133,7 +133,7 @@ inline void log_fatal_proxy(unsigned int delayMs, const char *system, const char
                                               std::forward<Args>(args)...);
 }
 
-}  
+}  // namespace LoggerMacrosImpl
 
 #define LOG_TRACE(...) LoggerMacrosImpl::log_trace_proxy(__VA_ARGS__)
 #define LOG_DEBUG(...) LoggerMacrosImpl::log_debug_proxy(__VA_ARGS__)

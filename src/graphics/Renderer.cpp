@@ -47,7 +47,7 @@ void Renderer::renderFrame(const entt::registry &registry, const sf::View &view,
         sf::CircleShape shape(renderable.radius);
         shape.setFillColor(renderable.color);
         shape.setPosition(position.coordinates);
-        
+
         shape.setOrigin({renderable.radius, renderable.radius});
 
         _windowInstance.draw(shape);

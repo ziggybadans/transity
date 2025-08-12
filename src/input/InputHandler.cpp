@@ -5,7 +5,6 @@
 #include <string>
 #include <vector>
 
-
 InputHandler::InputHandler(ServiceLocator &serviceLocator)
     : _services(serviceLocator), _zoomFactor(Constants::ZOOM_FACTOR),
       _unzoomFactor(Constants::UNZOOM_FACTOR) {

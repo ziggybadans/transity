@@ -23,6 +23,4 @@ void GameStateSystem::onInteractionModeChange(const InteractionModeChangeEvent &
     }
 }
 
-void GameStateSystem::update(sf::Time dt) {
-    
-}
+void GameStateSystem::update(sf::Time dt) {}

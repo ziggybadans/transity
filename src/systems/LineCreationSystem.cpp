@@ -9,23 +9,19 @@
 
 LineCreationSystem::LineCreationSystem(ServiceLocator &serviceLocator)
     : _registry(serviceLocator.registry), _entityFactory(serviceLocator.entityFactory),
-      _colorManager(serviceLocator.colorManager),
-      _gameState(serviceLocator.gameState) {  
-    
-    
-    
+      _colorManager(serviceLocator.colorManager), _gameState(serviceLocator.gameState) {
+
     m_finalizeLineConnection = serviceLocator.eventBus->sink<FinalizeLineEvent>()
                                    .connect<&LineCreationSystem::onFinalizeLine>(this);
-    m_mousePressConnection =
-        serviceLocator.eventBus->sink<MouseButtonPressedEvent>()
-            .connect<&LineCreationSystem::onMouseButtonPressed>(this);  
+    m_mousePressConnection = serviceLocator.eventBus->sink<MouseButtonPressedEvent>()
+                                 .connect<&LineCreationSystem::onMouseButtonPressed>(this);
     LOG_INFO("LineCreationSystem", "LineCreationSystem created and connected to EventBus.");
 }
 
 LineCreationSystem::~LineCreationSystem() {
-    
+
     m_finalizeLineConnection.release();
-    m_mousePressConnection.release();  
+    m_mousePressConnection.release();
     LOG_INFO("LineCreationSystem", "LineCreationSystem destroyed and disconnected from EventBus.");
 }
 
@@ -46,9 +42,9 @@ void LineCreationSystem::onMouseButtonPressed(const MouseButtonPressedEvent &eve
             if (distanceSquared <= clickable.boundingRadius * clickable.boundingRadius) {
                 LOG_DEBUG("LineCreationSystem", "Station entity %u clicked.",
                           static_cast<unsigned int>(entity_id));
-                
+
                 addStationToLine(entity_id);
-                return;  
+                return;
             }
         }
         LOG_TRACE("LineCreationSystem",
@@ -188,6 +184,4 @@ void LineCreationSystem::onFinalizeLine(const FinalizeLineEvent &event) {
     finalizeLine();
 }
 
-void LineCreationSystem::update(sf::Time dt) {
-    
-}
+void LineCreationSystem::update(sf::Time dt) {}
