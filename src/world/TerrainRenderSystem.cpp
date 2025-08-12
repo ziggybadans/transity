@@ -1,39 +1,47 @@
 #include "TerrainRenderSystem.h"
-#include <iostream> // For debugging if needed
+#include <iostream>
 #include <algorithm>
 #include <cstdint>
 
 TerrainRenderSystem::TerrainRenderSystem() {
-    // Initialize cellShape once. Its size will be set from WorldGridComponent.
-    // Its position and color will be set per cell.
 }
 
-const WorldGridComponent& TerrainRenderSystem::getWorldGridSettings(entt::registry& registry) {
-    auto view = registry.view<WorldGridComponent>();
+const WorldGridComponent& TerrainRenderSystem::getWorldGridSettings(const entt::registry& registry) {
+    auto view = registry.view<const WorldGridComponent>();
     if (view.empty()) {
         throw std::runtime_error("TerrainRenderSystem: WorldGridComponent not found in registry!");
     }
-    return view.get<WorldGridComponent>(view.front());
+    return view.get<const WorldGridComponent>(view.front());
 }
 
-void TerrainRenderSystem::render(entt::registry& registry, sf::RenderTarget& target, const sf::View& view) {
+void TerrainRenderSystem::updateMeshes(entt::registry& registry) {
+    const auto& worldGrid = getWorldGridSettings(registry);
+    auto view = registry.view<ChunkComponent, ChunkMeshComponent>();
+
+    for (auto entity : view) {
+        auto& chunk = view.get<ChunkComponent>(entity);
+        if (chunk.isMeshDirty) {
+            auto& chunkMesh = view.get<ChunkMeshComponent>(entity);
+            buildAllChunkMeshes(chunk, chunkMesh, worldGrid);
+            chunk.isMeshDirty = false; // The state modification happens here
+        }
+    }
+}
+
+void TerrainRenderSystem::render(const entt::registry& registry, sf::RenderTarget& target, const sf::View& view) {
     const WorldGridComponent& worldGrid = getWorldGridSettings(registry);
-    auto chunkView = registry.view<ChunkComponent>();
+    auto chunkView = registry.view<const ChunkComponent, const ChunkMeshComponent>();
 
-    // Calculate the view's bounding box using the SFML 3 API
     sf::FloatRect viewBounds({view.getCenter() - view.getSize() / 2.f, view.getSize()});
-
-    // Optional: Inflate the view bounds slightly to prevent pop-in at the edges
     viewBounds.position.x -= worldGrid.cellSize;
     viewBounds.position.y -= worldGrid.cellSize;
     viewBounds.size.x += worldGrid.cellSize * 2;
     viewBounds.size.y += worldGrid.cellSize * 2;
 
-    int renderedChunkCount = 0;
     for (auto entity : chunkView) {
-        auto& chunk = chunkView.get<ChunkComponent>(entity);
+        const auto& chunk = chunkView.get<const ChunkComponent>(entity);
+        const auto& chunkMesh = chunkView.get<const ChunkMeshComponent>(entity);
 
-        // Calculate the chunk's bounding box
         float chunkWidthPixels = worldGrid.chunkDimensionsInCells.x * worldGrid.cellSize;
         float chunkHeightPixels = worldGrid.chunkDimensionsInCells.y * worldGrid.cellSize;
         sf::FloatRect chunkBounds(
@@ -41,20 +49,13 @@ void TerrainRenderSystem::render(entt::registry& registry, sf::RenderTarget& tar
             {chunkWidthPixels, chunkHeightPixels}
         );
 
-        // The culling check remains the same, as intersects() is still the correct method
         if (!viewBounds.findIntersection(chunkBounds)) {
             continue;
         }
 
-        // If the chunk is visible, proceed with rendering
-        if (chunk.isMeshDirty) {
-            buildAllChunkMeshes(chunk, worldGrid); // Call the new function
-        }
-
         LODLevel levelToRender = _isLodEnabled ? chunk.lodLevel : LODLevel::LOD0;
-        target.draw(chunk.lodVertexArrays[static_cast<int>(levelToRender)]);
+        target.draw(chunkMesh.lodVertexArrays[static_cast<int>(levelToRender)]);
         
-        // --- START VISUALIZATION LOGIC ---
         if (_visualizeChunkBorders) {
             float left = chunkBounds.position.x;
             float top = chunkBounds.position.y;
@@ -70,7 +71,7 @@ void TerrainRenderSystem::render(entt::registry& registry, sf::RenderTarget& tar
             border[2].color = sf::Color::Red;
             border[3].position = {left, bottom};
             border[3].color = sf::Color::Red;
-            border[4].position = {left, top}; // Close the loop
+            border[4].position = {left, top};
             border[4].color = sf::Color::Red;
 
             target.draw(border);
@@ -84,49 +85,27 @@ void TerrainRenderSystem::render(entt::registry& registry, sf::RenderTarget& tar
             float chunkBottom = chunkTop + chunkBounds.size.y;
             sf::Color gridColor(128, 128, 128, 128);
 
-            // Vertical lines
             for (int i = 1; i < worldGrid.chunkDimensionsInCells.x; ++i) {
                 float x = chunkLeft + i * worldGrid.cellSize;
-                sf::Vertex topVertex, bottomVertex;
-                
-                topVertex.position = {x, chunkTop};
-                topVertex.color = gridColor;
-                
-                bottomVertex.position = {x, chunkBottom};
-                bottomVertex.color = gridColor;
-                
-                gridLines.append(topVertex);
-                gridLines.append(bottomVertex);
+                gridLines.append({{x, chunkTop}, gridColor});
+                gridLines.append({{x, chunkBottom}, gridColor});
             }
-            // Horizontal lines
             for (int i = 1; i < worldGrid.chunkDimensionsInCells.y; ++i) {
                 float y = chunkTop + i * worldGrid.cellSize;
-                sf::Vertex leftVertex, rightVertex;
-
-                leftVertex.position = {chunkLeft, y};
-                leftVertex.color = gridColor;
-
-                rightVertex.position = {chunkRight, y};
-                rightVertex.color = gridColor;
-
-                gridLines.append(leftVertex);
-                gridLines.append(rightVertex);
+                gridLines.append({{chunkLeft, y}, gridColor});
+                gridLines.append({{chunkRight, y}, gridColor});
             }
             target.draw(gridLines);
         }
-        // --- END VISUALIZATION LOGIC ---
-
-        renderedChunkCount++;
     }
-    // LOG_TRACE("TerrainRenderSystem", "Rendered %d visible chunks.", renderedChunkCount);
 }
 
-void TerrainRenderSystem::buildAllChunkMeshes(ChunkComponent& chunk, const WorldGridComponent& worldGrid) {
+void TerrainRenderSystem::buildAllChunkMeshes(const ChunkComponent& chunk, ChunkMeshComponent& chunkMesh, const WorldGridComponent& worldGrid) {
     int cellsPerDimension = worldGrid.chunkDimensionsInCells.x;
 
     for (int lod = 0; lod < static_cast<int>(LODLevel::Count); ++lod) {
         int step = 1 << lod;
-        sf::VertexArray& vertexArray = chunk.lodVertexArrays[lod];
+        sf::VertexArray& vertexArray = chunkMesh.lodVertexArrays[lod];
         vertexArray.clear();
 
         int numCellsX = cellsPerDimension / step;
@@ -142,7 +121,6 @@ void TerrainRenderSystem::buildAllChunkMeshes(ChunkComponent& chunk, const World
                 int originalCellIndex = (y * step) * cellsPerDimension + (x * step);
                 TerrainType currentType = chunk.cells[originalCellIndex];
 
-                // Find width of the rectangle
                 int rectWidth = 1;
                 while (x + rectWidth < numCellsX) {
                     int nextCellIndex = (y * step) * cellsPerDimension + ((x + rectWidth) * step);
@@ -152,7 +130,6 @@ void TerrainRenderSystem::buildAllChunkMeshes(ChunkComponent& chunk, const World
                     rectWidth++;
                 }
 
-                // Find height of the rectangle
                 int rectHeight = 1;
                 while (y + rectHeight < numCellsY) {
                     bool canExtend = true;
@@ -169,14 +146,12 @@ void TerrainRenderSystem::buildAllChunkMeshes(ChunkComponent& chunk, const World
                     rectHeight++;
                 }
 
-                // Mark all cells in the rectangle as visited
                 for (int ry = 0; ry < rectHeight; ++ry) {
                     for (int rx = 0; rx < rectWidth; ++rx) {
                         visited[(y + ry) * numCellsX + (x + rx)] = true;
                     }
                 }
 
-                // Add the quad for the rectangle
                 float screenX = (chunk.chunkGridPosition.x * cellsPerDimension + (x * step)) * worldGrid.cellSize;
                 float screenY = (chunk.chunkGridPosition.y * cellsPerDimension + (y * step)) * worldGrid.cellSize;
                 float quadWidth = rectWidth * worldGrid.cellSize * step;
@@ -205,11 +180,8 @@ void TerrainRenderSystem::buildAllChunkMeshes(ChunkComponent& chunk, const World
             }
         }
     }
-    chunk.isMeshDirty = false;
 }
 
-void TerrainRenderSystem::setLodEnabled(entt::registry& registry, bool enabled) {
-    // This function no longer needs to dirty meshes.
-    // It just toggles the internal flag.
+void TerrainRenderSystem::setLodEnabled(bool enabled) {
     _isLodEnabled = enabled;
 }

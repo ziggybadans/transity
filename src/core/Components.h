@@ -1,20 +1,20 @@
 #pragma once
 
-#include <SFML/System.hpp>
 #include <SFML/Graphics.hpp>
+#include <SFML/System.hpp>
+#include <set>
 #include <string>
 #include <vector>
-#include <set>
 
 #include "../world/TerrainType.h"
 #include "../world/WorldData.h"
 
 enum class LODLevel {
-    LOD0, // Highest detail
+    LOD0,  // Highest detail
     LOD1,
     LOD2,
-    LOD3, // Lowest detail
-    Count // Add this to get the number of LOD levels
+    LOD3,  // Lowest detail
+    Count  // Add this to get the number of LOD levels
 };
 
 struct PositionComponent {
@@ -22,7 +22,8 @@ struct PositionComponent {
 };
 
 struct RenderableComponent {
-    sf::CircleShape shape;
+    float radius;
+    sf::Color color;
     int zOrder;
 };
 
@@ -56,23 +57,29 @@ struct ChunkComponent {
     std::vector<TerrainType> cells;
     std::vector<float> noiseValues;
     std::vector<float> rawNoiseValues;
-    std::vector<sf::VertexArray> lodVertexArrays;
     bool isMeshDirty = true;
     std::set<int> dirtyCells;
     LODLevel lodLevel = LODLevel::LOD0;
 
-    ChunkComponent(int chunkWidth, int chunkHeight) : cells(chunkWidth * chunkHeight, TerrainType::WATER),
-        noiseValues(chunkWidth * chunkHeight, 0.0f) {
-        lodVertexArrays.resize(static_cast<size_t>(LODLevel::Count)); // Resize the vector
-        for (auto& va : lodVertexArrays) {
+    ChunkComponent(int chunkWidth, int chunkHeight)
+        : cells(chunkWidth * chunkHeight, TerrainType::WATER),
+          noiseValues(chunkWidth * chunkHeight, 0.0f) {}
+};
+
+struct ChunkMeshComponent {
+    std::vector<sf::VertexArray> lodVertexArrays;
+
+    ChunkMeshComponent() {
+        lodVertexArrays.resize(static_cast<size_t>(LODLevel::Count));
+        for (auto &va : lodVertexArrays) {
             va.setPrimitiveType(sf::PrimitiveType::Triangles);
         }
     }
 };
 
 struct WorldGridComponent {
-    sf::Vector2i worldDimensionsInChunks = { 100, 100 };
-    sf::Vector2i chunkDimensionsInCells = { 32, 32 };
+    sf::Vector2i worldDimensionsInChunks = {100, 100};
+    sf::Vector2i chunkDimensionsInCells = {32, 32};
     float cellSize = 16.0f;
 };
 

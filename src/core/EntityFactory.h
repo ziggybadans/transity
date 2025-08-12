@@ -1,24 +1,25 @@
 #pragma once
 
-#include <entt/entt.hpp>
-#include <SFML/System.hpp>
 #include <SFML/Graphics/Color.hpp>
-#include <string>
+#include <SFML/System.hpp>
+#include <entt/entt.hpp>
 #include <map>
-#include <optional>
 #include <nlohmann/json.hpp>
+#include <optional>
+#include <string>
 
 #include "Components.h"
 
 class EntityFactory {
 public:
-    EntityFactory(entt::registry& registry);
+    EntityFactory(entt::registry &registry);
 
-    void loadArchetypes(const std::string& directoryPath);
-    entt::entity createEntity(const std::string& archetypeId, const sf::Vector2f& position, const std::string& name = "");
-    entt::entity createLine(const std::vector<entt::entity>& stops, const sf::Color& color);
+    void loadArchetypes(const std::string &directoryPath);
+    entt::entity createEntity(const std::string &archetypeId, const sf::Vector2f &position,
+                              const std::string &name = "");
+    entt::entity createLine(const std::vector<entt::entity> &stops, const sf::Color &color);
 
 private:
-    entt::registry& _registry;
+    entt::registry &_registry;
     std::map<std::string, nlohmann::json> _archetypes;
 };

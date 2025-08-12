@@ -3,10 +3,11 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/System.hpp>
 #include <entt/entt.hpp>
-#include "../world/TerrainRenderSystem.h"
-#include "LineRenderSystem.h"
+
 #include "../event/EventBus.h"
 #include "../event/InputEvents.h"
+#include "../world/TerrainRenderSystem.h"
+#include "LineRenderSystem.h"
 
 class Renderer {
 public:
@@ -14,19 +15,17 @@ public:
     ~Renderer();
 
     void initialize();
-    void renderFrame(entt::registry& registry,
-        const sf::View& view,
-        sf::Time dt);
+    void renderFrame(const entt::registry &registry, const sf::View &view, sf::Time dt);
     void displayFrame();
     void cleanupResources();
     bool isWindowOpen() const;
-    sf::RenderWindow& getWindowInstance();
+    sf::RenderWindow &getWindowInstance();
 
-    void setClearColor(const sf::Color& color);
-    const sf::Color& getClearColor() const;
+    void setClearColor(const sf::Color &color);
+    const sf::Color &getClearColor() const;
 
-    void connectToEventBus(EventBus& eventBus);
-    TerrainRenderSystem& getTerrainRenderSystem();
+    void connectToEventBus(EventBus &eventBus);
+    TerrainRenderSystem &getTerrainRenderSystem();
 
 private:
     sf::RenderWindow _windowInstance;
@@ -34,6 +33,6 @@ private:
     TerrainRenderSystem _terrainRenderSystem;
     LineRenderSystem _lineRenderSystem;
 
-    void onWindowClose(const WindowCloseEvent& event);
+    void onWindowClose(const WindowCloseEvent &event);
     entt::connection m_windowCloseConnection;
 };

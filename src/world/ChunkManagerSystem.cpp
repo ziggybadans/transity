@@ -188,6 +188,7 @@ void ChunkManagerSystem::processCompletedChunks() {
 
         auto entity = _registry.create();
         _registry.emplace<ChunkComponent>(entity, std::move(chunkData));
+        _registry.emplace<ChunkMeshComponent>(entity);
         
         _activeChunks[chunkPos] = entity;
         _chunksBeingLoaded.erase(chunkPos);

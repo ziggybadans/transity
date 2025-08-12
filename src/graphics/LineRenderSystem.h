@@ -5,5 +5,5 @@
 
 class LineRenderSystem {
 public:
-    void render(entt::registry& registry, sf::RenderWindow& window, const sf::View& view);
+    void render(const entt::registry &registry, sf::RenderWindow &window, const sf::View &view);
 };

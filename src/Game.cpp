@@ -65,21 +65,21 @@ void Game::init() {
     LOG_INFO("Game", "Game initialization completed.");
 }
 
-// Remove the processInputCommands method entirely
-
 void Game::update(sf::Time dt, UI& ui) {
     // The system manager update now takes only dt
     _systemManager->update(dt);
     
-    // The event bus triggers system updates automatically.
-    // We just need to trigger the update on the dispatcher.
+    // Update terrain meshes if they are dirty
+    _renderer.getTerrainRenderSystem().updateMeshes(_registry);
+
+    // The event bus triggers system updates automatically,
+    // we just need to trigger the update on the dispatcher
     _eventBus.update();
 }
 
 void Game::onWindowResize(unsigned int width, unsigned int height) {
     _camera.onWindowResize(width, height);
 }
-
 
 size_t Game::getActiveStationCount() {
     // Retrieve the system from the manager to get the data.
@@ -89,7 +89,6 @@ size_t Game::getActiveStationCount() {
     }
     return 0;
 }
-
 
 Game::~Game() {
     LOG_INFO("Game", "Game instance destroyed.");

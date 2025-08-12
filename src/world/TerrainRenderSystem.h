@@ -9,10 +9,15 @@ class TerrainRenderSystem {
 public:
     TerrainRenderSystem();
 
-    void render(entt::registry& registry, sf::RenderTarget& target, const sf::View& view);
+    // This is now a simulation-side system that modifies the registry
+    void updateMeshes(entt::registry& registry); 
+    
+    // Render is now const-correct and does not modify the registry
+    void render(const entt::registry& registry, sf::RenderTarget& target, const sf::View& view);
+
     void setVisualizeChunkBorders(bool visualize) { _visualizeChunkBorders = visualize; }
     void setVisualizeCellBorders(bool visualize) { _visualizeCellBorders = visualize; }
-    void setLodEnabled(entt::registry& registry, bool enabled);
+    void setLodEnabled(bool enabled);
 
 private:
     sf::RectangleShape _cellShape;
@@ -20,6 +25,6 @@ private:
     bool _visualizeCellBorders = false;
     bool _isLodEnabled = true;
 
-    const WorldGridComponent& getWorldGridSettings(entt::registry& registry);
-    void buildAllChunkMeshes(ChunkComponent& chunk, const WorldGridComponent& worldGrid);
+    const WorldGridComponent& getWorldGridSettings(const entt::registry& registry);
+    void buildAllChunkMeshes(const ChunkComponent& chunk, ChunkMeshComponent& chunkMesh, const WorldGridComponent& worldGrid);
 };
