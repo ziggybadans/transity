@@ -32,7 +32,7 @@ These changes address core architectural issues that have wide-ranging impacts o
     *   **Action:** Add a single `eventBus->update()` call in the main loop to process all queued events in a predictable sequence.
     *   **Files:** `src/Application.cpp`, `src/input/InputHandler.cpp`, `src/graphics/UI.cpp`
 
-### Tier 2: Performance and Memory Optimizations
+### Tier 2: Performance and Memory Optimizations (Complete)
 
 These changes focus on improving performance and memory management, building on the new architecture.
 

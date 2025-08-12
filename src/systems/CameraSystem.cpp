@@ -4,6 +4,8 @@
 #include "../core/ServiceLocator.h"
 #include "../graphics/Renderer.h"
 
+#include <cassert>
+
 CameraSystem::CameraSystem(ServiceLocator &serviceLocator)
     : m_camera(serviceLocator.camera), m_window(&serviceLocator.renderer->getWindowInstance()) {
     m_zoomConnection =
@@ -20,6 +22,7 @@ CameraSystem::~CameraSystem() {
 }
 
 void CameraSystem::onCameraZoom(const CameraZoomEvent &event) {
+    assert(event.zoomDelta != 0.0f && "Camera zoom delta cannot be zero.");
     LOG_DEBUG("CameraSystem", "Processing CameraZoomEvent with delta: %.2f", event.zoomDelta);
     sf::View &view = m_camera->getViewToModify();
     sf::Vector2f worldPosBeforeZoom = m_window->mapPixelToCoords(event.mousePixelPosition, view);

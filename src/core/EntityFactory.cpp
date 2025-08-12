@@ -64,7 +64,7 @@ entt::entity EntityFactory::createEntity(const std::string &archetypeId,
             if (componentName == "renderable") {
                 auto &renderable = _registry.emplace<RenderableComponent>(entity);
                 if (componentData.contains("radius")) {
-                    renderable.radius = componentData["radius"].get<float>();
+                    renderable.radius = {componentData["radius"].get<float>()};
                 }
                 if (componentData.contains("color") && componentData["color"].is_array()
                     && componentData["color"].size() == 4) {
@@ -75,12 +75,12 @@ entt::entity EntityFactory::createEntity(const std::string &archetypeId,
                                   static_cast<unsigned char>(componentData["color"][3].get<int>()));
                 }
                 if (componentData.contains("zOrder")) {
-                    renderable.zOrder = componentData["zOrder"].get<int>();
+                    renderable.zOrder = {componentData["zOrder"].get<int>()};
                 }
             } else if (componentName == "clickable") {
                 auto &clickable = _registry.emplace<ClickableComponent>(entity);
                 if (componentData.contains("boundingRadius")) {
-                    clickable.boundingRadius = componentData["boundingRadius"].get<float>();
+                    clickable.boundingRadius = {componentData["boundingRadius"].get<float>()};
                 }
             } else if (componentName == "station") {
                 _registry.emplace<StationComponent>(entity);

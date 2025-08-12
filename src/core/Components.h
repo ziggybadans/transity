@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 
+#include "StrongTypes.h"
 #include "../world/TerrainType.h"
 #include "../world/WorldData.h"
 
@@ -16,9 +17,9 @@ struct PositionComponent {
 };
 
 struct RenderableComponent {
-    float radius;
+    Radius radius;
     sf::Color color;
-    int zOrder;
+    ZOrder zOrder;
 };
 
 struct StationComponent {
@@ -29,15 +30,19 @@ struct LineComponent {
     sf::Color color;
     std::vector<entt::entity> stops;
     std::vector<sf::Vector2f> pathPoints;
-    float thickness = 5.0f;
+    Thickness thickness = {5.0f};
 };
 
 struct ClickableComponent {
-    float boundingRadius;
+    Radius boundingRadius;
+};
+
+struct AABBComponent {
+    sf::FloatRect bounds;
 };
 
 struct ActiveLineStationTag {
-    int order = 0;
+    StationOrder order = {0};
 };
 
 struct GridCellComponent {

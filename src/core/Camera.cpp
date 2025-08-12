@@ -54,33 +54,33 @@ void Camera::setInitialView(const sf::RenderWindow &window, const sf::Vector2f &
              _view.getSize().x, _view.getSize().y, _view.getCenter().x, _view.getCenter().y);
 }
 
-sf::View &Camera::getViewToModify() {
+sf::View &Camera::getViewToModify() noexcept {
     return _view;
 }
 
-void Camera::moveView(const sf::Vector2f &offset) {
+void Camera::moveView(const sf::Vector2f &offset) noexcept {
     _view.move(offset);
     LOG_TRACE("Camera", "View moved by (%.1f, %.1f). New center: (%.1f, %.1f)", offset.x, offset.y,
               _view.getCenter().x, _view.getCenter().y);
 }
 
-void Camera::zoomView(float factor) {
+void Camera::zoomView(float factor) noexcept {
     _view.zoom(factor);
     LOG_TRACE("Camera", "View zoomed by factor %.2f. New size: (%.1f, %.1f)", factor,
               _view.getSize().x, _view.getSize().y);
 }
 
-const sf::View &Camera::getView() const {
+const sf::View &Camera::getView() const noexcept {
     LOG_TRACE("Camera", "Getting view. Center: (%.1f, %.1f), Size: (%.1f, %.1f)",
               _view.getCenter().x, _view.getCenter().y, _view.getSize().x, _view.getSize().y);
     return _view;
 }
 
-sf::Vector2f Camera::getCenter() const {
+sf::Vector2f Camera::getCenter() const noexcept {
     return _view.getCenter();
 }
 
-void Camera::onWindowResize(unsigned int width, unsigned int height) {
+void Camera::onWindowResize(unsigned int width, unsigned int height) noexcept {
     LOG_INFO("Camera", "Window resized to %u x %u", width, height);
 
     _view.setViewport({{0.f, 0.f}, {1.f, 1.f}});
@@ -101,7 +101,7 @@ void Camera::onWindowResize(unsigned int width, unsigned int height) {
               _view.getSize().x, _view.getSize().y);
 }
 
-float Camera::getZoom() const {
+float Camera::getZoom() const noexcept {
 
     return 600.0f / _view.getSize().y;
 }

@@ -20,7 +20,7 @@ public:
 
     void update(sf::Time dt) override;
 
-    void clearCurrentLine();
+    void clearCurrentLine() noexcept;
     std::vector<entt::entity> getActiveLineStations() const;
 
 private:

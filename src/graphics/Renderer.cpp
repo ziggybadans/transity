@@ -24,7 +24,7 @@ void Renderer::initialize() {
     LOG_INFO("Renderer", "Renderer initialized.");
 }
 
-TerrainRenderSystem &Renderer::getTerrainRenderSystem() {
+TerrainRenderSystem &Renderer::getTerrainRenderSystem() noexcept {
     return _terrainRenderSystem;
 }
 
@@ -44,11 +44,11 @@ void Renderer::renderFrame(const entt::registry &registry, const sf::View &view,
         const auto &position = viewRegistry.get<const PositionComponent>(entity);
         const auto &renderable = viewRegistry.get<const RenderableComponent>(entity);
 
-        sf::CircleShape shape(renderable.radius);
+        sf::CircleShape shape(renderable.radius.value);
         shape.setFillColor(renderable.color);
         shape.setPosition(position.coordinates);
 
-        shape.setOrigin({renderable.radius, renderable.radius});
+        shape.setOrigin({renderable.radius.value, renderable.radius.value});
 
         _windowInstance.draw(shape);
         entityCount++;
@@ -62,26 +62,26 @@ void Renderer::displayFrame() {
     _windowInstance.display();
 }
 
-void Renderer::cleanupResources() {
+void Renderer::cleanupResources() noexcept {
     LOG_INFO("Renderer", "Renderer cleanup initiated.");
     LOG_INFO("Renderer", "Renderer cleaned up.");
 }
 
-bool Renderer::isWindowOpen() const {
+bool Renderer::isWindowOpen() const noexcept {
     return _windowInstance.isOpen();
 }
 
-sf::RenderWindow &Renderer::getWindowInstance() {
+sf::RenderWindow &Renderer::getWindowInstance() noexcept {
     return _windowInstance;
 }
 
-void Renderer::setClearColor(const sf::Color &color) {
+void Renderer::setClearColor(const sf::Color &color) noexcept {
     _clearColor = color;
     LOG_DEBUG("Renderer", "Clear color set to R:%d G:%d B:%d A:%d", color.r, color.g, color.b,
               color.a);
 }
 
-const sf::Color &Renderer::getClearColor() const {
+const sf::Color &Renderer::getClearColor() const noexcept {
     return _clearColor;
 }
 

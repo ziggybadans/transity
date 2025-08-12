@@ -5,7 +5,7 @@
 class ColorManager {
 public:
     ColorManager();
-    sf::Color getNextLineColor();
+    sf::Color getNextLineColor() noexcept;
 
 private:
     std::vector<sf::Color> _lineColors;

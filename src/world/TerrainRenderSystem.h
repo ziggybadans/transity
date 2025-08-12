@@ -14,9 +14,9 @@ public:
 
     void render(const entt::registry &registry, sf::RenderTarget &target, const sf::View &view);
 
-    void setVisualizeChunkBorders(bool visualize) { _visualizeChunkBorders = visualize; }
-    void setVisualizeCellBorders(bool visualize) { _visualizeCellBorders = visualize; }
-    void setLodEnabled(bool enabled);
+    void setVisualizeChunkBorders(bool visualize) noexcept { _visualizeChunkBorders = visualize; }
+    void setVisualizeCellBorders(bool visualize) noexcept { _visualizeCellBorders = visualize; }
+    void setLodEnabled(bool enabled) noexcept;
 
 private:
     sf::RectangleShape _cellShape;

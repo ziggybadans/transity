@@ -20,9 +20,9 @@ public:
     
     sf::Vector2f getWorldSize();
 
-    entt::registry &getRegistry() { return _registry; }
+    entt::registry &getRegistry() noexcept { return _registry; }
 
-    const WorldGenParams &getParams() const { return _params; }
+    const WorldGenParams &getParams() const noexcept { return _params; }
     WorldGenParams &getParams() { return _params; }
     void setParams(const WorldGenParams &params);
 

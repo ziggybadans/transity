@@ -39,7 +39,7 @@ void LineCreationSystem::onMouseButtonPressed(const MouseButtonPressedEvent &eve
             sf::Vector2f diff = event.worldPosition - pos.coordinates;
             float distanceSquared = (diff.x * diff.x) + (diff.y * diff.y);
 
-            if (distanceSquared <= clickable.boundingRadius * clickable.boundingRadius) {
+            if (distanceSquared <= clickable.boundingRadius.value * clickable.boundingRadius.value) {
                 LOG_DEBUG("LineCreationSystem", "Station entity %u clicked.",
                           static_cast<unsigned int>(entity_id));
 
@@ -60,8 +60,8 @@ void LineCreationSystem::addStationToLine(entt::entity stationEntity) {
         auto view = _registry->view<ActiveLineStationTag>();
         for (auto entity : view) {
             const auto &tag = view.get<ActiveLineStationTag>(entity);
-            if (tag.order > currentHighestOrder) {
-                currentHighestOrder = tag.order;
+            if (tag.order.value > currentHighestOrder) {
+                currentHighestOrder = tag.order.value;
                 lastStationEntity = entity;
             }
         }
@@ -73,7 +73,7 @@ void LineCreationSystem::addStationToLine(entt::entity stationEntity) {
             return;
         }
 
-        _registry->emplace_or_replace<ActiveLineStationTag>(stationEntity, currentHighestOrder + 1);
+        _registry->emplace_or_replace<ActiveLineStationTag>(stationEntity, StationOrder{currentHighestOrder + 1});
         LOG_DEBUG("LineCreationSystem", "Station %u tagged for active line with order %d.",
                   static_cast<unsigned int>(stationEntity), currentHighestOrder + 1);
     } else {
@@ -86,7 +86,7 @@ void LineCreationSystem::finalizeLine() {
     std::vector<std::pair<int, entt::entity>> taggedStations;
     auto view = _registry->view<ActiveLineStationTag>();
     for (auto entity : view) {
-        taggedStations.push_back({view.get<ActiveLineStationTag>(entity).order, entity});
+        taggedStations.push_back({view.get<ActiveLineStationTag>(entity).order.value, entity});
     }
 
     std::sort(taggedStations.begin(), taggedStations.end());
@@ -147,7 +147,7 @@ void LineCreationSystem::finalizeLine() {
     clearCurrentLine();
 }
 
-void LineCreationSystem::clearCurrentLine() {
+void LineCreationSystem::clearCurrentLine() noexcept {
     LOG_DEBUG("LineCreationSystem",
               "Clearing active line stations (removing ActiveLineStationTag).");
     auto view = _registry->view<ActiveLineStationTag>();
@@ -168,7 +168,7 @@ std::vector<entt::entity> LineCreationSystem::getActiveLineStations() const {
     std::vector<std::pair<int, entt::entity>> taggedStations;
     auto view = _registry->view<PositionComponent, ActiveLineStationTag>();
     for (auto entity : view) {
-        taggedStations.push_back({view.get<ActiveLineStationTag>(entity).order, entity});
+        taggedStations.push_back({view.get<ActiveLineStationTag>(entity).order.value, entity});
     }
     std::sort(taggedStations.begin(), taggedStations.end());
 

@@ -28,7 +28,7 @@ void LineRenderSystem::render(const entt::registry &registry, sf::RenderWindow &
     auto activeStationsView = registry.view<const PositionComponent, const ActiveLineStationTag>();
     for (auto entity : activeStationsView) {
         m_taggedStationsPairs.push_back(
-            {activeStationsView.get<const ActiveLineStationTag>(entity).order, entity});
+            {activeStationsView.get<const ActiveLineStationTag>(entity).order.value, entity});
     }
 
     if (!m_taggedStationsPairs.empty()) {

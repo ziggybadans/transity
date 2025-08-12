@@ -1,7 +1,9 @@
 #include "TerrainRenderSystem.h"
+
 #include <algorithm>
 #include <cstdint>
 #include <iostream>
+#include <cassert>
 
 TerrainRenderSystem::TerrainRenderSystem() {}
 
@@ -9,7 +11,7 @@ const WorldGridComponent &
 TerrainRenderSystem::getWorldGridSettings(const entt::registry &registry) {
     auto view = registry.view<const WorldGridComponent>();
     if (view.empty()) {
-        throw std::runtime_error("TerrainRenderSystem: WorldGridComponent not found in registry!");
+        assert(!view.empty() && "WorldGridComponent not found in registry. The TerrainRenderSystem requires it to be present.");
     }
     return view.get<const WorldGridComponent>(view.front());
 }
@@ -202,6 +204,6 @@ void TerrainRenderSystem::buildAllChunkMeshes(const ChunkPositionComponent &chun
     }
 }
 
-void TerrainRenderSystem::setLodEnabled(bool enabled) {
+void TerrainRenderSystem::setLodEnabled(bool enabled) noexcept {
     _isLodEnabled = enabled;
 }

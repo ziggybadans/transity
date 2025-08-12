@@ -5,7 +5,7 @@ ColorManager::ColorManager() : _currentLineColorIndex(0) {
                    sf::Color::Yellow, sf::Color::Magenta, sf::Color::Cyan};
 }
 
-sf::Color ColorManager::getNextLineColor() {
+sf::Color ColorManager::getNextLineColor() noexcept {
     sf::Color color = _lineColors[_currentLineColorIndex];
     _currentLineColorIndex = (_currentLineColorIndex + 1) % _lineColors.size();
     return color;

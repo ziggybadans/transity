@@ -17,15 +17,15 @@ public:
     void initialize();
     void renderFrame(const entt::registry &registry, const sf::View &view, float interpolation);
     void displayFrame();
-    void cleanupResources();
-    bool isWindowOpen() const;
-    sf::RenderWindow &getWindowInstance();
+    void cleanupResources() noexcept;
+    bool isWindowOpen() const noexcept;
+    sf::RenderWindow &getWindowInstance() noexcept;
 
-    void setClearColor(const sf::Color &color);
-    const sf::Color &getClearColor() const;
+    void setClearColor(const sf::Color &color) noexcept;
+    const sf::Color &getClearColor() const noexcept;
 
     void connectToEventBus(EventBus &eventBus);
-    TerrainRenderSystem &getTerrainRenderSystem();
+    TerrainRenderSystem &getTerrainRenderSystem() noexcept;
 
 private:
     sf::RenderWindow _windowInstance;

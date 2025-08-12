@@ -2,6 +2,7 @@
 #include "../Logger.h"
 #include "../core/Constants.h"
 
+#include <cassert>
 #include <algorithm>
 #include <random>
 #include <vector>
@@ -24,6 +25,11 @@ WorldGenerationSystem::~WorldGenerationSystem() {}
 
 void WorldGenerationSystem::setParams(const WorldGenParams &params) {
     _params = params;
+    for (const auto& layer : _params.noiseLayers) {
+        assert(layer.frequency > 0.0f && "Noise frequency must be positive.");
+        assert(layer.octaves > 0 && "Noise octaves must be positive.");
+        assert(layer.weight >= 0.0f && "Noise weight must be non-negative.");
+    }
     configureNoise();
 }
 
