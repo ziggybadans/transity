@@ -2,6 +2,7 @@
 
 #include <SFML/Graphics.hpp>
 #include <entt/entt.hpp>
+#include <vector>
 
 #include "../core/Components.h"
 
@@ -22,6 +23,7 @@ private:
     bool _visualizeChunkBorders = false;
     bool _visualizeCellBorders = false;
     bool _isLodEnabled = true;
+    std::vector<bool> m_visited;
 
     const WorldGridComponent &getWorldGridSettings(const entt::registry &registry);
     void buildAllChunkMeshes(const ChunkPositionComponent &chunkPos,

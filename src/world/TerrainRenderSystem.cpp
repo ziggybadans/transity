@@ -116,11 +116,12 @@ void TerrainRenderSystem::buildAllChunkMeshes(const ChunkPositionComponent &chun
 
         int numCellsX = cellsPerDimension / step;
         int numCellsY = cellsPerDimension / step;
-        std::vector<bool> visited(numCellsX * numCellsY, false);
+
+        m_visited.assign(numCellsX * numCellsY, false);
 
         for (int y = 0; y < numCellsY; ++y) {
             for (int x = 0; x < numCellsX; ++x) {
-                if (visited[y * numCellsX + x]) {
+                if (m_visited[y * numCellsX + x]) {
                     continue;
                 }
 
@@ -130,7 +131,7 @@ void TerrainRenderSystem::buildAllChunkMeshes(const ChunkPositionComponent &chun
                 int rectWidth = 1;
                 while (x + rectWidth < numCellsX) {
                     int nextCellIndex = (y * step) * cellsPerDimension + ((x + rectWidth) * step);
-                    if (visited[y * numCellsX + (x + rectWidth)]
+                    if (m_visited[y * numCellsX + (x + rectWidth)]
                         || chunkTerrain.cells[nextCellIndex] != currentType) {
                         break;
                     }
@@ -143,7 +144,7 @@ void TerrainRenderSystem::buildAllChunkMeshes(const ChunkPositionComponent &chun
                     for (int i = 0; i < rectWidth; ++i) {
                         int nextCellIndex =
                             ((y + rectHeight) * step) * cellsPerDimension + ((x + i) * step);
-                        if (visited[(y + rectHeight) * numCellsX + (x + i)]
+                        if (m_visited[(y + rectHeight) * numCellsX + (x + i)]
                             || chunkTerrain.cells[nextCellIndex] != currentType) {
                             canExtend = false;
                             break;
@@ -157,7 +158,7 @@ void TerrainRenderSystem::buildAllChunkMeshes(const ChunkPositionComponent &chun
 
                 for (int ry = 0; ry < rectHeight; ++ry) {
                     for (int rx = 0; rx < rectWidth; ++rx) {
-                        visited[(y + ry) * numCellsX + (x + rx)] = true;
+                        m_visited[(y + ry) * numCellsX + (x + rx)] = true;
                     }
                 }
 

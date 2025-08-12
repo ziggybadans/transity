@@ -56,6 +56,7 @@ void WorldGenerationSystem::generateContinentShape() {
     sf::Vector2f center = worldSize / 2.0f;
     float radius = std::min(worldSize.x, worldSize.y) / 3.0f;
     int numPoints = 128;
+    _params.continentShape.reserve(numPoints);
 
     FastNoiseLite shapeNoise;
     shapeNoise.SetSeed(_params.noiseLayers.empty() ? 1337 : _params.noiseLayers[0].seed + 1);

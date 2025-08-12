@@ -24,32 +24,32 @@ void LineRenderSystem::render(const entt::registry &registry, sf::RenderWindow &
         }
     }
 
-    std::vector<std::pair<int, entt::entity>> taggedStationsPairs;
+    m_taggedStationsPairs.clear();
     auto activeStationsView = registry.view<const PositionComponent, const ActiveLineStationTag>();
     for (auto entity : activeStationsView) {
-        taggedStationsPairs.push_back(
+        m_taggedStationsPairs.push_back(
             {activeStationsView.get<const ActiveLineStationTag>(entity).order, entity});
     }
 
-    if (!taggedStationsPairs.empty()) {
-        std::sort(taggedStationsPairs.begin(), taggedStationsPairs.end());
+    if (!m_taggedStationsPairs.empty()) {
+        std::sort(m_taggedStationsPairs.begin(), m_taggedStationsPairs.end());
 
-        std::vector<entt::entity> activeLineStations;
-        for (const auto &pair : taggedStationsPairs)
-            activeLineStations.push_back(pair.second);
+        m_activeLineStations.clear();
+        for (const auto &pair : m_taggedStationsPairs)
+            m_activeLineStations.push_back(pair.second);
 
-        for (size_t i = 0; i < activeLineStations.size() - 1; ++i) {
+        for (size_t i = 0; i < m_activeLineStations.size() - 1; ++i) {
             const auto &pos1 =
-                registry.get<const PositionComponent>(activeLineStations[i]).coordinates;
+                registry.get<const PositionComponent>(m_activeLineStations[i]).coordinates;
             const auto &pos2 =
-                registry.get<const PositionComponent>(activeLineStations[i + 1]).coordinates;
+                registry.get<const PositionComponent>(m_activeLineStations[i + 1]).coordinates;
             sf::Vertex line[] = {{pos1, sf::Color::Yellow, sf::Vector2f()},
                                  {pos2, sf::Color::Yellow, sf::Vector2f()}};
             window.draw(line, 2, sf::PrimitiveType::Lines);
         }
 
         const auto &lastPos =
-            registry.get<const PositionComponent>(activeLineStations.back()).coordinates;
+            registry.get<const PositionComponent>(m_activeLineStations.back()).coordinates;
         sf::Vector2f mousePos = window.mapPixelToCoords(sf::Mouse::getPosition(window), view);
         sf::Vertex lineToMouse[] = {{lastPos, sf::Color::Yellow, sf::Vector2f()},
                                     {mousePos, sf::Color::Yellow, sf::Vector2f()}};
