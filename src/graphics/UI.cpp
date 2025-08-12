@@ -136,14 +136,16 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
 
     if ((paramsChanged || gridChanged) && _autoRegenerate) {
         LOG_INFO("UI", "Settings changed, auto-regenerating world.");
-        _eventBus.trigger<RegenerateWorldRequestEvent>({params});
+        auto paramsCopy = std::make_shared<WorldGenParams>(params);
+        _eventBus.enqueue<RegenerateWorldRequestEvent>({paramsCopy});
     }
 
     ImGui::Separator();
 
     if (ImGui::Button("Regenerate World")) {
         LOG_INFO("UI", "Regenerate World button clicked.");
-        _eventBus.trigger<RegenerateWorldRequestEvent>({params});
+        auto paramsCopy = std::make_shared<WorldGenParams>(params);
+        _eventBus.enqueue<RegenerateWorldRequestEvent>({paramsCopy});
     }
 
     if (ImGui::Checkbox("Visualize Chunk Borders", &_visualizeChunkBorders)) {
@@ -173,19 +175,19 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
     int currentMode = static_cast<int>(_gameState.currentInteractionMode);
 
     if (ImGui::RadioButton("None", &currentMode, static_cast<int>(InteractionMode::SELECT))) {
-        _eventBus.trigger(InteractionModeChangeEvent{InteractionMode::SELECT});
+        _eventBus.enqueue(InteractionModeChangeEvent{InteractionMode::SELECT});
         LOG_INFO("UI", "Interaction mode change requested: None");
     }
     ImGui::SameLine();
     if (ImGui::RadioButton("Station Placement", &currentMode,
                            static_cast<int>(InteractionMode::CREATE_STATION))) {
-        _eventBus.trigger(InteractionModeChangeEvent{InteractionMode::CREATE_STATION});
+        _eventBus.enqueue(InteractionModeChangeEvent{InteractionMode::CREATE_STATION});
         LOG_INFO("UI", "Interaction mode change requested: StationPlacement");
     }
     ImGui::SameLine();
     if (ImGui::RadioButton("Line Creation", &currentMode,
                            static_cast<int>(InteractionMode::CREATE_LINE))) {
-        _eventBus.trigger(InteractionModeChangeEvent{InteractionMode::CREATE_LINE});
+        _eventBus.enqueue(InteractionModeChangeEvent{InteractionMode::CREATE_LINE});
         LOG_INFO("UI", "Interaction mode change requested: LineCreation");
     }
     ImGui::End();

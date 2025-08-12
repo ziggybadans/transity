@@ -35,15 +35,17 @@ void ChunkManagerSystem::onImmediateRedraw(const ImmediateRedrawEvent &event) {
 
 void ChunkManagerSystem::onRegenerateWorld(const RegenerateWorldRequestEvent &event) {
     if (_generationFuture.valid()) {
-        LOG_WARN("ChunkManagerSystem", "World regeneration is already in progress.");
+        LOG_WARN("ChunkManager", "Already generating world, regenerate request ignored.");
         return;
     }
+
+    const WorldGenParams& params = *event.params; 
 
     LOG_INFO("ChunkManagerSystem", "Regenerating world.");
     auto &worldState =
         _registry.get<WorldStateComponent>(_registry.view<WorldStateComponent>().front());
 
-    worldState.generatingParams = event.params;
+    worldState.generatingParams = *event.params;
 
     _generationFuture = std::async(std::launch::async, [&, params = worldState.generatingParams]() {
         _worldGenSystem.regenerate(params);

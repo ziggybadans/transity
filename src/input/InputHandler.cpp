@@ -22,7 +22,7 @@ void InputHandler::handleGameEvent(const sf::Event &event, sf::RenderWindow &win
 
     if (event.is<sf::Event::Closed>()) {
         LOG_INFO("Input", "Window close event received.");
-        eventBus->trigger<WindowCloseEvent>();
+        eventBus->enqueue<WindowCloseEvent>();
     } else if (auto *scrollData = event.getIf<sf::Event::MouseWheelScrolled>()) {
         if (scrollData->wheel == sf::Mouse::Wheel::Vertical) {
             LOG_DEBUG("Input", "Mouse wheel scrolled: delta %.1f", scrollData->delta);
@@ -35,14 +35,14 @@ void InputHandler::handleGameEvent(const sf::Event &event, sf::RenderWindow &win
                 LOG_TRACE("Input", "Zoom out event generated.");
             }
             if (zoomDelta != 0.0f) {
-                eventBus->trigger<CameraZoomEvent>({zoomDelta, sf::Mouse::getPosition(window)});
+                eventBus->enqueue<CameraZoomEvent>({zoomDelta, sf::Mouse::getPosition(window)});
             }
         }
     } else if (auto *pressData = event.getIf<sf::Event::MouseButtonPressed>()) {
         sf::Vector2i pixelPos = pressData->position;
         sf::Vector2f worldPos = window.mapPixelToCoords(pixelPos, camera->getView());
 
-        eventBus->trigger<MouseButtonPressedEvent>({pressData->button, pixelPos, worldPos});
+        eventBus->enqueue<MouseButtonPressedEvent>({pressData->button, pixelPos, worldPos});
 
         LOG_DEBUG("Input", "MouseButtonPressedEvent generated for button %d at world (%.1f, %.1f)",
                   pressData->button, worldPos.x, worldPos.y);
@@ -77,7 +77,7 @@ void InputHandler::update(sf::Time dt) {
         sf::Vector2f viewSize = view.getSize();
         float dynamicCameraSpeed = viewSize.y * Constants::DYNAMIC_CAMERA_SPEED_MULTIPLIER;
         sf::Vector2f panVector = panDirection * dynamicCameraSpeed * dt.asSeconds();
-        eventBus->trigger<CameraPanEvent>({panVector});
+        eventBus->enqueue<CameraPanEvent>({panVector});
         LOG_TRACE("Input", "CameraPan event generated with direction (%.1f, %.1f).", panVector.x,
                   panVector.y);
     }

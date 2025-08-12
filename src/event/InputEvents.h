@@ -6,6 +6,7 @@
 #include "../world/WorldData.h"
 #include <SFML/System/Vector2.hpp>
 #include <entt/entt.hpp>
+#include <memory>
 
 struct WindowCloseEvent {};
 
@@ -33,7 +34,7 @@ struct InteractionModeChangeEvent {
 };
 
 struct RegenerateWorldRequestEvent {
-    WorldGenParams params;
+    std::shared_ptr<const WorldGenParams> params;
 };
 
 struct ToggleNoiseVisualizationEvent {
