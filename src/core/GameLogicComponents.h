@@ -1,0 +1,34 @@
+#pragma once
+
+#include <SFML/Graphics.hpp>
+#include <vector>
+#include <entt/entt.hpp>
+#include "StrongTypes.h"
+
+// The position of an entity in the world.
+struct PositionComponent {
+    sf::Vector2f coordinates;
+};
+
+// A component for station entities.
+struct StationComponent {
+    std::vector<entt::entity> connectedLines;
+};
+
+// A component for line entities.
+struct LineComponent {
+    sf::Color color;
+    std::vector<entt::entity> stops;
+    std::vector<sf::Vector2f> pathPoints;
+    Thickness thickness = {5.0f};
+};
+
+// A component that makes an entity clickable.
+struct ClickableComponent {
+    Radius boundingRadius;
+};
+
+// A tag for stations that are part of a line currently being created.
+struct ActiveLineStationTag {
+    StationOrder order = {0};
+};

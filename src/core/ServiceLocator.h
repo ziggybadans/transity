@@ -1,8 +1,6 @@
 #pragma once
 
 #include "../event/EventBus.h"
-#include "../graphics/ColorManager.h"
-#include "../graphics/Renderer.h"
 #include "Camera.h"
 #include "EntityFactory.h"
 #include "GameState.h"
@@ -10,6 +8,8 @@
 #include <entt/entt.hpp>
 
 class Renderer;
+class ColorManager;
+class WorldGenerationSystem;
 
 struct ServiceLocator {
     entt::registry *registry = nullptr;
@@ -18,6 +18,7 @@ struct ServiceLocator {
     EntityFactory *entityFactory = nullptr;
     Camera *camera = nullptr;
     ColorManager *colorManager = nullptr;
+    WorldGenerationSystem *worldGenerationSystem = nullptr;
     Renderer *renderer = nullptr;
     ThreadPool *threadPool = nullptr;
 };

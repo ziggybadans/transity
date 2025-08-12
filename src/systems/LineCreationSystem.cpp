@@ -1,6 +1,6 @@
 #include "LineCreationSystem.h"
 #include "../Logger.h"
-#include "../core/Components.h"
+#include "../core/GameLogicComponents.h"
 #include "../core/EntityFactory.h"
 #include "../core/ServiceLocator.h"
 #include "../graphics/ColorManager.h"

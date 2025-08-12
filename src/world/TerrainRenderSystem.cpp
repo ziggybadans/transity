@@ -1,5 +1,8 @@
 #include "TerrainRenderSystem.h"
 
+#include "../core/RenderComponents.h"
+#include "../core/WorldComponents.h"
+
 #include <algorithm>
 #include <cstdint>
 #include <iostream>

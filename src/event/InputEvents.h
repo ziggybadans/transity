@@ -4,6 +4,7 @@
 
 #include "../input/InteractionMode.h"
 #include "../world/WorldData.h"
+#include <SFML/Window/Mouse.hpp>
 #include <SFML/System/Vector2.hpp>
 #include <entt/entt.hpp>
 #include <memory>

@@ -90,6 +90,7 @@ add_executable(main
     src/core/SystemManager.cpp
     src/systems/GameStateSystem.cpp
     src/world/ChunkManagerSystem.cpp
+    src/systems/WorldSetupSystem.cpp
 )
 target_compile_features(main PRIVATE cxx_std_17)
 

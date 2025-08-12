@@ -3,7 +3,7 @@
 #include <entt/entt.hpp>
 #include <vector>
 
-#include "../core/Components.h"
+#include "../core/WorldComponents.h"
 #include "../event/EventBus.h"
 #include "../event/InputEvents.h"
 #include "FastNoiseLite.h"

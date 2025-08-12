@@ -1,6 +1,6 @@
 #include "LineRenderSystem.h"
 #include "../Logger.h"
-#include "../core/Components.h"
+#include "../core/GameLogicComponents.h"
 #include "../core/Constants.h"
 #include <algorithm>
 #include <vector>

@@ -4,7 +4,10 @@
 #include <entt/entt.hpp>
 #include <vector>
 
-#include "../core/Components.h"
+struct ChunkPositionComponent;
+struct WorldGridComponent;
+struct ChunkTerrainComponent;
+struct ChunkMeshComponent;
 
 class TerrainRenderSystem {
 public:

@@ -1,6 +1,7 @@
 
 #include "Application.h"
 #include "Logger.h"
+#include "core/ServiceLocator.h"
 #include "core/Constants.h"
 #include "input/InputHandler.h"
 #include <stdexcept>
@@ -20,10 +21,8 @@ Application::Application() {
 
         _renderer->connectToEventBus(_game->getEventBus());
 
-        _game->init();
-
         _ui = std::make_unique<UI>(_renderer->getWindowInstance(), _game->getRegistry(),
-                                   &_game->getWorldGenerationSystem(),
+                                   _game->getServiceLocator().worldGenerationSystem,
                                    &_renderer->getTerrainRenderSystem(), _game->getGameState(),
                                    _game->getEventBus(), _game->getCamera());
         _ui->initialize();
@@ -44,7 +43,7 @@ void Application::run() {
         processEvents();
 
         // Update UI with real frame time once per frame
-        _ui->update(frameTime, _game->getActiveStationCount());
+        _ui->update(frameTime, 0);
 
         // Perform fixed updates if focused
         if (_isWindowFocused) {
@@ -72,10 +71,6 @@ void Application::processEvents() {
                 _isWindowFocused = false;
             } else if (currentEvent.is<sf::Event::FocusGained>()) {
                 _isWindowFocused = true;
-            }
-
-            if (const auto *resizedEvent = currentEvent.getIf<sf::Event::Resized>()) {
-                _game->onWindowResize(resizedEvent->size.x, resizedEvent->size.y);
             }
 
             _ui->processEvent(currentEvent);
