@@ -54,7 +54,7 @@ These changes focus on improving performance and memory management, building on 
     *   **Action:** Introduce an `AABBComponent` for more accurate and efficient collision detection and culling for non-circular entities.
     *   **Action:** (Future) When pathfinding is implemented, cache pathfinding results and integrate with the event system to invalidate the cache when the environment changes.
 
-### Tier 3: API, Type Safety, and Code Hygiene
+### Tier 3: API, Type Safety, and Code Hygiene (Complete)
 
 These changes improve the developer experience, reduce bugs, and increase code clarity.
 

@@ -4,6 +4,8 @@
 #include "core/ServiceLocator.h"
 #include "core/Constants.h"
 #include "input/InputHandler.h"
+#include "core/PerfTimer.h"
+
 #include <stdexcept>
 #include <thread>
 
@@ -86,13 +88,16 @@ void Application::processEvents() {
 }
 
 void Application::update(sf::Time dt) {
+    PerfTimer timer("Application::update");
+
     _game->getInputHandler().update(dt);
     _game->update(dt, *_ui);
 }
 
 
 void Application::render(float interpolation) {
-    // Pass interpolation to the renderer
+    PerfTimer timer("Application::render");
+
     _renderer->renderFrame(_game->getRegistry(), _game->getCamera().getView(), interpolation);
     _ui->renderFrame();
     _renderer->displayFrame();

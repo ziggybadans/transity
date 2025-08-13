@@ -1,6 +1,7 @@
 #include "WorldGenerationSystem.h"
 #include "../Logger.h"
 #include "../core/Constants.h"
+#include "../core/PerfTimer.h"
 
 #include <cassert>
 #include <algorithm>
@@ -104,6 +105,8 @@ sf::Vector2f WorldGenerationSystem::getWorldSize() {
 }
 
 GeneratedChunkData WorldGenerationSystem::generateChunkData(const sf::Vector2i& chunkGridPosition) const {
+    PerfTimer timer("generateChunkData");
+    
     const auto &worldGrid = getWorldGridSettings();
     sf::Vector2f worldSize = {
         static_cast<float>(worldGrid.worldDimensionsInChunks.x * worldGrid.chunkDimensionsInCells.x)

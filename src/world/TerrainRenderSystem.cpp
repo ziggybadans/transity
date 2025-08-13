@@ -2,6 +2,7 @@
 
 #include "../core/RenderComponents.h"
 #include "../core/WorldComponents.h"
+#include "../core/PerfTimer.h"
 
 #include <algorithm>
 #include <cstdint>
@@ -112,6 +113,8 @@ void TerrainRenderSystem::buildAllChunkMeshes(const ChunkPositionComponent &chun
                                               const ChunkTerrainComponent &chunkTerrain,
                                               ChunkMeshComponent &chunkMesh,
                                               const WorldGridComponent &worldGrid) {
+    PerfTimer timer("buildAllChunkMeshes");
+    
     int cellsPerDimension = worldGrid.chunkDimensionsInCells.x;
 
     for (int lod = 0; lod < static_cast<int>(LODLevel::Count); ++lod) {
