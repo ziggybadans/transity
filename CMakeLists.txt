@@ -70,29 +70,8 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(ImGuiSFML)
 
 # ---- your executable --------------------------------------------------------
-add_executable(main
-    src/main.cpp
-    src/Game.cpp
-    src/Application.cpp
-    src/core/Camera.cpp
-    src/input/InputHandler.cpp
-    src/graphics/Renderer.cpp
-    src/core/EntityFactory.cpp
-    src/Logger.cpp
-    src/graphics/UI.cpp
-    src/graphics/ColorManager.cpp
-    src/systems/LineCreationSystem.cpp
-    src/world/WorldGenerationSystem.cpp
-    src/world/TerrainRenderSystem.cpp
-    src/systems/CameraSystem.cpp
-    src/systems/StationPlacementSystem.cpp
-    src/graphics/LineRenderSystem.cpp
-    src/core/SystemManager.cpp
-    src/systems/GameStateSystem.cpp
-    src/world/ChunkManagerSystem.cpp
-    src/systems/WorldSetupSystem.cpp
-    src/systems/TerrainMeshSystem.cpp
-)
+file(GLOB_RECURSE SOURCES "src/*.cpp")
+add_executable(main ${SOURCES})
 target_compile_features(main PRIVATE cxx_std_17)
 
 # Add include directory

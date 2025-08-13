@@ -27,14 +27,16 @@ void InputHandler::handleGameEvent(const sf::Event &event, sf::RenderWindow &win
                 LOG_TRACE("Input", "Zoom out event generated.");
             }
             if (zoomDelta != 0.0f) {
-                _services.eventBus.enqueue<CameraZoomEvent>({zoomDelta, sf::Mouse::getPosition(window)});
+                _services.eventBus.enqueue<CameraZoomEvent>(
+                    {zoomDelta, sf::Mouse::getPosition(window)});
             }
         }
     } else if (auto *pressData = event.getIf<sf::Event::MouseButtonPressed>()) {
         sf::Vector2i pixelPos = pressData->position;
         sf::Vector2f worldPos = window.mapPixelToCoords(pixelPos, _services.camera.getView());
 
-        _services.eventBus.enqueue<MouseButtonPressedEvent>({pressData->button, pixelPos, worldPos});
+        _services.eventBus.enqueue<MouseButtonPressedEvent>(
+            {pressData->button, pixelPos, worldPos});
 
         LOG_DEBUG("Input", "MouseButtonPressedEvent generated for button %d at world (%.1f, %.1f)",
                   pressData->button, worldPos.x, worldPos.y);

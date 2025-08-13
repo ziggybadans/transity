@@ -7,7 +7,7 @@
 #include <queue>
 #include <stdexcept>
 #include <thread>
-#include <type_traits> // For std::result_of
+#include <type_traits>  // For std::result_of
 #include <vector>
 
 class ThreadPool {
@@ -28,8 +28,8 @@ public:
 
                     {
                         std::unique_lock<std::mutex> lock(this->queue_mutex);
-                        this->condition.wait(
-                            lock, [this] { return this->stop || !this->tasks.empty(); });
+                        this->condition.wait(lock,
+                                             [this] { return this->stop || !this->tasks.empty(); });
                         if (this->stop && this->tasks.empty()) return;
                         task = std::move(this->tasks.front());
                         this->tasks.pop();
@@ -41,8 +41,7 @@ public:
     }
 
     template <class F, class... Args>
-    auto enqueue(F&& f, Args&&... args)
-        -> std::future<typename std::result_of<F(Args...)>::type> {
+    auto enqueue(F &&f, Args &&...args) -> std::future<typename std::result_of<F(Args...)>::type> {
         using return_type = typename std::result_of<F(Args...)>::type;
 
         auto task = std::make_shared<std::packaged_task<return_type()>>(
@@ -66,6 +65,7 @@ public:
             stop = true;
         }
         condition.notify_all();
-        for (std::thread& worker : workers) worker.join();
+        for (std::thread &worker : workers)
+            worker.join();
     }
 };
