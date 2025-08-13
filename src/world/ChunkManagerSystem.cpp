@@ -6,7 +6,7 @@
 ChunkManagerSystem::ChunkManagerSystem(ServiceLocator &serviceLocator,
                                        WorldGenerationSystem &worldGenSystem, EventBus &eventBus)
     : _serviceLocator(serviceLocator), _worldGenSystem(worldGenSystem),
-      _registry(*serviceLocator.registry), _eventBus(eventBus), _activeChunks() {
+      _registry(serviceLocator.registry), _eventBus(eventBus), _activeChunks() {
     _regenerateWorldListener = _eventBus.sink<RegenerateWorldRequestEvent>()
                                    .connect<&ChunkManagerSystem::onRegenerateWorld>(this);
     _swapWorldStateListener =
@@ -90,7 +90,7 @@ void ChunkManagerSystem::update(sf::Time dt) {
 
     processCompletedChunks();
 
-    const auto &camera = *_serviceLocator.camera;
+    const auto &camera = _serviceLocator.camera;
     const auto &worldGrid =
         _registry.get<WorldGridComponent>(_registry.view<WorldGridComponent>().front());
 
@@ -166,7 +166,7 @@ void ChunkManagerSystem::loadChunk(const sf::Vector2i &chunkPos) {
     auto task = [this, chunkPos]() {
         return _worldGenSystem.generateChunkData(chunkPos);
     };
-    _chunkLoadFutures.emplace_back(_serviceLocator.threadPool->enqueue(task));
+    _chunkLoadFutures.emplace_back(_serviceLocator.threadPool.enqueue(task));
 }
 
 void ChunkManagerSystem::unloadChunk(const sf::Vector2i &chunkPos) {

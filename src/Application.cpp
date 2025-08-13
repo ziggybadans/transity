@@ -22,9 +22,11 @@ Application::Application() {
         _renderer->connectToEventBus(_game->getEventBus());
 
         _ui = std::make_unique<UI>(_renderer->getWindowInstance(), _game->getRegistry(),
-                                   _game->getServiceLocator().worldGenerationSystem,
-                                   &_renderer->getTerrainRenderSystem(), _game->getGameState(),
-                                   _game->getEventBus(), _game->getCamera());
+                           _game->getServiceLocator().worldGenerationSystem,
+                           _renderer->getTerrainRenderSystem(), // Remove the &
+                           _game->getGameState(),
+                           _game->getEventBus(), 
+                           _game->getCamera());
         _ui->initialize();
 
     } catch (const std::exception &e) {

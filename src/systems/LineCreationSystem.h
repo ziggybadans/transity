@@ -30,10 +30,10 @@ private:
     void addStationToLine(entt::entity stationEntity);
     void finalizeLine();
 
-    entt::registry *_registry;
-    EntityFactory *_entityFactory;
-    ColorManager *_colorManager;
-    GameState *_gameState;
+    entt::registry &_registry;
+    EntityFactory &_entityFactory;
+    ColorManager &_colorManager;
+    GameState &_gameState;
 
     entt::connection m_finalizeLineConnection;
     entt::connection m_mousePressConnection;

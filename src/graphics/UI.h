@@ -14,8 +14,8 @@ class TerrainRenderSystem;
 
 class UI {
 public:
-    UI(sf::RenderWindow &window, entt::registry &registry, WorldGenerationSystem *worldGenSystem,
-       TerrainRenderSystem *terrainRenderSystem, GameState &gameState, EventBus &eventBus,
+    UI(sf::RenderWindow &window, entt::registry &registry, WorldGenerationSystem &worldGenSystem,
+       TerrainRenderSystem &terrainRenderSystem, GameState &gameState, EventBus &eventBus,
        Camera &camera);
     ~UI();
     void initialize();
@@ -33,8 +33,8 @@ private:
 
     bool _autoRegenerate;
 
-    WorldGenerationSystem *_worldGenerationSystem;
-    TerrainRenderSystem *_terrainRenderSystem;
+    WorldGenerationSystem &_worldGenerationSystem;
+    TerrainRenderSystem &_terrainRenderSystem;
 
     bool _visualizeChunkBorders = false;
     bool _visualizeCellBorders = false;

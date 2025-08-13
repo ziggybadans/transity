@@ -13,5 +13,5 @@ public:
     void update(sf::Time dt) override;
 
 private:
-    ServiceLocator* m_services;
+    ServiceLocator& m_services;
 };

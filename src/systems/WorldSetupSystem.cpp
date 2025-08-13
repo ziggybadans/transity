@@ -8,21 +8,21 @@
 
 #include <entt/entt.hpp>
 
-WorldSetupSystem::WorldSetupSystem(ServiceLocator& services) : m_services(&services) {}
+WorldSetupSystem::WorldSetupSystem(ServiceLocator& services) : m_services(services) {}
 
 void WorldSetupSystem::init() {
     LOG_INFO("WorldSetupSystem", "Initializing world setup.");
 
-    auto worldGridEntity = m_services->registry->create();
-    m_services->registry->emplace<WorldGridComponent>(worldGridEntity);
+    auto worldGridEntity = m_services.registry.create();
+    m_services.registry.emplace<WorldGridComponent>(worldGridEntity);
     LOG_INFO("WorldSetupSystem", "WorldGridComponent created with default values.");
 
-    auto& worldGenSystem = *m_services->worldGenerationSystem;
+    auto& worldGenSystem = m_services.worldGenerationSystem;
     sf::Vector2f worldSize = worldGenSystem.getWorldSize();
     sf::Vector2f worldCenter = {worldSize.x / 2.0f, worldSize.y / 2.0f};
 
-    auto& window = m_services->renderer->getWindowInstance();
-    auto& camera = *m_services->camera;
+    auto& window = m_services.renderer.getWindowInstance();
+    auto& camera = m_services.camera;
 
     float zoomFactor = 4.0f;
     sf::Vector2f initialViewSize = {worldSize.x / zoomFactor, worldSize.y / zoomFactor};

@@ -11,20 +11,24 @@
 #include "world/ChunkManagerSystem.h"
 #include "core/ThreadPool.h"
 #include "systems/WorldSetupSystem.h"
+#include "systems/TerrainMeshSystem.h"
 
 Game::Game(Renderer &renderer, ThreadPool &threadPool)
-    : _renderer(renderer), _eventBus(), _entityFactory(_registry),
-      _worldGenerationSystem(_registry, _eventBus) {
-
-    _serviceLocator.registry = &_registry;
-    _serviceLocator.eventBus = &_eventBus;
-    _serviceLocator.gameState = &_gameState;
-    _serviceLocator.entityFactory = &_entityFactory;
-    _serviceLocator.camera = &_camera;
-    _serviceLocator.colorManager = &_colorManager;
-    _serviceLocator.worldGenerationSystem = &_worldGenerationSystem;
-    _serviceLocator.renderer = &_renderer;
-    _serviceLocator.threadPool = &threadPool;
+    : _renderer(renderer), 
+      _eventBus(), 
+      _entityFactory(_registry),
+      _worldGenerationSystem(_registry, _eventBus),
+      _serviceLocator{
+          _registry,
+          _eventBus,
+          _gameState,
+          _entityFactory,
+          _camera,
+          _colorManager,
+          _worldGenerationSystem,
+          _renderer,
+          threadPool
+      } {
 
     _inputHandler = std::make_unique<InputHandler>(_serviceLocator);
 
@@ -36,6 +40,7 @@ Game::Game(Renderer &renderer, ThreadPool &threadPool)
     _systemManager->addSystem<GameStateSystem>();
     _systemManager->addSystem<WorldSetupSystem>()->init();
     _systemManager->addSystem<ChunkManagerSystem>(_worldGenerationSystem, _eventBus);
+    _systemManager->addSystem<TerrainMeshSystem>();
 
     LOG_INFO("Game", "Game instance created and systems registered.");
 }
@@ -43,8 +48,6 @@ Game::Game(Renderer &renderer, ThreadPool &threadPool)
 void Game::update(sf::Time dt, UI &ui) {
 
     _systemManager->update(dt);
-
-    _renderer.getTerrainRenderSystem().updateMeshes(_registry);
 
     _eventBus.update();
 }

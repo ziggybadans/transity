@@ -12,13 +12,13 @@ class ColorManager;
 class WorldGenerationSystem;
 
 struct ServiceLocator {
-    entt::registry *registry = nullptr;
-    EventBus *eventBus = nullptr;
-    GameState *gameState = nullptr;
-    EntityFactory *entityFactory = nullptr;
-    Camera *camera = nullptr;
-    ColorManager *colorManager = nullptr;
-    WorldGenerationSystem *worldGenerationSystem = nullptr;
-    Renderer *renderer = nullptr;
-    ThreadPool *threadPool = nullptr;
+    entt::registry &registry;
+    EventBus &eventBus;
+    GameState &gameState;
+    EntityFactory &entityFactory;
+    Camera &camera;
+    ColorManager &colorManager;
+    WorldGenerationSystem &worldGenerationSystem;
+    Renderer &renderer;
+    ThreadPool &threadPool;
 };

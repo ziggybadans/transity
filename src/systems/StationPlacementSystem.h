@@ -19,9 +19,9 @@ public:
 private:
     void onMouseButtonPressed(const MouseButtonPressedEvent &event);
 
-    entt::registry *_registry;
-    class EntityFactory *_entityFactory;
-    class GameState *_gameState;
+    entt::registry &_registry;
+    EntityFactory &_entityFactory;
+    GameState &_gameState;
 
     entt::connection m_mousePressConnection;
 };

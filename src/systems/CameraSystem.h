@@ -22,8 +22,8 @@ private:
     void onCameraZoom(const CameraZoomEvent &event);
     void onCameraPan(const CameraPanEvent &event);
 
-    Camera *m_camera;
-    sf::RenderWindow *m_window;
+    Camera& m_camera;
+    sf::RenderWindow& m_window;
 
     entt::connection m_zoomConnection;
     entt::connection m_panConnection;

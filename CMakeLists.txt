@@ -91,6 +91,7 @@ add_executable(main
     src/systems/GameStateSystem.cpp
     src/world/ChunkManagerSystem.cpp
     src/systems/WorldSetupSystem.cpp
+    src/systems/TerrainMeshSystem.cpp
 )
 target_compile_features(main PRIVATE cxx_std_17)
 

@@ -9,12 +9,12 @@
 #include "imgui.h"
 #include <cstdlib>
 
-UI::UI(sf::RenderWindow &window, entt::registry &registry, WorldGenerationSystem *worldGenSystem,
-       TerrainRenderSystem *terrainRenderSystem, GameState &gameState, EventBus &eventBus,
+UI::UI(sf::RenderWindow &window, entt::registry &registry, WorldGenerationSystem &worldGenSystem,
+       TerrainRenderSystem &terrainRenderSystem, GameState &gameState, EventBus &eventBus,
        Camera &camera)
-    : _window(window), _registry(registry), _gameState(gameState), _eventBus(eventBus),
-      _worldGenerationSystem(worldGenSystem), _terrainRenderSystem(terrainRenderSystem),
-      _camera(camera) {
+    : _window(window), _registry(registry), _worldGenerationSystem(worldGenSystem),
+      _terrainRenderSystem(terrainRenderSystem), _gameState(gameState), _eventBus(eventBus),
+      _camera(camera), _autoRegenerate(false) {
     LOG_INFO("UI", "UI instance created.");
 }
 
@@ -66,7 +66,7 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
         _registry.get<WorldStateComponent>(_registry.view<WorldStateComponent>().front());
     auto &worldGrid =
         _registry.get<WorldGridComponent>(_registry.view<WorldGridComponent>().front());
-    WorldGenParams &params = _worldGenerationSystem->getParams();
+    WorldGenParams &params = _worldGenerationSystem.getParams();
 
     bool paramsChanged = false;
 
@@ -149,17 +149,13 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
     }
 
     if (ImGui::Checkbox("Visualize Chunk Borders", &_visualizeChunkBorders)) {
-        if (_terrainRenderSystem)
-            _terrainRenderSystem->setVisualizeChunkBorders(_visualizeChunkBorders);
+        _terrainRenderSystem.setVisualizeChunkBorders(_visualizeChunkBorders);
     }
     if (ImGui::Checkbox("Visualize Cell Borders", &_visualizeCellBorders)) {
-        if (_terrainRenderSystem)
-            _terrainRenderSystem->setVisualizeCellBorders(_visualizeCellBorders);
+        _terrainRenderSystem.setVisualizeCellBorders(_visualizeCellBorders);
     }
     if (ImGui::Checkbox("Enable LOD", &_isLodEnabled)) {
-        if (_terrainRenderSystem) {
-            _terrainRenderSystem->setLodEnabled(_isLodEnabled);
-        }
+        _terrainRenderSystem.setLodEnabled(_isLodEnabled);
     }
 
     ImGui::Checkbox("Auto Regenerate", &_autoRegenerate);
