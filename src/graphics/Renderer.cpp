@@ -59,7 +59,7 @@ void Renderer::renderFrame(const entt::registry &registry, const sf::View &view,
     LOG_TRACE("Renderer", "Render pass complete.");
 }
 
-void Renderer::displayFrame() {
+void Renderer::displayFrame() noexcept {
     _windowInstance.display();
 }
 

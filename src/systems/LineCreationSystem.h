@@ -21,7 +21,7 @@ public:
     void update(sf::Time dt) override;
 
     void clearCurrentLine() noexcept;
-    std::vector<entt::entity> getActiveLineStations() const;
+    void getActiveLineStations(std::function<void(entt::entity)> callback) const noexcept;
 
 private:
     void onFinalizeLine(const FinalizeLineEvent &event);

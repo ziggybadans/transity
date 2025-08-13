@@ -164,19 +164,18 @@ void LineCreationSystem::clearCurrentLine() noexcept {
     }
 }
 
-std::vector<entt::entity> LineCreationSystem::getActiveLineStations() const {
-    std::vector<std::pair<int, entt::entity>> taggedStations;
+void LineCreationSystem::getActiveLineStations(
+    std::function<void(entt::entity)> callback) const noexcept {
     auto view = _registry->view<PositionComponent, ActiveLineStationTag>();
+    std::vector<std::pair<int, entt::entity>> taggedStations;
     for (auto entity : view) {
         taggedStations.push_back({view.get<ActiveLineStationTag>(entity).order.value, entity});
     }
     std::sort(taggedStations.begin(), taggedStations.end());
 
-    std::vector<entt::entity> stationsInOrder;
     for (const auto &pair : taggedStations) {
-        stationsInOrder.push_back(pair.second);
+        callback(pair.second);
     }
-    return stationsInOrder;
 }
 
 void LineCreationSystem::onFinalizeLine(const FinalizeLineEvent &event) {

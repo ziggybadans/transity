@@ -16,7 +16,7 @@ public:
 
     void initialize();
     void renderFrame(const entt::registry &registry, const sf::View &view, float interpolation);
-    void displayFrame();
+    void displayFrame() noexcept;
     void cleanupResources() noexcept;
     bool isWindowOpen() const noexcept;
     sf::RenderWindow &getWindowInstance() noexcept;
