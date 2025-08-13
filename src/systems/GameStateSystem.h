@@ -5,7 +5,7 @@
 #include "../core/ServiceLocator.h"
 #include "../event/InputEvents.h"
 
-class GameStateSystem : public ISystem {
+class GameStateSystem : public ISystem, public IUpdatable {
 public:
     explicit GameStateSystem(ServiceLocator &services);
     ~GameStateSystem();

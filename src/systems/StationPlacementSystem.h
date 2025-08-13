@@ -9,7 +9,7 @@
 
 class ServiceLocator;
 
-class StationPlacementSystem : public ISystem {
+class StationPlacementSystem : public ISystem, public IUpdatable {
 public:
     explicit StationPlacementSystem(ServiceLocator &serviceLocator);
     ~StationPlacementSystem();

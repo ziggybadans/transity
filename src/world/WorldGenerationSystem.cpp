@@ -125,53 +125,66 @@ GeneratedChunkData WorldGenerationSystem::generateChunkData(const sf::Vector2i& 
     chunkData.noiseValues.resize(totalCells);
     chunkData.rawNoiseValues.resize(totalCells);
 
-    for (int y = 0; y < chunkCellSizeY; ++y) {
-        for (int x = 0; x < chunkCellSizeX; ++x) {
-            int cellIndex = y * chunkCellSizeX + x;
-            float worldX = static_cast<float>((chunkGridPosition.x * chunkCellSizeX) + x)
-                           * worldGrid.cellSize;
-            float worldY = static_cast<float>((chunkGridPosition.y * chunkCellSizeY) + y)
-                           * worldGrid.cellSize;
+    auto processCell = [&](int x, int y, bool distort) {
+        int cellIndex = y * chunkCellSizeX + x;
+        float worldX = static_cast<float>((chunkGridPosition.x * chunkCellSizeX) + x)
+                       * worldGrid.cellSize;
+        float worldY = static_cast<float>((chunkGridPosition.y * chunkCellSizeY) + y)
+                       * worldGrid.cellSize;
 
-            float dx = center.x - worldX;
-            float dy = center.y - worldY;
-            float distance = std::sqrt(dx * dx + dy * dy);
+        float dx = center.x - worldX;
+        float dy = center.y - worldY;
+        float distance = std::sqrt(dx * dx + dy * dy);
 
-            float maxDistance = std::min(worldSize.x, worldSize.y) / 2.5f;
-            float falloff = 1.0f - std::min(1.0f, distance / maxDistance);
+        float maxDistance = std::min(worldSize.x, worldSize.y) / 2.5f;
+        float falloff = 1.0f - std::min(1.0f, distance / maxDistance);
 
-            float noiseX = static_cast<float>((chunkGridPosition.x * chunkCellSizeX) + x);
-            float noiseY = static_cast<float>((chunkGridPosition.y * chunkCellSizeY) + y);
+        float noiseX = static_cast<float>((chunkGridPosition.x * chunkCellSizeX) + x);
+        float noiseY = static_cast<float>((chunkGridPosition.y * chunkCellSizeY) + y);
 
-            float combinedNoise = 0.0f;
-            float totalWeight = 0.0f;
+        float combinedNoise = 0.0f;
+        float totalWeight = 0.0f;
 
-            for (size_t i = 0; i < _noiseGenerators.size(); ++i) {
-                float noiseValue = _noiseGenerators[i].GetNoise(noiseX, noiseY);
-                noiseValue = (noiseValue + 1.0f) / 2.0f;
-                combinedNoise += noiseValue * _params.noiseLayers[i].weight;
-                totalWeight += _params.noiseLayers[i].weight;
+        for (size_t i = 0; i < _noiseGenerators.size(); ++i) {
+            float noiseValue = _noiseGenerators[i].GetNoise(noiseX, noiseY);
+            noiseValue = (noiseValue + 1.0f) / 2.0f;
+            combinedNoise += noiseValue * _params.noiseLayers[i].weight;
+            totalWeight += _params.noiseLayers[i].weight;
+        }
+
+        if (totalWeight > 0) {
+            combinedNoise /= totalWeight;
+        }
+
+        chunkData.rawNoiseValues[cellIndex] = combinedNoise;
+        float finalValue = combinedNoise * falloff;
+
+        float distortedLandThreshold = _params.landThreshold;
+        if (distort) {
+            float distortion = _coastlineDistortion.GetNoise(noiseX, noiseY)
+                               * _params.coastlineDistortionStrength;
+            distortedLandThreshold += distortion;
+        }
+
+        chunkData.noiseValues[cellIndex] = finalValue;
+        chunkData.cells[cellIndex] =
+            (finalValue > distortedLandThreshold) ? TerrainType::LAND : TerrainType::WATER;
+    };
+
+    if (_params.distortCoastline) {
+        for (int y = 0; y < chunkCellSizeY; ++y) {
+            for (int x = 0; x < chunkCellSizeX; ++x) {
+                processCell(x, y, true);
             }
-
-            if (totalWeight > 0) {
-                combinedNoise /= totalWeight;
+        }
+    } else {
+        for (int y = 0; y < chunkCellSizeY; ++y) {
+            for (int x = 0; x < chunkCellSizeX; ++x) {
+                processCell(x, y, false);
             }
-
-            chunkData.rawNoiseValues[cellIndex] = combinedNoise;
-            float finalValue = combinedNoise * falloff;
-
-            float distortion = 0.0f;
-            if (_params.distortCoastline) {
-                distortion = _coastlineDistortion.GetNoise(noiseX, noiseY)
-                             * _params.coastlineDistortionStrength;
-            }
-            float distortedLandThreshold = _params.landThreshold + distortion;
-
-            chunkData.noiseValues[cellIndex] = finalValue;
-            chunkData.cells[cellIndex] =
-                (finalValue > distortedLandThreshold) ? TerrainType::LAND : TerrainType::WATER;
         }
     }
+
     return chunkData;
 }
 

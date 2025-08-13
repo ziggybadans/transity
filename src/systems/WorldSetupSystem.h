@@ -4,7 +4,7 @@
 
 class ServiceLocator;
 
-class WorldSetupSystem : public ISystem {
+class WorldSetupSystem : public ISystem, public IUpdatable {
 public:
     explicit WorldSetupSystem(ServiceLocator& services);
     ~WorldSetupSystem() override = default;

@@ -13,7 +13,7 @@
 class ServiceLocator;
 class GameState;
 
-class LineCreationSystem : public ISystem {
+class LineCreationSystem : public ISystem, public IUpdatable {
 public:
     explicit LineCreationSystem(ServiceLocator &serviceLocator);
     ~LineCreationSystem();

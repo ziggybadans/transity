@@ -21,7 +21,7 @@ struct Vector2iCompare {
     }
 };
 
-class ChunkManagerSystem : public ISystem {
+class ChunkManagerSystem : public ISystem, public IUpdatable {
 public:
     explicit ChunkManagerSystem(ServiceLocator &serviceLocator,
                                 WorldGenerationSystem &worldGenSystem, EventBus &eventBus);

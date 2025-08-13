@@ -6,7 +6,7 @@
 
 class ServiceLocator;
 
-class TerrainMeshSystem : public ISystem {
+class TerrainMeshSystem : public ISystem, public IUpdatable {
 public:
     explicit TerrainMeshSystem(ServiceLocator& serviceLocator);
     void update(sf::Time dt) override;

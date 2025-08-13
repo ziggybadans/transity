@@ -11,7 +11,7 @@ namespace sf {
 class RenderWindow;
 }
 
-class CameraSystem : public ISystem {
+class CameraSystem : public ISystem, public IUpdatable {
 public:
     explicit CameraSystem(ServiceLocator &serviceLocator);
     ~CameraSystem();
