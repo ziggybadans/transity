@@ -19,13 +19,26 @@ void EntityFactory::loadArchetypes(const std::string &directoryPath) {
                 try {
                     nlohmann::json archetypeJson;
                     file >> archetypeJson;
-                    if (archetypeJson.contains("id") && archetypeJson["id"].is_string()) {
-                        _archetypes[archetypeJson["id"]] = archetypeJson;
-                        LOG_INFO("EntityFactory", "Loaded archetype: %s",
-                                 archetypeJson["id"].get<std::string>().c_str());
+                    if (archetypeJson.contains("id") && archetypeJson["id"].is_string() &&
+                        archetypeJson.contains("version") && archetypeJson["version"].is_number()) {
+                        const std::string id = archetypeJson["id"];
+                        const int version = archetypeJson["version"];
+
+                        // For now, we only support version 1.
+                        // In a real application, you would add migration logic here.
+                        if (version != 1) {
+                            LOG_ERROR("EntityFactory", "Unsupported archetype version %d for '%s'",
+                                      version, id.c_str());
+                            continue;
+                        }
+
+                        _archetypes[id] = archetypeJson;
+                        LOG_INFO("EntityFactory", "Loaded archetype: %s (Version: %d)", id.c_str(),
+                                 version);
                     } else {
                         LOG_ERROR("EntityFactory",
-                                  "Archetype file %s is missing 'id' field or it's not a string.",
+                                  "Archetype file %s is missing 'id' or 'version' field, or they "
+                                  "have an incorrect type.",
                                   entry.path().string().c_str());
                     }
                 } catch (const nlohmann::json::exception &e) {
