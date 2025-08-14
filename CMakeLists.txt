@@ -78,6 +78,7 @@ target_compile_features(main PRIVATE cxx_std_17)
 target_include_directories(main PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/lib
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${entt_SOURCE_DIR}/src
     ${imgui_SOURCE_DIR}          # For ImGui headers
     ${imgui_SOURCE_DIR}/backends # For ImGui backend headers (if needed directly)
