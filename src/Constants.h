@@ -17,6 +17,8 @@ constexpr float CAMERA_SPEED = 200.0f;
 constexpr float ZOOM_FACTOR = 0.9f;
 constexpr float UNZOOM_FACTOR = 1.0f / ZOOM_FACTOR;
 constexpr float DYNAMIC_CAMERA_SPEED_MULTIPLIER = 0.5f;
+constexpr float CAMERA_MIN_ZOOM = 0.03f;  // Most zoomed out
+constexpr float CAMERA_MAX_ZOOM = 1.0f;   // Most zoomed in
 
 constexpr int ISLAND_BASE_SHAPE_POINTS = 8;
 constexpr float COASTLINE_DISTORTION_FREQUENCY = 0.05f;

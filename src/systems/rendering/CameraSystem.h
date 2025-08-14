@@ -3,6 +3,7 @@
 #include "ecs/ISystem.h"
 #include "ecs/SystemManager.h"
 #include "event/InputEvents.h"
+#include "systems/world/WorldGenerationSystem.h"
 #include <entt/entt.hpp>
 
 class ServiceLocator;
@@ -24,6 +25,7 @@ private:
 
     Camera &m_camera;
     sf::RenderWindow &m_window;
+    WorldGenerationSystem &m_worldGenSystem;
 
     entt::connection m_zoomConnection;
     entt::connection m_panConnection;
