@@ -1,7 +1,7 @@
 #include "CameraSystem.h"
 #include "Logger.h"
-#include "render/Camera.h"
 #include "core/ServiceLocator.h"
+#include "render/Camera.h"
 #include "render/Renderer.h"
 
 #include <cassert>

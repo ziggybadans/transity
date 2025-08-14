@@ -1,11 +1,11 @@
 #pragma once
 
-#include "ecs/ISystem.h"
+#include "WorldGenerationSystem.h"
 #include "core/ServiceLocator.h"
+#include "ecs/ISystem.h"
 #include "event/EventBus.h"
 #include "event/InputEvents.h"
 #include "world/WorldData.h"
-#include "WorldGenerationSystem.h"
 #include <SFML/System/Vector2.hpp>
 #include <condition_variable>
 #include <future>

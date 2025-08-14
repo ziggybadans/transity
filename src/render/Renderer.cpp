@@ -1,6 +1,6 @@
 #include "Renderer.h"
+#include "Constants.h"
 #include "Logger.h"
-#include "core/Constants.h"
 #include "components/GameLogicComponents.h"
 #include "components/RenderComponents.h"
 #include <SFML/Graphics.hpp>

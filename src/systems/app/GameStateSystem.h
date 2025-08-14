@@ -1,8 +1,8 @@
 
 #pragma once
 
-#include "ecs/ISystem.h"
 #include "core/ServiceLocator.h"
+#include "ecs/ISystem.h"
 #include "event/InputEvents.h"
 
 class GameStateSystem : public ISystem, public IUpdatable {

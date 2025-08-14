@@ -1,5 +1,5 @@
-#include "app/Application.h"
 #include "Logger.h"
+#include "app/Application.h"
 #include <cstdlib>
 #include <exception>
 #include <iostream>

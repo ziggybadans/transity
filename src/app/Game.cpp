@@ -1,17 +1,17 @@
 #include "Game.h"
+#include "Constants.h"
 #include "Logger.h"
-#include "core/Constants.h"
 #include "core/ThreadPool.h"
-#include "render/Renderer.h"
-#include "ui/UI.h"
 #include "input/InputHandler.h"
-#include "systems/rendering/CameraSystem.h"
+#include "render/Renderer.h"
 #include "systems/app/GameStateSystem.h"
 #include "systems/gameplay/LineCreationSystem.h"
 #include "systems/gameplay/StationPlacementSystem.h"
+#include "systems/rendering/CameraSystem.h"
 #include "systems/rendering/TerrainMeshSystem.h"
-#include "systems/world/WorldSetupSystem.h"
 #include "systems/world/ChunkManagerSystem.h"
+#include "systems/world/WorldSetupSystem.h"
+#include "ui/UI.h"
 
 Game::Game(Renderer &renderer, ThreadPool &threadPool)
     : _renderer(renderer), _eventBus(), _entityFactory(_registry),

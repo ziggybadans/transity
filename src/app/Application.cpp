@@ -1,7 +1,7 @@
 
 #include "Application.h"
+#include "Constants.h"
 #include "Logger.h"
-#include "core/Constants.h"
 #include "core/PerfTimer.h"
 #include "core/ServiceLocator.h"
 #include "input/InputHandler.h"

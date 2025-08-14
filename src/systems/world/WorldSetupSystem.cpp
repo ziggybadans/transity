@@ -1,10 +1,10 @@
 #include "WorldSetupSystem.h"
 #include "Logger.h"
-#include "render/Camera.h"
-#include "core/ServiceLocator.h"
-#include "components/WorldComponents.h"
-#include "render/Renderer.h"
 #include "WorldGenerationSystem.h"
+#include "components/WorldComponents.h"
+#include "core/ServiceLocator.h"
+#include "render/Camera.h"
+#include "render/Renderer.h"
 
 #include <entt/entt.hpp>
 

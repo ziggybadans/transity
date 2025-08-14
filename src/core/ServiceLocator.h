@@ -1,10 +1,10 @@
 #pragma once
 
+#include "ThreadPool.h"
+#include "app/GameState.h"
+#include "ecs/EntityFactory.h"
 #include "event/EventBus.h"
 #include "render/Camera.h"
-#include "ecs/EntityFactory.h"
-#include "app/GameState.h"
-#include "ThreadPool.h"
 #include <entt/entt.hpp>
 
 class Renderer;

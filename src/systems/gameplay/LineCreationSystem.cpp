@@ -1,8 +1,8 @@
 #include "LineCreationSystem.h"
 #include "Logger.h"
-#include "ecs/EntityFactory.h"
 #include "components/GameLogicComponents.h"
 #include "core/ServiceLocator.h"
+#include "ecs/EntityFactory.h"
 #include "render/ColorManager.h"
 #include <algorithm>
 #include <utility>

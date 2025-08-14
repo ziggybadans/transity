@@ -1,12 +1,12 @@
 #include "UI.h"
+#include "Constants.h"
 #include "Logger.h"
-#include "core/Constants.h"
-#include "event/InputEvents.h"
 #include "app/InteractionMode.h"
-#include "systems/world/ChunkManagerSystem.h"
-#include "systems/rendering/TerrainRenderSystem.h"
+#include "event/InputEvents.h"
 #include "imgui-SFML.h"
 #include "imgui.h"
+#include "systems/rendering/TerrainRenderSystem.h"
+#include "systems/world/ChunkManagerSystem.h"
 #include <cstdlib>
 
 UI::UI(sf::RenderWindow &window, entt::registry &registry, WorldGenerationSystem &worldGenSystem,

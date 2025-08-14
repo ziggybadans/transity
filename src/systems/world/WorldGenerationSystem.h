@@ -3,10 +3,10 @@
 #include <entt/entt.hpp>
 #include <vector>
 
+#include "FastNoiseLite.h"
 #include "components/WorldComponents.h"
 #include "event/EventBus.h"
 #include "event/InputEvents.h"
-#include "FastNoiseLite.h"
 #include "world/WorldData.h"
 
 class WorldGenerationSystem {
