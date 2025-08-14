@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../world/TerrainType.h"
-#include "../world/WorldData.h"
+#include "world/TerrainType.h"
+#include "world/WorldData.h"
 #include <SFML/System.hpp>
 #include <vector>
 

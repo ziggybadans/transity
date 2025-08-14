@@ -1,14 +1,14 @@
 
 #pragma once
 
-#include "core/Camera.h"
-#include "core/EntityFactory.h"
-#include "core/GameState.h"
+#include "render/Camera.h"
+#include "ecs/EntityFactory.h"
+#include "GameState.h"
 #include "core/ServiceLocator.h"
-#include "core/SystemManager.h"
+#include "ecs/SystemManager.h"
 #include "event/EventBus.h"
-#include "graphics/ColorManager.h"
-#include "world/WorldGenerationSystem.h"
+#include "render/ColorManager.h"
+#include "systems/world/WorldGenerationSystem.h"
 #include <entt/entt.hpp>
 #include <memory>
 

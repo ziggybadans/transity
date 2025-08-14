@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include "../input/InteractionMode.h"
-#include "../world/WorldData.h"
+#include "app/InteractionMode.h"
+#include "world/WorldData.h"
 #include <SFML/System/Vector2.hpp>
 #include <SFML/Window/Mouse.hpp>
 #include <entt/entt.hpp>

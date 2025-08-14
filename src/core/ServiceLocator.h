@@ -1,9 +1,9 @@
 #pragma once
 
-#include "../event/EventBus.h"
-#include "Camera.h"
-#include "EntityFactory.h"
-#include "GameState.h"
+#include "event/EventBus.h"
+#include "render/Camera.h"
+#include "ecs/EntityFactory.h"
+#include "app/GameState.h"
 #include "ThreadPool.h"
 #include <entt/entt.hpp>
 

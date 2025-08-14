@@ -1,8 +1,8 @@
 #include "TerrainRenderSystem.h"
 
-#include "../core/PerfTimer.h"
-#include "../core/RenderComponents.h"
-#include "../core/WorldComponents.h"
+#include "core/PerfTimer.h"
+#include "components/RenderComponents.h"
+#include "components/WorldComponents.h"
 
 #include <algorithm>
 #include <cassert>

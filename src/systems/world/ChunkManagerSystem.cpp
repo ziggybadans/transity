@@ -1,7 +1,7 @@
 #include "ChunkManagerSystem.h"
-#include "../Logger.h"
-#include "../core/RenderComponents.h"
-#include "../core/WorldComponents.h"
+#include "Logger.h"
+#include "components/RenderComponents.h"
+#include "components/WorldComponents.h"
 
 ChunkManagerSystem::ChunkManagerSystem(ServiceLocator &serviceLocator,
                                        WorldGenerationSystem &worldGenSystem, EventBus &eventBus)

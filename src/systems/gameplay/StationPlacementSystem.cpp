@@ -1,9 +1,9 @@
 
 
 #include "StationPlacementSystem.h"
-#include "../Logger.h"
-#include "../core/EntityFactory.h"
-#include "../core/ServiceLocator.h"
+#include "Logger.h"
+#include "ecs/EntityFactory.h"
+#include "core/ServiceLocator.h"
 #include <string>
 
 StationPlacementSystem::StationPlacementSystem(ServiceLocator &serviceLocator)

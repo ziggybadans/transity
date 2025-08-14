@@ -1,6 +1,6 @@
 #include "TerrainMeshSystem.h"
-#include "../core/ServiceLocator.h"
-#include "../graphics/Renderer.h"
+#include "core/ServiceLocator.h"
+#include "render/Renderer.h"
 
 TerrainMeshSystem::TerrainMeshSystem(ServiceLocator &serviceLocator)
     : _registry(serviceLocator.registry),

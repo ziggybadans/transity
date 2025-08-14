@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../input/InteractionMode.h"
+#include "InteractionMode.h"
 
 struct GameState {
     InteractionMode currentInteractionMode = InteractionMode::SELECT;

@@ -3,11 +3,11 @@
 #include <entt/entt.hpp>
 #include <vector>
 
-#include "../core/WorldComponents.h"
-#include "../event/EventBus.h"
-#include "../event/InputEvents.h"
+#include "components/WorldComponents.h"
+#include "event/EventBus.h"
+#include "event/InputEvents.h"
 #include "FastNoiseLite.h"
-#include "WorldData.h"
+#include "world/WorldData.h"
 
 class WorldGenerationSystem {
 public:

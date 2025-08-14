@@ -1,8 +1,8 @@
 #include "CameraSystem.h"
-#include "../Logger.h"
-#include "../core/Camera.h"
-#include "../core/ServiceLocator.h"
-#include "../graphics/Renderer.h"
+#include "Logger.h"
+#include "render/Camera.h"
+#include "core/ServiceLocator.h"
+#include "render/Renderer.h"
 
 #include <cassert>
 

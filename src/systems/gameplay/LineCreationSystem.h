@@ -2,10 +2,10 @@
 
 #pragma once
 
-#include "../core/ISystem.h"
-#include "../core/SystemManager.h"
-#include "../event/InputEvents.h"
-#include "../event/LineEvents.h"
+#include "ecs/ISystem.h"
+#include "ecs/SystemManager.h"
+#include "event/InputEvents.h"
+#include "event/LineEvents.h"
 #include <SFML/Graphics/Color.hpp>
 #include <entt/entt.hpp>
 #include <vector>

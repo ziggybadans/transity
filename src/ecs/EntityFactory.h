@@ -8,8 +8,8 @@
 #include <optional>
 #include <string>
 
-#include "GameLogicComponents.h"
-#include "RenderComponents.h"
+#include "components/GameLogicComponents.h"
+#include "components/RenderComponents.h"
 
 class EntityFactory {
 public:

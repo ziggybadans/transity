@@ -1,7 +1,7 @@
 
 #include "GameStateSystem.h"
-#include "../Logger.h"
-#include "../core/GameState.h"
+#include "Logger.h"
+#include "app/GameState.h"
 
 GameStateSystem::GameStateSystem(ServiceLocator &services) : _services(services) {
     _interactionModeChangeListener = _services.eventBus.sink<InteractionModeChangeEvent>()

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../core/ISystem.h"
-#include "../world/TerrainRenderSystem.h"
+#include "ecs/ISystem.h"
+#include "TerrainRenderSystem.h"
 #include <entt/entt.hpp>
 
 class ServiceLocator;

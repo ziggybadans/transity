@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../core/ISystem.h"
+#include "ecs/ISystem.h"
 
 class ServiceLocator;
 

@@ -1,7 +1,7 @@
 #include "LineRenderSystem.h"
-#include "../Logger.h"
-#include "../core/Constants.h"
-#include "../core/GameLogicComponents.h"
+#include "Logger.h"
+#include "core/Constants.h"
+#include "components/GameLogicComponents.h"
 #include <algorithm>
 #include <vector>
 

@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../Logger.h"
+#include "Logger.h"
 #include "ISystem.h"
-#include "ServiceLocator.h"
+#include "core/ServiceLocator.h"
 #include <SFML/System/Time.hpp>
 #include <memory>
 #include <typeindex>

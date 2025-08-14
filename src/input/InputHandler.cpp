@@ -1,6 +1,6 @@
 #include "InputHandler.h"
-#include "../Logger.h"
-#include "../core/Constants.h"
+#include "Logger.h"
+#include "core/Constants.h"
 #include <iostream>
 #include <string>
 #include <vector>

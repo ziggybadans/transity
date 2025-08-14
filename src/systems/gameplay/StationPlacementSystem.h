@@ -1,10 +1,8 @@
-
-
 #pragma once
 
-#include "../core/ISystem.h"
-#include "../core/SystemManager.h"
-#include "../event/InputEvents.h"
+#include "ecs/ISystem.h"
+#include "ecs/SystemManager.h"
+#include "event/InputEvents.h"
 #include "entt/entt.hpp"
 
 class ServiceLocator;

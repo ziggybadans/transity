@@ -3,8 +3,8 @@
 
 #include "Game.h"
 #include "core/ThreadPool.h"
-#include "graphics/Renderer.h"
-#include "graphics/UI.h"
+#include "render/Renderer.h"
+#include "ui/UI.h"
 #include <SFML/System/Clock.hpp>
 #include <memory>
 

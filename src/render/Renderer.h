@@ -4,9 +4,9 @@
 #include <SFML/System.hpp>
 #include <entt/entt.hpp>
 
-#include "../event/EventBus.h"
-#include "../event/InputEvents.h"
-#include "../world/TerrainRenderSystem.h"
+#include "event/EventBus.h"
+#include "event/InputEvents.h"
+#include "systems/rendering/TerrainRenderSystem.h"
 #include "LineRenderSystem.h"
 
 class Renderer {

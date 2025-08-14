@@ -1,9 +1,9 @@
 
 #pragma once
 
-#include "../core/ServiceLocator.h"
-#include "../event/InputEvents.h"
-#include "../event/LineEvents.h"
+#include "core/ServiceLocator.h"
+#include "event/InputEvents.h"
+#include "event/LineEvents.h"
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
 
