@@ -3,6 +3,7 @@
 #include "Logger.h"
 #include "components/GameLogicComponents.h"
 #include "components/RenderComponents.h"
+#include "systems/world/WorldGenerationSystem.h"
 #include <SFML/Graphics.hpp>
 #include <cstdlib>
 #include <entt/entt.hpp>
@@ -29,13 +30,12 @@ TerrainRenderSystem &Renderer::getTerrainRenderSystem() noexcept {
     return _terrainRenderSystem;
 }
 
-void Renderer::renderFrame(const entt::registry &registry, const sf::View &view,
-                           float interpolation) {
+void Renderer::renderFrame(const entt::registry &registry, const sf::View &view, const WorldGenerationSystem &worldGen, float interpolation) {
     LOG_TRACE("Renderer", "Beginning render pass.");
     _windowInstance.setView(view);
     _windowInstance.clear(_clearColor);
 
-    _terrainRenderSystem.render(registry, _windowInstance, view);
+    _terrainRenderSystem.render(registry, _windowInstance, view, worldGen.getParams());
     LOG_TRACE("Renderer", "Terrain rendered.");
     _lineRenderSystem.render(registry, _windowInstance, view);
     LOG_TRACE("Renderer", "Lines rendered.");

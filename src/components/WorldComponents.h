@@ -39,11 +39,7 @@ struct ChunkStateComponent {
 };
 
 // Defines the overall structure of the world grid.
-struct WorldGridComponent {
-    sf::Vector2i worldDimensionsInChunks = {100, 100};
-    sf::Vector2i chunkDimensionsInCells = {32, 32};
-    float cellSize = 16.0f;
-};
+struct WorldGridComponent {};
 
 // Holds the parameters for world generation.
 struct WorldStateComponent {

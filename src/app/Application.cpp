@@ -95,7 +95,9 @@ void Application::update(sf::Time dt) {
 void Application::render(float interpolation) {
     PerfTimer timer("Application::render");
 
-    _renderer->renderFrame(_game->getRegistry(), _game->getCamera().getView(), interpolation);
+    const auto &worldGen = _game->getWorldGenSystem();
+
+    _renderer->renderFrame(_game->getRegistry(), _game->getCamera().getView(), worldGen, interpolation);
     _ui->renderFrame();
     _renderer->displayFrame();
 }

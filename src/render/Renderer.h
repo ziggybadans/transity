@@ -9,13 +9,16 @@
 #include "event/InputEvents.h"
 #include "systems/rendering/TerrainRenderSystem.h"
 
+class WorldGenerationSystem;
+
 class Renderer {
 public:
     Renderer();
     ~Renderer();
 
     void initialize();
-    void renderFrame(const entt::registry &registry, const sf::View &view, float interpolation);
+    void renderFrame(const entt::registry &registry, const sf::View &view,
+                     const WorldGenerationSystem &worldGen, float interpolation);
     void displayFrame() noexcept;
     void cleanupResources() noexcept;
     bool isWindowOpen() const noexcept;

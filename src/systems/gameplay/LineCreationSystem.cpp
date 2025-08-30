@@ -125,14 +125,14 @@ void LineCreationSystem::finalizeLine() {
     }
 
     for (entt::entity stationEnt : stopsInOrder) {
-        if (_registry.valid(stationEnt) && _registry.all_of<StationComponent>(stationEnt)) {
-            auto &stationComp = _registry.get<StationComponent>(stationEnt);
+        if (_registry.valid(stationEnt) && _registry.all_of<CityComponent>(stationEnt)) {
+            auto &stationComp = _registry.get<CityComponent>(stationEnt);
             stationComp.connectedLines.push_back(lineEntity);
             LOG_DEBUG("LineCreationSystem", "Connected line %u to station %u",
                       static_cast<unsigned int>(lineEntity), static_cast<unsigned int>(stationEnt));
         } else {
             LOG_WARN("LineCreationSystem",
-                     "Station entity %u in line is invalid or missing StationComponent during "
+                     "Station entity %u in line is invalid or missing CityComponent during "
                      "finalization.",
                      static_cast<unsigned int>(stationEnt));
         }

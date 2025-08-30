@@ -64,8 +64,6 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
 
     auto &worldState =
         _registry.get<WorldStateComponent>(_registry.view<WorldStateComponent>().front());
-    auto &worldGrid =
-        _registry.get<WorldGridComponent>(_registry.view<WorldGridComponent>().front());
     WorldGenParams &params = _worldGenerationSystem.getParams();
 
     bool paramsChanged = false;
@@ -128,11 +126,11 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
     ImGui::Separator();
 
     bool gridChanged = false;
-    if (ImGui::InputInt("World Chunks X", &worldGrid.worldDimensionsInChunks.x)) gridChanged = true;
-    if (ImGui::InputInt("World Chunks Y", &worldGrid.worldDimensionsInChunks.y)) gridChanged = true;
-    if (ImGui::InputInt("Chunk Size X", &worldGrid.chunkDimensionsInCells.x)) gridChanged = true;
-    if (ImGui::InputInt("Chunk Size Y", &worldGrid.chunkDimensionsInCells.y)) gridChanged = true;
-    if (ImGui::InputFloat("Cell Size", &worldGrid.cellSize, 1.0f, 0.0f, "%.2f")) gridChanged = true;
+    if (ImGui::InputInt("World Chunks X", &params.worldDimensionsInChunks.x)) gridChanged = true;
+    if (ImGui::InputInt("World Chunks Y", &params.worldDimensionsInChunks.y)) gridChanged = true;
+    if (ImGui::InputInt("Chunk Size X", &params.chunkDimensionsInCells.x)) gridChanged = true;
+    if (ImGui::InputInt("Chunk Size Y", &params.chunkDimensionsInCells.y)) gridChanged = true;
+    if (ImGui::InputFloat("Cell Size", &params.cellSize, 1.0f, 0.0f, "%.2f")) gridChanged = true;
 
     if ((paramsChanged || gridChanged) && _autoRegenerate) {
         LOG_INFO("UI", "Settings changed, auto-regenerating world.");

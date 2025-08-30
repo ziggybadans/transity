@@ -27,6 +27,10 @@ struct WorldGenParams {
     bool distortCoastline = false;
     float coastlineDistortionStrength = 0.1f;
     std::vector<Point> continentShape;
+
+    sf::Vector2i worldDimensionsInChunks = {100, 100};
+    sf::Vector2i chunkDimensionsInCells = {32, 32};
+    float cellSize = 16.0f;
 };
 
 struct SwapWorldStateEvent {};

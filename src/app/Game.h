@@ -9,6 +9,7 @@
 #include "render/Camera.h"
 #include "render/ColorManager.h"
 #include "systems/world/WorldGenerationSystem.h"
+#include "systems/gameplay/CityPlacementSystem.h"
 #include <entt/entt.hpp>
 #include <memory>
 
@@ -31,6 +32,7 @@ public:
     GameState &getGameState() { return _gameState; }
     InputHandler &getInputHandler() { return *_inputHandler; }
     ServiceLocator &getServiceLocator() { return _serviceLocator; }
+    const WorldGenerationSystem &getWorldGenSystem() const { return _worldGenerationSystem; }
 
 private:
     Renderer &_renderer;
@@ -43,6 +45,7 @@ private:
     GameState _gameState;
     WorldGenerationSystem _worldGenerationSystem;
     ServiceLocator _serviceLocator;
+    CityPlacementSystem _cityPlacementSystem;
 
     std::unique_ptr<ChunkManagerSystem> _chunkManagerSystem;
     std::unique_ptr<SystemManager> _systemManager;

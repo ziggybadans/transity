@@ -10,8 +10,8 @@ struct PositionComponent {
     sf::Vector2f coordinates;
 };
 
-// A component for station entities.
-struct StationComponent {
+// A component for city entities.
+struct CityComponent {
     std::vector<entt::entity> connectedLines;
 };
 

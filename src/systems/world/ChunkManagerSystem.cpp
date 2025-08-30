@@ -91,8 +91,7 @@ void ChunkManagerSystem::update(sf::Time dt) {
     processCompletedChunks();
 
     const auto &camera = _serviceLocator.camera;
-    const auto &worldGrid =
-        _registry.get<WorldGridComponent>(_registry.view<WorldGridComponent>().front());
+    const auto &worldParams = _worldGenSystem.getParams();
 
     float zoom = camera.getZoom();
     LODLevel currentLOD = LODLevel::LOD0;
@@ -113,8 +112,8 @@ void ChunkManagerSystem::update(sf::Time dt) {
 
     sf::Vector2f cameraCenter = camera.getCenter();
     sf::Vector2f viewSize = camera.getView().getSize();
-    float cellSize = worldGrid.cellSize;
-    const auto &chunkDims = worldGrid.chunkDimensionsInCells;
+    float cellSize = worldParams.cellSize;
+    const auto &chunkDims = worldParams.chunkDimensionsInCells;
 
     float chunkWidthInPixels = chunkDims.x * cellSize;
     float chunkHeightInPixels = chunkDims.y * cellSize;
@@ -152,9 +151,8 @@ void ChunkManagerSystem::update(sf::Time dt) {
 }
 
 void ChunkManagerSystem::loadChunk(const sf::Vector2i &chunkPos) {
-    const auto &worldGrid =
-        _registry.get<WorldGridComponent>(_registry.view<WorldGridComponent>().front());
-    const auto &worldDims = worldGrid.worldDimensionsInChunks;
+    const auto &worldParams = _worldGenSystem.getParams();
+    const auto &worldDims = worldParams.worldDimensionsInChunks;
 
     if (chunkPos.x < 0 || chunkPos.x >= worldDims.x || chunkPos.y < 0
         || chunkPos.y >= worldDims.y) {

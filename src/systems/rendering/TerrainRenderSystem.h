@@ -5,17 +5,16 @@
 #include <vector>
 
 struct ChunkPositionComponent;
-struct WorldGridComponent;
 struct ChunkTerrainComponent;
 struct ChunkMeshComponent;
+struct WorldGenParams;
 
 class TerrainRenderSystem {
 public:
     TerrainRenderSystem();
 
-    void updateMeshes(entt::registry &registry);
-
-    void render(const entt::registry &registry, sf::RenderTarget &target, const sf::View &view);
+    void updateMeshes(entt::registry &registry, const WorldGenParams &worldParams);
+    void render(const entt::registry &registry, sf::RenderTarget &target, const sf::View &view, const WorldGenParams &worldParams);
 
     void setVisualizeChunkBorders(bool visualize) noexcept { _visualizeChunkBorders = visualize; }
     void setVisualizeCellBorders(bool visualize) noexcept { _visualizeCellBorders = visualize; }
@@ -28,8 +27,7 @@ private:
     bool _isLodEnabled = true;
     std::vector<bool> m_visited;
 
-    const WorldGridComponent &getWorldGridSettings(const entt::registry &registry);
     void buildAllChunkMeshes(const ChunkPositionComponent &chunkPos,
                              const ChunkTerrainComponent &chunkTerrain,
-                             ChunkMeshComponent &chunkMesh, const WorldGridComponent &worldGrid);
+                             ChunkMeshComponent &chunkMesh, const WorldGenParams &worldParams);
 };

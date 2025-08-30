@@ -96,8 +96,8 @@ entt::entity EntityFactory::createEntity(const std::string &archetypeId,
                 if (componentData.contains("boundingRadius")) {
                     clickable.boundingRadius = {componentData["boundingRadius"].get<float>()};
                 }
-            } else if (componentName == "station") {
-                _registry.emplace<StationComponent>(entity);
+            } else if (componentName == "city") {
+                _registry.emplace<CityComponent>(entity);
             }
         }
     }

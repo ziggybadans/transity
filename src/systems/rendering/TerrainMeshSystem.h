@@ -5,6 +5,7 @@
 #include <entt/entt.hpp>
 
 class ServiceLocator;
+class WorldGenerationSystem;
 
 class TerrainMeshSystem : public ISystem, public IUpdatable {
 public:
@@ -14,4 +15,5 @@ public:
 private:
     entt::registry &_registry;
     TerrainRenderSystem &_terrainRenderSystem;
+    const WorldGenerationSystem &_worldGenSystem;
 };

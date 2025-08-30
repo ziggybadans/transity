@@ -18,6 +18,8 @@ public:
 
     GeneratedChunkData generateChunkData(const sf::Vector2i &chunkGridPosition) const;
 
+    TerrainType getTerrainTypeAt(float worldX, float worldY) const;
+
     sf::Vector2f getWorldSize();
 
     entt::registry &getRegistry() noexcept { return _registry; }
@@ -39,6 +41,4 @@ private:
     void generateContinentShape();
 
     entt::connection _regenerateWorldListener;
-
-    const WorldGridComponent &getWorldGridSettings() const;
 };

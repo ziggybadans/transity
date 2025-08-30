@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "id": "city",
+  "components": {
+    "renderable": {
+      "radius": 5.0,
+      "color": [255, 165, 0, 255],
+      "zOrder": 1
+    },
+    "clickable": {
+      "boundingRadius": 6.0
+    },
+    "city": {}
+  }
+}

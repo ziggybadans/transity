@@ -80,113 +80,90 @@ void WorldGenerationSystem::generateContinentShape() {
     }
 }
 
-const WorldGridComponent &WorldGenerationSystem::getWorldGridSettings() const {
-    auto view = _registry.view<WorldGridComponent>();
-    if (view.empty()) {
-        throw std::runtime_error("No WorldGridComponent found in the registry.");
-    }
-    return view.get<WorldGridComponent>(view.front());
-}
-
 sf::Vector2f WorldGenerationSystem::getWorldSize() {
-    try {
-        const WorldGridComponent &worldGrid = getWorldGridSettings();
-        float worldWidth = static_cast<float>(worldGrid.worldDimensionsInChunks.x
-                                              * worldGrid.chunkDimensionsInCells.x)
-                           * worldGrid.cellSize;
-        float worldHeight = static_cast<float>(worldGrid.worldDimensionsInChunks.y
-                                               * worldGrid.chunkDimensionsInCells.y)
-                            * worldGrid.cellSize;
-        return {worldWidth, worldHeight};
-    } catch (const std::runtime_error &e) {
-        LOG_ERROR("WorldGenerationSystem", "Cannot get world size: %s", e.what());
-        return {0.0f, 0.0f};
-    }
+    // Use _params directly
+    float worldWidth = static_cast<float>(_params.worldDimensionsInChunks.x
+                                          * _params.chunkDimensionsInCells.x)
+                       * _params.cellSize;
+    float worldHeight = static_cast<float>(_params.worldDimensionsInChunks.y
+                                           * _params.chunkDimensionsInCells.y)
+                        * _params.cellSize;
+    return {worldWidth, worldHeight};
 }
 
 GeneratedChunkData
 WorldGenerationSystem::generateChunkData(const sf::Vector2i &chunkGridPosition) const {
     PerfTimer timer("generateChunkData");
 
-    const auto &worldGrid = getWorldGridSettings();
-    sf::Vector2f worldSize = {
-        static_cast<float>(worldGrid.worldDimensionsInChunks.x * worldGrid.chunkDimensionsInCells.x)
-            * worldGrid.cellSize,
-        static_cast<float>(worldGrid.worldDimensionsInChunks.y * worldGrid.chunkDimensionsInCells.y)
-            * worldGrid.cellSize};
-    sf::Vector2f center = worldSize / 2.0f;
-
-    const int chunkCellSizeX = static_cast<int>(worldGrid.chunkDimensionsInCells.x);
-    const int chunkCellSizeY = static_cast<int>(worldGrid.chunkDimensionsInCells.y);
+    // Use _params directly
+    const int chunkCellSizeX = static_cast<int>(_params.chunkDimensionsInCells.x);
+    const int chunkCellSizeY = static_cast<int>(_params.chunkDimensionsInCells.y);
     const int totalCells = chunkCellSizeX * chunkCellSizeY;
 
     GeneratedChunkData chunkData;
     chunkData.chunkGridPosition = chunkGridPosition;
     chunkData.cells.resize(totalCells);
-    chunkData.noiseValues.resize(totalCells);
-    chunkData.rawNoiseValues.resize(totalCells);
+    // We no longer need to store noise values in the chunk data for this purpose.
+    // chunkData.noiseValues.resize(totalCells);
+    // chunkData.rawNoiseValues.resize(totalCells);
 
-    auto processCell = [&](int x, int y, bool distort) {
-        int cellIndex = y * chunkCellSizeX + x;
-        float worldX =
-            static_cast<float>((chunkGridPosition.x * chunkCellSizeX) + x) * worldGrid.cellSize;
-        float worldY =
-            static_cast<float>((chunkGridPosition.y * chunkCellSizeY) + y) * worldGrid.cellSize;
+    for (int y = 0; y < chunkCellSizeY; ++y) {
+        for (int x = 0; x < chunkCellSizeX; ++x) {
+            int cellIndex = y * chunkCellSizeX + x;
+            float worldX =
+                static_cast<float>((chunkGridPosition.x * chunkCellSizeX) + x) * _params.cellSize;
+            float worldY =
+                static_cast<float>((chunkGridPosition.y * chunkCellSizeY) + y) * _params.cellSize;
 
-        float dx = center.x - worldX;
-        float dy = center.y - worldY;
-        float distance = std::sqrt(dx * dx + dy * dy);
-
-        float maxDistance = std::min(worldSize.x, worldSize.y) / 2.5f;
-        float falloff = 1.0f - std::min(1.0f, distance / maxDistance);
-
-        float noiseX = static_cast<float>((chunkGridPosition.x * chunkCellSizeX) + x);
-        float noiseY = static_cast<float>((chunkGridPosition.y * chunkCellSizeY) + y);
-
-        float combinedNoise = 0.0f;
-        float totalWeight = 0.0f;
-
-        for (size_t i = 0; i < _noiseGenerators.size(); ++i) {
-            float noiseValue = _noiseGenerators[i].GetNoise(noiseX, noiseY);
-            noiseValue = (noiseValue + 1.0f) / 2.0f;
-            combinedNoise += noiseValue * _params.noiseLayers[i].weight;
-            totalWeight += _params.noiseLayers[i].weight;
-        }
-
-        if (totalWeight > 0) {
-            combinedNoise /= totalWeight;
-        }
-
-        chunkData.rawNoiseValues[cellIndex] = combinedNoise;
-        float finalValue = combinedNoise * falloff;
-
-        float distortedLandThreshold = _params.landThreshold;
-        if (distort) {
-            float distortion =
-                _coastlineDistortion.GetNoise(noiseX, noiseY) * _params.coastlineDistortionStrength;
-            distortedLandThreshold += distortion;
-        }
-
-        chunkData.noiseValues[cellIndex] = finalValue;
-        chunkData.cells[cellIndex] =
-            (finalValue > distortedLandThreshold) ? TerrainType::LAND : TerrainType::WATER;
-    };
-
-    if (_params.distortCoastline) {
-        for (int y = 0; y < chunkCellSizeY; ++y) {
-            for (int x = 0; x < chunkCellSizeX; ++x) {
-                processCell(x, y, true);
-            }
-        }
-    } else {
-        for (int y = 0; y < chunkCellSizeY; ++y) {
-            for (int x = 0; x < chunkCellSizeX; ++x) {
-                processCell(x, y, false);
-            }
+            chunkData.cells[cellIndex] = getTerrainTypeAt(worldX, worldY);
         }
     }
 
     return chunkData;
+}
+
+TerrainType WorldGenerationSystem::getTerrainTypeAt(float worldX, float worldY) const {
+    sf::Vector2f worldSize = {
+        static_cast<float>(_params.worldDimensionsInChunks.x * _params.chunkDimensionsInCells.x)
+            * _params.cellSize,
+        static_cast<float>(_params.worldDimensionsInChunks.y * _params.chunkDimensionsInCells.y)
+            * _params.cellSize};
+    sf::Vector2f center = worldSize / 2.0f;
+
+    float dx = center.x - worldX;
+    float dy = center.y - worldY;
+    float distance = std::sqrt(dx * dx + dy * dy);
+
+    float maxDistance = std::min(worldSize.x, worldSize.y) / 2.5f;
+    float falloff = 1.0f - std::min(1.0f, distance / maxDistance);
+
+    float noiseX = worldX / _params.cellSize;
+    float noiseY = worldY / _params.cellSize;
+
+    float combinedNoise = 0.0f;
+    float totalWeight = 0.0f;
+
+    for (size_t i = 0; i < _noiseGenerators.size(); ++i) {
+        float noiseValue = _noiseGenerators[i].GetNoise(noiseX, noiseY);
+        noiseValue = (noiseValue + 1.0f) / 2.0f; // Remap from [-1, 1] to [0, 1]
+        combinedNoise += noiseValue * _params.noiseLayers[i].weight;
+        totalWeight += _params.noiseLayers[i].weight;
+    }
+
+    if (totalWeight > 0) {
+        combinedNoise /= totalWeight;
+    }
+
+    float finalValue = combinedNoise * falloff;
+
+    float distortedLandThreshold = _params.landThreshold;
+    if (_params.distortCoastline) {
+        float distortion =
+            _coastlineDistortion.GetNoise(noiseX, noiseY) * _params.coastlineDistortionStrength;
+        distortedLandThreshold += distortion;
+    }
+
+    return (finalValue > distortedLandThreshold) ? TerrainType::LAND : TerrainType::WATER;
 }
 
 void WorldGenerationSystem::regenerate(const WorldGenParams &params) {
