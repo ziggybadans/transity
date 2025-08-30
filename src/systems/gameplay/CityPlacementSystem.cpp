@@ -9,11 +9,8 @@
 #include <algorithm>
 #include <random>
 
-CityPlacementSystem::CityPlacementSystem(entt::registry &registry, EntityFactory &entityFactory,
-                                         const WorldGenerationSystem &worldGenSystem)
-    : _registry(registry),
-      _entityFactory(entityFactory),
-      _worldGenSystem(worldGenSystem) {
+CityPlacementSystem::CityPlacementSystem(ServiceLocator &serviceLocator)
+    : _serviceLocator(serviceLocator) {
     LOG_INFO("CityPlacementSystem", "CityPlacementSystem created.");
 }
 
@@ -21,12 +18,22 @@ CityPlacementSystem::~CityPlacementSystem() {
     LOG_INFO("CityPlacementSystem", "CityPlacementSystem destroyed.");
 }
 
-// src/systems/gameplay/CityPlacementSystem.cpp
+void CityPlacementSystem::update(sf::Time dt) {
+    if (_hasRun) {
+        return;
+    }
+
+    placeCities(10);
+    _hasRun = true;
+}
 
 void CityPlacementSystem::placeCities(int numberOfCities) {
     LOG_INFO("CityPlacementSystem", "Placing %d cities...", numberOfCities);
 
-    const auto &worldGrid = _worldGenSystem.getParams();
+    auto &worldGenSystem = _serviceLocator.worldGenerationSystem;
+    auto &entityFactory = _serviceLocator.entityFactory;
+
+    const auto &worldGrid = worldGenSystem.getParams();
     const int mapWidth = worldGrid.worldDimensionsInChunks.x * worldGrid.chunkDimensionsInCells.x;
     const int mapHeight = worldGrid.worldDimensionsInChunks.y * worldGrid.chunkDimensionsInCells.y;
     const float cellSize = worldGrid.cellSize;
@@ -38,7 +45,7 @@ void CityPlacementSystem::placeCities(int numberOfCities) {
         for (int x = 0; x < mapWidth; ++x) {
             float worldX = x * worldGrid.cellSize;
             float worldY = y * worldGrid.cellSize;
-            if (_worldGenSystem.getTerrainTypeAt(worldX, worldY) == TerrainType::LAND) {
+            if (worldGenSystem.getTerrainTypeAt(worldX, worldY) == TerrainType::LAND) {
                 suitabilityMap[y * mapWidth + x] = 1.0f; // Base score for land
             }
         }
@@ -59,7 +66,7 @@ void CityPlacementSystem::placeCities(int numberOfCities) {
                         if (neighborX >= 0 && neighborX < mapWidth && neighborY >= 0 && neighborY < mapHeight) {
                             float neighborWorldX = neighborX * worldGrid.cellSize;
                             float neighborWorldY = neighborY * worldGrid.cellSize;
-                            if (_worldGenSystem.getTerrainTypeAt(neighborWorldX, neighborWorldY) == TerrainType::WATER) {
+                            if (worldGenSystem.getTerrainTypeAt(neighborWorldX, neighborWorldY) == TerrainType::WATER) {
                                 isCoastal = true;
                                 break;
                             }
@@ -87,7 +94,7 @@ void CityPlacementSystem::placeCities(int numberOfCities) {
         float worldX = bestLocation.x * worldGrid.cellSize + worldGrid.cellSize / 2.0f;
         float worldY = bestLocation.y * worldGrid.cellSize + worldGrid.cellSize / 2.0f;
 
-        _entityFactory.createEntity("city", {worldX, worldY});
+        entityFactory.createEntity("city", {worldX, worldY});
         LOG_INFO("CityPlacementSystem", "Placed city %d at (%.1f, %.1f)", i + 1, worldX, worldY);
 
         reduceSuitabilityAroundCity(bestLocation.x, bestLocation.y, mapWidth, mapHeight, suitabilityMap);
@@ -112,6 +119,9 @@ sf::Vector2i CityPlacementSystem::findBestLocation(int mapWidth, int mapHeight, 
             }
         }
     }
+
+    LOG_INFO("CityPlacementSystem", "Max suitability found: %.2f", maxSuitability);
+    LOG_INFO("CityPlacementSystem", "Found %d best locations.", bestLocations.size());
 
     if (bestLocations.empty()) {
         return {-1, -1}; // No suitable location found

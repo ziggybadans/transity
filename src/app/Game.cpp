@@ -24,8 +24,7 @@ Game::Game(Renderer &renderer, ThreadPool &threadPool)
                                                                     _colorManager,
                                                                     _worldGenerationSystem,
                                                                     _renderer,
-                                                                    threadPool},
-     _cityPlacementSystem(_registry, _entityFactory, _worldGenerationSystem) {
+                                                                    threadPool} {
 
     _inputHandler = std::make_unique<InputHandler>(_serviceLocator);
     _systemManager = std::make_unique<SystemManager>(_serviceLocator);
@@ -36,8 +35,7 @@ Game::Game(Renderer &renderer, ThreadPool &threadPool)
     _systemManager->addSystem<WorldSetupSystem>()->init();
     _systemManager->addSystem<ChunkManagerSystem>(_worldGenerationSystem, _eventBus);
     _systemManager->addSystem<TerrainMeshSystem>();
-
-    _cityPlacementSystem.placeCities(10);
+    _systemManager->addSystem<CityPlacementSystem>();
 
     LOG_INFO("Game", "Game instance created and systems registered.");
 }

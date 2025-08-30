@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include "GameState.h"
@@ -45,7 +44,6 @@ private:
     GameState _gameState;
     WorldGenerationSystem _worldGenerationSystem;
     ServiceLocator _serviceLocator;
-    CityPlacementSystem _cityPlacementSystem;
 
     std::unique_ptr<ChunkManagerSystem> _chunkManagerSystem;
     std::unique_ptr<SystemManager> _systemManager;

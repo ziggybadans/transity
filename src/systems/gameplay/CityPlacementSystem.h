@@ -4,26 +4,23 @@
 #include "entt/entt.hpp"
 #include <SFML/System/Vector2.hpp>
 
-class EntityFactory; // Forward-declare
-class WorldGenerationSystem;
+class ServiceLocator;
 
-class CityPlacementSystem : public ISystem {
+class CityPlacementSystem : public ISystem, public IUpdatable {
 public:
-    // Update the constructor signature
-    explicit CityPlacementSystem(entt::registry &registry, EntityFactory &entityFactory,
-                                 const WorldGenerationSystem &worldGenSystem);
-    ~CityPlacementSystem();
+    explicit CityPlacementSystem(ServiceLocator &serviceLocator);
+    ~CityPlacementSystem() override;
 
-    void placeCities(int numberOfCities);
+    void update(sf::Time dt) override;
 
 private:
+    void placeCities(int numberOfCities);
     sf::Vector2i findBestLocation(int mapWidth, int mapHeight,
                                   const std::vector<float> &suitabilityMap);
     void reduceSuitabilityAroundCity(int cityX, int cityY, int mapWidth, int mapHeight,
                                      std::vector<float> &suitabilityMap);
 
 private:
-    entt::registry &_registry;
-    EntityFactory &_entityFactory;
-    const WorldGenerationSystem &_worldGenSystem;
+    ServiceLocator &_serviceLocator;
+    bool _hasRun = false;
 };

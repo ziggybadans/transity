@@ -72,6 +72,7 @@ FetchContent_MakeAvailable(ImGuiSFML)
 # ---- your executable --------------------------------------------------------
 file(GLOB_RECURSE SOURCES "src/*.cpp")
 add_executable(main ${SOURCES})
+target_compile_definitions(main PRIVATE LOGGING_ENABLED)
 target_compile_features(main PRIVATE cxx_std_17)
 
 # Add include directory
