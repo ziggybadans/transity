@@ -6,7 +6,7 @@
 #include <vector>
 
 EntityFactory::EntityFactory(entt::registry &registry) : _registry(registry) {
-    LOG_INFO("EntityFactory", "EntityFactory created.");
+    LOG_DEBUG("EntityFactory", "EntityFactory created.");
     loadArchetypes("data/archetypes");
 }
 
@@ -34,7 +34,7 @@ void EntityFactory::loadArchetypes(const std::string &directoryPath) {
                         }
 
                         _archetypes[id] = archetypeJson;
-                        LOG_INFO("EntityFactory", "Loaded archetype: %s (Version: %d)", id.c_str(),
+                        LOG_DEBUG("EntityFactory", "Loaded archetype: %s (Version: %d)", id.c_str(),
                                  version);
                     } else {
                         LOG_ERROR("EntityFactory",
@@ -57,9 +57,9 @@ void EntityFactory::loadArchetypes(const std::string &directoryPath) {
 
 entt::entity EntityFactory::createEntity(const std::string &archetypeId,
                                          const sf::Vector2f &position, const std::string &name) {
-    LOG_INFO("EntityFactory",
-             "Request to create entity with archetype '%s' and name '%s' at (%.1f, %.1f).",
-             archetypeId.c_str(), name.c_str(), position.x, position.y);
+   LOG_DEBUG("EntityFactory",
+            "Request to create entity with archetype '%s' and name '%s' at (%.1f, %.1f).",
+            archetypeId.c_str(), name.c_str(), position.x, position.y);
 
     auto it = _archetypes.find(archetypeId);
     if (it == _archetypes.end()) {
@@ -104,12 +104,22 @@ entt::entity EntityFactory::createEntity(const std::string &archetypeId,
 
     LOG_DEBUG("EntityFactory", "Entity (ID: %u) created successfully using archetype '%s'.",
               static_cast<unsigned int>(entity), archetypeId.c_str());
+
+    if (_registry.all_of<PositionComponent>(entity)) {
+        const auto& pos = _registry.get<PositionComponent>(entity);
+        LOG_DEBUG("EntityFactory", "Entity %u has PositionComponent at (%.1f, %.1f)", static_cast<unsigned int>(entity), pos.coordinates.x, pos.coordinates.y);
+    }
+    if (_registry.all_of<RenderableComponent>(entity)) {
+        const auto& renderable = _registry.get<RenderableComponent>(entity);
+        LOG_DEBUG("EntityFactory", "Entity %u has RenderableComponent with radius %.1f", static_cast<unsigned int>(entity), renderable.radius.value);
+    }
+
     return entity;
 }
 entt::entity EntityFactory::createLine(const std::vector<entt::entity> &stops,
                                        const sf::Color &color) {
-    LOG_INFO("EntityFactory", "Request to create line entity with %zu stops.", stops.size());
-    if (stops.size() < 2) {
+   LOG_DEBUG("EntityFactory", "Request to create line entity with %zu stops.", stops.size());
+   if (stops.size() < 2) {
         LOG_ERROR("EntityFactory", "Cannot create line with less than 2 stops.");
         return entt::null;
     }

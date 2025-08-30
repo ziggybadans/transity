@@ -10,7 +10,7 @@
 
 WorldGenerationSystem::WorldGenerationSystem(entt::registry &registry, EventBus &eventBus)
     : _registry(registry), _eventBus(eventBus) {
-    LOG_INFO("WorldGenerationSystem", "System created.");
+    LOG_DEBUG("WorldGenerationSystem", "System created.");
 
     _params.noiseLayers.push_back({"Continents", 1337, 0.005f, FastNoiseLite::NoiseType_Perlin,
                                    FastNoiseLite::FractalType_FBm, 3, 2.0f, 0.5f, 1.0f});

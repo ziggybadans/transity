@@ -24,7 +24,7 @@ public:
             m_updatableSystems.push_back(ptr);
         }
 
-        LOG_INFO("SystemManager", "Added system: %s", typeid(T).name());
+        LOG_DEBUG("SystemManager", "Added system: %s", typeid(T).name());
         return ptr;
     }
 

@@ -15,14 +15,14 @@ LineCreationSystem::LineCreationSystem(ServiceLocator &serviceLocator)
                                    .connect<&LineCreationSystem::onFinalizeLine>(this);
     m_mousePressConnection = serviceLocator.eventBus.sink<MouseButtonPressedEvent>()
                                  .connect<&LineCreationSystem::onMouseButtonPressed>(this);
-    LOG_INFO("LineCreationSystem", "LineCreationSystem created and connected to EventBus.");
+  LOG_DEBUG("LineCreationSystem", "LineCreationSystem created and connected to EventBus.");
 }
 
 LineCreationSystem::~LineCreationSystem() {
 
     m_finalizeLineConnection.release();
     m_mousePressConnection.release();
-    LOG_INFO("LineCreationSystem", "LineCreationSystem destroyed and disconnected from EventBus.");
+    LOG_DEBUG("LineCreationSystem", "LineCreationSystem destroyed and disconnected from EventBus.");
 }
 
 void LineCreationSystem::onMouseButtonPressed(const MouseButtonPressedEvent &event) {
@@ -48,9 +48,6 @@ void LineCreationSystem::onMouseButtonPressed(const MouseButtonPressedEvent &eve
                 return;
             }
         }
-        LOG_TRACE("LineCreationSystem",
-                  "Mouse click in CREATE_LINE mode at world (%.1f, %.1f) but no station found.",
-                  event.worldPosition.x, event.worldPosition.y);
     }
 }
 
@@ -143,7 +140,7 @@ void LineCreationSystem::finalizeLine() {
             _registry.remove<ActiveLineStationTag>(stationEnt);
         }
     }
-    LOG_INFO("LineCreationSystem", "Created line entity with ID: %u and removed tags.",
+    LOG_DEBUG("LineCreationSystem", "Created line entity with ID: %u and removed tags.",
              static_cast<unsigned int>(lineEntity));
 
     clearCurrentLine();

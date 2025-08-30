@@ -18,13 +18,13 @@ CameraSystem::CameraSystem(ServiceLocator &serviceLocator)
     m_panConnection =
         serviceLocator.eventBus.sink<CameraPanEvent>().connect<&CameraSystem::onCameraPan>(
             this);  // Change -> to .
-    LOG_INFO("CameraSystem", "CameraSystem created and connected to EventBus.");
+   LOG_DEBUG("CameraSystem", "CameraSystem created and connected to EventBus.");
 }
 
 CameraSystem::~CameraSystem() {
     m_zoomConnection.release();
     m_panConnection.release();
-    LOG_INFO("CameraSystem", "CameraSystem destroyed and disconnected from EventBus.");
+    LOG_DEBUG("CameraSystem", "CameraSystem destroyed and disconnected from EventBus.");
 }
 
 void CameraSystem::onCameraZoom(const CameraZoomEvent &event) {

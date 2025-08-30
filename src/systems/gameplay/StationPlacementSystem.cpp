@@ -12,13 +12,13 @@ StationPlacementSystem::StationPlacementSystem(ServiceLocator &serviceLocator)
 
     m_mousePressConnection = serviceLocator.eventBus.sink<MouseButtonPressedEvent>()
                                  .connect<&StationPlacementSystem::onMouseButtonPressed>(this);
-    LOG_INFO("StationPlacementSystem", "StationPlacementSystem created and connected to EventBus.");
+  LOG_DEBUG("StationPlacementSystem", "StationPlacementSystem created and connected to EventBus.");
 }
 
 StationPlacementSystem::~StationPlacementSystem() {
 
     m_mousePressConnection.release();
-    LOG_INFO("StationPlacementSystem",
+    LOG_DEBUG("StationPlacementSystem",
              "StationPlacementSystem destroyed and disconnected from EventBus.");
 }
 

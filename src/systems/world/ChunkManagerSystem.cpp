@@ -42,7 +42,7 @@ void ChunkManagerSystem::onRegenerateWorld(const RegenerateWorldRequestEvent &ev
 
     const WorldGenParams &params = *event.params;
 
-    LOG_INFO("ChunkManagerSystem", "Regenerating world.");
+    LOG_DEBUG("ChunkManagerSystem", "Regenerating world.");
     auto &worldState =
         _registry.get<WorldStateComponent>(_registry.view<WorldStateComponent>().front());
 
@@ -170,7 +170,7 @@ void ChunkManagerSystem::unloadChunk(const sf::Vector2i &chunkPos) {
     if (it != _activeChunks.end()) {
         _registry.destroy(it->second);
         _activeChunks.erase(it);
-        LOG_INFO("ChunkManagerSystem", "Unloaded chunk at (%d, %d)", chunkPos.x, chunkPos.y);
+        LOG_DEBUG("ChunkManagerSystem", "Unloaded chunk at (%d, %d)", chunkPos.x, chunkPos.y);
     }
 }
 
@@ -192,7 +192,7 @@ void ChunkManagerSystem::processCompletedChunks() {
 
         _activeChunks[chunkPos] = entity;
         _chunksBeingLoaded.erase(chunkPos);
-        LOG_INFO("ChunkManagerSystem", "Finalized loaded chunk at (%d, %d)", chunkPos.x,
+        LOG_TRACE("ChunkManagerSystem", "Finalized loaded chunk at (%d, %d)", chunkPos.x,
                  chunkPos.y);
     }
 }

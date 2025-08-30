@@ -3,7 +3,7 @@
 #include <SFML/Window/Event.hpp>
 
 Camera::Camera() {
-    LOG_INFO("Camera", "Camera created. Initial view size: (%.1f, %.1f), center: (%.1f, %.1f)",
+    LOG_DEBUG("Camera", "Camera created. Initial view size: (%.1f, %.1f), center: (%.1f, %.1f)",
              _view.getSize().x, _view.getSize().y, _view.getCenter().x, _view.getCenter().y);
     _view.setSize({800, 600});
     _view.setCenter({400, 300});
@@ -11,9 +11,9 @@ Camera::Camera() {
 
 void Camera::setInitialView(const sf::RenderWindow &window, const sf::Vector2f &landCenter,
                             const sf::Vector2f &landSize) {
-    LOG_INFO("Camera", "Setting initial view. Land center: (%.1f, %.1f), Land size: (%.1f, %.1f)",
-             landCenter.x, landCenter.y, landSize.x, landSize.y);
-    _view.setCenter(landCenter);
+   LOG_DEBUG("Camera", "Setting initial view. Land center: (%.1f, %.1f), Land size: (%.1f, %.1f)",
+            landCenter.x, landCenter.y, landSize.x, landSize.y);
+   _view.setCenter(landCenter);
 
     sf::Vector2u windowSizeU = window.getSize();
     sf::Vector2f windowSizeF(static_cast<float>(windowSizeU.x), static_cast<float>(windowSizeU.y));
@@ -50,7 +50,7 @@ void Camera::setInitialView(const sf::RenderWindow &window, const sf::Vector2f &
         viewSize.y = viewSize.x / windowAspectRatio;
     }
     _view.setSize(viewSize);
-    LOG_INFO("Camera", "Initial view set. View size: (%.1f, %.1f), View center: (%.1f, %.1f)",
+    LOG_DEBUG("Camera", "Initial view set. View size: (%.1f, %.1f), View center: (%.1f, %.1f)",
              _view.getSize().x, _view.getSize().y, _view.getCenter().x, _view.getCenter().y);
 }
 
@@ -71,8 +71,6 @@ void Camera::zoomView(float factor) noexcept {
 }
 
 const sf::View &Camera::getView() const noexcept {
-    LOG_TRACE("Camera", "Getting view. Center: (%.1f, %.1f), Size: (%.1f, %.1f)",
-              _view.getCenter().x, _view.getCenter().y, _view.getSize().x, _view.getSize().y);
     return _view;
 }
 
@@ -81,7 +79,7 @@ sf::Vector2f Camera::getCenter() const noexcept {
 }
 
 void Camera::onWindowResize(unsigned int width, unsigned int height) noexcept {
-    LOG_INFO("Camera", "Window resized to %u x %u", width, height);
+    LOG_DEBUG("Camera", "Window resized to %u x %u", width, height);
 
     _view.setViewport({{0.f, 0.f}, {1.f, 1.f}});
 

@@ -3,7 +3,7 @@
   "id": "city",
   "components": {
     "renderable": {
-      "radius": 5.0,
+      "radius": 100.0,
       "color": [255, 165, 0, 255],
       "zOrder": 1
     },

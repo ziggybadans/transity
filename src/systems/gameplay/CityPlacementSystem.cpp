@@ -11,11 +11,11 @@
 
 CityPlacementSystem::CityPlacementSystem(ServiceLocator &serviceLocator)
     : _serviceLocator(serviceLocator) {
-    LOG_INFO("CityPlacementSystem", "CityPlacementSystem created.");
+    LOG_DEBUG("CityPlacementSystem", "CityPlacementSystem created.");
 }
 
 CityPlacementSystem::~CityPlacementSystem() {
-    LOG_INFO("CityPlacementSystem", "CityPlacementSystem destroyed.");
+    LOG_DEBUG("CityPlacementSystem", "CityPlacementSystem destroyed.");
 }
 
 void CityPlacementSystem::update(sf::Time dt) {
@@ -28,7 +28,7 @@ void CityPlacementSystem::update(sf::Time dt) {
 }
 
 void CityPlacementSystem::placeCities(int numberOfCities) {
-    LOG_INFO("CityPlacementSystem", "Placing %d cities...", numberOfCities);
+    LOG_DEBUG("CityPlacementSystem", "Placing %d cities...", numberOfCities);
 
     auto &worldGenSystem = _serviceLocator.worldGenerationSystem;
     auto &entityFactory = _serviceLocator.entityFactory;
@@ -95,7 +95,7 @@ void CityPlacementSystem::placeCities(int numberOfCities) {
         float worldY = bestLocation.y * worldGrid.cellSize + worldGrid.cellSize / 2.0f;
 
         entityFactory.createEntity("city", {worldX, worldY});
-        LOG_INFO("CityPlacementSystem", "Placed city %d at (%.1f, %.1f)", i + 1, worldX, worldY);
+        LOG_DEBUG("CityPlacementSystem", "Placed city %d at (%.1f, %.1f)", i + 1, worldX, worldY);
 
         reduceSuitabilityAroundCity(bestLocation.x, bestLocation.y, mapWidth, mapHeight, suitabilityMap);
     }
@@ -120,8 +120,8 @@ sf::Vector2i CityPlacementSystem::findBestLocation(int mapWidth, int mapHeight, 
         }
     }
 
-    LOG_INFO("CityPlacementSystem", "Max suitability found: %.2f", maxSuitability);
-    LOG_INFO("CityPlacementSystem", "Found %d best locations.", bestLocations.size());
+    LOG_DEBUG("CityPlacementSystem", "Max suitability found: %.2f", maxSuitability);
+    LOG_DEBUG("CityPlacementSystem", "Found %d best locations.", bestLocations.size());
 
     if (bestLocations.empty()) {
         return {-1, -1}; // No suitable location found

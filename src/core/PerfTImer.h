@@ -12,8 +12,8 @@ public:
         auto end = std::chrono::high_resolution_clock::now();
         auto duration =
             std::chrono::duration_cast<std::chrono::microseconds>(end - m_start).count();
-        LOG_DEBUG("Performance", "%s took %lld us", m_name, duration);
-    }
+       LOG_TRACE("Performance", "%s took %lld us", m_name, duration);
+   }
 
 private:
     const char *m_name;

@@ -15,11 +15,11 @@ UI::UI(sf::RenderWindow &window, entt::registry &registry, WorldGenerationSystem
     : _window(window), _registry(registry), _worldGenerationSystem(worldGenSystem),
       _terrainRenderSystem(terrainRenderSystem), _gameState(gameState), _eventBus(eventBus),
       _camera(camera), _autoRegenerate(false) {
-    LOG_INFO("UI", "UI instance created.");
+    LOG_DEBUG("UI", "UI instance created.");
 }
 
 UI::~UI() {
-    LOG_INFO("UI", "UI instance destroyed.");
+    LOG_DEBUG("UI", "UI instance destroyed.");
 }
 
 void UI::initialize() {
@@ -133,7 +133,7 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
     if (ImGui::InputFloat("Cell Size", &params.cellSize, 1.0f, 0.0f, "%.2f")) gridChanged = true;
 
     if ((paramsChanged || gridChanged) && _autoRegenerate) {
-        LOG_INFO("UI", "Settings changed, auto-regenerating world.");
+        LOG_DEBUG("UI", "Settings changed, auto-regenerating world.");
         auto paramsCopy = std::make_shared<WorldGenParams>(params);
         _eventBus.enqueue<RegenerateWorldRequestEvent>({paramsCopy});
     }
@@ -141,7 +141,7 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
     ImGui::Separator();
 
     if (ImGui::Button("Regenerate World")) {
-        LOG_INFO("UI", "Regenerate World button clicked.");
+        LOG_DEBUG("UI", "Regenerate World button clicked.");
         auto paramsCopy = std::make_shared<WorldGenParams>(params);
         _eventBus.enqueue<RegenerateWorldRequestEvent>({paramsCopy});
     }
@@ -170,19 +170,19 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
 
     if (ImGui::RadioButton("None", &currentMode, static_cast<int>(InteractionMode::SELECT))) {
         _eventBus.enqueue(InteractionModeChangeEvent{InteractionMode::SELECT});
-        LOG_INFO("UI", "Interaction mode change requested: None");
+        LOG_DEBUG("UI", "Interaction mode change requested: None");
     }
     ImGui::SameLine();
     if (ImGui::RadioButton("Station Placement", &currentMode,
                            static_cast<int>(InteractionMode::CREATE_STATION))) {
         _eventBus.enqueue(InteractionModeChangeEvent{InteractionMode::CREATE_STATION});
-        LOG_INFO("UI", "Interaction mode change requested: StationPlacement");
+        LOG_DEBUG("UI", "Interaction mode change requested: StationPlacement");
     }
     ImGui::SameLine();
     if (ImGui::RadioButton("Line Creation", &currentMode,
                            static_cast<int>(InteractionMode::CREATE_LINE))) {
         _eventBus.enqueue(InteractionModeChangeEvent{InteractionMode::CREATE_LINE});
-        LOG_INFO("UI", "Interaction mode change requested: LineCreation");
+        LOG_DEBUG("UI", "Interaction mode change requested: LineCreation");
     }
     ImGui::End();
 }

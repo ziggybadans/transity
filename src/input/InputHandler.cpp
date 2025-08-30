@@ -8,7 +8,7 @@
 InputHandler::InputHandler(ServiceLocator &serviceLocator)
     : _services(serviceLocator), _zoomFactor(Constants::ZOOM_FACTOR),
       _unzoomFactor(Constants::UNZOOM_FACTOR) {
-    LOG_INFO("Input", "InputHandler created.");
+   LOG_DEBUG("Input", "InputHandler created.");
 }
 
 void InputHandler::handleGameEvent(const sf::Event &event, sf::RenderWindow &window) {

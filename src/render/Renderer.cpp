@@ -13,12 +13,12 @@ Renderer::Renderer()
     : _windowInstance(sf::VideoMode({Constants::WINDOW_WIDTH, Constants::WINDOW_HEIGHT}),
                       Constants::WINDOW_TITLE),
       _clearColor(Constants::CLEAR_COLOR_R, Constants::CLEAR_COLOR_G, Constants::CLEAR_COLOR_B) {
-    LOG_INFO("Renderer", "Renderer created and window initialized.");
-    _windowInstance.setFramerateLimit(Constants::FRAMERATE_LIMIT);
+   LOG_DEBUG("Renderer", "Renderer created and window initialized.");
+   _windowInstance.setFramerateLimit(Constants::FRAMERATE_LIMIT);
 }
 
 Renderer::~Renderer() {
-    LOG_INFO("Renderer", "Renderer destroyed.");
+    LOG_DEBUG("Renderer", "Renderer destroyed.");
 }
 
 void Renderer::initialize() {
@@ -31,18 +31,27 @@ TerrainRenderSystem &Renderer::getTerrainRenderSystem() noexcept {
 }
 
 void Renderer::renderFrame(const entt::registry &registry, const sf::View &view, const WorldGenerationSystem &worldGen, float interpolation) {
-    LOG_TRACE("Renderer", "Beginning render pass.");
     _windowInstance.setView(view);
     _windowInstance.clear(_clearColor);
 
     _terrainRenderSystem.render(registry, _windowInstance, view, worldGen.getParams());
-    LOG_TRACE("Renderer", "Terrain rendered.");
     _lineRenderSystem.render(registry, _windowInstance, view);
-    LOG_TRACE("Renderer", "Lines rendered.");
 
     auto viewRegistry = registry.view<const PositionComponent, const RenderableComponent>();
-    int entityCount = 0;
+
+    std::vector<entt::entity> sortedEntities;
     for (auto entity : viewRegistry) {
+        sortedEntities.push_back(entity);
+    }
+
+    std::sort(sortedEntities.begin(), sortedEntities.end(),
+              [&](const auto &a, const auto &b) {
+                  const auto &renderableA = viewRegistry.get<const RenderableComponent>(a);
+                  const auto &renderableB = viewRegistry.get<const RenderableComponent>(b);
+                  return renderableA.zOrder.value < renderableB.zOrder.value;
+              });
+
+    for (auto entity : sortedEntities) {
         const auto &position = viewRegistry.get<const PositionComponent>(entity);
         const auto &renderable = viewRegistry.get<const RenderableComponent>(entity);
 
@@ -53,11 +62,7 @@ void Renderer::renderFrame(const entt::registry &registry, const sf::View &view,
         shape.setOrigin({renderable.radius.value, renderable.radius.value});
 
         _windowInstance.draw(shape);
-        entityCount++;
     }
-    LOG_TRACE("Renderer", "Rendered %d entities.", entityCount);
-
-    LOG_TRACE("Renderer", "Render pass complete.");
 }
 
 void Renderer::displayFrame() noexcept {

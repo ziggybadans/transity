@@ -57,7 +57,7 @@ namespace LoggerMacrosImpl {
 template <typename... Args>
 inline void log_trace_proxy(const char *system, const char *format, Args &&...args) {
     if (Logging::g_logger) {
-        Logging::g_logger->logMessage(Logging::LogLevel::INFO, system, 0, format,
+        Logging::g_logger->logMessage(Logging::LogLevel::TRACE, system, 0, format,
                                       std::forward<Args>(args)...);
     }
 }
