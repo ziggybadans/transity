@@ -4,6 +4,7 @@
 #include "systems/world/WorldGenerationSystem.h"
 #include "Logger.h"
 #include "components/WorldComponents.h"
+#include "core/PerfTimer.h"
 
 #include <vector>
 #include <algorithm>
@@ -29,6 +30,7 @@ void CityPlacementSystem::update(sf::Time dt) {
 }
 
 void CityPlacementSystem::placeCities(int numberOfCities) {
+    PerfTimer timer("CityPlacementSystem::placeCities", _serviceLocator, PerfTimer::Purpose::Log);
     LOG_INFO("CityPlacementSystem", "Starting city placement for %d cities...", numberOfCities);
 
     auto &worldGenSystem = _serviceLocator.worldGenerationSystem;
@@ -45,15 +47,33 @@ void CityPlacementSystem::placeCities(int numberOfCities) {
     maps.final.resize(mapWidth * mapHeight, 0.0f);
 
     // Calculate static suitability maps once
-    calculateWaterSuitability(mapWidth, mapHeight, maps.water);
-    calculateExpandabilitySuitability(mapWidth, mapHeight, maps.expandability);
+    {
+        PerfTimer timer("calculateWaterSuitability", _serviceLocator, PerfTimer::Purpose::Log);
+        calculateWaterSuitability(mapWidth, mapHeight, maps.water);
+    }
+    {
+        PerfTimer timer("calculateExpandabilitySuitability", _serviceLocator, PerfTimer::Purpose::Log);
+        calculateExpandabilitySuitability(mapWidth, mapHeight, maps.expandability);
+    }
 
     for (int i = 0; i < numberOfCities; ++i) {
+        PerfTimer loopTimer("CityPlacementLoop iteration " + std::to_string(i), _serviceLocator, PerfTimer::Purpose::Log);
+        
         // Update dynamic maps and combine
-        updateCityProximitySuitability(mapWidth, mapHeight, maps.cityProximity);
-        combineSuitabilityMaps(mapWidth, mapHeight, maps, _weights, maps.final);
+        {
+            PerfTimer timer("updateCityProximitySuitability", _serviceLocator, PerfTimer::Purpose::Log);
+            updateCityProximitySuitability(mapWidth, mapHeight, maps.cityProximity);
+        }
+        {
+            PerfTimer timer("combineSuitabilityMaps", _serviceLocator, PerfTimer::Purpose::Log);
+            combineSuitabilityMaps(mapWidth, mapHeight, maps, _weights, maps.final);
+        }
 
-        sf::Vector2i bestLocation = findBestLocation(mapWidth, mapHeight, maps.final);
+        sf::Vector2i bestLocation;
+        {
+            PerfTimer timer("findBestLocation", _serviceLocator, PerfTimer::Purpose::Log);
+            bestLocation = findBestLocation(mapWidth, mapHeight, maps.final);
+        }
 
         if (bestLocation.x == -1) {
             LOG_WARN("CityPlacementSystem", "No suitable location found for city %d. Halting.", i + 1);
@@ -124,28 +144,41 @@ void CityPlacementSystem::calculateWaterSuitability(int mapWidth, int mapHeight,
 void CityPlacementSystem::calculateExpandabilitySuitability(int mapWidth, int mapHeight, std::vector<float> &map) {
     auto &worldGenSystem = _serviceLocator.worldGenerationSystem;
     const float cellSize = worldGenSystem.getParams().cellSize;
-    const int radius = 15; // Radius to check for open land
+    const int radius = 15;
+
+    std::vector<int> landMap(mapWidth * mapHeight, 0);
+    for (int y = 0; y < mapHeight; ++y) {
+        for (int x = 0; x < mapWidth; ++x) {
+            if (worldGenSystem.getTerrainTypeAt(x * cellSize, y * cellSize) == TerrainType::LAND) {
+                landMap[y * mapWidth + x] = 1;
+            }
+        }
+    }
+
+    std::vector<long long> sat(mapWidth * mapHeight, 0);
+    for (int y = 0; y < mapHeight; ++y) {
+        for (int x = 0; x < mapWidth; ++x) {
+            long long val = landMap[y * mapWidth + x];
+            if (x > 0) val += sat[y * mapWidth + (x - 1)];
+            if (y > 0) val += sat[(y - 1) * mapWidth + x];
+            if (x > 0 && y > 0) val -= sat[(y - 1) * mapWidth + (x - 1)];
+            sat[y * mapWidth + x] = val;
+        }
+    }
 
     for (int y = 0; y < mapHeight; ++y) {
         for (int x = 0; x < mapWidth; ++x) {
-            if (worldGenSystem.getTerrainTypeAt(x * cellSize, y * cellSize) != TerrainType::LAND) {
-                map[y * mapWidth + x] = 0;
-                continue;
-            }
+            int x1 = std::max(0, x - radius);
+            int y1 = std::max(0, y - radius);
+            int x2 = std::min(mapWidth - 1, x + radius);
+            int y2 = std::min(mapHeight - 1, y + radius);
 
-            int landCount = 0;
-            for (int ny = -radius; ny <= radius; ++ny) {
-                for (int nx = -radius; nx <= radius; ++nx) {
-                    int checkX = x + nx;
-                    int checkY = y + ny;
-                    if (checkX >= 0 && checkX < mapWidth && checkY >= 0 && checkY < mapHeight) {
-                        if (worldGenSystem.getTerrainTypeAt(checkX * cellSize, checkY * cellSize) == TerrainType::LAND) {
-                            landCount++;
-                        }
-                    }
-                }
-            }
-            map[y * mapWidth + x] = static_cast<float>(landCount);
+            long long sum = sat[y2 * mapWidth + x2];
+            if (x1 > 0) sum -= sat[y2 * mapWidth + (x1 - 1)];
+            if (y1 > 0) sum -= sat[(y1 - 1) * mapWidth + x2];
+            if (x1 > 0 && y1 > 0) sum += sat[(y1 - 1) * mapWidth + (x1 - 1)];
+            
+            map[y * mapWidth + x] = static_cast<float>(sum);
         }
     }
 }
@@ -153,21 +186,39 @@ void CityPlacementSystem::calculateExpandabilitySuitability(int mapWidth, int ma
 void CityPlacementSystem::updateCityProximitySuitability(int mapWidth, int mapHeight, std::vector<float> &map) {
     if (_placedCities.empty()) return;
 
-    const float idealDist = 80.0f; // Ideal distance from the nearest city
-    const float falloff = 0.01f;   // How quickly the score falls off from the ideal
+    const float idealDist = 80.0f;
+    const float falloff = 0.01f;
 
-    for (int y = 0; y < mapHeight; ++y) {
-        for (int x = 0; x < mapWidth; ++x) {
-            float min_d = std::numeric_limits<float>::max();
-            for (const auto &cityPos : _placedCities) {
-                float d = std::sqrt(std::pow(x - cityPos.x, 2) + std::pow(y - cityPos.y, 2));
-                if (d < min_d) {
-                    min_d = d;
-                }
+    std::vector<int> dist(mapWidth * mapHeight, -1);
+    std::queue<sf::Vector2i> q;
+
+    for (const auto &cityPos : _placedCities) {
+        q.push(cityPos);
+        dist[cityPos.y * mapWidth + cityPos.x] = 0;
+    }
+
+    int dx[] = {0, 0, 1, -1, 1, 1, -1, -1};
+    int dy[] = {1, -1, 0, 0, 1, -1, 1, -1};
+
+    while (!q.empty()) {
+        sf::Vector2i curr = q.front();
+        q.pop();
+
+        for (int i = 0; i < 8; ++i) {
+            int nx = curr.x + dx[i];
+            int ny = curr.y + dy[i];
+
+            if (nx >= 0 && nx < mapWidth && ny >= 0 && ny < mapHeight && dist[ny * mapWidth + nx] == -1) {
+                dist[ny * mapWidth + nx] = dist[curr.y * mapWidth + curr.x] + 1;
+                q.push({nx, ny});
             }
-            float score = 1.0f - std::abs(min_d - idealDist) * falloff;
-            map[y * mapWidth + x] = std::max(0.0f, score);
         }
+    }
+
+    for (int i = 0; i < mapWidth * mapHeight; ++i) {
+        float d = static_cast<float>(dist[i]);
+        float score = 1.0f - std::abs(d - idealDist) * falloff;
+        map[i] = std::max(0.0f, score);
     }
 }
 
@@ -216,29 +267,27 @@ void CityPlacementSystem::normalizeMap(std::vector<float> &map) {
 
 sf::Vector2i CityPlacementSystem::findBestLocation(int mapWidth, int mapHeight, const std::vector<float> &suitabilityMap) {
     float maxSuitability = 0.0f;
-    std::vector<sf::Vector2i> bestLocations;
+    sf::Vector2i bestLocation = {-1, -1};
+    
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> disX(0, mapWidth - 1);
+    std::uniform_int_distribution<> disY(0, mapHeight - 1);
 
-    for (int y = 0; y < mapHeight; ++y) {
-        for (int x = 0; x < mapWidth; ++x) {
-            float suitability = suitabilityMap[y * mapWidth + x];
-            if (suitability > maxSuitability) {
-                maxSuitability = suitability;
-                bestLocations.clear();
-                bestLocations.push_back({x, y});
-            } else if (suitability == maxSuitability && maxSuitability > 0) {
-                bestLocations.push_back({x, y});
-            }
+    const int numSamples = 5000;
+
+    for (int i = 0; i < numSamples; ++i) {
+        int x = disX(gen);
+        int y = disY(gen);
+        
+        float suitability = suitabilityMap[y * mapWidth + x];
+        if (suitability > maxSuitability) {
+            maxSuitability = suitability;
+            bestLocation = {x, y};
         }
     }
 
-    if (bestLocations.empty()) {
-        return {-1, -1};
-    }
-
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<> dis(0, bestLocations.size() - 1);
-    return bestLocations[dis(gen)];
+    return bestLocation;
 }
 
 void CityPlacementSystem::reduceSuitabilityAroundCity(int cityX, int cityY, int mapWidth, int mapHeight, std::vector<float> &suitabilityMap) {

@@ -23,10 +23,7 @@ Application::Application() {
 
         _renderer->connectToEventBus(_game->getEventBus());
 
-        _ui = std::make_unique<UI>(_renderer->getWindowInstance(), _game->getRegistry(),
-                                   _game->getServiceLocator().worldGenerationSystem,
-                                   _renderer->getTerrainRenderSystem(),  // Remove the &
-                                   _game->getGameState(), _game->getEventBus(), _game->getCamera());
+        _ui = std::make_unique<UI>(_renderer->getWindowInstance(), _renderer->getTerrainRenderSystem(), _game->getServiceLocator());
         _ui->initialize();
 
     } catch (const std::exception &e) {
@@ -86,14 +83,14 @@ void Application::processEvents() {
 }
 
 void Application::update(sf::Time dt) {
-    PerfTimer timer("Application::update");
+    PerfTimer timer("Application::update", _game->getServiceLocator());
 
     _game->getInputHandler().update(dt);
     _game->update(dt, *_ui);
 }
 
 void Application::render(float interpolation) {
-    PerfTimer timer("Application::render");
+    PerfTimer timer("Application::render", _game->getServiceLocator());
 
     const auto &worldGen = _game->getWorldGenSystem();
 

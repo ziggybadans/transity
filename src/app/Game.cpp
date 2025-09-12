@@ -24,7 +24,8 @@ Game::Game(Renderer &renderer, ThreadPool &threadPool)
                                                                     _colorManager,
                                                                     _worldGenerationSystem,
                                                                     _renderer,
-                                                                    threadPool} {
+                                                                    threadPool,
+                                                                    _performanceMonitor} {
 
     _inputHandler = std::make_unique<InputHandler>(_serviceLocator);
     _systemManager = std::make_unique<SystemManager>(_serviceLocator);

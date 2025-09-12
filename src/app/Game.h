@@ -43,6 +43,7 @@ private:
     Camera _camera;
     GameState _gameState;
     WorldGenerationSystem _worldGenerationSystem;
+    PerformanceMonitor _performanceMonitor;
     ServiceLocator _serviceLocator;
 
     std::unique_ptr<ChunkManagerSystem> _chunkManagerSystem;

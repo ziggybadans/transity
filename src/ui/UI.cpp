@@ -9,13 +9,27 @@
 #include "systems/world/ChunkManagerSystem.h"
 #include <cstdlib>
 
-UI::UI(sf::RenderWindow &window, entt::registry &registry, WorldGenerationSystem &worldGenSystem,
-       TerrainRenderSystem &terrainRenderSystem, GameState &gameState, EventBus &eventBus,
-       Camera &camera)
-    : _window(window), _registry(registry), _worldGenerationSystem(worldGenSystem),
-      _terrainRenderSystem(terrainRenderSystem), _gameState(gameState), _eventBus(eventBus),
-      _camera(camera), _autoRegenerate(false) {
+UI::UI(sf::RenderWindow &window, TerrainRenderSystem &terrainRenderSystem, ServiceLocator &serviceLocator)
+    : _window(window), _terrainRenderSystem(terrainRenderSystem), _serviceLocator(serviceLocator), _autoRegenerate(false) {
     LOG_DEBUG("UI", "UI instance created.");
+}
+
+void UI::drawPerformancePanel() {
+    ImGui::Begin("Performance");
+
+    auto& monitor = _serviceLocator.performanceMonitor;
+
+    const auto& renderHistory = monitor.getHistory("Application::render");
+    if (!renderHistory.empty()) {
+        ImGui::PlotLines("Render (us)", renderHistory.data(), renderHistory.size(), 0, nullptr, 0.0f, 33000.0f, ImVec2(0, 80));
+    }
+
+    const auto& updateHistory = monitor.getHistory("Application::update");
+    if (!updateHistory.empty()) {
+        ImGui::PlotLines("Update (us)", updateHistory.data(), updateHistory.size(), 0, nullptr, 0.0f, 16000.0f, ImVec2(0, 80));
+    }
+
+    ImGui::End();
 }
 
 UI::~UI() {
@@ -40,6 +54,8 @@ void UI::processEvent(const sf::Event &sfEvent) {
 void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
     ImGui::SFML::Update(_window, deltaTime);
 
+    drawPerformancePanel();
+
     const float windowPadding = Constants::UI_WINDOW_PADDING;
     ImGuiIO &io = ImGui::GetIO();
     ImVec2 displaySize = io.DisplaySize;
@@ -52,7 +68,7 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
     ImGui::SetNextWindowPos(debugWindowPos, ImGuiCond_Always);
     ImGui::Begin("Profiling", nullptr, size_flags);
     ImGui::Text("FPS: %.1f", 1.f / deltaTime.asSeconds());
-    ImGui::Text("Zoom: %.2f", _camera.getZoom());
+    ImGui::Text("Zoom: %.2f", _serviceLocator.camera.getZoom());
     ImGui::End();
 
     float worldGenSettingsWidth = Constants::UI_WORLD_GEN_SETTINGS_WIDTH;
@@ -63,8 +79,8 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
     ImGui::Begin("World Generation Settings", nullptr, window_flags);
 
     auto &worldState =
-        _registry.get<WorldStateComponent>(_registry.view<WorldStateComponent>().front());
-    WorldGenParams &params = _worldGenerationSystem.getParams();
+        _serviceLocator.registry.get<WorldStateComponent>(_serviceLocator.registry.view<WorldStateComponent>().front());
+    WorldGenParams &params = _serviceLocator.worldGenerationSystem.getParams();
 
     bool paramsChanged = false;
 
@@ -135,7 +151,7 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
     if ((paramsChanged || gridChanged) && _autoRegenerate) {
         LOG_DEBUG("UI", "Settings changed, auto-regenerating world.");
         auto paramsCopy = std::make_shared<WorldGenParams>(params);
-        _eventBus.enqueue<RegenerateWorldRequestEvent>({paramsCopy});
+        _serviceLocator.eventBus.enqueue<RegenerateWorldRequestEvent>({paramsCopy});
     }
 
     ImGui::Separator();
@@ -143,7 +159,7 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
     if (ImGui::Button("Regenerate World")) {
         LOG_DEBUG("UI", "Regenerate World button clicked.");
         auto paramsCopy = std::make_shared<WorldGenParams>(params);
-        _eventBus.enqueue<RegenerateWorldRequestEvent>({paramsCopy});
+        _serviceLocator.eventBus.enqueue<RegenerateWorldRequestEvent>({paramsCopy});
     }
 
     if (ImGui::Checkbox("Visualize Chunk Borders", &_visualizeChunkBorders)) {
@@ -166,22 +182,22 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
                                         displaySize.y - interactionModesHeight - windowPadding);
     ImGui::SetNextWindowPos(interactionModesPos, ImGuiCond_Always);
     ImGui::Begin("Interaction Modes", nullptr, size_flags);
-    int currentMode = static_cast<int>(_gameState.currentInteractionMode);
+    int currentMode = static_cast<int>(_serviceLocator.gameState.currentInteractionMode);
 
     if (ImGui::RadioButton("None", &currentMode, static_cast<int>(InteractionMode::SELECT))) {
-        _eventBus.enqueue(InteractionModeChangeEvent{InteractionMode::SELECT});
+        _serviceLocator.eventBus.enqueue(InteractionModeChangeEvent{InteractionMode::SELECT});
         LOG_DEBUG("UI", "Interaction mode change requested: None");
     }
     ImGui::SameLine();
     if (ImGui::RadioButton("Station Placement", &currentMode,
                            static_cast<int>(InteractionMode::CREATE_STATION))) {
-        _eventBus.enqueue(InteractionModeChangeEvent{InteractionMode::CREATE_STATION});
+        _serviceLocator.eventBus.enqueue(InteractionModeChangeEvent{InteractionMode::CREATE_STATION});
         LOG_DEBUG("UI", "Interaction mode change requested: StationPlacement");
     }
     ImGui::SameLine();
     if (ImGui::RadioButton("Line Creation", &currentMode,
                            static_cast<int>(InteractionMode::CREATE_LINE))) {
-        _eventBus.enqueue(InteractionModeChangeEvent{InteractionMode::CREATE_LINE});
+        _serviceLocator.eventBus.enqueue(InteractionModeChangeEvent{InteractionMode::CREATE_LINE});
         LOG_DEBUG("UI", "Interaction mode change requested: LineCreation");
     }
     ImGui::End();

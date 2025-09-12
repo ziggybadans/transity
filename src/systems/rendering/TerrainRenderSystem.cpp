@@ -107,8 +107,6 @@ void TerrainRenderSystem::buildAllChunkMeshes(const ChunkPositionComponent &chun
                                               const ChunkTerrainComponent &chunkTerrain,
                                               ChunkMeshComponent &chunkMesh,
                                               const WorldGenParams &worldParams) {
-    PerfTimer timer("buildAllChunkMeshes");
-
     int cellsPerDimension = worldParams.chunkDimensionsInCells.x;
 
     for (int lod = 0; lod < static_cast<int>(LODLevel::Count); ++lod) {

@@ -17,7 +17,7 @@ void InputHandler::handleGameEvent(const sf::Event &event, sf::RenderWindow &win
         _services.eventBus.enqueue<WindowCloseEvent>();
     } else if (auto *scrollData = event.getIf<sf::Event::MouseWheelScrolled>()) {
         if (scrollData->wheel == sf::Mouse::Wheel::Vertical) {
-            LOG_DEBUG("Input", "Mouse wheel scrolled: delta %.1f", scrollData->delta);
+            LOG_TRACE("Input", "Mouse wheel scrolled: delta %.1f", scrollData->delta);
             float zoomDelta = 0.0f;
             if (scrollData->delta > 0) {
                 zoomDelta = _zoomFactor;

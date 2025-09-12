@@ -29,7 +29,7 @@ CameraSystem::~CameraSystem() {
 
 void CameraSystem::onCameraZoom(const CameraZoomEvent &event) {
     assert(event.zoomDelta != 0.0f && "Camera zoom delta cannot be zero.");
-    LOG_DEBUG("CameraSystem", "Processing CameraZoomEvent with delta: %.2f", event.zoomDelta);
+    LOG_TRACE("CameraSystem", "Processing CameraZoomEvent with delta: %.2f", event.zoomDelta);
     sf::View &view = m_camera.getViewToModify();
 
     const float currentZoom = m_camera.getZoom();
@@ -84,7 +84,7 @@ void CameraSystem::onCameraZoom(const CameraZoomEvent &event) {
 }
 
 void CameraSystem::onCameraPan(const CameraPanEvent &event) {
-    LOG_DEBUG("CameraSystem", "Processing CameraPanEvent with direction: (%.1f, %.1f)",
+    LOG_TRACE("CameraSystem", "Processing CameraPanEvent with direction: (%.1f, %.1f)",
               event.panDirection.x, event.panDirection.y);
     sf::View &view = m_camera.getViewToModify();
     const sf::Vector2f worldSize = m_worldGenSystem.getWorldSize();

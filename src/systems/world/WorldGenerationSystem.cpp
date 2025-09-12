@@ -93,8 +93,6 @@ sf::Vector2f WorldGenerationSystem::getWorldSize() {
 
 GeneratedChunkData
 WorldGenerationSystem::generateChunkData(const sf::Vector2i &chunkGridPosition) const {
-    PerfTimer timer("generateChunkData");
-
     // Use _params directly
     const int chunkCellSizeX = static_cast<int>(_params.chunkDimensionsInCells.x);
     const int chunkCellSizeY = static_cast<int>(_params.chunkDimensionsInCells.y);

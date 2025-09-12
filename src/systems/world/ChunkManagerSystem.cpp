@@ -170,7 +170,7 @@ void ChunkManagerSystem::unloadChunk(const sf::Vector2i &chunkPos) {
     if (it != _activeChunks.end()) {
         _registry.destroy(it->second);
         _activeChunks.erase(it);
-        LOG_DEBUG("ChunkManagerSystem", "Unloaded chunk at (%d, %d)", chunkPos.x, chunkPos.y);
+        LOG_TRACE("ChunkManagerSystem", "Unloaded chunk at (%d, %d)", chunkPos.x, chunkPos.y);
     }
 }
 
