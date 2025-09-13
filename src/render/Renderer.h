@@ -17,6 +17,7 @@ public:
     ~Renderer();
 
     void initialize();
+    void clear();
     void renderFrame(const entt::registry &registry, const sf::View &view,
                      const WorldGenerationSystem &worldGen, float interpolation);
     void displayFrame() noexcept;

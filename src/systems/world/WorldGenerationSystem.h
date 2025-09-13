@@ -13,6 +13,7 @@ class WorldGenerationSystem {
 public:
     WorldGenerationSystem(entt::registry &registry, EventBus &eventBus);
     ~WorldGenerationSystem();
+    void init();
 
     void configureNoise();
 

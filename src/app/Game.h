@@ -10,6 +10,7 @@
 #include "systems/gameplay/CityPlacementSystem.h"
 #include "systems/world/WorldGenerationSystem.h"
 #include <entt/entt.hpp>
+#include <future>
 #include <memory>
 
 class Renderer;
@@ -23,6 +24,7 @@ public:
     Game(Renderer &renderer, ThreadPool &threadPool);
     ~Game();
 
+    void startLoading();
     void update(sf::Time dt, UI &ui);
 
     entt::registry &getRegistry() { return _registry; }
@@ -32,6 +34,8 @@ public:
     InputHandler &getInputHandler() { return *_inputHandler; }
     ServiceLocator &getServiceLocator() { return _serviceLocator; }
     const WorldGenerationSystem &getWorldGenSystem() const { return _worldGenerationSystem; }
+
+    std::future<void> &getLoadingFuture() { return _loadingFuture; }
 
 private:
     Renderer &_renderer;
@@ -49,4 +53,6 @@ private:
     std::unique_ptr<ChunkManagerSystem> _chunkManagerSystem;
     std::unique_ptr<SystemManager> _systemManager;
     std::unique_ptr<InputHandler> _inputHandler;
+    
+    std::future<void> _loadingFuture;
 };

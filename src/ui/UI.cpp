@@ -36,6 +36,21 @@ void UI::drawPerformancePanel() {
     ImGui::End();
 }
 
+void UI::drawLoadingScreen() {
+    ImGuiIO &io = ImGui::GetIO();
+    ImVec2 displaySize = io.DisplaySize;
+
+    const char *text = "Loading...";
+    ImVec2 textSize = ImGui::CalcTextSize(text);
+
+    ImGui::SetNextWindowPos(ImVec2((displaySize.x - textSize.x) * 0.5f,
+                                   (displaySize.y - textSize.y) * 0.5f));
+
+    ImGui::Begin("Loading", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::Text("%s", text);
+    ImGui::End();
+}
+
 UI::~UI() {
     LOG_DEBUG("UI", "UI instance destroyed.");
 }

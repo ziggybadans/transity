@@ -5,6 +5,7 @@
 #include "core/PerfTimer.h"
 #include "core/ServiceLocator.h"
 #include "input/InputHandler.h"
+#include "app/GameState.h"
 
 #include <stdexcept>
 #include <thread>
@@ -20,6 +21,7 @@ Application::Application() {
         _renderer->initialize();
 
         _game = std::make_unique<Game>(*_renderer, *_threadPool);
+        _game->startLoading();
 
         _renderer->connectToEventBus(_game->getEventBus());
 
@@ -42,20 +44,31 @@ void Application::run() {
 
         processEvents();
 
-        // Update UI with real frame time once per frame
-        _ui->update(frameTime, 0);
+        const auto appState = _game->getGameState().currentAppState;
 
-        // Perform fixed updates if focused
-        if (_isWindowFocused) {
-            while (_timeAccumulator >= TimePerFrame) {
-                _timeAccumulator -= TimePerFrame;
-                update(TimePerFrame);
+        switch (appState) {
+        case AppState::LOADING:
+            _ui->update(frameTime, 0);
+            if(_game->getLoadingFuture().wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
+                _game->getGameState().currentAppState = AppState::RUNNING;
+                LOG_INFO("Application", "Loading complete, switching to RUNNING state.");
             }
-        }
+            renderLoad();
+            break;
+        case AppState::RUNNING:
+            _ui->update(frameTime, 0);
 
-        // Calculate interpolation for smooth rendering
-        const float interpolation = _timeAccumulator.asSeconds() / TimePerFrame.asSeconds();
-        render(interpolation);
+            if (_isWindowFocused) {
+                while (_timeAccumulator >= TimePerFrame) {
+                    _timeAccumulator -= TimePerFrame;
+                    update(TimePerFrame);
+                }
+            }
+
+            const float interpolation = _timeAccumulator.asSeconds() / TimePerFrame.asSeconds();
+            render(interpolation);
+            break;
+        }
     }
     LOG_INFO("Application", "Main loop ended.");
     _renderer->cleanupResources();
@@ -97,6 +110,12 @@ void Application::render(float interpolation) {
 
     _renderer->renderFrame(_game->getRegistry(), _game->getCamera().getView(), worldGen,
                            interpolation);
+    _ui->renderFrame();
+    _renderer->displayFrame();
+}
+
+void Application::renderLoad() {
+    _renderer->clear();
     _ui->renderFrame();
     _renderer->displayFrame();
 }

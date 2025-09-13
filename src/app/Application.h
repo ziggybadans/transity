@@ -17,6 +17,7 @@ private:
     void processEvents();
     void update(sf::Time dt);
     void render(float interpolation);
+    void renderLoad();
 
     std::unique_ptr<Renderer> _renderer;
     std::unique_ptr<UI> _ui;

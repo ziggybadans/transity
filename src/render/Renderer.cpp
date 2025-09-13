@@ -26,6 +26,10 @@ void Renderer::initialize() {
     LOG_INFO("Renderer", "Renderer initialized.");
 }
 
+void Renderer::clear() {
+    _windowInstance.clear(_clearColor);
+}
+
 TerrainRenderSystem &Renderer::getTerrainRenderSystem() noexcept {
     return _terrainRenderSystem;
 }

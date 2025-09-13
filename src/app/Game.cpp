@@ -33,7 +33,7 @@ Game::Game(Renderer &renderer, ThreadPool &threadPool)
     _systemManager->addSystem<CameraSystem>();
     _systemManager->addSystem<LineCreationSystem>();
     _systemManager->addSystem<GameStateSystem>();
-    _systemManager->addSystem<WorldSetupSystem>()->init();
+    _systemManager->addSystem<WorldSetupSystem>();
     _systemManager->addSystem<ChunkManagerSystem>(_worldGenerationSystem, _eventBus);
     _systemManager->addSystem<TerrainMeshSystem>();
     _systemManager->addSystem<CityPlacementSystem>();
@@ -46,6 +46,17 @@ void Game::update(sf::Time dt, UI &ui) {
     _systemManager->update(dt);
 
     _eventBus.update();
+}
+
+void Game::startLoading() {
+    auto& threadPool = _serviceLocator.threadPool;
+    auto worldSetupSystem = _systemManager->getSystem<WorldSetupSystem>();
+
+    _loadingFuture = threadPool.enqueue([worldSetupSystem]() {
+        if (worldSetupSystem) {
+            worldSetupSystem->init();
+        }
+    });
 }
 
 Game::~Game() {

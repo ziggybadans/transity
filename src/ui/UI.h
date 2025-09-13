@@ -26,6 +26,7 @@ public:
 
 private:
     void drawPerformancePanel();
+    void drawLoadingScreen();
 
     sf::RenderWindow &_window;
     ServiceLocator &_serviceLocator;
