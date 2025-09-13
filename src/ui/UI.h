@@ -36,5 +36,7 @@ private:
 
     bool _visualizeChunkBorders = false;
     bool _visualizeCellBorders = false;
+    bool _visualizeSuitabilityMap = false;
+    int _selectedSuitabilityMap = 0;
     bool _isLodEnabled = true;
 };

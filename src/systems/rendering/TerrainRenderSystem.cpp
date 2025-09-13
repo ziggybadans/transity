@@ -4,6 +4,7 @@
 #include "components/WorldComponents.h"
 #include "world/WorldData.h"
 #include "core/PerfTimer.h"
+#include "systems/gameplay/CityPlacementSystem.h"
 
 #include <algorithm>
 #include <cassert>
@@ -99,6 +100,58 @@ void TerrainRenderSystem::render(const entt::registry &registry, sf::RenderTarge
                 gridLines.append({{chunkRight, y}, gridColor});
             }
             target.draw(gridLines);
+        }
+    }
+
+    if (_visualizeSuitabilityMap && _suitabilityMaps != nullptr && _suitabilityMapType != SuitabilityMapType::None) {
+        const std::vector<float>* mapData = nullptr;
+        switch (_suitabilityMapType) {
+            case SuitabilityMapType::Water:
+                mapData = &_suitabilityMaps->water;
+                break;
+            case SuitabilityMapType::Expandability:
+                mapData = &_suitabilityMaps->expandability;
+                break;
+            case SuitabilityMapType::CityProximity:
+                mapData = &_suitabilityMaps->cityProximity;
+                break;
+            case SuitabilityMapType::Final:
+                mapData = &_suitabilityMaps->final;
+                break;
+            default:
+                break;
+        }
+
+        if (mapData != nullptr) {
+            sf::VertexArray suitabilityQuads(sf::PrimitiveType::Triangles);
+            int mapWidth = worldParams.worldDimensionsInChunks.x * worldParams.chunkDimensionsInCells.x;
+            for (int i = 0; i < mapData->size(); ++i) {
+                float value = (*mapData)[i];
+                if (value > 0) {
+                    int x = i % mapWidth;
+                    int y = i / mapWidth;
+
+                    sf::Color color(static_cast<std::uint8_t>(255 * (1.0f - value)), static_cast<std::uint8_t>(255 * value), 0, 128);
+
+                    float screenX = x * worldParams.cellSize;
+                    float screenY = y * worldParams.cellSize;
+
+                    sf::Vertex v1, v2, v3, v4;
+                    v1.position = {screenX, screenY};
+                    v2.position = {screenX + worldParams.cellSize, screenY};
+                    v3.position = {screenX + worldParams.cellSize, screenY + worldParams.cellSize};
+                    v4.position = {screenX, screenY + worldParams.cellSize};
+                    v1.color = v2.color = v3.color = v4.color = color;
+
+                    suitabilityQuads.append(v1);
+                    suitabilityQuads.append(v2);
+                    suitabilityQuads.append(v3);
+                    suitabilityQuads.append(v3);
+                    suitabilityQuads.append(v4);
+                    suitabilityQuads.append(v1);
+                }
+            }
+            target.draw(suitabilityQuads);
         }
     }
 }

@@ -45,6 +45,11 @@ void Game::update(sf::Time dt, UI &ui) {
 
     _systemManager->update(dt);
 
+    auto cityPlacementSystem = _systemManager->getSystem<CityPlacementSystem>();
+    if (cityPlacementSystem) {
+        _renderer.getTerrainRenderSystem().setSuitabilityMapData(&cityPlacementSystem->getSuitabilityMaps());
+    }
+
     _eventBus.update();
 }
 

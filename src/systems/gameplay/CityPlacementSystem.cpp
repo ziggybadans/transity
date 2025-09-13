@@ -20,6 +20,10 @@ CityPlacementSystem::~CityPlacementSystem() {
     LOG_DEBUG("CityPlacementSystem", "CityPlacementSystem destroyed.");
 }
 
+const SuitabilityMaps &CityPlacementSystem::getSuitabilityMaps() const {
+    return _suitabilityMaps;
+}
+
 void CityPlacementSystem::update(sf::Time dt) {
     if (_hasRun) {
         return;
@@ -42,25 +46,24 @@ void CityPlacementSystem::placeCities(int numberOfCities) {
 
     precomputeTerrainCache(mapWidth, mapHeight);
 
-    SuitabilityMaps maps;
-    maps.water.resize(mapWidth * mapHeight, 0.0f);
-    maps.expandability.resize(mapWidth * mapHeight, 0.0f);
-    maps.cityProximity.resize(mapWidth * mapHeight, 1.0f);
-    maps.final.resize(mapWidth * mapHeight, 0.0f);
+    _suitabilityMaps.water.resize(mapWidth * mapHeight, 0.0f);
+    _suitabilityMaps.expandability.resize(mapWidth * mapHeight, 0.0f);
+    _suitabilityMaps.cityProximity.resize(mapWidth * mapHeight, 1.0f);
+    _suitabilityMaps.final.resize(mapWidth * mapHeight, 0.0f);
 
     _distanceToNearestCity.assign(mapWidth * mapHeight, std::numeric_limits<int>::max());
-    maps.cityProximity.assign(mapWidth * mapHeight, 1.0f);
+    _suitabilityMaps.cityProximity.assign(mapWidth * mapHeight, 1.0f);
 
     // Calculate and normalize static maps once
     {
         PerfTimer timer("calculateWaterSuitability", _serviceLocator, PerfTimer::Purpose::Log);
-        calculateWaterSuitability(mapWidth, mapHeight, maps.water);
-        normalizeMap(maps.water);
+        calculateWaterSuitability(mapWidth, mapHeight, _suitabilityMaps.water);
+        normalizeMap(_suitabilityMaps.water);
     }
     {
         PerfTimer timer("calculateExpandabilitySuitability", _serviceLocator, PerfTimer::Purpose::Log);
-        calculateExpandabilitySuitability(mapWidth, mapHeight, maps.expandability);
-        normalizeMap(maps.expandability);
+        calculateExpandabilitySuitability(mapWidth, mapHeight, _suitabilityMaps.expandability);
+        normalizeMap(_suitabilityMaps.expandability);
     }
 
     for (int i = 0; i < numberOfCities; ++i) {
@@ -74,17 +77,17 @@ void CityPlacementSystem::placeCities(int numberOfCities) {
             }
             {
                 PerfTimer timer ("calculateProximitySuitability", _serviceLocator, PerfTimer::Purpose::Log);
-                calculateProximitySuitability(mapWidth, mapHeight, maps.cityProximity);
-                normalizeMap(maps.cityProximity);
+                calculateProximitySuitability(mapWidth, mapHeight, _suitabilityMaps.cityProximity);
+                normalizeMap(_suitabilityMaps.cityProximity);
             }
         }
         
         {
             PerfTimer timer("combineSuitabilityMaps", _serviceLocator, PerfTimer::Purpose::Log);
-            combineSuitabilityMaps(mapWidth, mapHeight, maps, _weights, maps.final);
+            combineSuitabilityMaps(mapWidth, mapHeight, _suitabilityMaps, _weights, _suitabilityMaps.final);
         }
 
-        sf::Vector2i bestLocation = findBestLocation(mapWidth, mapHeight, maps.final);
+        sf::Vector2i bestLocation = findBestLocation(mapWidth, mapHeight, _suitabilityMaps.final);
 
         if (bestLocation.x == -1) {
             LOG_WARN("CityPlacementSystem", "No suitable location found for city %d. Halting.", i + 1);
@@ -95,7 +98,7 @@ void CityPlacementSystem::placeCities(int numberOfCities) {
         _placedCities.push_back(bestLocation);
         LOG_DEBUG("CityPlacementSystem", "Placed city %d at (%d, %d)", i + 1, bestLocation.x, bestLocation.y);
 
-        reduceSuitabilityAroundCity(bestLocation.x, bestLocation.y, mapWidth, mapHeight, maps.final);
+        reduceSuitabilityAroundCity(bestLocation.x, bestLocation.y, mapWidth, mapHeight, _suitabilityMaps.final);
     }
 
     LOG_INFO("CityPlacementSystem", "Finished city placement.");

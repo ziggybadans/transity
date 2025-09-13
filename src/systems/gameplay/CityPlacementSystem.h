@@ -28,6 +28,8 @@ public:
 
     void update(sf::Time dt) override;
 
+    const SuitabilityMaps &getSuitabilityMaps() const;
+
 private:
     void placeCities(int numberOfCities);
     
@@ -51,6 +53,7 @@ private:
     ServiceLocator &_serviceLocator;
     bool _hasRun = false;
     PlacementWeights _weights;
+    SuitabilityMaps _suitabilityMaps;
     std::vector<sf::Vector2i> _placedCities;
     std::vector<TerrainType> _terrainCache;
     std::vector<int> _distanceToNearestCity;

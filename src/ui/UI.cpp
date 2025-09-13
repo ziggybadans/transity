@@ -187,6 +187,18 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
     if (ImGui::Checkbox("Visualize Cell Borders", &_visualizeCellBorders)) {
         _terrainRenderSystem.setVisualizeCellBorders(_visualizeCellBorders);
     }
+
+    if (ImGui::Checkbox("Visualize Suitability Map", &_visualizeSuitabilityMap)) {
+        _terrainRenderSystem.setVisualizeSuitabilityMap(_visualizeSuitabilityMap);
+    }
+    ImGui::SameLine();
+    ImGui::BeginDisabled(!_visualizeSuitabilityMap);
+    const char* items[] = { "Water", "Expandability", "City Proximity", "Final" };
+    if (ImGui::Combo("##SuitabilityMap", &_selectedSuitabilityMap, items, IM_ARRAYSIZE(items))) {
+        _terrainRenderSystem.setSuitabilityMapType(static_cast<TerrainRenderSystem::SuitabilityMapType>(_selectedSuitabilityMap + 1));
+    }
+    ImGui::EndDisabled();
+
     if (ImGui::Checkbox("Enable LOD", &_isLodEnabled)) {
         _terrainRenderSystem.setLodEnabled(_isLodEnabled);
     }
