@@ -40,30 +40,36 @@ void CityPlacementSystem::placeCities(int numberOfCities) {
     const int mapHeight = worldGrid.worldDimensionsInChunks.y * worldGrid.chunkDimensionsInCells.y;
     const float cellSize = worldGrid.cellSize;
 
+    precomputeTerrainCache(mapWidth, mapHeight);
+
     SuitabilityMaps maps;
     maps.water.resize(mapWidth * mapHeight, 0.0f);
     maps.expandability.resize(mapWidth * mapHeight, 0.0f);
-    maps.cityProximity.resize(mapWidth * mapHeight, 1.0f); // Start with a neutral score
+    maps.cityProximity.resize(mapWidth * mapHeight, 1.0f);
     maps.final.resize(mapWidth * mapHeight, 0.0f);
 
-    // Calculate static suitability maps once
+    // Calculate and normalize static maps once
     {
         PerfTimer timer("calculateWaterSuitability", _serviceLocator, PerfTimer::Purpose::Log);
         calculateWaterSuitability(mapWidth, mapHeight, maps.water);
+        normalizeMap(maps.water);
     }
     {
         PerfTimer timer("calculateExpandabilitySuitability", _serviceLocator, PerfTimer::Purpose::Log);
         calculateExpandabilitySuitability(mapWidth, mapHeight, maps.expandability);
+        normalizeMap(maps.expandability);
     }
 
     for (int i = 0; i < numberOfCities; ++i) {
         PerfTimer loopTimer("CityPlacementLoop iteration " + std::to_string(i), _serviceLocator, PerfTimer::Purpose::Log);
         
-        // Update dynamic maps and combine
+        // Update and normalize dynamic map
         {
             PerfTimer timer("updateCityProximitySuitability", _serviceLocator, PerfTimer::Purpose::Log);
             updateCityProximitySuitability(mapWidth, mapHeight, maps.cityProximity);
+            normalizeMap(maps.cityProximity);
         }
+        
         {
             PerfTimer timer("combineSuitabilityMaps", _serviceLocator, PerfTimer::Purpose::Log);
             combineSuitabilityMaps(mapWidth, mapHeight, maps, _weights, maps.final);
@@ -87,25 +93,35 @@ void CityPlacementSystem::placeCities(int numberOfCities) {
         _placedCities.push_back(bestLocation);
         LOG_DEBUG("CityPlacementSystem", "Placed city %d at (%d, %d)", i + 1, bestLocation.x, bestLocation.y);
 
-        // Make the area around the new city unsuitable for the next placement
         reduceSuitabilityAroundCity(bestLocation.x, bestLocation.y, mapWidth, mapHeight, maps.final);
     }
 
     LOG_INFO("CityPlacementSystem", "Finished city placement.");
 }
 
-void CityPlacementSystem::calculateWaterSuitability(int mapWidth, int mapHeight, std::vector<float> &map) {
+void CityPlacementSystem::precomputeTerrainCache(int mapWidth, int mapHeight) {
+    PerfTimer timer("CityPlacementSystem::precomputeTerrainCache", _serviceLocator, PerfTimer::Purpose::Log);
     auto &worldGenSystem = _serviceLocator.worldGenerationSystem;
     const float cellSize = worldGenSystem.getParams().cellSize;
+
+    _terrainCache.resize(mapWidth * mapHeight);
+    for (int y = 0; y < mapHeight; ++y) {
+        for (int x = 0; x < mapWidth; ++x) {
+            _terrainCache[y * mapWidth + x] = worldGenSystem.getTerrainTypeAt(x * cellSize, y * cellSize);
+        }
+    }
+}
+
+void CityPlacementSystem::calculateWaterSuitability(int mapWidth, int mapHeight, std::vector<float> &map) {
     const int maxDist = 20; // Max distance in cells to consider for water bonus
 
     std::vector<int> dist(mapWidth * mapHeight, -1);
     std::queue<sf::Vector2i> q;
 
-    // Initialize queue with all water cells
+    // Initialize queue with all water cells with cache
     for (int y = 0; y < mapHeight; ++y) {
         for (int x = 0; x < mapWidth; ++x) {
-            if (worldGenSystem.getTerrainTypeAt(x * cellSize, y * cellSize) == TerrainType::WATER) {
+            if (_terrainCache[y * mapWidth + x] == TerrainType::WATER) {
                 q.push({x, y});
                 dist[y * mapWidth + x] = 0;
             }
@@ -142,14 +158,12 @@ void CityPlacementSystem::calculateWaterSuitability(int mapWidth, int mapHeight,
 }
 
 void CityPlacementSystem::calculateExpandabilitySuitability(int mapWidth, int mapHeight, std::vector<float> &map) {
-    auto &worldGenSystem = _serviceLocator.worldGenerationSystem;
-    const float cellSize = worldGenSystem.getParams().cellSize;
     const int radius = 15;
 
     std::vector<int> landMap(mapWidth * mapHeight, 0);
     for (int y = 0; y < mapHeight; ++y) {
         for (int x = 0; x < mapWidth; ++x) {
-            if (worldGenSystem.getTerrainTypeAt(x * cellSize, y * cellSize) == TerrainType::LAND) {
+            if (_terrainCache[y * mapWidth + x] == TerrainType::LAND) {
                 landMap[y * mapWidth + x] = 1;
             }
         }
@@ -224,24 +238,15 @@ void CityPlacementSystem::updateCityProximitySuitability(int mapWidth, int mapHe
 
 void CityPlacementSystem::combineSuitabilityMaps(int mapWidth, int mapHeight, const SuitabilityMaps &maps,
                                                  const PlacementWeights &weights, std::vector<float> &finalMap) {
-    SuitabilityMaps normalizedMaps = maps;
-    normalizeMap(normalizedMaps.water);
-    normalizeMap(normalizedMaps.expandability);
-    normalizeMap(normalizedMaps.cityProximity);
-
-    auto &worldGenSystem = _serviceLocator.worldGenerationSystem;
-    const float cellSize = worldGenSystem.getParams().cellSize;
-
     for (int i = 0; i < mapWidth * mapHeight; ++i) {
-        // Ensure we only place on land
-        if (worldGenSystem.getTerrainTypeAt((i % mapWidth) * cellSize, (i / mapWidth) * cellSize) != TerrainType::LAND) {
+        if (_terrainCache[i] != TerrainType::LAND) {
             finalMap[i] = 0;
             continue;
         }
 
-        finalMap[i] = (normalizedMaps.water[i] * weights.waterAccess) +
-                      (normalizedMaps.expandability[i] * weights.landExpandability) +
-                      (normalizedMaps.cityProximity[i] * weights.cityProximity);
+        finalMap[i] = (maps.water[i] * weights.waterAccess) +
+                      (maps.expandability[i] * weights.landExpandability) +
+                      (maps.cityProximity[i] * weights.cityProximity);
     }
 }
 

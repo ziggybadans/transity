@@ -2,6 +2,7 @@
 
 #include "ecs/ISystem.h"
 #include "entt/entt.hpp"
+#include "components/WorldComponents.h"
 #include <SFML/System/Vector2.hpp>
 #include <vector>
 
@@ -29,6 +30,8 @@ public:
 
 private:
     void placeCities(int numberOfCities);
+    
+    void precomputeTerrainCache(int mapWidth, int mapHeight);
 
     void calculateSuitabilityMaps(int mapWidth, int mapHeight, SuitabilityMaps &maps);
     void calculateWaterSuitability(int mapWidth, int mapHeight, std::vector<float> &map);
@@ -48,4 +51,5 @@ private:
     bool _hasRun = false;
     PlacementWeights _weights;
     std::vector<sf::Vector2i> _placedCities;
+    std::vector<TerrainType> _terrainCache;
 };
