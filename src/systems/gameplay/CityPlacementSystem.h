@@ -36,7 +36,8 @@ private:
     void calculateSuitabilityMaps(int mapWidth, int mapHeight, SuitabilityMaps &maps);
     void calculateWaterSuitability(int mapWidth, int mapHeight, std::vector<float> &map);
     void calculateExpandabilitySuitability(int mapWidth, int mapHeight, std::vector<float> &map);
-    void updateCityProximitySuitability(int mapWidth, int mapHeight, std::vector<float> &map);
+    void updateDistanceMap(const sf::Vector2i &newCity, int mapWidth, int mapHeight);
+    void calculateProximitySuitability(int mapWidth, int mapHeight, std::vector<float> &map);
     void combineSuitabilityMaps(int mapWidth, int mapHeight, const SuitabilityMaps &maps,
                                 const PlacementWeights &weights, std::vector<float> &finalMap);
     void normalizeMap(std::vector<float> &map);
@@ -52,4 +53,5 @@ private:
     PlacementWeights _weights;
     std::vector<sf::Vector2i> _placedCities;
     std::vector<TerrainType> _terrainCache;
+    std::vector<int> _distanceToNearestCity;
 };

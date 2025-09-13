@@ -48,6 +48,9 @@ void CityPlacementSystem::placeCities(int numberOfCities) {
     maps.cityProximity.resize(mapWidth * mapHeight, 1.0f);
     maps.final.resize(mapWidth * mapHeight, 0.0f);
 
+    _distanceToNearestCity.assign(mapWidth * mapHeight, std::numeric_limits<int>::max());
+    maps.cityProximity.assign(mapWidth * mapHeight, 1.0f);
+
     // Calculate and normalize static maps once
     {
         PerfTimer timer("calculateWaterSuitability", _serviceLocator, PerfTimer::Purpose::Log);
@@ -62,12 +65,18 @@ void CityPlacementSystem::placeCities(int numberOfCities) {
 
     for (int i = 0; i < numberOfCities; ++i) {
         PerfTimer loopTimer("CityPlacementLoop iteration " + std::to_string(i), _serviceLocator, PerfTimer::Purpose::Log);
-        
-        // Update and normalize dynamic map
-        {
-            PerfTimer timer("updateCityProximitySuitability", _serviceLocator, PerfTimer::Purpose::Log);
-            updateCityProximitySuitability(mapWidth, mapHeight, maps.cityProximity);
-            normalizeMap(maps.cityProximity);
+
+        if (i > 0) {
+            const auto &lastCity = _placedCities.back();
+            {
+                PerfTimer timer("updateDistanceMap", _serviceLocator, PerfTimer::Purpose::Log);
+                updateDistanceMap(lastCity, mapWidth, mapHeight);
+            }
+            {
+                PerfTimer timer ("calculateProximitySuitability", _serviceLocator, PerfTimer::Purpose::Log);
+                calculateProximitySuitability(mapWidth, mapHeight, maps.cityProximity);
+                normalizeMap(maps.cityProximity);
+            }
         }
         
         {
@@ -75,21 +84,14 @@ void CityPlacementSystem::placeCities(int numberOfCities) {
             combineSuitabilityMaps(mapWidth, mapHeight, maps, _weights, maps.final);
         }
 
-        sf::Vector2i bestLocation;
-        {
-            PerfTimer timer("findBestLocation", _serviceLocator, PerfTimer::Purpose::Log);
-            bestLocation = findBestLocation(mapWidth, mapHeight, maps.final);
-        }
+        sf::Vector2i bestLocation = findBestLocation(mapWidth, mapHeight, maps.final);
 
         if (bestLocation.x == -1) {
             LOG_WARN("CityPlacementSystem", "No suitable location found for city %d. Halting.", i + 1);
             break;
         }
 
-        float worldX = bestLocation.x * cellSize + cellSize / 2.0f;
-        float worldY = bestLocation.y * cellSize + cellSize / 2.0f;
-
-        entityFactory.createEntity("city", {worldX, worldY});
+        entityFactory.createEntity("city", {bestLocation.x * cellSize + cellSize / 2.0f, bestLocation.y * cellSize + cellSize / 2.0f});
         _placedCities.push_back(bestLocation);
         LOG_DEBUG("CityPlacementSystem", "Placed city %d at (%d, %d)", i + 1, bestLocation.x, bestLocation.y);
 
@@ -97,6 +99,55 @@ void CityPlacementSystem::placeCities(int numberOfCities) {
     }
 
     LOG_INFO("CityPlacementSystem", "Finished city placement.");
+}
+
+void CityPlacementSystem::updateDistanceMap(const sf::Vector2i &newCity, int mapWidth, int mapHeight) {
+    std::queue<sf::Vector2i> q;
+
+    if (_distanceToNearestCity[newCity.y * mapWidth + newCity.x] > 0) {
+        q.push(newCity);
+        _distanceToNearestCity[newCity.y * mapWidth + newCity.x] = 0;
+    } else {
+        return; // Already processed
+    }
+
+    int dx[] = {0, 0, 1, -1, 1, 1, -1, -1};
+    int dy[] = {1, -1, 0, 0, 1, -1, 1, -1};
+
+    while (!q.empty()) {
+        sf::Vector2i curr = q.front();
+        q.pop();
+
+        int d = _distanceToNearestCity[curr.y * mapWidth + curr.x];
+
+        for (int i = 0; i < 8; ++i) {
+            int nx = curr.x + dx[i];
+            int ny = curr.y + dy[i];
+
+            if (nx >= 0 && nx < mapWidth && ny >= 0 && ny < mapHeight) {
+                int newDist = d + 1;
+                if (newDist < _distanceToNearestCity[ny * mapWidth + nx]) {
+                    _distanceToNearestCity[ny * mapWidth + nx] = newDist;
+                    q.push({nx, ny});
+                }
+            }
+        }
+    }
+}
+
+void CityPlacementSystem::calculateProximitySuitability(int mapWidth, int mapHeight, std::vector<float> &map) {
+    const float idealDist = 80.0f;
+    const float falloff = 0.01f;
+
+    for (int i = 0; i < mapWidth * mapHeight; ++i) {
+        if (_distanceToNearestCity[i] == std::numeric_limits<int>::max()) {
+            map[i] = 1.0f; // No cities yet, max suitability
+        } else {
+            float d = static_cast<float>(_distanceToNearestCity[i]);
+            float score = 1.0f - std::abs(d - idealDist) * falloff;
+            map[i] = std::max(0.0f, score);
+        }
+    }
 }
 
 void CityPlacementSystem::precomputeTerrainCache(int mapWidth, int mapHeight) {
@@ -194,45 +245,6 @@ void CityPlacementSystem::calculateExpandabilitySuitability(int mapWidth, int ma
             
             map[y * mapWidth + x] = static_cast<float>(sum);
         }
-    }
-}
-
-void CityPlacementSystem::updateCityProximitySuitability(int mapWidth, int mapHeight, std::vector<float> &map) {
-    if (_placedCities.empty()) return;
-
-    const float idealDist = 80.0f;
-    const float falloff = 0.01f;
-
-    std::vector<int> dist(mapWidth * mapHeight, -1);
-    std::queue<sf::Vector2i> q;
-
-    for (const auto &cityPos : _placedCities) {
-        q.push(cityPos);
-        dist[cityPos.y * mapWidth + cityPos.x] = 0;
-    }
-
-    int dx[] = {0, 0, 1, -1, 1, 1, -1, -1};
-    int dy[] = {1, -1, 0, 0, 1, -1, 1, -1};
-
-    while (!q.empty()) {
-        sf::Vector2i curr = q.front();
-        q.pop();
-
-        for (int i = 0; i < 8; ++i) {
-            int nx = curr.x + dx[i];
-            int ny = curr.y + dy[i];
-
-            if (nx >= 0 && nx < mapWidth && ny >= 0 && ny < mapHeight && dist[ny * mapWidth + nx] == -1) {
-                dist[ny * mapWidth + nx] = dist[curr.y * mapWidth + curr.x] + 1;
-                q.push({nx, ny});
-            }
-        }
-    }
-
-    for (int i = 0; i < mapWidth * mapHeight; ++i) {
-        float d = static_cast<float>(dist[i]);
-        float score = 1.0f - std::abs(d - idealDist) * falloff;
-        map[i] = std::max(0.0f, score);
     }
 }
 
