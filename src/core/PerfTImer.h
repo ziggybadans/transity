@@ -8,13 +8,11 @@
 
 class PerfTimer {
 public:
-    enum class Purpose {
-        Log,
-        Record
-    };
+    enum class Purpose { Log, Record };
 
     PerfTimer(std::string name, ServiceLocator &serviceLocator, Purpose purpose = Purpose::Record)
-        : _name(std::move(name)), _serviceLocator(serviceLocator), _purpose(purpose), _start(std::chrono::high_resolution_clock::now()) {}
+        : _name(std::move(name)), _serviceLocator(serviceLocator), _purpose(purpose),
+          _start(std::chrono::high_resolution_clock::now()) {}
 
     ~PerfTimer() {
         auto end = std::chrono::high_resolution_clock::now();

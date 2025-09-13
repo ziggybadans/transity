@@ -4,16 +4,16 @@
 
 Camera::Camera() {
     LOG_DEBUG("Camera", "Camera created. Initial view size: (%.1f, %.1f), center: (%.1f, %.1f)",
-             _view.getSize().x, _view.getSize().y, _view.getCenter().x, _view.getCenter().y);
+              _view.getSize().x, _view.getSize().y, _view.getCenter().x, _view.getCenter().y);
     _view.setSize({800, 600});
     _view.setCenter({400, 300});
 }
 
 void Camera::setInitialView(const sf::RenderWindow &window, const sf::Vector2f &landCenter,
                             const sf::Vector2f &landSize) {
-   LOG_DEBUG("Camera", "Setting initial view. Land center: (%.1f, %.1f), Land size: (%.1f, %.1f)",
-            landCenter.x, landCenter.y, landSize.x, landSize.y);
-   _view.setCenter(landCenter);
+    LOG_DEBUG("Camera", "Setting initial view. Land center: (%.1f, %.1f), Land size: (%.1f, %.1f)",
+              landCenter.x, landCenter.y, landSize.x, landSize.y);
+    _view.setCenter(landCenter);
 
     sf::Vector2u windowSizeU = window.getSize();
     sf::Vector2f windowSizeF(static_cast<float>(windowSizeU.x), static_cast<float>(windowSizeU.y));
@@ -51,7 +51,7 @@ void Camera::setInitialView(const sf::RenderWindow &window, const sf::Vector2f &
     }
     _view.setSize(viewSize);
     LOG_DEBUG("Camera", "Initial view set. View size: (%.1f, %.1f), View center: (%.1f, %.1f)",
-             _view.getSize().x, _view.getSize().y, _view.getCenter().x, _view.getCenter().y);
+              _view.getSize().x, _view.getSize().y, _view.getCenter().x, _view.getCenter().y);
 }
 
 sf::View &Camera::getViewToModify() noexcept {

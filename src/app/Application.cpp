@@ -23,7 +23,8 @@ Application::Application() {
 
         _renderer->connectToEventBus(_game->getEventBus());
 
-        _ui = std::make_unique<UI>(_renderer->getWindowInstance(), _renderer->getTerrainRenderSystem(), _game->getServiceLocator());
+        _ui = std::make_unique<UI>(_renderer->getWindowInstance(),
+                                   _renderer->getTerrainRenderSystem(), _game->getServiceLocator());
         _ui->initialize();
 
     } catch (const std::exception &e) {
@@ -94,7 +95,8 @@ void Application::render(float interpolation) {
 
     const auto &worldGen = _game->getWorldGenSystem();
 
-    _renderer->renderFrame(_game->getRegistry(), _game->getCamera().getView(), worldGen, interpolation);
+    _renderer->renderFrame(_game->getRegistry(), _game->getCamera().getView(), worldGen,
+                           interpolation);
     _ui->renderFrame();
     _renderer->displayFrame();
 }

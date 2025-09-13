@@ -13,8 +13,8 @@ Renderer::Renderer()
     : _windowInstance(sf::VideoMode({Constants::WINDOW_WIDTH, Constants::WINDOW_HEIGHT}),
                       Constants::WINDOW_TITLE),
       _clearColor(Constants::CLEAR_COLOR_R, Constants::CLEAR_COLOR_G, Constants::CLEAR_COLOR_B) {
-   LOG_DEBUG("Renderer", "Renderer created and window initialized.");
-   _windowInstance.setFramerateLimit(Constants::FRAMERATE_LIMIT);
+    LOG_DEBUG("Renderer", "Renderer created and window initialized.");
+    _windowInstance.setFramerateLimit(Constants::FRAMERATE_LIMIT);
 }
 
 Renderer::~Renderer() {
@@ -30,7 +30,8 @@ TerrainRenderSystem &Renderer::getTerrainRenderSystem() noexcept {
     return _terrainRenderSystem;
 }
 
-void Renderer::renderFrame(const entt::registry &registry, const sf::View &view, const WorldGenerationSystem &worldGen, float interpolation) {
+void Renderer::renderFrame(const entt::registry &registry, const sf::View &view,
+                           const WorldGenerationSystem &worldGen, float interpolation) {
     _windowInstance.setView(view);
     _windowInstance.clear(_clearColor);
 
@@ -44,12 +45,11 @@ void Renderer::renderFrame(const entt::registry &registry, const sf::View &view,
         sortedEntities.push_back(entity);
     }
 
-    std::sort(sortedEntities.begin(), sortedEntities.end(),
-              [&](const auto &a, const auto &b) {
-                  const auto &renderableA = viewRegistry.get<const RenderableComponent>(a);
-                  const auto &renderableB = viewRegistry.get<const RenderableComponent>(b);
-                  return renderableA.zOrder.value < renderableB.zOrder.value;
-              });
+    std::sort(sortedEntities.begin(), sortedEntities.end(), [&](const auto &a, const auto &b) {
+        const auto &renderableA = viewRegistry.get<const RenderableComponent>(a);
+        const auto &renderableB = viewRegistry.get<const RenderableComponent>(b);
+        return renderableA.zOrder.value < renderableB.zOrder.value;
+    });
 
     for (auto entity : sortedEntities) {
         const auto &position = viewRegistry.get<const PositionComponent>(entity);

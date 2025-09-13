@@ -9,24 +9,28 @@
 #include "systems/world/ChunkManagerSystem.h"
 #include <cstdlib>
 
-UI::UI(sf::RenderWindow &window, TerrainRenderSystem &terrainRenderSystem, ServiceLocator &serviceLocator)
-    : _window(window), _terrainRenderSystem(terrainRenderSystem), _serviceLocator(serviceLocator), _autoRegenerate(false) {
+UI::UI(sf::RenderWindow &window, TerrainRenderSystem &terrainRenderSystem,
+       ServiceLocator &serviceLocator)
+    : _window(window), _terrainRenderSystem(terrainRenderSystem), _serviceLocator(serviceLocator),
+      _autoRegenerate(false) {
     LOG_DEBUG("UI", "UI instance created.");
 }
 
 void UI::drawPerformancePanel() {
     ImGui::Begin("Performance");
 
-    auto& monitor = _serviceLocator.performanceMonitor;
+    auto &monitor = _serviceLocator.performanceMonitor;
 
-    const auto& renderHistory = monitor.getHistory("Application::render");
+    const auto &renderHistory = monitor.getHistory("Application::render");
     if (!renderHistory.empty()) {
-        ImGui::PlotLines("Render (us)", renderHistory.data(), renderHistory.size(), 0, nullptr, 0.0f, 33000.0f, ImVec2(0, 80));
+        ImGui::PlotLines("Render (us)", renderHistory.data(), renderHistory.size(), 0, nullptr,
+                         0.0f, 33000.0f, ImVec2(0, 80));
     }
 
-    const auto& updateHistory = monitor.getHistory("Application::update");
+    const auto &updateHistory = monitor.getHistory("Application::update");
     if (!updateHistory.empty()) {
-        ImGui::PlotLines("Update (us)", updateHistory.data(), updateHistory.size(), 0, nullptr, 0.0f, 16000.0f, ImVec2(0, 80));
+        ImGui::PlotLines("Update (us)", updateHistory.data(), updateHistory.size(), 0, nullptr,
+                         0.0f, 16000.0f, ImVec2(0, 80));
     }
 
     ImGui::End();
@@ -78,8 +82,8 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
     ImGui::SetNextWindowSize(ImVec2(worldGenSettingsWidth, 0.0f), ImGuiCond_Always);
     ImGui::Begin("World Generation Settings", nullptr, window_flags);
 
-    auto &worldState =
-        _serviceLocator.registry.get<WorldStateComponent>(_serviceLocator.registry.view<WorldStateComponent>().front());
+    auto &worldState = _serviceLocator.registry.get<WorldStateComponent>(
+        _serviceLocator.registry.view<WorldStateComponent>().front());
     WorldGenParams &params = _serviceLocator.worldGenerationSystem.getParams();
 
     bool paramsChanged = false;
@@ -191,7 +195,8 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
     ImGui::SameLine();
     if (ImGui::RadioButton("Station Placement", &currentMode,
                            static_cast<int>(InteractionMode::CREATE_STATION))) {
-        _serviceLocator.eventBus.enqueue(InteractionModeChangeEvent{InteractionMode::CREATE_STATION});
+        _serviceLocator.eventBus.enqueue(
+            InteractionModeChangeEvent{InteractionMode::CREATE_STATION});
         LOG_DEBUG("UI", "Interaction mode change requested: StationPlacement");
     }
     ImGui::SameLine();

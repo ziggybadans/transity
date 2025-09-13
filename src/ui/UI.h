@@ -15,7 +15,8 @@ class ServiceLocator;
 
 class UI {
 public:
-    UI(sf::RenderWindow &window, TerrainRenderSystem &terrainRenderSystem, ServiceLocator &serviceLocator);
+    UI(sf::RenderWindow &window, TerrainRenderSystem &terrainRenderSystem,
+       ServiceLocator &serviceLocator);
     ~UI();
     void initialize();
     void processEvent(const sf::Event &event);

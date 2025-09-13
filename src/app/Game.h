@@ -7,8 +7,8 @@
 #include "event/EventBus.h"
 #include "render/Camera.h"
 #include "render/ColorManager.h"
-#include "systems/world/WorldGenerationSystem.h"
 #include "systems/gameplay/CityPlacementSystem.h"
+#include "systems/world/WorldGenerationSystem.h"
 #include <entt/entt.hpp>
 #include <memory>
 

@@ -2,10 +2,10 @@
 
 #include "ThreadPool.h"
 #include "app/GameState.h"
+#include "core/PerformanceMonitor.h"
 #include "ecs/EntityFactory.h"
 #include "event/EventBus.h"
 #include "render/Camera.h"
-#include "core/PerformanceMonitor.h"
 #include <entt/entt.hpp>
 
 class Renderer;
