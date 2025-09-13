@@ -5,6 +5,7 @@
 #include "world/WorldData.h"
 #include "core/PerfTimer.h"
 #include "systems/gameplay/CityPlacementSystem.h"
+#include "Logger.h"
 
 #include <algorithm>
 #include <cassert>
@@ -104,54 +105,15 @@ void TerrainRenderSystem::render(const entt::registry &registry, sf::RenderTarge
     }
 
     if (_visualizeSuitabilityMap && _suitabilityMaps != nullptr && _suitabilityMapType != SuitabilityMapType::None) {
-        const std::vector<float>* mapData = nullptr;
-        switch (_suitabilityMapType) {
-            case SuitabilityMapType::Water:
-                mapData = &_suitabilityMaps->water;
-                break;
-            case SuitabilityMapType::Expandability:
-                mapData = &_suitabilityMaps->expandability;
-                break;
-            case SuitabilityMapType::CityProximity:
-                mapData = &_suitabilityMaps->cityProximity;
-                break;
-            case SuitabilityMapType::Final:
-                mapData = &_suitabilityMaps->final;
-                break;
-            default:
-                break;
+        if (_suitabilityMapsDirty) {
+            regenerateSuitabilityMaps(worldParams);
         }
 
-        if (mapData != nullptr) {
-            sf::VertexArray suitabilityQuads(sf::PrimitiveType::Triangles);
-            int mapWidth = worldParams.worldDimensionsInChunks.x * worldParams.chunkDimensionsInCells.x;
-            for (int i = 0; i < mapData->size(); ++i) {
-                float value = (*mapData)[i];
-                if (value > 0) {
-                    int x = i % mapWidth;
-                    int y = i / mapWidth;
-
-                    sf::Color color(static_cast<std::uint8_t>(255 * (1.0f - value)), static_cast<std::uint8_t>(255 * value), 0, 128);
-
-                    float screenX = x * worldParams.cellSize;
-                    float screenY = y * worldParams.cellSize;
-
-                    sf::Vertex v1, v2, v3, v4;
-                    v1.position = {screenX, screenY};
-                    v2.position = {screenX + worldParams.cellSize, screenY};
-                    v3.position = {screenX + worldParams.cellSize, screenY + worldParams.cellSize};
-                    v4.position = {screenX, screenY + worldParams.cellSize};
-                    v1.color = v2.color = v3.color = v4.color = color;
-
-                    suitabilityQuads.append(v1);
-                    suitabilityQuads.append(v2);
-                    suitabilityQuads.append(v3);
-                    suitabilityQuads.append(v3);
-                    suitabilityQuads.append(v4);
-                    suitabilityQuads.append(v1);
-                }
-            }
-            target.draw(suitabilityQuads);
+        auto it = _suitabilityMapTextures.find(_suitabilityMapType);
+        if (it != _suitabilityMapTextures.end() && it->second) {
+            sf::Sprite suitabilityMapSprite(it->second->getTexture());
+            suitabilityMapSprite.setScale({worldParams.cellSize, worldParams.cellSize});
+            target.draw(suitabilityMapSprite);
         }
     }
 }
@@ -257,4 +219,68 @@ void TerrainRenderSystem::buildAllChunkMeshes(const ChunkPositionComponent &chun
 
 void TerrainRenderSystem::setLodEnabled(bool enabled) noexcept {
     _isLodEnabled = enabled;
+}
+
+void TerrainRenderSystem::setSuitabilityMapData(const SuitabilityMaps* maps, const WorldGenParams& worldParams) {
+    _suitabilityMaps = maps;
+    _suitabilityMapsDirty = true;
+}
+
+void TerrainRenderSystem::regenerateSuitabilityMaps(const WorldGenParams &worldParams) {
+    if (!_suitabilityMaps) {
+        return;
+    }
+
+    int mapWidth = worldParams.worldDimensionsInChunks.x * worldParams.chunkDimensionsInCells.x;
+    int mapHeight = worldParams.worldDimensionsInChunks.y * worldParams.chunkDimensionsInCells.y;
+    
+    unsigned int textureWidth = mapWidth;
+    unsigned int textureHeight = mapHeight;
+
+    auto regenerate = [&](SuitabilityMapType type, const std::vector<float>& data) {
+        auto& texturePtr = _suitabilityMapTextures[type];
+        if (!texturePtr) {
+            texturePtr = std::make_unique<sf::RenderTexture>();
+            if (!texturePtr->resize({textureWidth, textureHeight})) {
+                LOG_ERROR("TerrainRenderSystem", "Failed to create suitability map texture of size %u x %u", textureWidth, textureHeight);
+                return;
+            }
+        }
+
+        texturePtr->clear(sf::Color::Transparent);
+
+        sf::VertexArray suitabilityTriangles(sf::PrimitiveType::Triangles);
+        for (size_t i = 0; i < data.size(); ++i) {
+            float value = data[i];
+            if (value > 0) {
+                int x = i % mapWidth;
+                int y = i / mapWidth;
+
+                sf::Color color(static_cast<std::uint8_t>(255 * (1.0f - value)), static_cast<std::uint8_t>(255 * value), 0, 128);
+
+                sf::Vertex v1, v2, v3, v4;
+                v1.position = {(float)x, (float)y};
+                v2.position = {(float)x + 1, (float)y};
+                v3.position = {(float)x + 1, (float)y + 1};
+                v4.position = {(float)x, (float)y + 1};
+                v1.color = v2.color = v3.color = v4.color = color;
+
+                suitabilityTriangles.append(v1);
+                suitabilityTriangles.append(v2);
+                suitabilityTriangles.append(v3);
+                suitabilityTriangles.append(v3);
+                suitabilityTriangles.append(v4);
+                suitabilityTriangles.append(v1);
+            }
+        }
+        texturePtr->draw(suitabilityTriangles);
+        texturePtr->display();
+    };
+
+    regenerate(SuitabilityMapType::Water, _suitabilityMaps->water);
+    regenerate(SuitabilityMapType::Expandability, _suitabilityMaps->expandability);
+    regenerate(SuitabilityMapType::CityProximity, _suitabilityMaps->cityProximity);
+    regenerate(SuitabilityMapType::Final, _suitabilityMaps->final);
+
+    _suitabilityMapsDirty = false;
 }

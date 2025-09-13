@@ -5,6 +5,8 @@
 #include "Logger.h"
 #include "components/WorldComponents.h"
 #include "core/PerfTimer.h"
+#include "systems/rendering/TerrainRenderSystem.h"
+#include "render/Renderer.h" 
 
 #include <vector>
 #include <algorithm>
@@ -102,6 +104,7 @@ void CityPlacementSystem::placeCities(int numberOfCities) {
     }
 
     LOG_INFO("CityPlacementSystem", "Finished city placement.");
+    _serviceLocator.renderer.getTerrainRenderSystem().setSuitabilityMapData(&_suitabilityMaps, worldGrid);
 }
 
 void CityPlacementSystem::updateDistanceMap(const sf::Vector2i &newCity, int mapWidth, int mapHeight) {
