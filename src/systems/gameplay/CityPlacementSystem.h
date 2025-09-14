@@ -9,8 +9,8 @@
 class ServiceLocator;
 
 struct PlacementWeights {
-    float waterAccess = 0.4f;
-    float landExpandability = 0.3f;
+    float waterAccess = 0.2f;
+    float landExpandability = 0.5f;
     float cityProximity = 0.3f;
 };
 
@@ -21,12 +21,12 @@ struct SuitabilityMaps {
     std::vector<float> final;
 };
 
-class CityPlacementSystem : public ISystem, public IUpdatable {
+class CityPlacementSystem : public ISystem {
 public:
     explicit CityPlacementSystem(ServiceLocator &serviceLocator);
     ~CityPlacementSystem() override;
 
-    void update(sf::Time dt) override;
+    void init();
 
     const SuitabilityMaps &getSuitabilityMaps() const;
 

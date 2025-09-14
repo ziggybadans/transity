@@ -18,6 +18,7 @@ Game::Game(Renderer &renderer, ThreadPool &threadPool)
     : _renderer(renderer), _eventBus(), _entityFactory(_registry),
       _worldGenerationSystem(_registry, _eventBus), _serviceLocator{_registry,
                                                                     _eventBus,
+                                                                    _loadingState,
                                                                     _gameState,
                                                                     _entityFactory,
                                                                     _camera,
@@ -49,12 +50,19 @@ void Game::update(sf::Time dt, UI &ui) {
 }
 
 void Game::startLoading() {
+    _loadingState.progress = 0.0f;
+    _loadingState.message = "Loading...";
+
     auto& threadPool = _serviceLocator.threadPool;
     auto worldSetupSystem = _systemManager->getSystem<WorldSetupSystem>();
+    auto cityPlacementSystem = _systemManager->getSystem<CityPlacementSystem>();
 
-    _loadingFuture = threadPool.enqueue([worldSetupSystem]() {
+    _loadingFuture = threadPool.enqueue([worldSetupSystem, cityPlacementSystem]() {
         if (worldSetupSystem) {
             worldSetupSystem->init();
+        }
+        if (cityPlacementSystem) {
+            cityPlacementSystem->init();
         }
     });
 }

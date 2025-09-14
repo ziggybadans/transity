@@ -40,14 +40,30 @@ void UI::drawLoadingScreen() {
     ImGuiIO &io = ImGui::GetIO();
     ImVec2 displaySize = io.DisplaySize;
 
-    const char *text = "Loading...";
-    ImVec2 textSize = ImGui::CalcTextSize(text);
+    const char* message = _serviceLocator.loadingState.message.load();
+    float progress = _serviceLocator.loadingState.progress.load();
 
-    ImGui::SetNextWindowPos(ImVec2((displaySize.x - textSize.x) * 0.5f,
-                                   (displaySize.y - textSize.y) * 0.5f));
+    ImGui::SetNextWindowPos(ImVec2(displaySize.x * 0.5f, displaySize.y * 0.5f),
+                          ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+    ImGui::SetNextWindowSize(ImVec2(displaySize.x * 0.4f, 0));
 
-    ImGui::Begin("Loading", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize);
-    ImGui::Text("%s", text);
+    ImGui::Begin("Loading", nullptr,
+                 ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
+                     ImGuiWindowFlags_AlwaysAutoResize);
+
+    ImGui::Text("%s", message);
+
+    ImGui::Dummy(ImVec2(0.0f, 5.0f));
+    ImGui::ProgressBar(progress, ImVec2(-1.0f, 0.0f), "");
+
+    ImGui::SameLine(0.0f, 0.0f);
+    std::string progressText = std::to_string(static_cast<int>(progress * 100.0f)) + "%";
+    ImVec2 progressTextSize = ImGui::CalcTextSize(progressText.c_str());
+    ImGui::SetCursorPosX((ImGui::GetWindowSize().x - progressTextSize.x) * 0.5f);
+    ImGui::Text("%s", progressText.c_str());
+        
+    ImGui::Dummy(ImVec2(0.0f, 5.0f));
+    
     ImGui::End();
 }
 
@@ -72,6 +88,12 @@ void UI::processEvent(const sf::Event &sfEvent) {
 
 void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
     ImGui::SFML::Update(_window, deltaTime);
+
+    const auto appState = _serviceLocator.gameState.currentAppState;
+    if (appState == AppState::LOADING) {
+        drawLoadingScreen();
+        return;
+    }
 
     drawPerformancePanel();
 

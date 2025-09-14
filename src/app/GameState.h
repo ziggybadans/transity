@@ -2,7 +2,7 @@
 
 #include "InteractionMode.h"
 
-enum class AppState { LOADING, RUNNING };
+enum class AppState { LOADING, PLAYING, QUITTING };
 
 struct GameState {
     AppState currentAppState = AppState::LOADING;

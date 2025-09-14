@@ -1,6 +1,7 @@
 #pragma once
 
 #include "GameState.h"
+#include "LoadingState.h"
 #include "core/ServiceLocator.h"
 #include "ecs/EntityFactory.h"
 #include "ecs/SystemManager.h"
@@ -46,6 +47,7 @@ private:
     ColorManager _colorManager;
     Camera _camera;
     GameState _gameState;
+    LoadingState _loadingState;
     WorldGenerationSystem _worldGenerationSystem;
     PerformanceMonitor _performanceMonitor;
     ServiceLocator _serviceLocator;

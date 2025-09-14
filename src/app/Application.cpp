@@ -5,6 +5,7 @@
 #include "core/PerfTimer.h"
 #include "core/ServiceLocator.h"
 #include "input/InputHandler.h"
+#include "event/InputEvents.h"
 #include "app/GameState.h"
 
 #include <stdexcept>
@@ -48,14 +49,17 @@ void Application::run() {
 
         switch (appState) {
         case AppState::LOADING:
+        {
             _ui->update(frameTime, 0);
             if(_game->getLoadingFuture().wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
-                _game->getGameState().currentAppState = AppState::RUNNING;
-                LOG_INFO("Application", "Loading complete, switching to RUNNING state.");
+                _game->getGameState().currentAppState = AppState::PLAYING;
+                LOG_INFO("Application", "Loading complete, switching to PLAYING state.");
             }
             renderLoad();
             break;
-        case AppState::RUNNING:
+        }
+        case AppState::PLAYING:
+        {
             _ui->update(frameTime, 0);
 
             if (_isWindowFocused) {
@@ -68,6 +72,12 @@ void Application::run() {
             const float interpolation = _timeAccumulator.asSeconds() / TimePerFrame.asSeconds();
             render(interpolation);
             break;
+        }
+        case AppState::QUITTING:
+        {
+            _game->getEventBus().trigger<WindowCloseEvent>();
+            break;
+        }
         }
     }
     LOG_INFO("Application", "Main loop ended.");

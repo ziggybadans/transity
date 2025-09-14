@@ -26,18 +26,16 @@ const SuitabilityMaps &CityPlacementSystem::getSuitabilityMaps() const {
     return _suitabilityMaps;
 }
 
-void CityPlacementSystem::update(sf::Time dt) {
-    if (_hasRun) {
-        return;
-    }
-
+void CityPlacementSystem::init() {
     placeCities(10);
-    _hasRun = true;
 }
 
 void CityPlacementSystem::placeCities(int numberOfCities) {
     PerfTimer timer("CityPlacementSystem::placeCities", _serviceLocator, PerfTimer::Purpose::Log);
     LOG_INFO("CityPlacementSystem", "Starting city placement for %d cities...", numberOfCities);
+
+    _serviceLocator.loadingState.message = "Analysing terrain for city placement...";
+    _serviceLocator.loadingState.progress = 0.3f;
 
     auto &worldGenSystem = _serviceLocator.worldGenerationSystem;
     auto &entityFactory = _serviceLocator.entityFactory;
@@ -47,6 +45,9 @@ void CityPlacementSystem::placeCities(int numberOfCities) {
     const float cellSize = worldGrid.cellSize;
 
     precomputeTerrainCache(mapWidth, mapHeight);
+
+    _serviceLocator.loadingState.message = "Calculating suitability maps...";
+    _serviceLocator.loadingState.progress = 0.4f;
 
     _suitabilityMaps.water.resize(mapWidth * mapHeight, 0.0f);
     _suitabilityMaps.expandability.resize(mapWidth * mapHeight, 0.0f);
@@ -68,8 +69,13 @@ void CityPlacementSystem::placeCities(int numberOfCities) {
         normalizeMap(_suitabilityMaps.expandability);
     }
 
+    _serviceLocator.loadingState.message = "Placing cities...";
+
     for (int i = 0; i < numberOfCities; ++i) {
         PerfTimer loopTimer("CityPlacementLoop iteration " + std::to_string(i), _serviceLocator, PerfTimer::Purpose::Log);
+
+        float cityProgress = static_cast<float>(i) / numberOfCities;
+        _serviceLocator.loadingState.progress = 0.6f + (cityProgress * 0.4f);
 
         if (i > 0) {
             const auto &lastCity = _placedCities.back();
@@ -170,7 +176,7 @@ void CityPlacementSystem::precomputeTerrainCache(int mapWidth, int mapHeight) {
 }
 
 void CityPlacementSystem::calculateWaterSuitability(int mapWidth, int mapHeight, std::vector<float> &map) {
-    const int maxDist = 20; // Max distance in cells to consider for water bonus
+    const int maxDist = 60; // Max distance in cells to consider for water bonus
 
     std::vector<int> dist(mapWidth * mapHeight, -1);
     std::queue<sf::Vector2i> q;

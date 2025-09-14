@@ -6,6 +6,7 @@
 #include "ecs/EntityFactory.h"
 #include "event/EventBus.h"
 #include "render/Camera.h"
+#include "app/LoadingState.h"
 #include <entt/entt.hpp>
 
 class Renderer;
@@ -15,6 +16,7 @@ class WorldGenerationSystem;
 struct ServiceLocator {
     entt::registry &registry;
     EventBus &eventBus;
+    LoadingState &loadingState;
     GameState &gameState;
     EntityFactory &entityFactory;
     Camera &camera;
