@@ -38,5 +38,5 @@ private:
     bool _visualizeCellBorders = false;
     bool _visualizeSuitabilityMap = false;
     int _selectedSuitabilityMap = 3;
-    bool _isLodEnabled = true;
+    bool _isLodEnabled = false;
 };

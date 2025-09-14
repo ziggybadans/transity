@@ -14,6 +14,7 @@ UI::UI(sf::RenderWindow &window, TerrainRenderSystem &terrainRenderSystem,
     : _window(window), _terrainRenderSystem(terrainRenderSystem), _serviceLocator(serviceLocator),
       _autoRegenerate(false) {
     LOG_DEBUG("UI", "UI instance created.");
+    _terrainRenderSystem.setLodEnabled(_isLodEnabled);
 }
 
 void UI::drawPerformancePanel() {
