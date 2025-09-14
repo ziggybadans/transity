@@ -261,7 +261,7 @@ void TerrainRenderSystem::regenerateSuitabilityMaps(const WorldGenParams &worldP
             }
 
             float value = data[i];
-            if (value > 0) {
+            if (value >= 0) {
                 int x = i % mapWidth;
                 int y = i / mapWidth;
 
@@ -290,7 +290,6 @@ void TerrainRenderSystem::regenerateSuitabilityMaps(const WorldGenParams &worldP
     regenerate(SuitabilityMapType::Expandability, _suitabilityMaps->expandability);
     regenerate(SuitabilityMapType::CityProximity, _suitabilityMaps->cityProximity);
     regenerate(SuitabilityMapType::Final, _suitabilityMaps->final);
-    regenerate(SuitabilityMapType::Test, _suitabilityMaps->test);
 
     _suitabilityMapsDirty = false;
 }
