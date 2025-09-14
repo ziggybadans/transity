@@ -7,6 +7,7 @@
 #include "core/PerfTimer.h"
 #include "systems/rendering/TerrainRenderSystem.h"
 #include "render/Renderer.h" 
+#include "Constants.h"
 
 #include <vector>
 #include <algorithm>
@@ -16,6 +17,9 @@
 CityPlacementSystem::CityPlacementSystem(ServiceLocator &serviceLocator)
     : _serviceLocator(serviceLocator) {
     LOG_DEBUG("CityPlacementSystem", "CityPlacementSystem created.");
+    _noise.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
+    _noise.SetFrequency(0.005f);
+    _noise.SetSeed(std::random_device{}());
 }
 
 CityPlacementSystem::~CityPlacementSystem() {
@@ -27,7 +31,7 @@ const SuitabilityMaps &CityPlacementSystem::getSuitabilityMaps() const {
 }
 
 void CityPlacementSystem::init() {
-    placeCities(10);
+    placeCities(Constants::NUM_CITIES_TO_GENERATE);
 }
 
 void CityPlacementSystem::placeCities(int numberOfCities) {
@@ -53,6 +57,7 @@ void CityPlacementSystem::placeCities(int numberOfCities) {
     _suitabilityMaps.expandability.resize(mapWidth * mapHeight, 0.0f);
     _suitabilityMaps.cityProximity.resize(mapWidth * mapHeight, 1.0f);
     _suitabilityMaps.final.resize(mapWidth * mapHeight, 0.0f);
+    _suitabilityMaps.noise.resize(mapWidth * mapHeight, 0.0f);
 
     _distanceToNearestCity.assign(mapWidth * mapHeight, std::numeric_limits<int>::max());
     _suitabilityMaps.cityProximity.assign(mapWidth * mapHeight, 1.0f);
@@ -67,6 +72,11 @@ void CityPlacementSystem::placeCities(int numberOfCities) {
         PerfTimer timer("calculateExpandabilitySuitability", _serviceLocator, PerfTimer::Purpose::Log);
         calculateExpandabilitySuitability(mapWidth, mapHeight, _suitabilityMaps.expandability);
         normalizeMap(_suitabilityMaps.expandability);
+    }
+    {
+        PerfTimer timer("calculateNoiseSuitability", _serviceLocator, PerfTimer::Purpose::Log);
+        calculateNoiseSuitability(mapWidth, mapHeight, _suitabilityMaps.noise);
+        normalizeMap(_suitabilityMaps.noise);
     }
 
     _serviceLocator.loadingState.message = "Placing cities...";
@@ -279,7 +289,8 @@ void CityPlacementSystem::combineSuitabilityMaps(int mapWidth, int mapHeight, co
 
         finalMap[i] = (maps.water[i] * weights.waterAccess) +
                       (maps.expandability[i] * weights.landExpandability) +
-                      (maps.cityProximity[i] * weights.cityProximity);
+                      (maps.cityProximity[i] * weights.cityProximity) +
+                      (maps.noise[i] * weights.randomness);
     }
 }
 
@@ -304,26 +315,49 @@ void CityPlacementSystem::normalizeMap(std::vector<float> &map) {
 }
 
 sf::Vector2i CityPlacementSystem::findBestLocation(int mapWidth, int mapHeight, const std::vector<float> &suitabilityMap) {
-    float maxSuitability = 0.0f;
-    sf::Vector2i bestLocation = {-1, -1};
-    
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_int_distribution<> disX(0, mapWidth - 1);
     std::uniform_int_distribution<> disY(0, mapHeight - 1);
 
     const int numSamples = 5000;
+    const int numTopCandidates = 50;
+    std::vector<std::pair<float, sf::Vector2i>> candidates;
+    candidates.reserve(numSamples);
 
     for (int i = 0; i < numSamples; ++i) {
         int x = disX(gen);
         int y = disY(gen);
         
         float suitability = suitabilityMap[y * mapWidth + x];
-        if (suitability > maxSuitability) {
-            maxSuitability = suitability;
-            bestLocation = {x, y};
+        if (suitability > 0) { // Only consider valid locations
+            candidates.push_back({suitability, {x, y}});
         }
     }
 
-    return bestLocation;
+    if (candidates.empty()) {
+        return {-1, -1};
+    }
+
+    // Sort candidates by suitability in descending order
+    std::sort(candidates.begin(), candidates.end(), [](const auto& a, const auto& b) {
+        return a.first > b.first;
+    });
+
+    // Pick one of the top N candidates
+    int topN = std::min((int)candidates.size(), numTopCandidates);
+    std::uniform_int_distribution<> disTop(0, topN - 1);
+    
+    return candidates[disTop(gen)].second;
+}
+
+void CityPlacementSystem::calculateNoiseSuitability(int mapWidth, int mapHeight, std::vector<float> &map) {
+    for (int y = 0; y < mapHeight; ++y) {
+        for (int x = 0; x < mapWidth; ++x) {
+            // Get noise value, which is in the range [-1, 1]
+            float noiseVal = _noise.GetNoise((float)x, (float)y);
+            // Map it to [0, 1]
+            map[y * mapWidth + x] = (noiseVal + 1.0f) / 2.0f;
+        }
+    }
 }

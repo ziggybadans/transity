@@ -1,5 +1,7 @@
 #pragma once
 
+#include <SFML/Graphics/Color.hpp>
+
 namespace Constants {
 constexpr unsigned int WINDOW_WIDTH = 1920;
 constexpr unsigned int WINDOW_HEIGHT = 1080;
@@ -8,6 +10,10 @@ constexpr const char *WINDOW_TITLE = "Transity Predev";
 constexpr unsigned char CLEAR_COLOR_R = 173;
 constexpr unsigned char CLEAR_COLOR_G = 216;
 constexpr unsigned char CLEAR_COLOR_B = 230;
+
+constexpr sf::Color TERRAIN_LAND_COLOR = sf::Color(255, 255, 255);
+constexpr sf::Color TERRAIN_WATER_COLOR = sf::Color(229, 240, 247);
+constexpr sf::Color TERRAIN_RIVER_COLOR = sf::Color(100, 149, 237);
 
 constexpr unsigned int FRAMERATE_LIMIT = 144;
 constexpr unsigned int TRACE_LOG_DELAY_MS = 2000;
@@ -24,6 +30,7 @@ constexpr int ISLAND_BASE_SHAPE_POINTS = 8;
 constexpr float COASTLINE_DISTORTION_FREQUENCY = 0.05f;
 constexpr float COASTLINE_DISTORTION_STRENGTH = 15.0f;
 constexpr float COASTLINE_SUBDIVISION_LENGTH = 20.0f;
+constexpr int NUM_CITIES_TO_GENERATE = 10;
 
 constexpr float UI_WINDOW_PADDING = 10.0f;
 constexpr float UI_WORLD_GEN_SETTINGS_WIDTH = 300.0f;

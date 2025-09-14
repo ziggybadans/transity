@@ -20,6 +20,7 @@ public:
         Water,
         Expandability,
         CityProximity,
+        Noise,
         Final
     };
 

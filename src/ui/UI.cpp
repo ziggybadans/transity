@@ -221,7 +221,7 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
     }
     ImGui::SameLine();
     ImGui::BeginDisabled(!_visualizeSuitabilityMap);
-    const char* items[] = { "Water", "Expandability", "City Proximity", "Final" };
+    const char* items[] = { "Water", "Expandability", "City Proximity", "Noise", "Final" };
     if (ImGui::Combo("##SuitabilityMap", &_selectedSuitabilityMap, items, IM_ARRAYSIZE(items))) {
         _terrainRenderSystem.setSuitabilityMapType(static_cast<TerrainRenderSystem::SuitabilityMapType>(_selectedSuitabilityMap + 1));
     }

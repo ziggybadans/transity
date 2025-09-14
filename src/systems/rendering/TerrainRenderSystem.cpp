@@ -6,6 +6,7 @@
 #include "core/PerfTimer.h"
 #include "systems/gameplay/CityPlacementSystem.h"
 #include "Logger.h"
+#include "Constants.h"
 
 #include <algorithm>
 #include <cassert>
@@ -195,13 +196,13 @@ void TerrainRenderSystem::buildAllChunkMeshes(const ChunkPositionComponent &chun
                 sf::Color color;
                 switch (currentType) {
                 case TerrainType::WATER:
-                    color = sf::Color(229, 240, 247);
+                    color = Constants::TERRAIN_WATER_COLOR;
                     break;
                 case TerrainType::LAND:
-                    color = sf::Color(255, 255, 255);
+                    color = Constants::TERRAIN_LAND_COLOR;
                     break;
                 case TerrainType::RIVER:
-                    color = sf::Color(100, 149, 237);
+                    color = Constants::TERRAIN_RIVER_COLOR;
                     break;
                 default:
                     color = sf::Color::Magenta;
@@ -289,6 +290,7 @@ void TerrainRenderSystem::regenerateSuitabilityMaps(const WorldGenParams &worldP
     regenerate(SuitabilityMapType::Water, _suitabilityMaps->water);
     regenerate(SuitabilityMapType::Expandability, _suitabilityMaps->expandability);
     regenerate(SuitabilityMapType::CityProximity, _suitabilityMaps->cityProximity);
+    regenerate(SuitabilityMapType::Noise, _suitabilityMaps->noise);
     regenerate(SuitabilityMapType::Final, _suitabilityMaps->final);
 
     _suitabilityMapsDirty = false;

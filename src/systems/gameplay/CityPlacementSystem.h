@@ -3,21 +3,24 @@
 #include "ecs/ISystem.h"
 #include "entt/entt.hpp"
 #include "components/WorldComponents.h"
+#include "FastNoiseLite.h"
 #include <SFML/System/Vector2.hpp>
 #include <vector>
 
 class ServiceLocator;
 
 struct PlacementWeights {
-    float waterAccess = 0.4f;
-    float landExpandability = 0.4f;
-    float cityProximity = 0.2f;
+    float waterAccess = 0.35f;
+    float landExpandability = 0.35f;
+    float cityProximity = 0.15f;
+    float randomness = 0.15f;
 };
 
 struct SuitabilityMaps {
     std::vector<float> water;
     std::vector<float> expandability;
     std::vector<float> cityProximity;
+    std::vector<float> noise;
     std::vector<float> final;
 };
 
@@ -37,6 +40,7 @@ private:
 
     void calculateWaterSuitability(int mapWidth, int mapHeight, std::vector<float> &map);
     void calculateExpandabilitySuitability(int mapWidth, int mapHeight, std::vector<float> &map);
+    void calculateNoiseSuitability(int mapWidth, int mapHeight, std::vector<float> &map);
 
     void updateDistanceMap(const sf::Vector2i &newCity, int mapWidth, int mapHeight);
     void calculateProximitySuitability(int mapWidth, int mapHeight, std::vector<float> &map);
@@ -56,4 +60,5 @@ private:
     std::vector<sf::Vector2i> _placedCities;
     std::vector<TerrainType> _terrainCache;
     std::vector<int> _distanceToNearestCity;
+    FastNoiseLite _noise;
 };
