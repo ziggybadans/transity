@@ -221,13 +221,14 @@ void TerrainRenderSystem::setLodEnabled(bool enabled) noexcept {
     _isLodEnabled = enabled;
 }
 
-void TerrainRenderSystem::setSuitabilityMapData(const SuitabilityMaps* maps, const WorldGenParams& worldParams) {
+void TerrainRenderSystem::setSuitabilityMapData(const SuitabilityMaps* maps, const std::vector<TerrainType>* terrainCache, const WorldGenParams& worldParams) {
     _suitabilityMaps = maps;
+    _terrainCache = terrainCache;
     _suitabilityMapsDirty = true;
 }
 
 void TerrainRenderSystem::regenerateSuitabilityMaps(const WorldGenParams &worldParams) {
-    if (!_suitabilityMaps) {
+    if (!_suitabilityMaps || !_terrainCache) {
         return;
     }
 
@@ -254,7 +255,9 @@ void TerrainRenderSystem::regenerateSuitabilityMaps(const WorldGenParams &worldP
             // For maps other than the water map itself, don't visualize anything on water tiles.
             // In the water map, non-zero values represent water.
             if (type != SuitabilityMapType::Water && _suitabilityMaps->water[i] > 0.0f) {
-                continue;
+                if ((*_terrainCache)[i] == TerrainType::WATER) {
+                    continue;
+                }
             }
 
             float value = data[i];

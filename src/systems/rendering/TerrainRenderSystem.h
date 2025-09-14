@@ -11,6 +11,7 @@ struct ChunkTerrainComponent;
 struct ChunkMeshComponent;
 struct WorldGenParams;
 struct SuitabilityMaps;
+enum class TerrainType;
 
 class TerrainRenderSystem {
 public:
@@ -31,7 +32,7 @@ public:
     void setVisualizeChunkBorders(bool visualize) noexcept { _visualizeChunkBorders = visualize; }
     void setVisualizeCellBorders(bool visualize) noexcept { _visualizeCellBorders = visualize; }
     void setVisualizeSuitabilityMap(bool visualize) noexcept { _visualizeSuitabilityMap = visualize; }
-    void setSuitabilityMapData(const SuitabilityMaps *maps, const WorldGenParams &worldParams);
+    void setSuitabilityMapData(const SuitabilityMaps *maps, const std::vector<TerrainType> *terrainCache, const WorldGenParams &worldParams);
     void setSuitabilityMapType(SuitabilityMapType type) { _suitabilityMapType = type; }
     void setLodEnabled(bool enabled) noexcept;
     void regenerateSuitabilityMaps(const WorldGenParams &worldParams);
@@ -43,6 +44,7 @@ private:
     bool _visualizeSuitabilityMap = false;
     bool _isLodEnabled = true;
     const SuitabilityMaps *_suitabilityMaps = nullptr;
+    const std::vector<TerrainType> *_terrainCache = nullptr;
     SuitabilityMapType _suitabilityMapType = SuitabilityMapType::None;
     std::vector<bool> m_visited;
     std::map<SuitabilityMapType, std::unique_ptr<sf::RenderTexture>> _suitabilityMapTextures;

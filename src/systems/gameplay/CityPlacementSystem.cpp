@@ -116,7 +116,7 @@ void CityPlacementSystem::placeCities(int numberOfCities) {
     }
 
     LOG_INFO("CityPlacementSystem", "Finished city placement.");
-    _serviceLocator.renderer.getTerrainRenderSystem().setSuitabilityMapData(&_suitabilityMaps, worldGrid);
+    _serviceLocator.renderer.getTerrainRenderSystem().setSuitabilityMapData(&_suitabilityMaps, &_terrainCache, worldGrid);
 }
 
 void CityPlacementSystem::updateDistanceMap(const sf::Vector2i &newCity, int mapWidth, int mapHeight) {
