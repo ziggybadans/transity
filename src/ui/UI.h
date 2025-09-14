@@ -25,7 +25,6 @@ public:
     void cleanupResources();
 
 private:
-    void drawPerformancePanel();
     void drawLoadingScreen();
 
     sf::RenderWindow &_window;

@@ -17,26 +17,6 @@ UI::UI(sf::RenderWindow &window, TerrainRenderSystem &terrainRenderSystem,
     _terrainRenderSystem.setLodEnabled(_isLodEnabled);
 }
 
-void UI::drawPerformancePanel() {
-    ImGui::Begin("Performance");
-
-    auto &monitor = _serviceLocator.performanceMonitor;
-
-    const auto &renderHistory = monitor.getHistory("Application::render");
-    if (!renderHistory.empty()) {
-        ImGui::PlotLines("Render (us)", renderHistory.data(), renderHistory.size(), 0, nullptr,
-                         0.0f, 33000.0f, ImVec2(0, 80));
-    }
-
-    const auto &updateHistory = monitor.getHistory("Application::update");
-    if (!updateHistory.empty()) {
-        ImGui::PlotLines("Update (us)", updateHistory.data(), updateHistory.size(), 0, nullptr,
-                         0.0f, 16000.0f, ImVec2(0, 80));
-    }
-
-    ImGui::End();
-}
-
 void UI::drawLoadingScreen() {
     ImGuiIO &io = ImGui::GetIO();
     ImVec2 displaySize = io.DisplaySize;
@@ -96,8 +76,6 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
         return;
     }
 
-    drawPerformancePanel();
-
     const float windowPadding = Constants::UI_WINDOW_PADDING;
     ImGuiIO &io = ImGui::GetIO();
     ImVec2 displaySize = io.DisplaySize;
@@ -111,6 +89,21 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
     ImGui::Begin("Profiling", nullptr, size_flags);
     ImGui::Text("FPS: %.1f", 1.f / deltaTime.asSeconds());
     ImGui::Text("Zoom: %.2f", _serviceLocator.camera.getZoom());
+
+    if (ImGui::CollapsingHeader("Performance Graphs")) {
+        auto &monitor = _serviceLocator.performanceMonitor;
+
+        const auto &renderHistory = monitor.getHistory("Application::render");
+        if (!renderHistory.empty()) {
+            ImGui::PlotLines("Render Time (us)", renderHistory.data(), renderHistory.size(), 
+                0, nullptr, 0.0f, 33000.0f, ImVec2(0, 80));
+        }
+        const auto &updateHistory = monitor.getHistory("Application::update");
+        if (!updateHistory.empty()) {
+            ImGui::PlotLines("Update Time (us)", updateHistory.data(), updateHistory.size(), 
+                0, nullptr, 0.0f, 16000.0f, ImVec2(0, 80));
+        }
+    }
     ImGui::End();
 
     float worldGenSettingsWidth = Constants::UI_WORLD_GEN_SETTINGS_WIDTH;

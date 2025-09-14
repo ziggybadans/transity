@@ -10,10 +10,10 @@
 class ServiceLocator;
 
 struct PlacementWeights {
-    float waterAccess = 0.35f;
-    float landExpandability = 0.35f;
-    float cityProximity = 0.15f;
-    float randomness = 0.15f;
+    float waterAccess = 0.20f;
+    float landExpandability = 0.25f;
+    float cityProximity = 0.35f;
+    float randomness = 0.20f;
 };
 
 struct SuitabilityMaps {
