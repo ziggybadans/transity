@@ -190,6 +190,11 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
 
     if (ImGui::Checkbox("Visualize Suitability Map", &_visualizeSuitabilityMap)) {
         _terrainRenderSystem.setVisualizeSuitabilityMap(_visualizeSuitabilityMap);
+        if (_visualizeSuitabilityMap) {
+            _terrainRenderSystem.setSuitabilityMapType(static_cast<TerrainRenderSystem::SuitabilityMapType>(_selectedSuitabilityMap + 1));
+        } else {
+            _terrainRenderSystem.setSuitabilityMapType(TerrainRenderSystem::SuitabilityMapType::None);
+        }
     }
     ImGui::SameLine();
     ImGui::BeginDisabled(!_visualizeSuitabilityMap);

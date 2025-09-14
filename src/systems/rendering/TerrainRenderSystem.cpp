@@ -251,6 +251,12 @@ void TerrainRenderSystem::regenerateSuitabilityMaps(const WorldGenParams &worldP
 
         sf::VertexArray suitabilityTriangles(sf::PrimitiveType::Triangles);
         for (size_t i = 0; i < data.size(); ++i) {
+            // For maps other than the water map itself, don't visualize anything on water tiles.
+            // In the water map, non-zero values represent water.
+            if (type != SuitabilityMapType::Water && _suitabilityMaps->water[i] > 0.0f) {
+                continue;
+            }
+
             float value = data[i];
             if (value > 0) {
                 int x = i % mapWidth;
