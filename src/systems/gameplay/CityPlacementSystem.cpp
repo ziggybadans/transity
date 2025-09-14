@@ -53,6 +53,7 @@ void CityPlacementSystem::placeCities(int numberOfCities) {
     _suitabilityMaps.expandability.resize(mapWidth * mapHeight, 0.0f);
     _suitabilityMaps.cityProximity.resize(mapWidth * mapHeight, 1.0f);
     _suitabilityMaps.final.resize(mapWidth * mapHeight, 0.0f);
+    _suitabilityMaps.test.resize(mapWidth * mapHeight, 0.0f);
 
     _distanceToNearestCity.assign(mapWidth * mapHeight, std::numeric_limits<int>::max());
     _suitabilityMaps.cityProximity.assign(mapWidth * mapHeight, 1.0f);
@@ -67,6 +68,11 @@ void CityPlacementSystem::placeCities(int numberOfCities) {
         PerfTimer timer("calculateExpandabilitySuitability", _serviceLocator, PerfTimer::Purpose::Log);
         calculateExpandabilitySuitability(mapWidth, mapHeight, _suitabilityMaps.expandability);
         normalizeMap(_suitabilityMaps.expandability);
+    }
+    {
+        PerfTimer timer("calculateTestSuitability", _serviceLocator, PerfTimer::Purpose::Log);
+        calculateTestSuitability(mapWidth, mapHeight, _suitabilityMaps.test);
+        normalizeMap(_suitabilityMaps.test);
     }
 
     _serviceLocator.loadingState.message = "Placing cities...";
@@ -333,6 +339,15 @@ void CityPlacementSystem::reduceSuitabilityAroundCity(int cityX, int cityY, int 
                     suitabilityMap[currentY * mapWidth + currentX] = 0.0f;
                 }
             }
+        }
+    }
+}
+
+void CityPlacementSystem::calculateTestSuitability(int mapWidth, int mapHeight, std::vector<float> &map) {
+    // Simple gradient from left (high) to right (low)
+    for (int y = 0; y < mapHeight; ++y) {
+        for (int x = 0; x < mapWidth; ++x) {
+            map[y * mapWidth + x] = 1.0f - static_cast<float>(x) / mapWidth;
         }
     }
 }

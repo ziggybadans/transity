@@ -195,10 +195,10 @@ void TerrainRenderSystem::buildAllChunkMeshes(const ChunkPositionComponent &chun
                 sf::Color color;
                 switch (currentType) {
                 case TerrainType::WATER:
-                    color = sf::Color(173, 216, 230);
+                    color = sf::Color(229, 240, 247);
                     break;
                 case TerrainType::LAND:
-                    color = sf::Color(34, 139, 34);
+                    color = sf::Color(255, 255, 255);
                     break;
                 case TerrainType::RIVER:
                     color = sf::Color(100, 149, 237);
@@ -287,6 +287,7 @@ void TerrainRenderSystem::regenerateSuitabilityMaps(const WorldGenParams &worldP
     regenerate(SuitabilityMapType::Expandability, _suitabilityMaps->expandability);
     regenerate(SuitabilityMapType::CityProximity, _suitabilityMaps->cityProximity);
     regenerate(SuitabilityMapType::Final, _suitabilityMaps->final);
+    regenerate(SuitabilityMapType::Test, _suitabilityMaps->test);
 
     _suitabilityMapsDirty = false;
 }

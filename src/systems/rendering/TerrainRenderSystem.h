@@ -19,7 +19,8 @@ public:
         Water,
         Expandability,
         CityProximity,
-        Final
+        Final,
+        Test
     };
 
     TerrainRenderSystem();

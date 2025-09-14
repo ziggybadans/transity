@@ -12,6 +12,7 @@ struct PlacementWeights {
     float waterAccess = 0.2f;
     float landExpandability = 0.5f;
     float cityProximity = 0.3f;
+    float test = 0.0f;
 };
 
 struct SuitabilityMaps {
@@ -19,6 +20,7 @@ struct SuitabilityMaps {
     std::vector<float> expandability;
     std::vector<float> cityProximity;
     std::vector<float> final;
+    std::vector<float> test;
 };
 
 class CityPlacementSystem : public ISystem {
@@ -35,19 +37,21 @@ private:
     
     void precomputeTerrainCache(int mapWidth, int mapHeight);
 
-    void calculateSuitabilityMaps(int mapWidth, int mapHeight, SuitabilityMaps &maps);
     void calculateWaterSuitability(int mapWidth, int mapHeight, std::vector<float> &map);
     void calculateExpandabilitySuitability(int mapWidth, int mapHeight, std::vector<float> &map);
+    void calculateTestSuitability(int mapWidth, int mapHeight, std::vector<float> &map);
+
     void updateDistanceMap(const sf::Vector2i &newCity, int mapWidth, int mapHeight);
     void calculateProximitySuitability(int mapWidth, int mapHeight, std::vector<float> &map);
+    void reduceSuitabilityAroundCity(int cityX, int cityY, int mapWidth, int mapHeight,
+                                     std::vector<float> &suitabilityMap);
+
     void combineSuitabilityMaps(int mapWidth, int mapHeight, const SuitabilityMaps &maps,
                                 const PlacementWeights &weights, std::vector<float> &finalMap);
     void normalizeMap(std::vector<float> &map);
 
     sf::Vector2i findBestLocation(int mapWidth, int mapHeight,
                                   const std::vector<float> &suitabilityMap);
-    void reduceSuitabilityAroundCity(int cityX, int cityY, int mapWidth, int mapHeight,
-                                     std::vector<float> &suitabilityMap);
 
 private:
     ServiceLocator &_serviceLocator;
