@@ -21,16 +21,16 @@ void UI::drawLoadingScreen() {
     ImGuiIO &io = ImGui::GetIO();
     ImVec2 displaySize = io.DisplaySize;
 
-    const char* message = _serviceLocator.loadingState.message.load();
+    const char *message = _serviceLocator.loadingState.message.load();
     float progress = _serviceLocator.loadingState.progress.load();
 
-    ImGui::SetNextWindowPos(ImVec2(displaySize.x * 0.5f, displaySize.y * 0.5f),
-                          ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+    ImGui::SetNextWindowPos(ImVec2(displaySize.x * 0.5f, displaySize.y * 0.5f), ImGuiCond_Always,
+                            ImVec2(0.5f, 0.5f));
     ImGui::SetNextWindowSize(ImVec2(displaySize.x * 0.4f, 0));
 
     ImGui::Begin("Loading", nullptr,
-                 ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
-                     ImGuiWindowFlags_AlwaysAutoResize);
+                 ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove
+                     | ImGuiWindowFlags_AlwaysAutoResize);
 
     ImGui::Text("%s", message);
 
@@ -42,9 +42,9 @@ void UI::drawLoadingScreen() {
     ImVec2 progressTextSize = ImGui::CalcTextSize(progressText.c_str());
     ImGui::SetCursorPosX((ImGui::GetWindowSize().x - progressTextSize.x) * 0.5f);
     ImGui::Text("%s", progressText.c_str());
-        
+
     ImGui::Dummy(ImVec2(0.0f, 5.0f));
-    
+
     ImGui::End();
 }
 
@@ -95,13 +95,13 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
 
         const auto &renderHistory = monitor.getHistory("Application::render");
         if (!renderHistory.empty()) {
-            ImGui::PlotLines("Render Time (us)", renderHistory.data(), renderHistory.size(), 
-                0, nullptr, 0.0f, 33000.0f, ImVec2(0, 80));
+            ImGui::PlotLines("Render Time (us)", renderHistory.data(), renderHistory.size(), 0,
+                             nullptr, 0.0f, 33000.0f, ImVec2(0, 80));
         }
         const auto &updateHistory = monitor.getHistory("Application::update");
         if (!updateHistory.empty()) {
-            ImGui::PlotLines("Update Time (us)", updateHistory.data(), updateHistory.size(), 
-                0, nullptr, 0.0f, 16000.0f, ImVec2(0, 80));
+            ImGui::PlotLines("Update Time (us)", updateHistory.data(), updateHistory.size(), 0,
+                             nullptr, 0.0f, 16000.0f, ImVec2(0, 80));
         }
     }
     ImGui::End();
@@ -207,16 +207,19 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
     if (ImGui::Checkbox("Visualize Suitability Map", &_visualizeSuitabilityMap)) {
         _terrainRenderSystem.setVisualizeSuitabilityMap(_visualizeSuitabilityMap);
         if (_visualizeSuitabilityMap) {
-            _terrainRenderSystem.setSuitabilityMapType(static_cast<TerrainRenderSystem::SuitabilityMapType>(_selectedSuitabilityMap + 1));
+            _terrainRenderSystem.setSuitabilityMapType(
+                static_cast<TerrainRenderSystem::SuitabilityMapType>(_selectedSuitabilityMap + 1));
         } else {
-            _terrainRenderSystem.setSuitabilityMapType(TerrainRenderSystem::SuitabilityMapType::None);
+            _terrainRenderSystem.setSuitabilityMapType(
+                TerrainRenderSystem::SuitabilityMapType::None);
         }
     }
     ImGui::SameLine();
     ImGui::BeginDisabled(!_visualizeSuitabilityMap);
-    const char* items[] = { "Water", "Expandability", "City Proximity", "Noise", "Final" };
+    const char *items[] = {"Water", "Expandability", "City Proximity", "Noise", "Final"};
     if (ImGui::Combo("##SuitabilityMap", &_selectedSuitabilityMap, items, IM_ARRAYSIZE(items))) {
-        _terrainRenderSystem.setSuitabilityMapType(static_cast<TerrainRenderSystem::SuitabilityMapType>(_selectedSuitabilityMap + 1));
+        _terrainRenderSystem.setSuitabilityMapType(
+            static_cast<TerrainRenderSystem::SuitabilityMapType>(_selectedSuitabilityMap + 1));
     }
     ImGui::EndDisabled();
 
@@ -254,6 +257,31 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
         LOG_DEBUG("UI", "Interaction mode change requested: LineCreation");
     }
     ImGui::End();
+
+    if (_serviceLocator.gameState.currentInteractionMode == InteractionMode::CREATE_LINE) {
+        ImVec2 lineCreationWindowPos =
+            ImVec2(interactionModesPos.x + ImGui::GetWindowWidth() + windowPadding,
+                   displaySize.y - interactionModesHeight - windowPadding);
+        ImGui::SetNextWindowPos(lineCreationWindowPos, ImGuiCond_Always);
+        ImGui::Begin("Line Creation", nullptr, size_flags);
+
+        if (numberOfStationsInActiveLine < 2) {
+            ImGui::BeginDisabled();
+        }
+        if (ImGui::Button("Finalize Line")) {
+            _serviceLocator.eventBus.enqueue<FinalizeLineEvent>({});
+            LOG_DEBUG("UI", "Line finalization requested.");
+        }
+        if (numberOfStationsInActiveLine < 2) {
+            ImGui::EndDisabled();
+        }
+
+        ImGui::SameLine();
+        if (ImGui::Button("Cancel Line")) {
+            _serviceLocator.eventBus.enqueue<CancelLineCreationEvent>({});
+        }
+        ImGui::End();
+    }
 }
 
 void UI::renderFrame() {

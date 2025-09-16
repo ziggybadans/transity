@@ -2,11 +2,12 @@
 #include "Application.h"
 #include "Constants.h"
 #include "Logger.h"
+#include "app/GameState.h"
 #include "core/PerfTimer.h"
 #include "core/ServiceLocator.h"
-#include "input/InputHandler.h"
 #include "event/InputEvents.h"
-#include "app/GameState.h"
+#include "input/InputHandler.h"
+#include "systems/gameplay/LineCreationSystem.h"
 
 #include <stdexcept>
 #include <thread>
@@ -48,19 +49,25 @@ void Application::run() {
         const auto appState = _game->getGameState().currentAppState;
 
         switch (appState) {
-        case AppState::LOADING:
-        {
+        case AppState::LOADING: {
             _ui->update(frameTime, 0);
-            if(_game->getLoadingFuture().wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
+            if (_game->getLoadingFuture().wait_for(std::chrono::seconds(0))
+                == std::future_status::ready) {
                 _game->getGameState().currentAppState = AppState::PLAYING;
                 LOG_INFO("Application", "Loading complete, switching to PLAYING state.");
             }
             renderLoad();
             break;
         }
-        case AppState::PLAYING:
-        {
-            _ui->update(frameTime, 0);
+        case AppState::PLAYING: {
+            size_t numStationsInActiveLine = 0;
+            if (auto lineCreationSystem =
+                    _game->getSystemManager().getSystem<LineCreationSystem>()) {
+                lineCreationSystem->getActiveLineStations(
+                    [&numStationsInActiveLine](entt::entity) { numStationsInActiveLine++; });
+            }
+
+            _ui->update(frameTime, numStationsInActiveLine);
 
             if (_isWindowFocused) {
                 while (_timeAccumulator >= TimePerFrame) {
@@ -73,8 +80,7 @@ void Application::run() {
             render(interpolation);
             break;
         }
-        case AppState::QUITTING:
-        {
+        case AppState::QUITTING: {
             _game->getEventBus().trigger<WindowCloseEvent>();
             break;
         }

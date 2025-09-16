@@ -26,6 +26,7 @@ public:
 private:
     void onFinalizeLine(const FinalizeLineEvent &event);
     void onMouseButtonPressed(const MouseButtonPressedEvent &event);
+    void onCancelLineCreation(const CancelLineCreationEvent &event);
 
     void addStationToLine(entt::entity stationEntity);
     void finalizeLine();
@@ -37,4 +38,5 @@ private:
 
     entt::connection m_finalizeLineConnection;
     entt::connection m_mousePressConnection;
+    entt::connection m_cancelLineCreationConnection;
 };

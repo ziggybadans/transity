@@ -14,14 +14,16 @@ LineCreationSystem::LineCreationSystem(ServiceLocator &serviceLocator)
     m_finalizeLineConnection = serviceLocator.eventBus.sink<FinalizeLineEvent>()
                                    .connect<&LineCreationSystem::onFinalizeLine>(this);
     m_mousePressConnection = serviceLocator.eventBus.sink<MouseButtonPressedEvent>()
-                                 .connect<&LineCreationSystem::onMouseButtonPressed>(this);
+                                   .connect<&LineCreationSystem::onMouseButtonPressed>(this);
+    m_cancelLineCreationConnection = serviceLocator.eventBus.sink<CancelLineCreationEvent>()
+                                   .connect<&LineCreationSystem::onCancelLineCreation>(this);
   LOG_DEBUG("LineCreationSystem", "LineCreationSystem created and connected to EventBus.");
 }
 
 LineCreationSystem::~LineCreationSystem() {
-
     m_finalizeLineConnection.release();
     m_mousePressConnection.release();
+    m_cancelLineCreationConnection.release();
     LOG_DEBUG("LineCreationSystem", "LineCreationSystem destroyed and disconnected from EventBus.");
 }
 
@@ -183,3 +185,8 @@ void LineCreationSystem::onFinalizeLine(const FinalizeLineEvent &event) {
 }
 
 void LineCreationSystem::update(sf::Time dt) {}
+
+void LineCreationSystem::onCancelLineCreation(const CancelLineCreationEvent &event) {
+    LOG_DEBUG("LineCreationSystem", "Processing CancelLineCreationEvent.");
+    clearCurrentLine();
+}

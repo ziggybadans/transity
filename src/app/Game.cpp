@@ -16,17 +16,10 @@
 
 Game::Game(Renderer &renderer, ThreadPool &threadPool)
     : _renderer(renderer), _eventBus(), _entityFactory(_registry),
-      _worldGenerationSystem(_registry, _eventBus), _serviceLocator{_registry,
-                                                                    _eventBus,
-                                                                    _loadingState,
-                                                                    _gameState,
-                                                                    _entityFactory,
-                                                                    _camera,
-                                                                    _colorManager,
-                                                                    _worldGenerationSystem,
-                                                                    _renderer,
-                                                                    threadPool,
-                                                                    _performanceMonitor} {
+      _worldGenerationSystem(_registry, _eventBus),
+      _serviceLocator{_registry,      _eventBus,  _loadingState,      _gameState,
+                      _entityFactory, _camera,    _colorManager,      _worldGenerationSystem,
+                      _renderer,      threadPool, _performanceMonitor} {
 
     _inputHandler = std::make_unique<InputHandler>(_serviceLocator);
     _systemManager = std::make_unique<SystemManager>(_serviceLocator);
@@ -53,7 +46,7 @@ void Game::startLoading() {
     _loadingState.progress = 0.0f;
     _loadingState.message = "Loading...";
 
-    auto& threadPool = _serviceLocator.threadPool;
+    auto &threadPool = _serviceLocator.threadPool;
     auto worldSetupSystem = _systemManager->getSystem<WorldSetupSystem>();
     auto cityPlacementSystem = _systemManager->getSystem<CityPlacementSystem>();
 

@@ -8,7 +8,7 @@
       "zOrder": 1
     },
     "clickable": {
-      "boundingRadius": 6.0
+      "boundingRadius": 55.0
     },
     "city": {}
   }

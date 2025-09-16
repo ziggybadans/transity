@@ -33,6 +33,7 @@ public:
     Camera &getCamera() { return _camera; }
     GameState &getGameState() { return _gameState; }
     InputHandler &getInputHandler() { return *_inputHandler; }
+    SystemManager &getSystemManager() { return *_systemManager; }
     ServiceLocator &getServiceLocator() { return _serviceLocator; }
     const WorldGenerationSystem &getWorldGenSystem() const { return _worldGenerationSystem; }
 
@@ -55,6 +56,6 @@ private:
     std::unique_ptr<ChunkManagerSystem> _chunkManagerSystem;
     std::unique_ptr<SystemManager> _systemManager;
     std::unique_ptr<InputHandler> _inputHandler;
-    
+
     std::future<void> _loadingFuture;
 };

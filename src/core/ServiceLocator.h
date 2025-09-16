@@ -2,11 +2,11 @@
 
 #include "ThreadPool.h"
 #include "app/GameState.h"
+#include "app/LoadingState.h"
 #include "core/PerformanceMonitor.h"
 #include "ecs/EntityFactory.h"
 #include "event/EventBus.h"
 #include "render/Camera.h"
-#include "app/LoadingState.h"
 #include <entt/entt.hpp>
 
 class Renderer;
