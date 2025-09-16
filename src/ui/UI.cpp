@@ -17,6 +17,50 @@ UI::UI(sf::RenderWindow &window, TerrainRenderSystem &terrainRenderSystem,
     _terrainRenderSystem.setLodEnabled(_isLodEnabled);
 }
 
+UI::~UI() {
+    LOG_DEBUG("UI", "UI instance destroyed.");
+}
+
+void UI::initialize() {
+    LOG_INFO("UI", "Initializing ImGui.");
+    ImGui::CreateContext();
+    if (!ImGui::SFML::Init(_window)) {
+        LOG_FATAL("UI", "Failed to initialize ImGui-SFML");
+        exit(EXIT_FAILURE);
+    }
+    ImGui::StyleColorsDark();
+    LOG_INFO("UI", "ImGui initialized successfully.");
+}
+
+void UI::processEvent(const sf::Event &sfEvent) {
+    ImGui::SFML::ProcessEvent(_window, sfEvent);
+}
+
+void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
+    ImGui::SFML::Update(_window, deltaTime);
+
+    const auto appState = _serviceLocator.gameState.currentAppState;
+    if (appState == AppState::LOADING) {
+        drawLoadingScreen();
+        return;
+    }
+
+    drawProfilingWindow(deltaTime);
+    drawWorldGenSettingsWindow();
+    drawInteractionModeWindow();
+    drawLineCreationWindow(numberOfStationsInActiveLine);
+}
+
+void UI::renderFrame() {
+    ImGui::SFML::Render(_window);
+}
+
+void UI::cleanupResources() {
+    LOG_INFO("UI", "Shutting down ImGui.");
+    ImGui::SFML::Shutdown();
+    LOG_INFO("UI", "ImGui shutdown complete.");
+}
+
 void UI::drawLoadingScreen() {
     ImGuiIO &io = ImGui::GetIO();
     ImVec2 displaySize = io.DisplaySize;
@@ -48,39 +92,8 @@ void UI::drawLoadingScreen() {
     ImGui::End();
 }
 
-UI::~UI() {
-    LOG_DEBUG("UI", "UI instance destroyed.");
-}
-
-void UI::initialize() {
-    LOG_INFO("UI", "Initializing ImGui.");
-    ImGui::CreateContext();
-    if (!ImGui::SFML::Init(_window)) {
-        LOG_FATAL("UI", "Failed to initialize ImGui-SFML");
-        exit(EXIT_FAILURE);
-    }
-    ImGui::StyleColorsDark();
-    LOG_INFO("UI", "ImGui initialized successfully.");
-}
-
-void UI::processEvent(const sf::Event &sfEvent) {
-    ImGui::SFML::ProcessEvent(_window, sfEvent);
-}
-
-void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
-    ImGui::SFML::Update(_window, deltaTime);
-
-    const auto appState = _serviceLocator.gameState.currentAppState;
-    if (appState == AppState::LOADING) {
-        drawLoadingScreen();
-        return;
-    }
-
+void UI::drawProfilingWindow(sf::Time deltaTime) {
     const float windowPadding = Constants::UI_WINDOW_PADDING;
-    ImGuiIO &io = ImGui::GetIO();
-    ImVec2 displaySize = io.DisplaySize;
-
-    ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize;
     ImGuiWindowFlags size_flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize
                                   | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse;
 
@@ -105,6 +118,13 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
         }
     }
     ImGui::End();
+}
+
+void UI::drawWorldGenSettingsWindow() {
+    const float windowPadding = Constants::UI_WINDOW_PADDING;
+    ImGuiIO &io = ImGui::GetIO();
+    ImVec2 displaySize = io.DisplaySize;
+    ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize;
 
     float worldGenSettingsWidth = Constants::UI_WORLD_GEN_SETTINGS_WIDTH;
     ImVec2 worldGenSettingsPos =
@@ -113,10 +133,7 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
     ImGui::SetNextWindowSize(ImVec2(worldGenSettingsWidth, 0.0f), ImGuiCond_Always);
     ImGui::Begin("World Generation Settings", nullptr, window_flags);
 
-    auto &worldState = _serviceLocator.registry.get<WorldStateComponent>(
-        _serviceLocator.registry.view<WorldStateComponent>().front());
     WorldGenParams &params = _serviceLocator.worldGenerationSystem.getParams();
-
     bool paramsChanged = false;
 
     if (ImGui::Button("New Seed")) {
@@ -230,6 +247,14 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
     ImGui::Checkbox("Auto Regenerate", &_autoRegenerate);
 
     ImGui::End();
+}
+
+void UI::drawInteractionModeWindow() {
+    const float windowPadding = Constants::UI_WINDOW_PADDING;
+    ImGuiIO &io = ImGui::GetIO();
+    ImVec2 displaySize = io.DisplaySize;
+    ImGuiWindowFlags size_flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize
+                                  | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse;
 
     float interactionModesWidth = Constants::UI_INTERACTION_MODES_WIDTH;
     float interactionModesHeight = Constants::UI_INTERACTION_MODES_HEIGHT;
@@ -243,6 +268,7 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
         _serviceLocator.eventBus.enqueue(InteractionModeChangeEvent{InteractionMode::SELECT});
         LOG_DEBUG("UI", "Interaction mode change requested: None");
     }
+    /*
     ImGui::SameLine();
     if (ImGui::RadioButton("Station Placement", &currentMode,
                            static_cast<int>(InteractionMode::CREATE_STATION))) {
@@ -250,6 +276,7 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
             InteractionModeChangeEvent{InteractionMode::CREATE_STATION});
         LOG_DEBUG("UI", "Interaction mode change requested: StationPlacement");
     }
+    */
     ImGui::SameLine();
     if (ImGui::RadioButton("Line Creation", &currentMode,
                            static_cast<int>(InteractionMode::CREATE_LINE))) {
@@ -257,39 +284,44 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
         LOG_DEBUG("UI", "Interaction mode change requested: LineCreation");
     }
     ImGui::End();
+}
 
-    if (_serviceLocator.gameState.currentInteractionMode == InteractionMode::CREATE_LINE) {
-        ImVec2 lineCreationWindowPos =
-            ImVec2(interactionModesPos.x + ImGui::GetWindowWidth() + windowPadding,
-                   displaySize.y - interactionModesHeight - windowPadding);
-        ImGui::SetNextWindowPos(lineCreationWindowPos, ImGuiCond_Always);
-        ImGui::Begin("Line Creation", nullptr, size_flags);
-
-        if (numberOfStationsInActiveLine < 2) {
-            ImGui::BeginDisabled();
-        }
-        if (ImGui::Button("Finalize Line")) {
-            _serviceLocator.eventBus.enqueue<FinalizeLineEvent>({});
-            LOG_DEBUG("UI", "Line finalization requested.");
-        }
-        if (numberOfStationsInActiveLine < 2) {
-            ImGui::EndDisabled();
-        }
-
-        ImGui::SameLine();
-        if (ImGui::Button("Cancel Line")) {
-            _serviceLocator.eventBus.enqueue<CancelLineCreationEvent>({});
-        }
-        ImGui::End();
+void UI::drawLineCreationWindow(size_t numberOfStationsInActiveLine) {
+    if (_serviceLocator.gameState.currentInteractionMode != InteractionMode::CREATE_LINE) {
+        return;
     }
-}
 
-void UI::renderFrame() {
-    ImGui::SFML::Render(_window);
-}
+    const float windowPadding = Constants::UI_WINDOW_PADDING;
+    ImGuiIO &io = ImGui::GetIO();
+    ImVec2 displaySize = io.DisplaySize;
+    ImGuiWindowFlags size_flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize
+                                  | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse;
 
-void UI::cleanupResources() {
-    LOG_INFO("UI", "Shutting down ImGui.");
-    ImGui::SFML::Shutdown();
-    LOG_INFO("UI", "ImGui shutdown complete.");
+    float interactionModesWidth = Constants::UI_INTERACTION_MODES_WIDTH;
+    float interactionModesHeight = Constants::UI_INTERACTION_MODES_HEIGHT;
+    ImVec2 interactionModesPos = ImVec2((displaySize.x - interactionModesWidth) * 0.5f,
+                                        displaySize.y - interactionModesHeight - windowPadding);
+
+    ImVec2 lineCreationWindowPos =
+        ImVec2(interactionModesPos.x + ImGui::GetWindowWidth() + windowPadding,
+               displaySize.y - interactionModesHeight - windowPadding);
+    ImGui::SetNextWindowPos(lineCreationWindowPos, ImGuiCond_Always);
+    ImGui::Begin("Line Creation", nullptr, size_flags);
+
+    if (numberOfStationsInActiveLine < 2) {
+        ImGui::BeginDisabled();
+    }
+    if (ImGui::Button("Finalize Line")) {
+        _serviceLocator.eventBus.enqueue<FinalizeLineEvent>({});
+        LOG_DEBUG("UI", "Line finalization requested.");
+    }
+    if (numberOfStationsInActiveLine < 2) {
+        ImGui::EndDisabled();
+    }
+
+    ImGui::SameLine();
+    if (ImGui::Button("Cancel Line")) {
+        _serviceLocator.eventBus.enqueue<CancelLineCreationEvent>({});
+    }
+    ImGui::End();
 }

@@ -26,6 +26,10 @@ public:
 
 private:
     void drawLoadingScreen();
+    void drawProfilingWindow(sf::Time deltaTime);
+    void drawWorldGenSettingsWindow();
+    void drawInteractionModeWindow();
+    void drawLineCreationWindow(size_t numStationsInActiveLine);
 
     sf::RenderWindow &_window;
     ServiceLocator &_serviceLocator;
