@@ -15,6 +15,8 @@ UI::UI(sf::RenderWindow &window, TerrainRenderSystem &terrainRenderSystem,
       _autoRegenerate(false) {
     LOG_DEBUG("UI", "UI instance created.");
     _terrainRenderSystem.setLodEnabled(_isLodEnabled);
+
+    _themeChangedConnection = _serviceLocator.eventBus.sink<ThemeChangedEvent>().connect<&UI::onThemeChanged>(this);
 }
 
 UI::~UI() {
@@ -324,4 +326,34 @@ void UI::drawLineCreationWindow(size_t numberOfStationsInActiveLine) {
         _serviceLocator.eventBus.enqueue<CancelLineCreationEvent>({});
     }
     ImGui::End();
+}
+
+void UI::drawSettingsWindow() {
+    const float windowPadding = Constants::UI_WINDOW_PADDING;
+    ImGuiWindowFlags flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize
+                                  | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse;
+    ImVec2 settingsWindowPos = ImVec2(windowPadding, _window.getSize().y - ImGui::GetFrameHeightWithSpacing() * 4 - windowPadding);
+    ImGui::SetNextWindowPos(settingsWindowPos, ImGuiCond_Always);
+    ImGui::Begin("Settings", nullptr, flags);
+
+    ImGui::Text("Theme");
+    ImGui::SameLine();
+
+    int currentTheme = static_cast<int>(_serviceLocator.colorManager.getTheme());
+    if (ImGui::RadioButton("Light", &currentTheme, static_cast<int>(Theme::Light))) {
+        _serviceLocator.colorManager.setTheme(Theme::Light);
+    }
+    ImGui::SameLine();
+    if (ImGui::RadioButton("Dark", &currentTheme, static_cast<int>(Theme::Dark))) {
+        _serviceLocator.colorManager.setTheme(Theme::Dark);
+    }
+    ImGui::End();
+}
+
+void UI::onThemeChanged(const ThemeChangedEvent &event) {
+    if (event.theme == Theme::Light) {
+        ImGui::StyleColorsLight();
+    } else {
+        ImGui::StyleColorsDark();
+    }
 }

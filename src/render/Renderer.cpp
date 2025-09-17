@@ -9,10 +9,11 @@
 #include <entt/entt.hpp>
 #include <iostream>
 
-Renderer::Renderer()
+Renderer::Renderer(ColorManager &colorManager)
     : _windowInstance(sf::VideoMode({Constants::WINDOW_WIDTH, Constants::WINDOW_HEIGHT}),
-                      Constants::WINDOW_TITLE),
-      _clearColor(Constants::CLEAR_COLOR_R, Constants::CLEAR_COLOR_G, Constants::CLEAR_COLOR_B) {
+                      Constants::WINDOW_TITLE), _colorManager(colorManager),
+      _clearColor(_colorManager.getBackgroundColor()), _terrainRenderSystem(colorManager)
+ {
     LOG_DEBUG("Renderer", "Renderer created and window initialized.");
     _windowInstance.setFramerateLimit(Constants::FRAMERATE_LIMIT);
 }
@@ -99,8 +100,14 @@ const sf::Color &Renderer::getClearColor() const noexcept {
 void Renderer::connectToEventBus(EventBus &eventBus) {
     m_windowCloseConnection =
         eventBus.sink<WindowCloseEvent>().connect<&Renderer::onWindowClose>(this);
+    m_themeChangedConnection =
+        eventBus.sink<ThemeChangedEvent>().connect<&Renderer::onThemeChanged>(this);
 }
 
 void Renderer::onWindowClose(const WindowCloseEvent &event) {
     _windowInstance.close();
+}
+
+void Renderer::onThemeChanged(const ThemeChangedEvent &event) {
+    setClearColor(_colorManager.getBackgroundColor());
 }

@@ -8,12 +8,13 @@
 #include "event/EventBus.h"
 #include "event/InputEvents.h"
 #include "systems/rendering/TerrainRenderSystem.h"
+#include "render/ColorManager.h"
 
 class WorldGenerationSystem;
 
 class Renderer {
 public:
-    Renderer();
+    Renderer(ColorManager &colorManager);
     ~Renderer();
 
     void initialize();
@@ -36,7 +37,10 @@ private:
     sf::Color _clearColor;
     TerrainRenderSystem _terrainRenderSystem;
     LineRenderSystem _lineRenderSystem;
+    ColorManager &_colorManager;
 
     void onWindowClose(const WindowCloseEvent &event);
-    entt::connection m_windowCloseConnection;
+    void onThemeChanged(const ThemeChangedEvent &event);
+    entt::scoped_connection m_windowCloseConnection;
+    entt::scoped_connection m_themeChangedConnection;
 };

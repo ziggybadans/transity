@@ -22,7 +22,7 @@ class ThreadPool;
 
 class Game {
 public:
-    Game(Renderer &renderer, ThreadPool &threadPool);
+    Game(Renderer &renderer, ThreadPool &threadPool, EventBus &eventBus, ColorManager &colorManager);
     ~Game();
 
     void startLoading();
@@ -43,9 +43,9 @@ private:
     Renderer &_renderer;
     entt::registry _registry;
 
-    EventBus _eventBus;
+    EventBus &_eventBus;
     EntityFactory _entityFactory;
-    ColorManager _colorManager;
+    ColorManager &_colorManager;
     Camera _camera;
     GameState _gameState;
     LoadingState _loadingState;

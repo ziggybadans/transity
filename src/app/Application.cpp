@@ -12,23 +12,29 @@
 #include <stdexcept>
 #include <thread>
 
-Application::Application() {
+Application::Application() : _colorManager(_eventBus) {
     LOG_INFO("Application", "Application creation started.");
     try {
         unsigned int numThreads = std::thread::hardware_concurrency();
         _threadPool = std::make_unique<ThreadPool>(numThreads > 0 ? numThreads : 1);
         LOG_INFO("Application", "ThreadPool created with %u threads.", numThreads);
 
-        _renderer = std::make_unique<Renderer>();
+        LOG_INFO("Application", "Creating Renderer object...");
+        _renderer = std::make_unique<Renderer>(_colorManager);
+        LOG_INFO("Application", "Renderer object created.");
         _renderer->initialize();
+        LOG_INFO("Application", "Renderer initialized.");
 
-        _game = std::make_unique<Game>(*_renderer, *_threadPool);
+        LOG_INFO("Application", "Creating Game object...");
+        _game = std::make_unique<Game>(*_renderer, *_threadPool, _eventBus, _colorManager);
+        LOG_INFO("Application", "Game object created.");
         _game->startLoading();
 
-        _renderer->connectToEventBus(_game->getEventBus());
+        _renderer->connectToEventBus(_eventBus);
 
         _ui = std::make_unique<UI>(_renderer->getWindowInstance(),
-                                   _renderer->getTerrainRenderSystem(), _game->getServiceLocator());
+                                   _renderer->getTerrainRenderSystem(), 
+                                   _game->getServiceLocator());
         _ui->initialize();
 
     } catch (const std::exception &e) {
@@ -81,7 +87,7 @@ void Application::run() {
             break;
         }
         case AppState::QUITTING: {
-            _game->getEventBus().trigger<WindowCloseEvent>();
+            _eventBus.trigger<WindowCloseEvent>();
             break;
         }
         }

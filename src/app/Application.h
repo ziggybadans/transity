@@ -4,6 +4,7 @@
 #include "Game.h"
 #include "core/ThreadPool.h"
 #include "render/Renderer.h"
+#include "event/EventBus.h"
 #include "ui/UI.h"
 #include <SFML/System/Clock.hpp>
 #include <memory>
@@ -19,10 +20,13 @@ private:
     void render(float interpolation);
     void renderLoad();
 
-    std::unique_ptr<Renderer> _renderer;
-    std::unique_ptr<UI> _ui;
-    std::unique_ptr<Game> _game;
+    EventBus _eventBus;
+    ColorManager _colorManager;
     std::unique_ptr<ThreadPool> _threadPool;
+
+    std::unique_ptr<Game> _game;
+    std::unique_ptr<UI> _ui;
+    std::unique_ptr<Renderer> _renderer;
 
     sf::Clock _deltaClock;
     sf::Time _timeAccumulator;

@@ -5,6 +5,7 @@
 #include <vector>
 #include <map>
 #include <memory>
+#include "render/ColorManager.h"
 
 struct ChunkPositionComponent;
 struct ChunkTerrainComponent;
@@ -24,7 +25,7 @@ public:
         Final
     };
 
-    TerrainRenderSystem();
+    explicit TerrainRenderSystem(ColorManager &colorManager);
 
     void updateMeshes(entt::registry &registry, const WorldGenParams &worldParams);
     void render(const entt::registry &registry, sf::RenderTarget &target, const sf::View &view, const WorldGenParams &worldParams);
@@ -38,6 +39,7 @@ public:
     void regenerateSuitabilityMaps(const WorldGenParams &worldParams);
 
 private:
+    ColorManager &_colorManager;
     sf::RectangleShape _cellShape;
     bool _visualizeChunkBorders = false;
     bool _visualizeCellBorders = false;

@@ -14,8 +14,8 @@
 #include "systems/world/WorldSetupSystem.h"
 #include "ui/UI.h"
 
-Game::Game(Renderer &renderer, ThreadPool &threadPool)
-    : _renderer(renderer), _eventBus(), _entityFactory(_registry),
+Game::Game(Renderer &renderer, ThreadPool &threadPool, EventBus &eventBus, ColorManager &colorManager)
+    : _renderer(renderer), _eventBus(eventBus), _colorManager(colorManager), _entityFactory(_registry),
       _worldGenerationSystem(_registry, _eventBus),
       _serviceLocator{_registry,      _eventBus,  _loadingState,      _gameState,
                       _entityFactory, _camera,    _colorManager,      _worldGenerationSystem,
@@ -36,10 +36,7 @@ Game::Game(Renderer &renderer, ThreadPool &threadPool)
 }
 
 void Game::update(sf::Time dt, UI &ui) {
-
     _systemManager->update(dt);
-
-    _eventBus.update();
 }
 
 void Game::startLoading() {

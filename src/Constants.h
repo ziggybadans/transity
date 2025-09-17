@@ -7,14 +7,6 @@ constexpr unsigned int WINDOW_WIDTH = 1920;
 constexpr unsigned int WINDOW_HEIGHT = 1080;
 constexpr const char *WINDOW_TITLE = "Transity Predev";
 
-constexpr unsigned char CLEAR_COLOR_R = 173;
-constexpr unsigned char CLEAR_COLOR_G = 216;
-constexpr unsigned char CLEAR_COLOR_B = 230;
-
-constexpr sf::Color TERRAIN_LAND_COLOR = sf::Color(255, 255, 255);
-constexpr sf::Color TERRAIN_WATER_COLOR = sf::Color(229, 240, 247);
-constexpr sf::Color TERRAIN_RIVER_COLOR = sf::Color(100, 149, 237);
-
 constexpr unsigned int FRAMERATE_LIMIT = 144;
 constexpr unsigned int TRACE_LOG_DELAY_MS = 2000;
 constexpr unsigned int LINE_VERTEX_COUNT = 2;

@@ -13,7 +13,8 @@
 #include <cstdint>
 #include <iostream>
 
-TerrainRenderSystem::TerrainRenderSystem() {}
+TerrainRenderSystem::TerrainRenderSystem(ColorManager &colorManager)
+    : _colorManager(colorManager) {}
 
 void TerrainRenderSystem::updateMeshes(entt::registry &registry, const WorldGenParams &worldParams) {
     auto view = registry.view<ChunkPositionComponent, ChunkTerrainComponent, ChunkStateComponent,
@@ -196,13 +197,13 @@ void TerrainRenderSystem::buildAllChunkMeshes(const ChunkPositionComponent &chun
                 sf::Color color;
                 switch (currentType) {
                 case TerrainType::WATER:
-                    color = Constants::TERRAIN_WATER_COLOR;
+                    color = _colorManager.getWaterColor();
                     break;
                 case TerrainType::LAND:
-                    color = Constants::TERRAIN_LAND_COLOR;
+                    color = _colorManager.getLandColor();
                     break;
                 case TerrainType::RIVER:
-                    color = Constants::TERRAIN_RIVER_COLOR;
+                    color = _colorManager.getRiverColor();
                     break;
                 default:
                     color = sf::Color::Magenta;

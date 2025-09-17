@@ -1,6 +1,7 @@
 #pragma once
 
 #include "FastNoiseLite.h"
+#include "event/UIEvents.h"
 #include "app/GameState.h"
 #include "event/EventBus.h"
 #include "event/LineEvents.h"
@@ -27,6 +28,8 @@ public:
 private:
     void drawLoadingScreen();
     void drawProfilingWindow(sf::Time deltaTime);
+    void drawSettingsWindow();
+    void onThemeChanged(const ThemeChangedEvent &event);
     void drawWorldGenSettingsWindow();
     void drawInteractionModeWindow();
     void drawLineCreationWindow(size_t numStationsInActiveLine);
@@ -42,4 +45,5 @@ private:
     bool _visualizeSuitabilityMap = false;
     int _selectedSuitabilityMap = 4;
     bool _isLodEnabled = false;
+    entt::scoped_connection _themeChangedConnection;
 };
