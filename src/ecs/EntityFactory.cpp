@@ -153,16 +153,14 @@ entt::entity EntityFactory::createTrain(entt::entity lineEntity) {
 
     const auto &firstStopPos = _registry.get<PositionComponent>(line.stops.front()).coordinates;
 
-    auto trainEntity = _registry.create();
-    _registry.emplace<PositionComponent>(trainEntity, firstStopPos);
-    _registry.emplace<TrainComponent>(trainEntity, lineEntity);
+    // Use the archetype system to create the train
+    auto trainEntity = createEntity("train", firstStopPos);
+    if (trainEntity == entt::null) {
+        LOG_ERROR("EntityFactory", "Failed to create train entity from archetype.");
+        return entt::null;
+    }
 
-    // For now, let's give the train a simple renderable component.
-    // This will be improved in the TrainRenderSystem step.
-    auto &renderable = _registry.emplace<RenderableComponent>(trainEntity);
-    renderable.radius = {5.0f};
-    renderable.color = sf::Color::Yellow;
-    renderable.zOrder = {10};
+    _registry.emplace<TrainComponent>(trainEntity, lineEntity);
 
     LOG_DEBUG("EntityFactory", "Train entity (ID: %u) created for line (ID: %u).",
               static_cast<unsigned int>(trainEntity), static_cast<unsigned int>(lineEntity));

@@ -1,0 +1,11 @@
+{
+  "id": "train",
+  "version": 1,
+  "components": {
+    "renderable": {
+      "radius": 25.0,
+      "color": [255, 255, 0, 255],
+      "zOrder": 10
+    }
+  }
+}

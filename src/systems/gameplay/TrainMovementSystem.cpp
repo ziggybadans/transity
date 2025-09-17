@@ -4,6 +4,8 @@
 #include "Logger.h"
 #include <cmath>
 
+const float TrainComponent::STOP_DURATION = 2.0f;
+
 TrainMovementSystem::TrainMovementSystem(ServiceLocator &serviceLocator)
     : _registry(serviceLocator.registry) {
     LOG_DEBUG("TrainMovementSystem", "TrainMovementSystem created.");

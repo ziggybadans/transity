@@ -47,5 +47,8 @@ struct TrainComponent {
     float speed = 50.0f; // World units per second
     TrainState state = TrainState::MOVING;
     float stopTimer = 0.0f;
-    static constexpr float STOP_DURATION = 2.0f; // seconds
+    static const float STOP_DURATION; // Changed from static constexpr
 };
+
+// A tag to mark an entity as selected.
+struct SelectedComponent {};
