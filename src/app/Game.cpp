@@ -12,6 +12,7 @@
 #include "systems/rendering/TerrainMeshSystem.h"
 #include "systems/world/ChunkManagerSystem.h"
 #include "systems/world/WorldSetupSystem.h"
+#include "systems/gameplay/TrainMovementSystem.h"
 #include "ui/UI.h"
 
 Game::Game(Renderer &renderer, ThreadPool &threadPool, EventBus &eventBus, ColorManager &colorManager)
@@ -31,6 +32,7 @@ Game::Game(Renderer &renderer, ThreadPool &threadPool, EventBus &eventBus, Color
     _systemManager->addSystem<ChunkManagerSystem>(_worldGenerationSystem, _eventBus);
     _systemManager->addSystem<TerrainMeshSystem>();
     _systemManager->addSystem<CityPlacementSystem>();
+    _systemManager->addSystem<TrainMovementSystem>();
 
     LOG_INFO("Game", "Game instance created and systems registered.");
 }

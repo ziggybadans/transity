@@ -32,3 +32,20 @@ struct ClickableComponent {
 struct ActiveLineStationTag {
     StationOrder order = {0};
 };
+
+// Enum for the state of a train
+enum class TrainState {
+    MOVING,
+    STOPPED
+};
+
+// A component for train entities.
+struct TrainComponent {
+    entt::entity assignedLine;
+    int currentSegmentIndex = 0;
+    float progressOnSegment = 0.0f;
+    float speed = 50.0f; // World units per second
+    TrainState state = TrainState::MOVING;
+    float stopTimer = 0.0f;
+    static constexpr float STOP_DURATION = 2.0f; // seconds
+};

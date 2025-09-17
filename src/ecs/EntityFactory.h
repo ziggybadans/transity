@@ -19,6 +19,7 @@ public:
     entt::entity createEntity(const std::string &archetypeId, const sf::Vector2f &position,
                               const std::string &name = "");
     entt::entity createLine(const std::vector<entt::entity> &stops, const sf::Color &color);
+    entt::entity createTrain(entt::entity lineEntity);
 
 private:
     entt::registry &_registry;

@@ -133,5 +133,39 @@ entt::entity EntityFactory::createLine(const std::vector<entt::entity> &stops,
 
     LOG_DEBUG("EntityFactory", "Line entity (ID: %u) created successfully with %zu stops.",
               static_cast<unsigned int>(entity), stops.size());
+
+    createTrain(entity);
+
     return entity;
+}
+
+entt::entity EntityFactory::createTrain(entt::entity lineEntity) {
+    if (!_registry.valid(lineEntity) || !_registry.all_of<LineComponent>(lineEntity)) {
+        LOG_ERROR("EntityFactory", "Cannot create train for invalid line entity.");
+        return entt::null;
+    }
+
+    const auto &line = _registry.get<LineComponent>(lineEntity);
+    if (line.stops.empty()) {
+        LOG_ERROR("EntityFactory", "Cannot create train for a line with no stops.");
+        return entt::null;
+    }
+
+    const auto &firstStopPos = _registry.get<PositionComponent>(line.stops.front()).coordinates;
+
+    auto trainEntity = _registry.create();
+    _registry.emplace<PositionComponent>(trainEntity, firstStopPos);
+    _registry.emplace<TrainComponent>(trainEntity, lineEntity);
+
+    // For now, let's give the train a simple renderable component.
+    // This will be improved in the TrainRenderSystem step.
+    auto &renderable = _registry.emplace<RenderableComponent>(trainEntity);
+    renderable.radius = {5.0f};
+    renderable.color = sf::Color::Yellow;
+    renderable.zOrder = {10};
+
+    LOG_DEBUG("EntityFactory", "Train entity (ID: %u) created for line (ID: %u).",
+              static_cast<unsigned int>(trainEntity), static_cast<unsigned int>(lineEntity));
+
+    return trainEntity;
 }
