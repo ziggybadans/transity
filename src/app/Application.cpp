@@ -121,6 +121,7 @@ void Application::processEvents() {
 void Application::update(sf::Time dt) {
     PerfTimer timer("Application::update", _game->getServiceLocator());
 
+    _eventBus.update();
     _game->getInputHandler().update(dt);
     _game->update(dt, *_ui);
 }

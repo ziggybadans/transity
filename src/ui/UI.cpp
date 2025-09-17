@@ -51,6 +51,7 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
     drawWorldGenSettingsWindow();
     drawInteractionModeWindow();
     drawLineCreationWindow(numberOfStationsInActiveLine);
+    drawSettingsWindow();
 }
 
 void UI::renderFrame() {

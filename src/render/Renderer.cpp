@@ -10,9 +10,12 @@
 #include <iostream>
 
 Renderer::Renderer(ColorManager &colorManager)
-    : _windowInstance(sf::VideoMode({Constants::WINDOW_WIDTH, Constants::WINDOW_HEIGHT}),
-                      Constants::WINDOW_TITLE), _colorManager(colorManager),
-      _clearColor(_colorManager.getBackgroundColor()), _terrainRenderSystem(colorManager)
+    : _colorManager(colorManager),
+      _windowInstance(sf::VideoMode({Constants::WINDOW_WIDTH, Constants::WINDOW_HEIGHT}),
+                      Constants::WINDOW_TITLE),
+      _clearColor(_colorManager.getBackgroundColor()), 
+      _terrainRenderSystem(colorManager),
+      _lineRenderSystem()
  {
     LOG_DEBUG("Renderer", "Renderer created and window initialized.");
     _windowInstance.setFramerateLimit(Constants::FRAMERATE_LIMIT);

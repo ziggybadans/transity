@@ -32,6 +32,8 @@ ColorManager::ColorManager(EventBus& eventBus)
             sf::Color::Cyan
         }
     };
+
+    _eventBus.trigger<ThemeChangedEvent>({_activeTheme});
 }
 
 void ColorManager::setTheme(Theme theme) {

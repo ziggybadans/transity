@@ -33,11 +33,11 @@ public:
     TerrainRenderSystem &getTerrainRenderSystem() noexcept;
 
 private:
+    ColorManager &_colorManager;
     sf::RenderWindow _windowInstance;
     sf::Color _clearColor;
     TerrainRenderSystem _terrainRenderSystem;
     LineRenderSystem _lineRenderSystem;
-    ColorManager &_colorManager;
 
     void onWindowClose(const WindowCloseEvent &event);
     void onThemeChanged(const ThemeChangedEvent &event);
