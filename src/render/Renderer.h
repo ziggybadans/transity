@@ -9,7 +9,6 @@
 #include "event/InputEvents.h"
 #include "systems/rendering/TerrainRenderSystem.h"
 #include "render/ColorManager.h"
-#include "render/TrainRenderSystem.h" // Add this include
 
 class WorldGenerationSystem;
 
@@ -39,7 +38,6 @@ private:
     sf::Color _clearColor;
     TerrainRenderSystem _terrainRenderSystem;
     LineRenderSystem _lineRenderSystem;
-    TrainRenderSystem _trainRenderSystem; // Add this member
 
     void onWindowClose(const WindowCloseEvent &event);
     void onThemeChanged(const ThemeChangedEvent &event);

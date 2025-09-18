@@ -18,8 +18,7 @@ Renderer::Renderer(ColorManager &colorManager)
                       sf::ContextSettings{0u, 0u, 8u}),
       _clearColor(_colorManager.getBackgroundColor()), 
       _terrainRenderSystem(colorManager),
-      _lineRenderSystem(),
-      _trainRenderSystem()
+      _lineRenderSystem()
  {
     LOG_DEBUG("Renderer", "Renderer created and window initialized.");
     _windowInstance.setFramerateLimit(Constants::FRAMERATE_LIMIT);
@@ -52,10 +51,8 @@ void Renderer::renderFrame(const entt::registry &registry, const sf::View &view,
 
     _terrainRenderSystem.render(registry, _windowInstance, view, worldGen.getParams());
     _lineRenderSystem.render(registry, _windowInstance, view, highlightColor);
-    _trainRenderSystem.render(registry, _windowInstance, highlightColor);
 
-    // Exclude trains from this generic rendering loop
-    auto viewRegistry = registry.view<const PositionComponent, const RenderableComponent>(entt::exclude<const TrainComponent>);
+    auto viewRegistry = registry.view<const PositionComponent, const RenderableComponent>();
 
     std::vector<entt::entity> sortedEntities;
     for (auto entity : viewRegistry) {
