@@ -1,10 +1,17 @@
 #pragma once
 
-#include "InteractionMode.h"
+#include "app/InteractionMode.h"
+#include <entt/entt.hpp>
+#include <optional>
 
-enum class AppState { LOADING, PLAYING, QUITTING };
+enum class AppState {
+    LOADING,
+    PLAYING,
+    QUITTING
+};
 
 struct GameState {
-    AppState currentAppState = AppState::LOADING;
     InteractionMode currentInteractionMode = InteractionMode::SELECT;
+    AppState currentAppState = AppState::LOADING;
+    std::optional<entt::entity> selectedEntity;
 };

@@ -6,6 +6,9 @@
       "radius": 25.0,
       "color": [255, 255, 0, 255],
       "zOrder": 10
+    },
+    "clickable": {
+      "boundingRadius": 30.0
     }
   }
 }

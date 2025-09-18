@@ -33,6 +33,7 @@ private:
     void drawWorldGenSettingsWindow();
     void drawInteractionModeWindow();
     void drawLineCreationWindow(size_t numStationsInActiveLine);
+    void drawInfoPanel();
 
     sf::RenderWindow &_window;
     ServiceLocator &_serviceLocator;

@@ -52,6 +52,7 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
     drawInteractionModeWindow();
     drawLineCreationWindow(numberOfStationsInActiveLine);
     drawSettingsWindow();
+    drawInfoPanel();
 }
 
 void UI::renderFrame() {
@@ -357,4 +358,50 @@ void UI::onThemeChanged(const ThemeChangedEvent &event) {
     } else {
         ImGui::StyleColorsDark();
     }
+}
+
+void UI::drawInfoPanel() {
+    const float windowPadding = Constants::UI_WINDOW_PADDING;
+    ImGuiIO& io = ImGui::GetIO();
+    ImVec2 displaySize = io.DisplaySize;
+
+    float worldGenSettingsWidth = Constants::UI_WORLD_GEN_SETTINGS_WIDTH;
+    // Position it below the world gen settings window
+    ImVec2 worldGenSettingsPos = ImVec2(displaySize.x - worldGenSettingsWidth - windowPadding, windowPadding);
+    ImGui::SetNextWindowPos(ImVec2(worldGenSettingsPos.x, worldGenSettingsPos.y + ImGui::GetFrameHeightWithSpacing() * 15), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(worldGenSettingsWidth, 0), ImGuiCond_FirstUseEver);
+
+    ImGui::Begin("Info Panel");
+
+    auto& selectedEntityOpt = _serviceLocator.gameState.selectedEntity;
+    if (!selectedEntityOpt.has_value()) {
+        ImGui::Text("No information available.");
+    } else {
+        auto& registry = _serviceLocator.registry;
+        auto entity = selectedEntityOpt.value();
+
+        if (registry.valid(entity)) {
+            if (auto* name = registry.try_get<NameComponent>(entity)) {
+                ImGui::Text("Name: %s", name->name.c_str());
+            }
+
+            if (auto* city = registry.try_get<CityComponent>(entity)) {
+                ImGui::Text("Type: City");
+                ImGui::Text("Connected Lines: %zu", city->connectedLines.size());
+            } else if (auto* train = registry.try_get<TrainComponent>(entity)) {
+                ImGui::Text("Type: Train");
+                ImGui::Text("Assigned Line: %u", entt::to_integral(train->assignedLine));
+                const char* state = train->state == TrainState::MOVING ? "Moving" : "Stopped";
+                ImGui::Text("State: %s", state);
+            } else if (auto* line = registry.try_get<LineComponent>(entity)) {
+                ImGui::Text("Type: Line");
+                ImGui::Text("Stops: %zu", line->stops.size());
+            }
+        } else {
+            ImGui::Text("No information available.");
+            selectedEntityOpt = std::nullopt; // The entity is no longer valid
+        }
+    }
+
+    ImGui::End();
 }

@@ -52,3 +52,8 @@ struct TrainComponent {
 
 // A tag to mark an entity as selected.
 struct SelectedComponent {};
+
+// A component for storing a displayable name for an entity.
+struct NameComponent {
+    std::string name;
+};

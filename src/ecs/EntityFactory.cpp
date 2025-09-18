@@ -116,6 +116,12 @@ entt::entity EntityFactory::createEntity(const std::string &archetypeId,
                   static_cast<unsigned int>(entity), renderable.radius.value);
     }
 
+    if (!name.empty()) {
+        _registry.emplace<NameComponent>(entity, name);
+        LOG_DEBUG("EntityFactory", "Entity %u assigned name: %s", static_cast<unsigned int>(entity),
+                  name.c_str());
+    }
+
     return entity;
 }
 entt::entity EntityFactory::createLine(const std::vector<entt::entity> &stops,
@@ -154,7 +160,8 @@ entt::entity EntityFactory::createTrain(entt::entity lineEntity) {
     const auto &firstStopPos = _registry.get<PositionComponent>(line.stops.front()).coordinates;
 
     // Use the archetype system to create the train
-    auto trainEntity = createEntity("train", firstStopPos);
+    std::string trainName = "Train " + std::to_string(entt::to_integral(lineEntity));
+    auto trainEntity = createEntity("train", firstStopPos, trainName);
     if (trainEntity == entt::null) {
         LOG_ERROR("EntityFactory", "Failed to create train entity from archetype.");
         return entt::null;

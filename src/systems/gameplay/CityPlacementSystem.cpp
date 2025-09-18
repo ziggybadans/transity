@@ -112,7 +112,8 @@ void CityPlacementSystem::placeCities(int numberOfCities) {
             break;
         }
 
-        entityFactory.createEntity("city", {bestLocation.x * cellSize + cellSize / 2.0f, bestLocation.y * cellSize + cellSize / 2.0f});
+        std::string cityName = "City " + std::to_string(i + 1);
+        entityFactory.createEntity("city", {bestLocation.x * cellSize + cellSize / 2.0f, bestLocation.y * cellSize + cellSize / 2.0f}, cityName);
         _placedCities.push_back(bestLocation);
         LOG_DEBUG("CityPlacementSystem", "Placed city %d at (%d, %d)", i + 1, bestLocation.x, bestLocation.y);
     }
