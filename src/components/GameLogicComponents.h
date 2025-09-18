@@ -35,8 +35,10 @@ struct ActiveLineStationTag {
 
 // Enum for the state of a train
 enum class TrainState {
+    STOPPED,
+    ACCELERATING,
     MOVING,
-    STOPPED
+    DECELERATING
 };
 
 // A component for train entities.
@@ -44,9 +46,11 @@ struct TrainComponent {
     entt::entity assignedLine;
     int currentSegmentIndex = 0;
     float progressOnSegment = 0.0f;
-    float speed = 50.0f; // World units per second
-    TrainState state = TrainState::MOVING;
-    float stopTimer = 0.0f;
+    float maxSpeed = 100.0f;
+    float currentSpeed = 50.0f; // World units per second
+    float acceleration = 25.0f;
+    TrainState state = TrainState::STOPPED;
+    float stopTimer = 2.0f;
     static const float STOP_DURATION; // Changed from static constexpr
 };
 
