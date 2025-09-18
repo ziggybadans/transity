@@ -5,7 +5,7 @@
 
 TrainRenderSystem::TrainRenderSystem() {}
 
-void TrainRenderSystem::render(const entt::registry &registry, sf::RenderWindow &window) {
+void TrainRenderSystem::render(const entt::registry &registry, sf::RenderWindow &window, const sf::Color& highlightColor) {
     auto view = registry.view<const PositionComponent, const RenderableComponent, const TrainComponent>();
     for (auto entity : view) {
         const auto &pos = view.get<const PositionComponent>(entity);
@@ -17,5 +17,16 @@ void TrainRenderSystem::render(const entt::registry &registry, sf::RenderWindow 
         shape.setPosition(pos.coordinates);
         
         window.draw(shape);
+
+        // Draw highlight if selected
+        if (registry.all_of<SelectedComponent>(entity)) {
+            sf::CircleShape highlight(renderable.radius.value + 3.0f); // A bit larger
+            highlight.setFillColor(sf::Color::Transparent);
+            highlight.setOutlineColor(highlightColor);
+            highlight.setOutlineThickness(2.0f);
+            highlight.setOrigin({renderable.radius.value + 3.0f, renderable.radius.value + 3.0f});
+            highlight.setPosition(pos.coordinates);
+            window.draw(highlight);
+        }
     }
 }

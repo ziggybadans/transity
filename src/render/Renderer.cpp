@@ -12,11 +12,14 @@
 Renderer::Renderer(ColorManager &colorManager)
     : _colorManager(colorManager),
       _windowInstance(sf::VideoMode({Constants::WINDOW_WIDTH, Constants::WINDOW_HEIGHT}),
-                      Constants::WINDOW_TITLE),
+                      Constants::WINDOW_TITLE,
+                      sf::Style::Default,
+                      sf::State::Windowed,
+                      sf::ContextSettings{0u, 0u, 8u}),
       _clearColor(_colorManager.getBackgroundColor()), 
       _terrainRenderSystem(colorManager),
       _lineRenderSystem(),
-      _trainRenderSystem() // Initialize the new system
+      _trainRenderSystem()
  {
     LOG_DEBUG("Renderer", "Renderer created and window initialized.");
     _windowInstance.setFramerateLimit(Constants::FRAMERATE_LIMIT);
@@ -44,9 +47,12 @@ void Renderer::renderFrame(const entt::registry &registry, const sf::View &view,
     _windowInstance.setView(view);
     _windowInstance.clear(_clearColor);
 
+    const sf::Color& landColor = _colorManager.getLandColor();
+    sf::Color highlightColor(255 - landColor.r, 255 - landColor.g, 255 - landColor.b);
+
     _terrainRenderSystem.render(registry, _windowInstance, view, worldGen.getParams());
-    _lineRenderSystem.render(registry, _windowInstance, view);
-    _trainRenderSystem.render(registry, _windowInstance); // Call the train render system
+    _lineRenderSystem.render(registry, _windowInstance, view, highlightColor);
+    _trainRenderSystem.render(registry, _windowInstance, highlightColor);
 
     // Exclude trains from this generic rendering loop
     auto viewRegistry = registry.view<const PositionComponent, const RenderableComponent>(entt::exclude<const TrainComponent>);
@@ -73,6 +79,17 @@ void Renderer::renderFrame(const entt::registry &registry, const sf::View &view,
         shape.setOrigin({renderable.radius.value, renderable.radius.value});
 
         _windowInstance.draw(shape);
+
+        // Draw highlight if selected
+        if (registry.all_of<SelectedComponent>(entity)) {
+            sf::CircleShape highlight(renderable.radius.value + 3.0f);
+            highlight.setFillColor(sf::Color::Transparent);
+            highlight.setOutlineColor(highlightColor);
+            highlight.setOutlineThickness(2.0f);
+            highlight.setOrigin({renderable.radius.value + 3.0f, renderable.radius.value + 3.0f});
+            highlight.setPosition(position.coordinates);
+            _windowInstance.draw(highlight);
+        }
     }
 }
 

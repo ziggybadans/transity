@@ -6,21 +6,45 @@
 #include <vector>
 
 void LineRenderSystem::render(const entt::registry &registry, sf::RenderWindow &window,
-                              const sf::View &view) {
+                              const sf::View &view, const sf::Color& highlightColor) {
     auto lineView = registry.view<const LineComponent>();
     for (auto entity : lineView) {
         const auto &lineComp = lineView.get<const LineComponent>(entity);
         if (lineComp.stops.size() < 2) continue;
 
+        bool isSelected = registry.all_of<SelectedComponent>(entity);
+        sf::Color lineColor = isSelected ? highlightColor : lineComp.color;
+        float thickness = isSelected ? 4.0f : 2.0f;
+
         for (size_t i = 0; i < lineComp.stops.size() - 1; ++i) {
             if (!registry.valid(lineComp.stops[i]) || !registry.valid(lineComp.stops[i + 1]))
                 continue;
+            
             const auto &pos1 = registry.get<const PositionComponent>(lineComp.stops[i]).coordinates;
-            const auto &pos2 =
-                registry.get<const PositionComponent>(lineComp.stops[i + 1]).coordinates;
-            sf::Vertex line[] = {{pos1, lineComp.color, sf::Vector2f()},
-                                 {pos2, lineComp.color, sf::Vector2f()}};
-            window.draw(line, 2, sf::PrimitiveType::Lines);
+            const auto &pos2 = registry.get<const PositionComponent>(lineComp.stops[i + 1]).coordinates;
+
+            sf::Vector2f direction = pos2 - pos1;
+            float length = std::sqrt(direction.x * direction.x + direction.y * direction.y);
+            if (length == 0) continue;
+            sf::Vector2f unitDirection = direction / length;
+            sf::Vector2f unitPerpendicular(-unitDirection.y, unitDirection.x);
+
+            sf::Vector2f offset = (thickness / 2.f) * unitPerpendicular;
+
+            sf::VertexArray quad(sf::PrimitiveType::Triangles, 6);
+            quad[0].position = pos1 - offset;
+            quad[1].position = pos2 - offset;
+            quad[2].position = pos2 + offset;
+            
+            quad[3].position = pos2 + offset;
+            quad[4].position = pos1 + offset;
+            quad[5].position = pos1 - offset;
+
+            for(int v = 0; v < 6; ++v) {
+                quad[v].color = lineColor;
+            }
+
+            window.draw(quad);
         }
     }
 

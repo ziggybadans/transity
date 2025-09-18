@@ -6,5 +6,5 @@
 class TrainRenderSystem {
 public:
     TrainRenderSystem();
-    void render(const entt::registry &registry, sf::RenderWindow &window);
+    void render(const entt::registry &registry, sf::RenderWindow &window, const sf::Color& highlightColor);
 };

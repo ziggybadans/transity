@@ -2,6 +2,7 @@
 
 #include "StrongTypes.h"
 #include "WorldComponents.h"
+#include "components/GameLogicComponents.h"
 #include <SFML/Graphics.hpp>
 
 // General-purpose bounding box for collision detection and culling.
