@@ -14,7 +14,7 @@ void LineRenderSystem::render(const entt::registry &registry, sf::RenderWindow &
 
         bool isSelected = registry.all_of<SelectedComponent>(entity);
         sf::Color lineColor = isSelected ? highlightColor : lineComp.color;
-        float thickness = isSelected ? 4.0f : 2.0f;
+        float thickness = isSelected ? 16.0f : 8.0f;
 
         for (size_t i = 0; i < lineComp.stops.size() - 1; ++i) {
             if (!registry.valid(lineComp.stops[i]) || !registry.valid(lineComp.stops[i + 1]))
