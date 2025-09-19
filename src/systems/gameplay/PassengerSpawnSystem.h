@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ecs/ISystem.h"
+#include "core/Pathfinder.h"
 #include <SFML/System/Time.hpp>
 #include <entt/entt.hpp>
 
@@ -16,6 +17,7 @@ public:
 private:
     entt::registry& _registry;
     EntityFactory& _entityFactory;
+    Pathfinder& _pathfinder;
     sf::Time _spawnTimer;
     sf::Time _spawnInterval;
 };

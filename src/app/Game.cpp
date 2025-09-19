@@ -20,14 +20,14 @@
 
 Game::Game(Renderer &renderer, ThreadPool &threadPool, EventBus &eventBus, ColorManager &colorManager)
     : _renderer(renderer), _eventBus(eventBus), _colorManager(colorManager), _entityFactory(_registry),
-      _worldGenerationSystem(_registry, _eventBus),
+      _worldGenerationSystem(_registry, _eventBus), _pathfinder(_registry),
       _serviceLocator{_registry,      _eventBus,  _loadingState,      _gameState,
                       _entityFactory, _camera,    _colorManager,      _worldGenerationSystem,
-                      _renderer,      threadPool, _performanceMonitor} {
+                      _renderer,      threadPool, _pathfinder, _performanceMonitor} {
 
     _inputHandler = std::make_unique<InputHandler>(_serviceLocator);
     _systemManager = std::make_unique<SystemManager>(_serviceLocator);
-
+                        
     _systemManager->addSystem<CameraSystem>();
     _systemManager->addSystem<LineCreationSystem>();
     _systemManager->addSystem<GameStateSystem>();

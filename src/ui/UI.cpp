@@ -389,15 +389,92 @@ void UI::drawInfoPanel() {
                 ImGui::Text("Type: City");
                 ImGui::Text("Connected Lines: %zu", city->connectedLines.size());
                 ImGui::Text("Waiting Passengers: %zu", city->waitingPassengers.size());
+
+                if (ImGui::CollapsingHeader("Waiting Passengers")) {
+                    if (city->waitingPassengers.empty()) {
+                        ImGui::Text("No passengers waiting.");
+                    } else {
+                        for (entt::entity passengerEntity : city->waitingPassengers) {
+                            if (!registry.valid(passengerEntity)) continue;
+
+                            auto& passenger = registry.get<PassengerComponent>(passengerEntity);
+                            auto destinationStation = passenger.destinationStation;
+                            
+                            std::string destinationName = "Unknown";
+                            if (registry.valid(destinationStation)) {
+                                if (auto* name = registry.try_get<NameComponent>(destinationStation)) {
+                                    destinationName = name->name;
+                                }
+                            }
+
+                            std::string label = "Passenger " + std::to_string(entt::to_integral(passengerEntity)) + " -> " + destinationName;
+                            if (ImGui::Selectable(label.c_str())) {
+                                _serviceLocator.gameState.selectedEntity = passengerEntity;
+                            }
+                        }
+                    }
+                }
             } else if (auto* train = registry.try_get<TrainComponent>(entity)) {
                 ImGui::Text("Type: Train");
                 ImGui::Text("Assigned Line: %u", entt::to_integral(train->assignedLine));
                 const char* state = train->state == TrainState::MOVING ? "Moving" : "Stopped";
                 ImGui::Text("State: %s", state);
                 ImGui::Text("Passengers: %d/%d", train->currentLoad, train->capacity);
+
+                if (ImGui::CollapsingHeader("Passengers")) {
+                    if (train->passengers.empty()) {
+                        ImGui::Text("No passengers on board.");
+                    } else {
+                        for (entt::entity passengerEntity : train->passengers) {
+                            if (!registry.valid(passengerEntity)) continue;
+
+                            auto& passenger = registry.get<PassengerComponent>(passengerEntity);
+                            auto destinationStation = passenger.destinationStation;
+                            
+                            std::string destinationName = "Unknown";
+                            if (registry.valid(destinationStation)) {
+                                if (auto* name = registry.try_get<NameComponent>(destinationStation)) {
+                                    destinationName = name->name;
+                                }
+                            }
+
+                            std::string label = "Passenger " + std::to_string(entt::to_integral(passengerEntity)) + " -> " + destinationName;
+                            if (ImGui::Selectable(label.c_str())) {
+                                _serviceLocator.gameState.selectedEntity = passengerEntity;
+                            }
+                        }
+                    }
+                }
             } else if (auto* line = registry.try_get<LineComponent>(entity)) {
                 ImGui::Text("Type: Line");
                 ImGui::Text("Stops: %zu", line->stops.size());
+            } else if (auto* passenger = registry.try_get<PassengerComponent>(entity)) {
+                ImGui::Text("Type: Passenger");
+                
+                std::string originName = "Unknown";
+                if (registry.valid(passenger->originStation)) {
+                    if (auto* name = registry.try_get<NameComponent>(passenger->originStation)) {
+                        originName = name->name;
+                    }
+                }
+                ImGui::Text("Origin: %s", originName.c_str());
+
+                std::string destinationName = "Unknown";
+                if (registry.valid(passenger->destinationStation)) {
+                    if (auto* name = registry.try_get<NameComponent>(passenger->destinationStation)) {
+                        destinationName = name->name;
+                    }
+                }
+                ImGui::Text("Destination: %s", destinationName.c_str());
+
+                const char* state;
+                switch(passenger->state) {
+                    case PassengerState::WAITING_FOR_TRAIN: state = "Waiting for train"; break;
+                    case PassengerState::ON_TRAIN: state = "On train"; break;
+                    case PassengerState::ARRIVED: state = "Arrived"; break;
+                    default: state = "Unknown"; break;
+                }
+                ImGui::Text("State: %s", state);
             }
         } else {
             ImGui::Text("No information available.");

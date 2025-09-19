@@ -12,6 +12,7 @@
 class Renderer;
 class ColorManager;
 class WorldGenerationSystem;
+class Pathfinder;
 
 struct ServiceLocator {
     entt::registry &registry;
@@ -24,5 +25,6 @@ struct ServiceLocator {
     WorldGenerationSystem &worldGenerationSystem;
     Renderer &renderer;
     ThreadPool &threadPool;
+    Pathfinder &pathfinder;
     PerformanceMonitor &performanceMonitor;
 };

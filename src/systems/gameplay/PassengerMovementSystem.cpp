@@ -11,21 +11,7 @@ PassengerMovementSystem::PassengerMovementSystem(ServiceLocator& serviceLocator)
 }
 
 void PassengerMovementSystem::update(sf::Time dt) {
-    // Add newly spawned passengers to their origin city's waiting list
-    auto newPassengerView = _registry.view<PassengerComponent>();
-    for (auto entity : newPassengerView) {
-        auto& passenger = newPassengerView.get<PassengerComponent>(entity);
-        if (passenger.state == PassengerState::WAITING_FOR_TRAIN) {
-            if (_registry.valid(passenger.originStation) && _registry.all_of<CityComponent>(passenger.originStation)) {
-                auto& city = _registry.get<CityComponent>(passenger.originStation);
-                if (std::find(city.waitingPassengers.begin(), city.waitingPassengers.end(), entity) == city.waitingPassengers.end()) {
-                    city.waitingPassengers.push_back(entity);
-                }
-            }
-        }
-    }
-
-    auto trainView = _registry.view<TrainComponent>();
+    auto trainView = _registry.view<TrainComponent, PositionComponent>();
     for (auto trainEntity : trainView) {
         auto& train = trainView.get<TrainComponent>(trainEntity);
 
@@ -42,13 +28,43 @@ void PassengerMovementSystem::update(sf::Time dt) {
         // Alighting passengers
         train.passengers.erase(std::remove_if(train.passengers.begin(), train.passengers.end(),
             [&](entt::entity passengerEntity) {
-                if (!_registry.valid(passengerEntity)) return true; // Remove if invalid
+                if (!_registry.valid(passengerEntity)) return true;
+
                 auto& passenger = _registry.get<PassengerComponent>(passengerEntity);
+                auto* path = _registry.try_get<PathComponent>(passengerEntity);
+
                 if (passenger.destinationStation == currentStopEntity) {
                     _registry.destroy(passengerEntity);
                     train.currentLoad--;
-                    LOG_DEBUG("PassengerMovementSystem", "Passenger alighted and reached destination.");
+                    LOG_DEBUG("PassengerMovementSystem", "Passenger reached destination.");
                     return true;
+                }
+
+                if (path && path->currentNodeIndex + 1 < path->nodes.size()) {
+                    entt::entity nextNodeInPath = path->nodes[path->currentNodeIndex + 1];
+                    
+                    bool trainGoesToNextNode = false;
+                    auto it = std::find(line.stops.begin(), line.stops.end(), currentStopEntity);
+                    if (it != line.stops.end()) {
+                        size_t currentStopIndexOnLine = std::distance(line.stops.begin(), it);
+                        if (currentStopIndexOnLine + 1 < line.stops.size() && line.stops[currentStopIndexOnLine + 1] == nextNodeInPath) {
+                            trainGoesToNextNode = true;
+                        }
+                    }
+
+                    if (!trainGoesToNextNode) {
+                        passenger.state = PassengerState::WAITING_FOR_TRAIN;
+                        path->currentNodeIndex++; 
+                        
+                        if (_registry.all_of<CityComponent>(currentStopEntity)) {
+                            auto& city = _registry.get<CityComponent>(currentStopEntity);
+                            city.waitingPassengers.push_back(passengerEntity);
+                        }
+                        
+                        train.currentLoad--;
+                        LOG_DEBUG("PassengerMovementSystem", "Passenger alighted to transfer.");
+                        return true; 
+                    }
                 }
                 return false;
             }), train.passengers.end());
@@ -58,21 +74,33 @@ void PassengerMovementSystem::update(sf::Time dt) {
             auto& city = _registry.get<CityComponent>(currentStopEntity);
             city.waitingPassengers.erase(std::remove_if(city.waitingPassengers.begin(), city.waitingPassengers.end(),
                 [&](entt::entity passengerEntity) {
-                    if (train.currentLoad >= train.capacity) {
-                        return false; // Train is full
-                    }
-                    if (!_registry.valid(passengerEntity)) return true; // Remove if invalid
+                    if (train.currentLoad >= train.capacity) return false;
+                    if (!_registry.valid(passengerEntity)) return true;
 
-                    // For now, any stopped train is a valid option.
-                    // A future pathfinding system would add more complex logic here.
-                    train.passengers.push_back(passengerEntity);
-                    train.currentLoad++;
+                    auto* path = _registry.try_get<PathComponent>(passengerEntity);
+                    if (!path || path->currentNodeIndex >= path->nodes.size() -1) return false;
+
+                    entt::entity nextNodeInPath = path->nodes[path->currentNodeIndex + 1];
                     
-                    auto& passenger = _registry.get<PassengerComponent>(passengerEntity);
-                    passenger.state = PassengerState::ON_TRAIN;
-                    
-                    LOG_DEBUG("PassengerMovementSystem", "Passenger boarded train.");
-                    return true;
+                    bool trainGoesToNextNode = false;
+                    auto it = std::find(line.stops.begin(), line.stops.end(), currentStopEntity);
+                    if (it != line.stops.end()) {
+                        size_t currentStopIndexOnLine = std::distance(line.stops.begin(), it);
+                        if (currentStopIndexOnLine + 1 < line.stops.size() && line.stops[currentStopIndexOnLine + 1] == nextNodeInPath) {
+                            trainGoesToNextNode = true;
+                        }
+                    }
+
+                    if (trainGoesToNextNode) {
+                        train.passengers.push_back(passengerEntity);
+                        train.currentLoad++;
+                        auto& passenger = _registry.get<PassengerComponent>(passengerEntity);
+                        passenger.state = PassengerState::ON_TRAIN;
+                        LOG_DEBUG("PassengerMovementSystem", "Passenger boarded train.");
+                        return true;
+                    }
+
+                    return false;
                 }), city.waitingPassengers.end());
         }
     }

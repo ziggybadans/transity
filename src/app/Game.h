@@ -10,6 +10,7 @@
 #include "render/ColorManager.h"
 #include "systems/gameplay/CityPlacementSystem.h"
 #include "systems/world/WorldGenerationSystem.h"
+#include "core/Pathfinder.h"
 #include <entt/entt.hpp>
 #include <future>
 #include <memory>
@@ -19,6 +20,7 @@ class UI;
 class InputHandler;
 class ChunkManagerSystem;
 class ThreadPool;
+class Pathfinder;
 
 class Game {
 public:
@@ -51,6 +53,7 @@ private:
     LoadingState _loadingState;
     WorldGenerationSystem _worldGenerationSystem;
     PerformanceMonitor _performanceMonitor;
+    Pathfinder _pathfinder;
     ServiceLocator _serviceLocator;
 
     std::unique_ptr<ChunkManagerSystem> _chunkManagerSystem;
