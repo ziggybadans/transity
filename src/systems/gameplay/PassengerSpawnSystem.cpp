@@ -31,12 +31,11 @@ void PassengerSpawnSystem::update(sf::Time dt) {
         }
 
         if (connectedCities.size() < 2) {
-            return; // Not enough connected cities to create a passenger trip
+            return;
         }
 
         const int maxAttempts = 10;
         for (int i = 0; i < maxAttempts; ++i) {
-            // Use a more robust random selection
             std::random_device rd;
             std::mt19937 gen(rd());
             std::shuffle(connectedCities.begin(), connectedCities.end(), gen);
@@ -44,19 +43,22 @@ void PassengerSpawnSystem::update(sf::Time dt) {
             entt::entity originCity = connectedCities[0];
             entt::entity destinationCity = connectedCities[1];
 
-            // Find a path for the passenger
             std::vector<entt::entity> path = _pathfinder.findPath(originCity, destinationCity);
 
             if (!path.empty()) {
                 entt::entity passengerEntity = _entityFactory.createPassenger(originCity, destinationCity);
                 if (_registry.valid(passengerEntity)) {
-                    // Get the existing PathComponent and populate it
                     auto& pathComponent = _registry.get<PathComponent>(passengerEntity);
                     pathComponent.nodes = path;
                     pathComponent.currentNodeIndex = 0;
-                    LOG_DEBUG("PassengerSpawnSystem", "Passenger created with a path of %zu stops from %u to %u.", path.size(), entt::to_integral(originCity), entt::to_integral(destinationCity));
+
+                    // Add passenger to the origin city's waiting list
+                    auto& originCityComponent = _registry.get<CityComponent>(originCity);
+                    originCityComponent.waitingPassengers.push_back(passengerEntity);
+
+                    LOG_DEBUG("PassengerSpawnSystem", "Passenger %u created at city %u, waiting for train. Path size: %zu.", entt::to_integral(passengerEntity), entt::to_integral(originCity), path.size());
                 }
-                return; // Passenger spawned, exit for this tick
+                return;
             }
         }
 

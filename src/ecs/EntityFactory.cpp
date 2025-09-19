@@ -188,6 +188,16 @@ entt::entity EntityFactory::createPassenger(entt::entity origin, entt::entity de
     _registry.emplace<PassengerComponent>(entity, origin, destination, PassengerState::WAITING_FOR_TRAIN);
     _registry.emplace<PathComponent>(entity); // Initially empty path
 
+    // Add a RenderableComponent to make passengers visible
+    auto& renderable = _registry.emplace<RenderableComponent>(entity);
+    renderable.radius = {5.0f}; // Small circle for passengers
+    renderable.color = sf::Color::Yellow;
+    renderable.zOrder = {2}; // Render above lines but below stations/trains
+
+    // Add a NameComponent
+    std::string passengerName = "Passenger " + std::to_string(entt::to_integral(entity));
+    _registry.emplace<NameComponent>(entity, passengerName);
+
     LOG_DEBUG("EntityFactory", "Passenger entity (ID: %u) created. Origin: %u, Destination: %u.",
               static_cast<unsigned int>(entity),
               static_cast<unsigned int>(origin),

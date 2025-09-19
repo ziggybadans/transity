@@ -4,6 +4,7 @@
 #include "components/GameLogicComponents.h"
 #include "components/RenderComponents.h"
 #include "Logger.h"
+#include "imgui.h"
 #include <SFML/System/Vector2.hpp>
 #include <SFML/Window/Mouse.hpp>
 #include <cmath>
@@ -40,6 +41,10 @@ void SelectionSystem::onMouseButtonPressed(const MouseButtonPressedEvent& event)
     }
 
     if (event.button != sf::Mouse::Button::Left) {
+        return;
+    }
+
+    if (ImGui::GetIO().WantCaptureMouse) {
         return;
     }
 

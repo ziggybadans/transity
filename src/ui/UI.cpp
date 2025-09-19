@@ -9,6 +9,17 @@
 #include "systems/world/ChunkManagerSystem.h"
 #include <cstdlib>
 
+// Add this helper function at the top of the file, after the includes
+const char* trainStateToString(TrainState state) {
+    switch (state) {
+        case TrainState::STOPPED: return "Stopped";
+        case TrainState::ACCELERATING: return "Accelerating";
+        case TrainState::MOVING: return "Moving";
+        case TrainState::DECELERATING: return "Decelerating";
+        default: return "Unknown";
+    }
+}
+
 UI::UI(sf::RenderWindow &window, TerrainRenderSystem &terrainRenderSystem,
        ServiceLocator &serviceLocator)
     : _window(window), _terrainRenderSystem(terrainRenderSystem), _serviceLocator(serviceLocator),
@@ -417,7 +428,7 @@ void UI::drawInfoPanel() {
             } else if (auto* train = registry.try_get<TrainComponent>(entity)) {
                 ImGui::Text("Type: Train");
                 ImGui::Text("Assigned Line: %u", entt::to_integral(train->assignedLine));
-                const char* state = train->state == TrainState::MOVING ? "Moving" : "Stopped";
+                const char* state = trainStateToString(train->state); // Use the helper function
                 ImGui::Text("State: %s", state);
                 ImGui::Text("Passengers: %d/%d", train->currentLoad, train->capacity);
 

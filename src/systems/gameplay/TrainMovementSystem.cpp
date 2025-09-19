@@ -97,14 +97,18 @@ void TrainMovementSystem::update(sf::Time dt) {
                 train.progressOnSegment += distanceToTravel / segmentLength;
 
                 if (train.progressOnSegment >= 1.0f) {
+                    // Reached the destination station. Clamp position and progress.
+                    // The DECELERATING state handler is now responsible for bringing the train to a full stop.
+                    train.progressOnSegment = 1.0f;
                     position.coordinates = nextStopPos;
-                    train.progressOnSegment = 0.0f;
-                    train.currentSegmentIndex = nextStopIndex;
 
-                    train.state = TrainState::STOPPED;
-                    train.stopTimer = TrainComponent::STOP_DURATION;
-                    train.currentSpeed = 0.0f;
+                    // If we arrived but weren't slowing down, force it.
+                    // This handles short segments where deceleration might not have triggered.
+                    if (train.state != TrainState::DECELERATING) {
+                        train.state = TrainState::DECELERATING;
+                    }
                 } else {
+                    // In transit, update position via interpolation.
                     position.coordinates = currentStopPos + segmentVector * train.progressOnSegment;
                 }
             }
