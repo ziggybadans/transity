@@ -14,6 +14,8 @@
 #include "systems/world/WorldSetupSystem.h"
 #include "systems/gameplay/TrainMovementSystem.h"
 #include "systems/gameplay/SelectionSystem.h"
+#include "systems/gameplay/PassengerSpawnSystem.h"
+#include "systems/gameplay/PassengerMovementSystem.h"
 #include "ui/UI.h"
 
 Game::Game(Renderer &renderer, ThreadPool &threadPool, EventBus &eventBus, ColorManager &colorManager)
@@ -35,6 +37,8 @@ Game::Game(Renderer &renderer, ThreadPool &threadPool, EventBus &eventBus, Color
     _systemManager->addSystem<CityPlacementSystem>();
     _systemManager->addSystem<SelectionSystem>();
     _systemManager->addSystem<TrainMovementSystem>();
+    _systemManager->addSystem<PassengerSpawnSystem>();
+    _systemManager->addSystem<PassengerMovementSystem>();
 
     LOG_INFO("Game", "Game instance created and systems registered.");
 }

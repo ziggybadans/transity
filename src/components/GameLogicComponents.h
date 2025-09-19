@@ -13,6 +13,7 @@ struct PositionComponent {
 // A component for city entities.
 struct CityComponent {
     std::vector<entt::entity> connectedLines;
+    std::vector<entt::entity> waitingPassengers;
 };
 
 // A component for line entities.
@@ -52,6 +53,9 @@ struct TrainComponent {
     TrainState state = TrainState::STOPPED;
     float stopTimer = 2.0f;
     static const float STOP_DURATION; // Changed from static constexpr
+    int capacity = 20;
+    int currentLoad = 0;
+    std::vector<entt::entity> passengers;
 };
 
 // A tag to mark an entity as selected.

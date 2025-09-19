@@ -388,11 +388,13 @@ void UI::drawInfoPanel() {
             if (auto* city = registry.try_get<CityComponent>(entity)) {
                 ImGui::Text("Type: City");
                 ImGui::Text("Connected Lines: %zu", city->connectedLines.size());
+                ImGui::Text("Waiting Passengers: %zu", city->waitingPassengers.size());
             } else if (auto* train = registry.try_get<TrainComponent>(entity)) {
                 ImGui::Text("Type: Train");
                 ImGui::Text("Assigned Line: %u", entt::to_integral(train->assignedLine));
                 const char* state = train->state == TrainState::MOVING ? "Moving" : "Stopped";
                 ImGui::Text("State: %s", state);
+                ImGui::Text("Passengers: %d/%d", train->currentLoad, train->capacity);
             } else if (auto* line = registry.try_get<LineComponent>(entity)) {
                 ImGui::Text("Type: Line");
                 ImGui::Text("Stops: %zu", line->stops.size());

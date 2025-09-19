@@ -10,6 +10,7 @@
 
 #include "components/GameLogicComponents.h"
 #include "components/RenderComponents.h"
+#include "components/PassengerComponents.h"
 
 class EntityFactory {
 public:
@@ -20,6 +21,7 @@ public:
                           const std::string &name = "");
     entt::entity createLine(const std::vector<entt::entity> &stops, const sf::Color &color);
     entt::entity createTrain(entt::entity lineEntity);
+    entt::entity createPassenger(entt::entity origin, entt::entity destination);
 
 private:
     entt::registry &_registry;

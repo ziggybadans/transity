@@ -174,3 +174,24 @@ entt::entity EntityFactory::createTrain(entt::entity lineEntity) {
 
     return trainEntity;
 }
+
+entt::entity EntityFactory::createPassenger(entt::entity origin, entt::entity destination) {
+    if (!_registry.valid(origin) || !_registry.valid(destination)) {
+        LOG_ERROR("EntityFactory", "Cannot create passenger with invalid origin or destination.");
+        return entt::null;
+    }
+
+    const auto& originPos = _registry.get<PositionComponent>(origin).coordinates;
+
+    auto entity = _registry.create();
+    _registry.emplace<PositionComponent>(entity, originPos);
+    _registry.emplace<PassengerComponent>(entity, origin, destination, PassengerState::WAITING_FOR_TRAIN);
+    _registry.emplace<PathComponent>(entity); // Initially empty path
+
+    LOG_DEBUG("EntityFactory", "Passenger entity (ID: %u) created. Origin: %u, Destination: %u.",
+              static_cast<unsigned int>(entity),
+              static_cast<unsigned int>(origin),
+              static_cast<unsigned int>(destination));
+
+    return entity;
+}
