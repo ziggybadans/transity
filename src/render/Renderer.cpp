@@ -8,6 +8,17 @@
 #include <cstdlib>
 #include <entt/entt.hpp>
 #include <iostream>
+#include <stdexcept>
+
+sf::Font Renderer::loadFont() {
+    sf::Font font;
+    if (!font.openFromFile("data/fonts/font.TTF")) {
+        const std::string errorMsg = "Failed to load font: data/fonts/font.TTF";
+        LOG_ERROR("Renderer", errorMsg.c_str());
+        throw std::runtime_error(errorMsg);
+    }
+    return font;
+}
 
 Renderer::Renderer(ColorManager &colorManager)
     : _colorManager(colorManager),
@@ -18,10 +29,15 @@ Renderer::Renderer(ColorManager &colorManager)
                       sf::ContextSettings{0u, 0u, 8u}),
       _clearColor(_colorManager.getBackgroundColor()), 
       _terrainRenderSystem(colorManager),
-      _lineRenderSystem()
+      _lineRenderSystem(),
+      _trainRenderSystem(), // Initialize the train render system
+      m_font(loadFont()),
+      m_text(m_font)
  {
     LOG_DEBUG("Renderer", "Renderer created and window initialized.");
     _windowInstance.setFramerateLimit(Constants::FRAMERATE_LIMIT);
+    m_text.setCharacterSize(24);
+    m_text.setFillColor(sf::Color::Black);
 }
 
 Renderer::~Renderer() {
@@ -66,6 +82,11 @@ void Renderer::renderFrame(const entt::registry &registry, const sf::View &view,
     });
 
     for (auto entity : sortedEntities) {
+        // Skip rendering trains, as they are handled by TrainRenderSystem
+        if (registry.all_of<TrainComponent>(entity)) {
+            continue;
+        }
+
         const auto &position = viewRegistry.get<const PositionComponent>(entity);
         const auto &renderable = viewRegistry.get<const RenderableComponent>(entity);
 
@@ -76,6 +97,18 @@ void Renderer::renderFrame(const entt::registry &registry, const sf::View &view,
         shape.setOrigin({renderable.radius.value, renderable.radius.value});
 
         _windowInstance.draw(shape);
+
+        // Draw passenger count for cities
+        if (auto* city = registry.try_get<const CityComponent>(entity)) {
+            if (!city->waitingPassengers.empty()) {
+                m_text.setString(std::to_string(city->waitingPassengers.size()));
+                sf::FloatRect textBounds = m_text.getLocalBounds();
+                m_text.setOrigin({textBounds.position.x + textBounds.size.x / 2.0f,
+                                  textBounds.position.y + textBounds.size.y / 2.0f});
+                m_text.setPosition({position.coordinates.x + renderable.radius.value + 10.0f, position.coordinates.y});
+                _windowInstance.draw(m_text);
+            }
+        }
 
         // Draw highlight if selected
         if (registry.all_of<SelectedComponent>(entity)) {
@@ -88,6 +121,8 @@ void Renderer::renderFrame(const entt::registry &registry, const sf::View &view,
             _windowInstance.draw(highlight);
         }
     }
+
+        _trainRenderSystem.render(registry, _windowInstance, highlightColor); // Call the train render system
 }
 
 void Renderer::displayFrame() noexcept {

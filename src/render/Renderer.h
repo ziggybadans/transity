@@ -5,6 +5,7 @@
 #include <entt/entt.hpp>
 
 #include "LineRenderSystem.h"
+#include "TrainRenderSystem.h" // Include the train render system
 #include "event/EventBus.h"
 #include "event/InputEvents.h"
 #include "systems/rendering/TerrainRenderSystem.h"
@@ -33,11 +34,16 @@ public:
     TerrainRenderSystem &getTerrainRenderSystem() noexcept;
 
 private:
+    static sf::Font loadFont();
+
     ColorManager &_colorManager;
     sf::RenderWindow _windowInstance;
     sf::Color _clearColor;
     TerrainRenderSystem _terrainRenderSystem;
     LineRenderSystem _lineRenderSystem;
+    TrainRenderSystem _trainRenderSystem; // Add the train render system
+    sf::Font m_font;
+    sf::Text m_text;
 
     void onWindowClose(const WindowCloseEvent &event);
     void onThemeChanged(const ThemeChangedEvent &event);
