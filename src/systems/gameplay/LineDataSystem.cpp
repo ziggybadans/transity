@@ -1,6 +1,7 @@
 #include "LineDataSystem.h"
 #include "components/GameLogicComponents.h"
 #include "core/ServiceLocator.h"
+#include "ecs/EntityFactory.h"
 #include "Logger.h"
 #include <SFML/System/Vector2.hpp>
 #include <vector>
@@ -17,12 +18,23 @@ struct Vector2fComparator {
 };
 
 LineDataSystem::LineDataSystem(ServiceLocator &serviceLocator)
-    : _registry(serviceLocator.registry) {
+    : _registry(serviceLocator.registry),
+      _entityFactory(serviceLocator.entityFactory) {
     LOG_DEBUG("LineDataSystem", "LineDataSystem created.");
+    m_addTrainConnection = serviceLocator.eventBus.sink<AddTrainToLineEvent>().connect<&LineDataSystem::onAddTrain>(this);
+}
+
+LineDataSystem::~LineDataSystem() {
+    m_addTrainConnection.release();
 }
 
 void LineDataSystem::update(sf::Time dt) {
     processParallelSegments();
+}
+
+void LineDataSystem::onAddTrain(const AddTrainToLineEvent& event) {
+    LOG_DEBUG("LineDataSystem", "Processing AddTrainToLineEvent for line %u.", entt::to_integral(event.lineEntity));
+    _entityFactory.createTrain(event.lineEntity);
 }
 
 void LineDataSystem::processParallelSegments() {

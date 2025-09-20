@@ -1,18 +1,24 @@
 #pragma once
 
 #include "ecs/ISystem.h"
-#include <SFML/System/Time.hpp>
-#include <entt/entt.hpp>
+#include "core/ServiceLocator.h"
+#include "entt/entt.hpp"
+#include "event/EventBus.h"
+#include "event/LineEvents.h"
 
-class ServiceLocator;
+class EntityFactory;
 
 class LineDataSystem : public ISystem, public IUpdatable {
 public:
-    explicit LineDataSystem(ServiceLocator &serviceLocator);
-
+    LineDataSystem(ServiceLocator& serviceLocator);
+    ~LineDataSystem();
     void update(sf::Time dt) override;
 
 private:
-    entt::registry &_registry;
     void processParallelSegments();
+    void onAddTrain(const AddTrainToLineEvent& event);
+
+    entt::registry& _registry;
+    EntityFactory& _entityFactory;
+    entt::connection m_addTrainConnection;
 };

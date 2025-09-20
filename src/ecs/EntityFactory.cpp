@@ -140,7 +140,7 @@ entt::entity EntityFactory::createLine(const std::vector<entt::entity> &stops,
     LOG_DEBUG("EntityFactory", "Line entity (ID: %u) created successfully with %zu stops.",
               static_cast<unsigned int>(entity), stops.size());
 
-    createTrain(entity);
+    // createTrain(entity);
 
     return entity;
 }

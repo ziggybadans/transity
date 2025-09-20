@@ -9,6 +9,7 @@
 #include "systems/world/ChunkManagerSystem.h"
 #include "components/PassengerComponents.h"
 #include <cstdlib>
+#include <cstdint>
 
 // Add this helper function at the top of the file, after the includes
 const char* trainStateToString(TrainState state) {
@@ -472,6 +473,114 @@ void UI::drawInfoPanel() {
             } else if (auto* line = registry.try_get<LineComponent>(entity)) {
                 ImGui::Text("Type: Line");
                 ImGui::Text("Stops: %zu", line->stops.size());
+
+                // Color Picker
+                float color[4] = {
+                    line->color.r / 255.f,
+                    line->color.g / 255.f,
+                    line->color.b / 255.f,
+                    line->color.a / 255.f
+                };
+                if (ImGui::ColorEdit4("Color", color)) {
+                    line->color.r = static_cast<std::uint8_t>(color[0] * 255);
+                    line->color.g = static_cast<std::uint8_t>(color[1] * 255);
+                    line->color.b = static_cast<std::uint8_t>(color[2] * 255);
+                    line->color.a = static_cast<std::uint8_t>(color[3] * 255);
+                }
+
+                if (ImGui::Button("Add Train")) {
+                    _serviceLocator.eventBus.enqueue<AddTrainToLineEvent>({entity});
+                    LOG_DEBUG("UI", "Add train to line %u requested.", entt::to_integral(entity));
+                }
+
+                // Find all trains on this line
+                std::vector<entt::entity> trainsOnLine;
+                auto trainView = registry.view<TrainComponent>();
+                for (auto trainEntity : trainView) {
+                    auto& train = trainView.get<TrainComponent>(trainEntity);
+                    if (train.assignedLine == entity) {
+                        trainsOnLine.push_back(trainEntity);
+                    }
+                }
+
+                ImGui::Text("Train Count: %zu", trainsOnLine.size());
+
+                if (ImGui::CollapsingHeader("Trains on Line")) {
+                    if (trainsOnLine.empty()) {
+                        ImGui::Text("No trains on this line.");
+                    } else {
+                        for (auto trainEntity : trainsOnLine) {
+                            auto& train = registry.get<TrainComponent>(trainEntity);
+                            auto* trainName = registry.try_get<NameComponent>(trainEntity);
+
+                            std::string trainLabel = trainName ? trainName->name : "Train " + std::to_string(entt::to_integral(trainEntity));
+                            
+                            std::string location;
+                            if (train.state == TrainState::STOPPED) {
+                                entt::entity currentStopEntity = entt::null;
+                                if (train.currentSegmentIndex < line->stops.size()) {
+                                    currentStopEntity = line->stops[train.currentSegmentIndex];
+                                }
+                                
+                                if (registry.valid(currentStopEntity)) {
+                                    auto* stationName = registry.try_get<NameComponent>(currentStopEntity);
+                                    location = "At " + (stationName ? stationName->name : "Unknown Station");
+                                } else {
+                                    location = "At an unknown station";
+                                }
+                            } else {
+                                if (train.currentSegmentIndex < line->stops.size() - 1) {
+                                    entt::entity stop1_entity = line->stops[train.currentSegmentIndex];
+                                    entt::entity stop2_entity = line->stops[train.currentSegmentIndex + 1];
+
+                                    if (registry.valid(stop1_entity) && registry.valid(stop2_entity)) {
+                                        auto* name1 = registry.try_get<NameComponent>(stop1_entity);
+                                        auto* name2 = registry.try_get<NameComponent>(stop2_entity);
+                                        
+                                        std::string station1Name = name1 ? name1->name : "Unknown";
+                                        std::string station2Name = name2 ? name2->name : "Unknown";
+
+                                        if (train.direction == TrainDirection::FORWARD) {
+                                            location = "Between " + station1Name + " and " + station2Name;
+                                        } else {
+                                            location = "Between " + station2Name + " and " + station1Name;
+                                        }
+                                    } else {
+                                        location = "Between unknown stations";
+                                    }
+                                } else {
+                                    location = "In transit";
+                                }
+                            }
+                            
+                            std::string fullLabel = trainLabel + " (" + location + ")";
+                            if (ImGui::Selectable(fullLabel.c_str())) {
+                                _serviceLocator.gameState.selectedEntity = trainEntity;
+                                LOG_DEBUG("UI", "Train %u selected from line info panel.", entt::to_integral(trainEntity));
+                            }
+                        }
+                    }
+                }
+
+                if (ImGui::CollapsingHeader("Stops")) {
+                    if (line->stops.empty()) {
+                        ImGui::Text("This line has no stops.");
+                    } else {
+                        for (size_t i = 0; i < line->stops.size(); ++i) {
+                            entt::entity stopEntity = line->stops[i];
+                            if (registry.valid(stopEntity)) {
+                                auto* name = registry.try_get<NameComponent>(stopEntity);
+                                std::string stopName = name ? name->name : "Stop " + std::to_string(entt::to_integral(stopEntity));
+                                std::string label = std::to_string(i + 1) + ". " + stopName;
+                                if (ImGui::Selectable(label.c_str())) {
+                                    _serviceLocator.gameState.selectedEntity = stopEntity;
+                                    LOG_DEBUG("UI", "Stop %u selected from line info panel.", entt::to_integral(stopEntity));
+                                }
+                            }
+                        }
+                    }
+                }
+
             } else if (auto* passenger = registry.try_get<PassengerComponent>(entity)) {
                 ImGui::Text("Type: Passenger");
                 

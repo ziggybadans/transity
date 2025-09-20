@@ -1,6 +1,6 @@
 #pragma once
 
-#include <entt/entt.hpp>
+#include "entt/entt.hpp"
 
 struct AddStationToLineEvent {
     entt::entity stationEntity;
@@ -9,3 +9,7 @@ struct AddStationToLineEvent {
 struct FinalizeLineEvent {};
 
 struct CancelLineCreationEvent {};
+
+struct AddTrainToLineEvent {
+    entt::entity lineEntity;
+};
