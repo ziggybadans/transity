@@ -74,12 +74,15 @@ void Application::run() {
             }
 
             _ui->update(frameTime, numStationsInActiveLine);
+            update(TimePerFrame); // Update UI and input every frame
 
             if (_isWindowFocused) {
                 while (_timeAccumulator >= TimePerFrame) {
                     _timeAccumulator -= TimePerFrame;
-                    sf::Time scaledTimePerFrame = TimePerFrame * _game->getGameState().timeMultiplier;
-                    update(scaledTimePerFrame);
+                    if (_game->getGameState().timeMultiplier > 0.0f) {
+                        sf::Time scaledTimePerFrame = TimePerFrame * _game->getGameState().timeMultiplier;
+                        _game->updateSimulation(scaledTimePerFrame);
+                    }
                 }
             }
 

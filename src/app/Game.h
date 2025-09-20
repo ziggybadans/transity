@@ -29,6 +29,7 @@ public:
 
     void startLoading();
     void update(sf::Time dt, UI &ui);
+    void updateSimulation(sf::Time dt);
 
     entt::registry &getRegistry() { return _registry; }
     EventBus &getEventBus() { return _eventBus; }
@@ -58,6 +59,7 @@ private:
 
     std::unique_ptr<ChunkManagerSystem> _chunkManagerSystem;
     std::unique_ptr<SystemManager> _systemManager;
+    std::unique_ptr<SystemManager> _simulationSystemManager;
     std::unique_ptr<InputHandler> _inputHandler;
 
     std::future<void> _loadingFuture;
