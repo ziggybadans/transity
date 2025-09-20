@@ -8,6 +8,7 @@
 #include "systems/rendering/TerrainRenderSystem.h"
 #include "systems/world/ChunkManagerSystem.h"
 #include "components/PassengerComponents.h"
+#include "event/DeletionEvents.h"
 #include <cstdlib>
 #include <cstdint>
 
@@ -446,6 +447,11 @@ void UI::drawInfoPanel() {
                 ImGui::Text("State: %s", state);
                 ImGui::Text("Passengers: %d/%d", train->currentLoad, train->capacity);
 
+                if (ImGui::Button("Delete Train")) {
+                    _serviceLocator.eventBus.enqueue<DeleteEntityEvent>({entity});
+                    LOG_DEBUG("UI", "Delete train %u requested.", entt::to_integral(entity));
+                }
+
                 if (ImGui::CollapsingHeader("Passengers")) {
                     if (train->passengers.empty()) {
                         ImGui::Text("No passengers on board.");
@@ -491,6 +497,12 @@ void UI::drawInfoPanel() {
                 if (ImGui::Button("Add Train")) {
                     _serviceLocator.eventBus.enqueue<AddTrainToLineEvent>({entity});
                     LOG_DEBUG("UI", "Add train to line %u requested.", entt::to_integral(entity));
+                }
+
+                ImGui::SameLine();
+                if (ImGui::Button("Delete Line")) {
+                    _serviceLocator.eventBus.enqueue<DeleteEntityEvent>({entity});
+                    LOG_DEBUG("UI", "Delete line %u requested.", entt::to_integral(entity));
                 }
 
                 // Find all trains on this line
