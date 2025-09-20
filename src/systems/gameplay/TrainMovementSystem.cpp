@@ -29,10 +29,29 @@ void TrainMovementSystem::update(sf::Time dt) {
             continue;
         }
 
-        if (train.currentSegmentIndex >= line.stops.size()) {
-            train.currentSegmentIndex = 0;
+        int nextStopIndex;
+        if (train.direction == TrainDirection::FORWARD) {
+            nextStopIndex = train.currentSegmentIndex + 1;
+        } else { // BACKWARD
+            nextStopIndex = train.currentSegmentIndex - 1;
         }
-        int nextStopIndex = (train.currentSegmentIndex + 1) % line.stops.size();
+
+        if (train.state != TrainState::STOPPED && (nextStopIndex < 0 || nextStopIndex >= line.stops.size())) {
+            // A moving train has reached a terminal. Force it to decelerate to a stop.
+            // The arrival logic will then handle turning around.
+            train.state = TrainState::DECELERATING;
+            train.currentSpeed = 0.0f;
+        }
+
+        // If the train is stopped, we don't need to calculate its next move yet.
+        if (train.state == TrainState::STOPPED) {
+            train.stopTimer -= timeStep;
+            if (train.stopTimer <= 0.0f) {
+                train.state = TrainState::ACCELERATING;
+            }
+            continue; // Skip movement calculations for this frame
+        }
+
         entt::entity currentStopEntity = line.stops[train.currentSegmentIndex];
         entt::entity nextStopEntity = line.stops[nextStopIndex];
 
@@ -48,13 +67,6 @@ void TrainMovementSystem::update(sf::Time dt) {
 
         // --- State Machine ---
         switch (train.state) {
-        case TrainState::STOPPED:
-            train.stopTimer -= timeStep;
-            if (train.stopTimer <= 0.0f) {
-                train.state = TrainState::ACCELERATING;
-            }
-            break;
-
         case TrainState::ACCELERATING: {
             train.currentSpeed += train.acceleration * timeStep;
             if (train.currentSpeed >= train.maxSpeed) {
@@ -86,6 +98,13 @@ void TrainMovementSystem::update(sf::Time dt) {
                 position.coordinates = nextStopPos;
                 train.progressOnSegment = 0.0f;
                 train.currentSegmentIndex = nextStopIndex;
+
+                // Reverse direction at terminal stations
+                if (train.direction == TrainDirection::FORWARD && train.currentSegmentIndex >= line.stops.size() - 1) {
+                    train.direction = TrainDirection::BACKWARD;
+                } else if (train.direction == TrainDirection::BACKWARD && train.currentSegmentIndex <= 0) {
+                    train.direction = TrainDirection::FORWARD;
+                }
             }
             break;
         }

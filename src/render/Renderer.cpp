@@ -30,7 +30,8 @@ Renderer::Renderer(ColorManager &colorManager)
       _clearColor(_colorManager.getBackgroundColor()), 
       _terrainRenderSystem(colorManager),
       _lineRenderSystem(),
-      _trainRenderSystem(), // Initialize the train render system
+      _trainRenderSystem(),
+      _pathRenderSystem(),
       m_font(loadFont()),
       m_text(m_font)
  {
@@ -123,6 +124,7 @@ void Renderer::renderFrame(const entt::registry &registry, const sf::View &view,
     }
 
         _trainRenderSystem.render(registry, _windowInstance, highlightColor); // Call the train render system
+        _pathRenderSystem.render(registry, _windowInstance); // Call the path render system
 }
 
 void Renderer::displayFrame() noexcept {

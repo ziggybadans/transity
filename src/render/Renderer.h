@@ -10,6 +10,7 @@
 #include "event/InputEvents.h"
 #include "systems/rendering/TerrainRenderSystem.h"
 #include "render/ColorManager.h"
+#include "PathRenderSystem.h"
 
 class WorldGenerationSystem;
 
@@ -41,7 +42,8 @@ private:
     sf::Color _clearColor;
     TerrainRenderSystem _terrainRenderSystem;
     LineRenderSystem _lineRenderSystem;
-    TrainRenderSystem _trainRenderSystem; // Add the train render system
+    TrainRenderSystem _trainRenderSystem;
+    PathRenderSystem _pathRenderSystem;
     sf::Font m_font;
     sf::Text m_text;
 

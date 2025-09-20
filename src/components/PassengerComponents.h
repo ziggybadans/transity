@@ -22,3 +22,6 @@ struct PathComponent {
     std::vector<entt::entity> nodes; // Sequence of stations/lines
     int currentNodeIndex = 0;
 };
+
+// A tag component to indicate that a passenger's path should be visualized.
+struct VisualizePathComponent {};

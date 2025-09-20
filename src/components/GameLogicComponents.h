@@ -42,11 +42,17 @@ enum class TrainState {
     DECELERATING
 };
 
+enum class TrainDirection {
+    FORWARD,
+    BACKWARD
+};
+
 // A component for train entities.
 struct TrainComponent {
     entt::entity assignedLine;
     int currentSegmentIndex = 0;
     float progressOnSegment = 0.0f;
+    TrainDirection direction = TrainDirection::FORWARD;
     float maxSpeed = 100.0f;
     float currentSpeed = 50.0f; // World units per second
     float acceleration = 25.0f;

@@ -7,6 +7,7 @@
 #include "imgui.h"
 #include "systems/rendering/TerrainRenderSystem.h"
 #include "systems/world/ChunkManagerSystem.h"
+#include "components/PassengerComponents.h"
 #include <cstdlib>
 
 // Add this helper function at the top of the file, after the includes
@@ -486,6 +487,22 @@ void UI::drawInfoPanel() {
                     default: state = "Unknown"; break;
                 }
                 ImGui::Text("State: %s", state);
+
+                // Add button to toggle path visualization
+                bool isVisualizing = registry.all_of<VisualizePathComponent>(entity);
+                const char* buttonText = isVisualizing ? "Hide Path" : "Show Path";
+                if (ImGui::Button(buttonText)) {
+                    // Clear any existing visualization components first
+                    auto view = registry.view<VisualizePathComponent>();
+                    for (auto otherEntity : view) {
+                        registry.remove<VisualizePathComponent>(otherEntity);
+                    }
+
+                    // If the button was "Show Path", add the component to the current entity
+                    if (!isVisualizing) {
+                        registry.emplace<VisualizePathComponent>(entity);
+                    }
+                }
             }
         } else {
             ImGui::Text("No information available.");
