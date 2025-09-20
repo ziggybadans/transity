@@ -16,6 +16,7 @@
 #include "systems/gameplay/SelectionSystem.h"
 #include "systems/gameplay/PassengerSpawnSystem.h"
 #include "systems/gameplay/PassengerMovementSystem.h"
+#include "systems/gameplay/LineDataSystem.h"
 #include "ui/UI.h"
 
 Game::Game(Renderer &renderer, ThreadPool &threadPool, EventBus &eventBus, ColorManager &colorManager)
@@ -40,6 +41,7 @@ Game::Game(Renderer &renderer, ThreadPool &threadPool, EventBus &eventBus, Color
     // Simulation systems that should be paused
     _simulationSystemManager->addSystem<WorldSetupSystem>();
     _simulationSystemManager->addSystem<CityPlacementSystem>();
+    _simulationSystemManager->addSystem<LineDataSystem>();
     _simulationSystemManager->addSystem<TrainMovementSystem>();
     _simulationSystemManager->addSystem<PassengerMovementSystem>();
 

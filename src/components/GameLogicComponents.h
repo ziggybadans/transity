@@ -21,6 +21,7 @@ struct LineComponent {
     sf::Color color;
     std::vector<entt::entity> stops;
     std::vector<sf::Vector2f> pathPoints;
+    std::vector<sf::Vector2f> pathOffsets; // Add this line
     Thickness thickness = {5.0f};
 };
 

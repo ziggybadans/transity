@@ -29,65 +29,67 @@ void TrainMovementSystem::update(sf::Time dt) {
             continue;
         }
 
-        int nextStopIndex;
-        if (train.direction == TrainDirection::FORWARD) {
-            nextStopIndex = train.currentSegmentIndex + 1;
-        } else { // BACKWARD
-            nextStopIndex = train.currentSegmentIndex - 1;
-        }
-
-        if (train.state != TrainState::STOPPED && (nextStopIndex < 0 || nextStopIndex >= line.stops.size())) {
-            // A moving train has reached a terminal. Force it to decelerate to a stop.
-            // The arrival logic will then handle turning around.
-            train.state = TrainState::DECELERATING;
-            train.currentSpeed = 0.0f;
-        }
-
-        // If the train is stopped, we don't need to calculate its next move yet.
+        // Handle stopped state
         if (train.state == TrainState::STOPPED) {
             train.stopTimer -= timeStep;
             if (train.stopTimer <= 0.0f) {
                 train.state = TrainState::ACCELERATING;
             }
-            continue; // Skip movement calculations for this frame
+            continue;
         }
 
-        entt::entity currentStopEntity = line.stops[train.currentSegmentIndex];
-        entt::entity nextStopEntity = line.stops[nextStopIndex];
+        // Determine current segment and next stop
+        int nextStopIndex;
+        int segmentIndexForOffset = -1;
+        if (train.direction == TrainDirection::FORWARD) {
+            nextStopIndex = train.currentSegmentIndex + 1;
+            segmentIndexForOffset = train.currentSegmentIndex;
+        } else { // BACKWARD
+            nextStopIndex = train.currentSegmentIndex - 1;
+            segmentIndexForOffset = train.currentSegmentIndex - 1;
+        }
+        
+        // Get segment start and end positions with offsets
+        const auto &currentStopPos = _registry.get<PositionComponent>(line.stops[train.currentSegmentIndex]).coordinates;
+        
+        sf::Vector2f segmentOffset(0.f, 0.f);
+        if (segmentIndexForOffset >= 0 && segmentIndexForOffset < line.pathOffsets.size()) {
+            segmentOffset = line.pathOffsets[segmentIndexForOffset];
+        }
+        
+        sf::Vector2f startPos = currentStopPos + segmentOffset;
+        sf::Vector2f endPos;
 
-        if (!_registry.valid(currentStopEntity) || !_registry.valid(nextStopEntity)) {
-            break;
+        if (nextStopIndex >= 0 && nextStopIndex < line.stops.size()) {
+            const auto &nextStopPos = _registry.get<PositionComponent>(line.stops[nextStopIndex]).coordinates;
+            endPos = nextStopPos + segmentOffset;
+        } else {
+            // At a terminal, the "end" of the segment is the station itself, but offset.
+            int terminalIndex = (train.direction == TrainDirection::FORWARD) ? line.stops.size() - 1 : 0;
+            const auto& terminalPos = _registry.get<PositionComponent>(line.stops[terminalIndex]).coordinates;
+            endPos = terminalPos + segmentOffset;
         }
 
-        const auto &currentStopPos = _registry.get<PositionComponent>(currentStopEntity).coordinates;
-        const auto &nextStopPos = _registry.get<PositionComponent>(nextStopEntity).coordinates;
-        sf::Vector2f segmentVector = nextStopPos - currentStopPos;
+        sf::Vector2f segmentVector = endPos - startPos;
         float segmentLength = std::sqrt(segmentVector.x * segmentVector.x + segmentVector.y * segmentVector.y);
         float distanceToNextStop = (1.0f - train.progressOnSegment) * segmentLength;
 
         // --- State Machine ---
         switch (train.state) {
-        case TrainState::ACCELERATING: {
+        case TrainState::ACCELERATING:
             train.currentSpeed += train.acceleration * timeStep;
             if (train.currentSpeed >= train.maxSpeed) {
                 train.currentSpeed = train.maxSpeed;
                 train.state = TrainState::MOVING;
             }
-            float decelerationDistance = (train.currentSpeed * train.currentSpeed) / (2.0f * train.acceleration);
-            if (distanceToNextStop <= decelerationDistance) {
-                train.state = TrainState::DECELERATING;
-            }
-            break;
-        }
-
+            // Fall-through to check for deceleration
         case TrainState::MOVING: {
             float decelerationDistance = (train.currentSpeed * train.currentSpeed) / (2.0f * train.acceleration);
-            if (distanceToNextStop <= decelerationDistance) {
+            if (distanceToNextStop <= decelerationDistance && segmentLength > 0) {
                 train.state = TrainState::DECELERATING;
             }
             break;
         }
-
         case TrainState::DECELERATING:
             train.currentSpeed -= train.acceleration * timeStep;
             if (train.currentSpeed <= 0.0f) {
@@ -95,18 +97,24 @@ void TrainMovementSystem::update(sf::Time dt) {
                 train.state = TrainState::STOPPED;
                 train.stopTimer = TrainComponent::STOP_DURATION;
 
-                position.coordinates = nextStopPos;
+                position.coordinates = endPos;
                 train.progressOnSegment = 0.0f;
-                train.currentSegmentIndex = nextStopIndex;
-
-                // Reverse direction at terminal stations
-                if (train.direction == TrainDirection::FORWARD && train.currentSegmentIndex >= line.stops.size() - 1) {
-                    train.direction = TrainDirection::BACKWARD;
-                } else if (train.direction == TrainDirection::BACKWARD && train.currentSegmentIndex <= 0) {
-                    train.direction = TrainDirection::FORWARD;
+                
+                if (nextStopIndex >= 0 && nextStopIndex < line.stops.size()) {
+                    train.currentSegmentIndex = nextStopIndex;
+                } else {
+                    // Arrived at terminal, reverse direction
+                    if (train.direction == TrainDirection::FORWARD) {
+                        train.currentSegmentIndex = line.stops.size() - 1;
+                        train.direction = TrainDirection::BACKWARD;
+                    } else {
+                        train.currentSegmentIndex = 0;
+                        train.direction = TrainDirection::FORWARD;
+                    }
                 }
             }
             break;
+        case TrainState::STOPPED: break; // Already handled
         }
 
         // --- Position Update ---
@@ -116,19 +124,20 @@ void TrainMovementSystem::update(sf::Time dt) {
                 train.progressOnSegment += distanceToTravel / segmentLength;
 
                 if (train.progressOnSegment >= 1.0f) {
-                    // Reached the destination station. Clamp position and progress.
-                    // The DECELERATING state handler is now responsible for bringing the train to a full stop.
                     train.progressOnSegment = 1.0f;
-                    position.coordinates = nextStopPos;
-
-                    // If we arrived but weren't slowing down, force it.
-                    // This handles short segments where deceleration might not have triggered.
+                    position.coordinates = endPos;
                     if (train.state != TrainState::DECELERATING) {
                         train.state = TrainState::DECELERATING;
                     }
                 } else {
-                    // In transit, update position via interpolation.
-                    position.coordinates = currentStopPos + segmentVector * train.progressOnSegment;
+                    position.coordinates = startPos + segmentVector * train.progressOnSegment;
+                }
+            } else {
+                // Zero length segment, just snap to end
+                position.coordinates = endPos;
+                train.progressOnSegment = 1.0;
+                if (train.state != TrainState::DECELERATING) {
+                    train.state = TrainState::DECELERATING;
                 }
             }
         }
