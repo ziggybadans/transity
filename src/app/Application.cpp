@@ -1,4 +1,3 @@
-
 #include "Application.h"
 #include "Constants.h"
 #include "Logger.h"
@@ -134,9 +133,10 @@ void Application::render(float interpolation) {
     PerfTimer timer("Application::render", _game->getServiceLocator());
 
     const auto &worldGen = _game->getWorldGenSystem();
+    auto& passengerSpawnAnimationSystem = _game->getPassengerSpawnAnimationSystem();
 
     _renderer->renderFrame(_game->getRegistry(), _game->getCamera().getView(), worldGen,
-                           interpolation);
+                           passengerSpawnAnimationSystem, interpolation);
     _ui->renderFrame();
     _renderer->displayFrame();
 }

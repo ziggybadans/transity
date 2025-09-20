@@ -9,6 +9,7 @@
 #include "event/EventBus.h"
 #include "event/InputEvents.h"
 #include "systems/rendering/TerrainRenderSystem.h"
+#include "systems/rendering/PassengerSpawnAnimationSystem.h"
 #include "render/ColorManager.h"
 #include "PathRenderSystem.h"
 
@@ -22,7 +23,7 @@ public:
     void initialize();
     void clear();
     void renderFrame(const entt::registry &registry, const sf::View &view,
-                     const WorldGenerationSystem &worldGen, float interpolation);
+                     const WorldGenerationSystem &worldGen, PassengerSpawnAnimationSystem &passengerSpawnAnimationSystem, float interpolation);
     void displayFrame() noexcept;
     void cleanupResources() noexcept;
     bool isWindowOpen() const noexcept;

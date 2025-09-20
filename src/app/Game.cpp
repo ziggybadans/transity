@@ -18,6 +18,7 @@
 #include "systems/gameplay/PassengerMovementSystem.h"
 #include "systems/gameplay/LineDataSystem.h"
 #include "systems/gameplay/DeletionSystem.h"
+#include "systems/rendering/PassengerSpawnAnimationSystem.h"
 #include "ui/UI.h"
 
 Game::Game(Renderer &renderer, ThreadPool &threadPool, EventBus &eventBus, ColorManager &colorManager)
@@ -39,6 +40,7 @@ Game::Game(Renderer &renderer, ThreadPool &threadPool, EventBus &eventBus, Color
     _systemManager->addSystem<DeletionSystem>();
     _systemManager->addSystem<ChunkManagerSystem>(_worldGenerationSystem, _eventBus);
     _systemManager->addSystem<TerrainMeshSystem>();
+    _systemManager->addSystem<PassengerSpawnAnimationSystem>();
 
     // Simulation systems that should be paused
     _simulationSystemManager->addSystem<WorldSetupSystem>();
@@ -46,6 +48,7 @@ Game::Game(Renderer &renderer, ThreadPool &threadPool, EventBus &eventBus, Color
     _simulationSystemManager->addSystem<LineDataSystem>();
     _simulationSystemManager->addSystem<TrainMovementSystem>();
     _simulationSystemManager->addSystem<PassengerMovementSystem>();
+    _simulationSystemManager->addSystem<PassengerSpawnSystem>();
 
     LOG_INFO("Game", "Game instance created and systems registered.");
 }

@@ -59,7 +59,7 @@ TerrainRenderSystem &Renderer::getTerrainRenderSystem() noexcept {
 }
 
 void Renderer::renderFrame(const entt::registry &registry, const sf::View &view,
-                           const WorldGenerationSystem &worldGen, float interpolation) {
+                           const WorldGenerationSystem &worldGen, PassengerSpawnAnimationSystem &passengerSpawnAnimationSystem, float interpolation) {
     _windowInstance.setView(view);
     _windowInstance.clear(_clearColor);
 
@@ -143,6 +143,7 @@ void Renderer::renderFrame(const entt::registry &registry, const sf::View &view,
 
         _trainRenderSystem.render(registry, _windowInstance, highlightColor); // Call the train render system
         _pathRenderSystem.render(registry, _windowInstance); // Call the path render system
+        passengerSpawnAnimationSystem.render(_windowInstance);
 }
 
 void Renderer::displayFrame() noexcept {

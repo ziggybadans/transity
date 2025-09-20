@@ -10,6 +10,7 @@
 #include "render/ColorManager.h"
 #include "systems/gameplay/CityPlacementSystem.h"
 #include "systems/world/WorldGenerationSystem.h"
+#include "systems/rendering/PassengerSpawnAnimationSystem.h"
 #include "core/Pathfinder.h"
 #include <entt/entt.hpp>
 #include <future>
@@ -39,6 +40,7 @@ public:
     SystemManager &getSystemManager() { return *_systemManager; }
     ServiceLocator &getServiceLocator() { return _serviceLocator; }
     const WorldGenerationSystem &getWorldGenSystem() const { return _worldGenerationSystem; }
+    PassengerSpawnAnimationSystem &getPassengerSpawnAnimationSystem() { return *_systemManager->getSystem<PassengerSpawnAnimationSystem>(); }
 
     std::future<void> &getLoadingFuture() { return _loadingFuture; }
 

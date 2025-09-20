@@ -43,21 +43,19 @@ void PassengerSpawnSystem::update(sf::Time dt) {
             entt::entity originCity = connectedCities[0];
             entt::entity destinationCity = connectedCities[1];
 
+            // If the city is already animating, don't try to spawn another passenger.
+            if (_registry.all_of<PassengerSpawnAnimationComponent>(originCity)) {
+                continue;
+            }
+
             std::vector<entt::entity> path = _pathfinder.findPath(originCity, destinationCity);
 
             if (!path.empty()) {
-                entt::entity passengerEntity = _entityFactory.createPassenger(originCity, destinationCity);
-                if (_registry.valid(passengerEntity)) {
-                    auto& pathComponent = _registry.get<PathComponent>(passengerEntity);
-                    pathComponent.nodes = path;
-                    pathComponent.currentNodeIndex = 0;
+                auto& animation = _registry.emplace<PassengerSpawnAnimationComponent>(originCity);
+                animation.originCity = originCity;
+                animation.destinationCity = destinationCity;
 
-                    // Add passenger to the origin city's waiting list
-                    auto& originCityComponent = _registry.get<CityComponent>(originCity);
-                    originCityComponent.waitingPassengers.push_back(passengerEntity);
-
-                    LOG_DEBUG("PassengerSpawnSystem", "Passenger %u created at city %u, waiting for train. Path size: %zu.", entt::to_integral(passengerEntity), entt::to_integral(originCity), path.size());
-                }
+                LOG_DEBUG("PassengerSpawnSystem", "Starting passenger spawn animation at city %u.", entt::to_integral(originCity));
                 return;
             }
         }

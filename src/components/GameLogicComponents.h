@@ -79,3 +79,11 @@ struct SelectedComponent {};
 struct NameComponent {
     std::string name;
 };
+
+// A component to manage the passenger spawn animation.
+struct PassengerSpawnAnimationComponent {
+    float progress = 0.0f;
+    float duration = 1.0f;
+    entt::entity originCity;
+    entt::entity destinationCity;
+};
