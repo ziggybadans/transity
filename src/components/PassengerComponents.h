@@ -2,6 +2,7 @@
 
 #include <entt/entt.hpp>
 #include <vector>
+#include <optional>
 
 // Enum for the state of a passenger
 enum class PassengerState {
@@ -15,6 +16,7 @@ struct PassengerComponent {
     entt::entity originStation;
     entt::entity destinationStation;
     PassengerState state = PassengerState::WAITING_FOR_TRAIN;
+    std::optional<entt::entity> currentTrain;
 };
 
 // A component for pathfinding information for a passenger.
@@ -22,6 +24,3 @@ struct PathComponent {
     std::vector<entt::entity> nodes; // Sequence of stations/lines
     int currentNodeIndex = 0;
 };
-
-// A tag component to indicate that a passenger's path should be visualized.
-struct VisualizePathComponent {};

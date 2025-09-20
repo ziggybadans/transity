@@ -2,6 +2,7 @@
 
 #include "ecs/ISystem.h"
 #include "event/InputEvents.h"
+#include "core/Pathfinder.h"
 
 class ServiceLocator;
 
@@ -14,5 +15,6 @@ public:
 
 private:
     ServiceLocator& _serviceLocator;
+    Pathfinder& _pathfinder;
     entt::scoped_connection _mouseButtonConnection;
 };

@@ -14,4 +14,5 @@ struct GameState {
     InteractionMode currentInteractionMode = InteractionMode::SELECT;
     AppState currentAppState = AppState::LOADING;
     std::optional<entt::entity> selectedEntity;
+    std::optional<entt::entity> passengerOriginStation; // Add this line
 };

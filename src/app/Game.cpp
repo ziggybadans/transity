@@ -37,7 +37,7 @@ Game::Game(Renderer &renderer, ThreadPool &threadPool, EventBus &eventBus, Color
     _systemManager->addSystem<CityPlacementSystem>();
     _systemManager->addSystem<SelectionSystem>();
     _systemManager->addSystem<TrainMovementSystem>();
-    _systemManager->addSystem<PassengerSpawnSystem>();
+   //_systemManager->addSystem<PassengerSpawnSystem>();
     _systemManager->addSystem<PassengerMovementSystem>();
 
     LOG_INFO("Game", "Game instance created and systems registered.");

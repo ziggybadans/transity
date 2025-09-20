@@ -2,6 +2,7 @@
 #include "core/ServiceLocator.h"
 #include "app/GameState.h"
 #include "components/GameLogicComponents.h"
+#include "components/PassengerComponents.h"
 #include "components/RenderComponents.h"
 #include "Logger.h"
 #include "imgui.h"
@@ -26,7 +27,8 @@ namespace {
 }
 
 SelectionSystem::SelectionSystem(ServiceLocator& serviceLocator)
-    : _serviceLocator(serviceLocator) {
+    : _serviceLocator(serviceLocator),
+      _pathfinder(serviceLocator.pathfinder) {
     _mouseButtonConnection = _serviceLocator.eventBus.sink<MouseButtonPressedEvent>().connect<&SelectionSystem::onMouseButtonPressed>(this);
     LOG_DEBUG("SelectionSystem", "SelectionSystem created and connected to event bus.");
 }
@@ -36,10 +38,6 @@ SelectionSystem::~SelectionSystem() {
 }
 
 void SelectionSystem::onMouseButtonPressed(const MouseButtonPressedEvent& event) {
-    if (_serviceLocator.gameState.currentInteractionMode != InteractionMode::SELECT) {
-        return;
-    }
-
     if (event.button != sf::Mouse::Button::Left) {
         return;
     }
@@ -49,6 +47,55 @@ void SelectionSystem::onMouseButtonPressed(const MouseButtonPressedEvent& event)
     }
 
     auto& registry = _serviceLocator.registry;
+    auto& gameState = _serviceLocator.gameState;
+
+    if (gameState.currentInteractionMode == InteractionMode::CREATE_PASSENGER) {
+        // Logic for selecting a destination city
+        auto clickableView = registry.view<const PositionComponent, const ClickableComponent, const CityComponent>();
+        for (auto entity : clickableView) {
+            const auto& position = clickableView.get<const PositionComponent>(entity);
+            const auto& clickable = clickableView.get<const ClickableComponent>(entity);
+
+            sf::Vector2f diff = position.coordinates - event.worldPosition;
+            float distanceSq = diff.x * diff.x + diff.y * diff.y;
+            float radiusSq = clickable.boundingRadius.value * clickable.boundingRadius.value;
+
+            if (distanceSq <= radiusSq) {
+                if (gameState.passengerOriginStation.has_value() && gameState.passengerOriginStation.value() != entity) {
+                    entt::entity origin = gameState.passengerOriginStation.value();
+                    entt::entity destination = entity;
+
+                    std::vector<entt::entity> path = _pathfinder.findPath(origin, destination);
+
+                    if (!path.empty()) {
+                        // Create passenger
+                        auto passenger = registry.create();
+                        registry.emplace<PassengerComponent>(passenger, origin, destination);
+                        
+                        // Add and populate PathComponent
+                        auto& pathComponent = registry.emplace<PathComponent>(passenger);
+                        pathComponent.nodes = path;
+                        pathComponent.currentNodeIndex = 0;
+
+                        // Add passenger to origin city's waiting list
+                        auto& originCity = registry.get<CityComponent>(origin);
+                        originCity.waitingPassengers.push_back(passenger);
+
+                        LOG_INFO("SelectionSystem", "Passenger created from %u to %u with path size %zu", entt::to_integral(origin), entt::to_integral(destination), path.size());
+                    } else {
+                        LOG_WARN("SelectionSystem", "Could not find a path for passenger from %u to %u", entt::to_integral(origin), entt::to_integral(destination));
+                    }
+
+                    // Reset state regardless of pathfinding success
+                    gameState.passengerOriginStation = std::nullopt;
+                    _serviceLocator.eventBus.enqueue<InteractionModeChangeEvent>({InteractionMode::SELECT});
+                }
+                return; // Exit after handling click
+            }
+        }
+    } else if (_serviceLocator.gameState.currentInteractionMode != InteractionMode::SELECT) {
+        return;
+    }
 
     // Clear the selection component from ALL previously selected entities
     auto selectionView = registry.view<SelectedComponent>();

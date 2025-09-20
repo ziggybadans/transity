@@ -28,3 +28,6 @@ struct ChunkMeshComponent {
         }
     }
 };
+
+// Tag component to indicate that a passenger's path should be visualized.
+struct VisualizePathComponent {};

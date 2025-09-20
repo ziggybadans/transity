@@ -54,6 +54,7 @@ void PassengerMovementSystem::update(sf::Time dt) {
 
                     if (!trainGoesToNextNode) {
                         passenger.state = PassengerState::WAITING_FOR_TRAIN;
+                        passenger.currentTrain = std::nullopt; // Clear the train
                         path->currentNodeIndex++; 
                         
                         if (_registry.all_of<CityComponent>(currentStopEntity)) {
@@ -96,6 +97,7 @@ void PassengerMovementSystem::update(sf::Time dt) {
                         train.currentLoad++;
                         auto& passenger = _registry.get<PassengerComponent>(passengerEntity);
                         passenger.state = PassengerState::ON_TRAIN;
+                        passenger.currentTrain = trainEntity; // Set the train
                         LOG_DEBUG("PassengerMovementSystem", "Passenger boarded train.");
                         return true;
                     }

@@ -63,6 +63,7 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
     drawWorldGenSettingsWindow();
     drawInteractionModeWindow();
     drawLineCreationWindow(numberOfStationsInActiveLine);
+    drawPassengerCreationWindow(); // Add this line
     drawSettingsWindow();
     drawInfoPanel();
 }
@@ -401,6 +402,10 @@ void UI::drawInfoPanel() {
                 ImGui::Text("Type: City");
                 ImGui::Text("Connected Lines: %zu", city->connectedLines.size());
                 ImGui::Text("Waiting Passengers: %zu", city->waitingPassengers.size());
+                if (ImGui::Button("Create Passenger")) {
+                    _serviceLocator.gameState.passengerOriginStation = entity;
+                    _serviceLocator.eventBus.enqueue<InteractionModeChangeEvent>({InteractionMode::CREATE_PASSENGER});
+                }
 
                 if (ImGui::CollapsingHeader("Waiting Passengers")) {
                     if (city->waitingPassengers.empty()) {
@@ -510,5 +515,35 @@ void UI::drawInfoPanel() {
         }
     }
 
+    ImGui::End();
+}
+
+void UI::drawPassengerCreationWindow() {
+    if (_serviceLocator.gameState.currentInteractionMode != InteractionMode::CREATE_PASSENGER) {
+        return;
+    }
+
+    const float windowPadding = Constants::UI_WINDOW_PADDING;
+    ImGuiIO &io = ImGui::GetIO();
+    ImVec2 displaySize = io.DisplaySize;
+    ImGuiWindowFlags size_flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize
+                                  | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse;
+
+    float interactionModesWidth = Constants::UI_INTERACTION_MODES_WIDTH;
+    float interactionModesHeight = Constants::UI_INTERACTION_MODES_HEIGHT;
+    ImVec2 interactionModesPos = ImVec2((displaySize.x - interactionModesWidth) * 0.5f,
+                                        displaySize.y - interactionModesHeight - windowPadding);
+
+    ImVec2 passengerCreationWindowPos =
+        ImVec2(interactionModesPos.x + ImGui::GetWindowWidth() + windowPadding,
+               displaySize.y - interactionModesHeight - windowPadding);
+    ImGui::SetNextWindowPos(passengerCreationWindowPos, ImGuiCond_Always);
+    ImGui::Begin("Passenger Creation", nullptr, size_flags);
+
+    ImGui::Text("Select a destination city for the new passenger.");
+
+    if (ImGui::Button("Cancel")) {
+        _serviceLocator.eventBus.enqueue<InteractionModeChangeEvent>({InteractionMode::SELECT});
+    }
     ImGui::End();
 }
