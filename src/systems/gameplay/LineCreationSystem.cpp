@@ -33,7 +33,7 @@ void LineCreationSystem::onMouseButtonPressed(const MouseButtonPressedEvent &eve
         LOG_DEBUG("LineCreationSystem", "Mouse click in CREATE_LINE mode at world (%.1f, %.1f).",
                   event.worldPosition.x, event.worldPosition.y);
 
-        auto view = _registry.view<PositionComponent, ClickableComponent>();
+        auto view = _registry.view<PositionComponent, ClickableComponent, CityComponent>(); // <-- Add CityComponent here
         for (auto entity_id : view) {
             const auto &pos = view.get<PositionComponent>(entity_id);
             const auto &clickable = view.get<ClickableComponent>(entity_id);

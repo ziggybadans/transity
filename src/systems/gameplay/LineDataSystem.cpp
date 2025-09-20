@@ -26,9 +26,6 @@ void LineDataSystem::update(sf::Time dt) {
 }
 
 void LineDataSystem::processParallelSegments() {
-    // A map from a pair of station entities (representing a segment) to a list of
-    // (line entity, segment index) that share this segment.
-    // The station entities in the pair are always ordered to treat (A,B) and (B,A) as the same segment.
     std::map<std::pair<entt::entity, entt::entity>, std::vector<std::pair<entt::entity, size_t>>> segmentMap;
 
     auto lineView = _registry.view<LineComponent>();
@@ -39,14 +36,12 @@ void LineDataSystem::processParallelSegments() {
             continue;
         }
 
-        // Ensure pathOffsets is the correct size, initialized to zero.
         line.pathOffsets.assign(line.stops.size() - 1, {0.f, 0.f});
 
         for (size_t i = 0; i < line.stops.size() - 1; ++i) {
             entt::entity station1 = line.stops[i];
             entt::entity station2 = line.stops[i + 1];
 
-            // Canonical representation of the segment
             if (station1 > station2) {
                 std::swap(station1, station2);
             }
@@ -54,33 +49,45 @@ void LineDataSystem::processParallelSegments() {
         }
     }
 
-    const float offsetStep = 12.0f; // The distance between parallel lines
+    const float offsetStep = 12.0f;
 
-    // Now, iterate through the map and find segments shared by multiple lines
     for (const auto& [segment, lines] : segmentMap) {
         if (lines.size() > 1) {
-            // This segment is shared by multiple lines.
-            float totalWidth = (lines.size() - 1) * offsetStep;
-            float currentOffset = -totalWidth / 2.0f;
+            std::vector<std::pair<entt::entity, size_t>> forwardLines;
+            std::vector<std::pair<entt::entity, size_t>> reverseLines;
 
-            for (size_t i = 0; i < lines.size(); ++i) {
-                entt::entity lineEntity = lines[i].first;
-                size_t segmentIndex = lines[i].second;
-
-                auto &line = _registry.get<LineComponent>(lineEntity);
-
-                // Get the direction of the segment to calculate the perpendicular
-                const auto& pos1 = _registry.get<PositionComponent>(line.stops[segmentIndex]).coordinates;
-                const auto& pos2 = _registry.get<PositionComponent>(line.stops[segmentIndex + 1]).coordinates;
-
-                sf::Vector2f direction = pos2 - pos1;
-                float length = std::sqrt(direction.x * direction.x + direction.y * direction.y);
-                if (length > 0) {
-                    sf::Vector2f unitDirection = direction / length;
-                    sf::Vector2f perpendicular(-unitDirection.y, unitDirection.x);
-                    line.pathOffsets[segmentIndex] = perpendicular * currentOffset;
+            // Separate lines by direction relative to the canonical segment
+            for (const auto& lineInfo : lines) {
+                auto& line = _registry.get<LineComponent>(lineInfo.first);
+                if (line.stops[lineInfo.second] == segment.first) {
+                    reverseLines.push_back(lineInfo);
+                } else {
+                    forwardLines.push_back(lineInfo);
                 }
+            }
 
+            const auto& pos1 = _registry.get<PositionComponent>(segment.first).coordinates;
+            const auto& pos2 = _registry.get<PositionComponent>(segment.second).coordinates;
+            sf::Vector2f canonicalDirection = pos2 - pos1;
+            float length = std::sqrt(canonicalDirection.x * canonicalDirection.x + canonicalDirection.y * canonicalDirection.y);
+            if (length == 0) continue;
+            sf::Vector2f canonicalPerpendicular(-canonicalDirection.y / length, canonicalDirection.x / length);
+
+            // Process forward lines
+            std::sort(forwardLines.begin(), forwardLines.end());
+            float currentOffset = offsetStep / 2.0f;
+            for (const auto& lineInfo : forwardLines) {
+                auto& line = _registry.get<LineComponent>(lineInfo.first);
+                line.pathOffsets[lineInfo.second] = canonicalPerpendicular * currentOffset;
+                currentOffset += offsetStep;
+            }
+
+            // Process reverse lines
+            std::sort(reverseLines.begin(), reverseLines.end());
+            currentOffset = offsetStep / 2.0f;
+            for (const auto& lineInfo : reverseLines) {
+                auto& line = _registry.get<LineComponent>(lineInfo.first);
+                line.pathOffsets[lineInfo.second] = -canonicalPerpendicular * currentOffset;
                 currentOffset += offsetStep;
             }
         }

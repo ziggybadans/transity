@@ -63,6 +63,13 @@ struct TrainComponent {
     int capacity = 20;
     int currentLoad = 0;
     std::vector<entt::entity> passengers;
+
+    // Fields for curved station approach
+    bool isApproachingStation = false;
+    sf::Vector2f approachCurveStart;
+    sf::Vector2f approachCurveControl;
+    float decelerationProgress = 0.0f;
+    float decelerationDistance = 0.0f;
 };
 
 // A tag to mark an entity as selected.
