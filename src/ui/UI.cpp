@@ -59,6 +59,7 @@ void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
         return;
     }
 
+    drawTimeControlWindow();
     drawProfilingWindow(deltaTime);
     drawWorldGenSettingsWindow();
     drawInteractionModeWindow();
@@ -114,7 +115,13 @@ void UI::drawProfilingWindow(sf::Time deltaTime) {
     ImGuiWindowFlags size_flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize
                                   | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse;
 
-    ImVec2 debugWindowPos = ImVec2(windowPadding, windowPadding);
+    // Get the size of the time control window to position the profiling window below it
+    ImGui::SetNextWindowPos(ImVec2(windowPadding, windowPadding));
+    ImGui::Begin("Time Controls", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize);
+    ImVec2 timeControlWindowSize = ImGui::GetWindowSize();
+    ImGui::End();
+
+    ImVec2 debugWindowPos = ImVec2(windowPadding, windowPadding + timeControlWindowSize.y + windowPadding);
     ImGui::SetNextWindowPos(debugWindowPos, ImGuiCond_Always);
     ImGui::Begin("Profiling", nullptr, size_flags);
     ImGui::Text("FPS: %.1f", 1.f / deltaTime.asSeconds());
@@ -545,5 +552,44 @@ void UI::drawPassengerCreationWindow() {
     if (ImGui::Button("Cancel")) {
         _serviceLocator.eventBus.enqueue<InteractionModeChangeEvent>({InteractionMode::SELECT});
     }
+    ImGui::End();
+}
+
+void UI::drawTimeControlWindow() {
+    const float windowPadding = Constants::UI_WINDOW_PADDING;
+    ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize;
+
+    ImGui::SetNextWindowPos(ImVec2(windowPadding, windowPadding));
+    ImGui::Begin("Time Controls", nullptr, flags);
+
+    float currentMultiplier = _serviceLocator.gameState.timeMultiplier;
+    ImVec4 activeColor = ImGui::GetStyle().Colors[ImGuiCol_ButtonActive];
+
+    // Pause Button
+    if (currentMultiplier == 0.0f) ImGui::PushStyleColor(ImGuiCol_Button, activeColor);
+    if (ImGui::Button("||")) _serviceLocator.gameState.timeMultiplier = 0.0f;
+    if (currentMultiplier == 0.0f) ImGui::PopStyleColor();
+
+    ImGui::SameLine();
+
+    // 1x Button
+    if (currentMultiplier == 1.0f) ImGui::PushStyleColor(ImGuiCol_Button, activeColor);
+    if (ImGui::Button("1x")) _serviceLocator.gameState.timeMultiplier = 1.0f;
+    if (currentMultiplier == 1.0f) ImGui::PopStyleColor();
+
+    ImGui::SameLine();
+
+    // 2x Button
+    if (currentMultiplier == 2.0f) ImGui::PushStyleColor(ImGuiCol_Button, activeColor);
+    if (ImGui::Button("2x")) _serviceLocator.gameState.timeMultiplier = 2.0f;
+    if (currentMultiplier == 2.0f) ImGui::PopStyleColor();
+
+    ImGui::SameLine();
+
+    // 3x Button
+    if (currentMultiplier == 3.0f) ImGui::PushStyleColor(ImGuiCol_Button, activeColor);
+    if (ImGui::Button("3x")) _serviceLocator.gameState.timeMultiplier = 3.0f;
+    if (currentMultiplier == 3.0f) ImGui::PopStyleColor();
+
     ImGui::End();
 }

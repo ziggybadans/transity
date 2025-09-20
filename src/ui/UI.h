@@ -35,6 +35,7 @@ private:
     void drawLineCreationWindow(size_t numStationsInActiveLine);
     void drawInfoPanel();
     void drawPassengerCreationWindow();
+    void drawTimeControlWindow();
 
     sf::RenderWindow &_window;
     ServiceLocator &_serviceLocator;

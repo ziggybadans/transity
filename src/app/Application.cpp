@@ -78,7 +78,8 @@ void Application::run() {
             if (_isWindowFocused) {
                 while (_timeAccumulator >= TimePerFrame) {
                     _timeAccumulator -= TimePerFrame;
-                    update(TimePerFrame);
+                    sf::Time scaledTimePerFrame = TimePerFrame * _game->getGameState().timeMultiplier;
+                    update(scaledTimePerFrame);
                 }
             }
 

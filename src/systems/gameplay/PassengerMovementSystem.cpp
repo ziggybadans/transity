@@ -12,6 +12,27 @@ PassengerMovementSystem::PassengerMovementSystem(ServiceLocator& serviceLocator)
 
 void PassengerMovementSystem::update(sf::Time dt) {
     auto trainView = _registry.view<TrainComponent, PositionComponent>();
+
+    // Helper to check if a train is heading towards a specific next stop
+    auto isTrainGoingToNextNode = [&](const TrainComponent& train, const LineComponent& line, entt::entity currentStopEntity, entt::entity nextNodeInPath) {
+        auto it = std::find(line.stops.begin(), line.stops.end(), currentStopEntity);
+        if (it == line.stops.end()) {
+            return false;
+        }
+        size_t currentStopIndexOnLine = std::distance(line.stops.begin(), it);
+
+        if (train.direction == TrainDirection::FORWARD) {
+            if (currentStopIndexOnLine + 1 < line.stops.size() && line.stops[currentStopIndexOnLine + 1] == nextNodeInPath) {
+                return true;
+            }
+        } else { // TrainDirection::BACKWARD
+            if (currentStopIndexOnLine > 0 && line.stops[currentStopIndexOnLine - 1] == nextNodeInPath) {
+                return true;
+            }
+        }
+        return false;
+    };
+
     for (auto trainEntity : trainView) {
         auto& train = trainView.get<TrainComponent>(trainEntity);
 
@@ -43,16 +64,7 @@ void PassengerMovementSystem::update(sf::Time dt) {
                 if (path && path->currentNodeIndex + 1 < path->nodes.size()) {
                     entt::entity nextNodeInPath = path->nodes[path->currentNodeIndex + 1];
                     
-                    bool trainGoesToNextNode = false;
-                    auto it = std::find(line.stops.begin(), line.stops.end(), currentStopEntity);
-                    if (it != line.stops.end()) {
-                        size_t currentStopIndexOnLine = std::distance(line.stops.begin(), it);
-                        if (currentStopIndexOnLine + 1 < line.stops.size() && line.stops[currentStopIndexOnLine + 1] == nextNodeInPath) {
-                            trainGoesToNextNode = true;
-                        }
-                    }
-
-                    if (!trainGoesToNextNode) {
+                    if (!isTrainGoingToNextNode(train, line, currentStopEntity, nextNodeInPath)) {
                         passenger.state = PassengerState::WAITING_FOR_TRAIN;
                         passenger.currentTrain = std::nullopt; // Clear the train
                         path->currentNodeIndex++; 
@@ -83,16 +95,7 @@ void PassengerMovementSystem::update(sf::Time dt) {
 
                     entt::entity nextNodeInPath = path->nodes[path->currentNodeIndex + 1];
                     
-                    bool trainGoesToNextNode = false;
-                    auto it = std::find(line.stops.begin(), line.stops.end(), currentStopEntity);
-                    if (it != line.stops.end()) {
-                        size_t currentStopIndexOnLine = std::distance(line.stops.begin(), it);
-                        if (currentStopIndexOnLine + 1 < line.stops.size() && line.stops[currentStopIndexOnLine + 1] == nextNodeInPath) {
-                            trainGoesToNextNode = true;
-                        }
-                    }
-
-                    if (trainGoesToNextNode) {
+                    if (isTrainGoingToNextNode(train, line, currentStopEntity, nextNodeInPath)) {
                         train.passengers.push_back(passengerEntity);
                         train.currentLoad++;
                         auto& passenger = _registry.get<PassengerComponent>(passengerEntity);
