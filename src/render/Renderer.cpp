@@ -91,27 +91,45 @@ void Renderer::renderFrame(const entt::registry &registry, const sf::View &view,
         const auto &position = viewRegistry.get<const PositionComponent>(entity);
         const auto &renderable = viewRegistry.get<const RenderableComponent>(entity);
 
-        sf::CircleShape shape(renderable.radius.value);
-        shape.setFillColor(renderable.color);
-        shape.setPosition(position.coordinates);
+        // Special rendering for cities to give them a bordered look
+        if (registry.all_of<CityComponent>(entity)) {
+            float borderThickness = 4.0f;
 
-        shape.setOrigin({renderable.radius.value, renderable.radius.value});
+            // Draw the outer border
+            sf::CircleShape border(renderable.radius.value);
+            border.setFillColor(highlightColor);
+            border.setOrigin({renderable.radius.value, renderable.radius.value});
+            border.setPosition(position.coordinates);
+            _windowInstance.draw(border);
 
-        _windowInstance.draw(shape);
+            // Draw the inner circle
+            sf::CircleShape innerCircle(renderable.radius.value - borderThickness);
+            innerCircle.setFillColor(renderable.color);
+            innerCircle.setOrigin({renderable.radius.value - borderThickness, renderable.radius.value - borderThickness});
+            innerCircle.setPosition(position.coordinates);
+            _windowInstance.draw(innerCircle);
 
-        // Draw passenger count for cities
-        if (auto* city = registry.try_get<const CityComponent>(entity)) {
-            if (!city->waitingPassengers.empty()) {
-                m_text.setString(std::to_string(city->waitingPassengers.size()));
-                sf::FloatRect textBounds = m_text.getLocalBounds();
-                m_text.setOrigin({textBounds.position.x + textBounds.size.x / 2.0f,
-                                  textBounds.position.y + textBounds.size.y / 2.0f});
-                m_text.setPosition({position.coordinates.x + renderable.radius.value + 10.0f, position.coordinates.y});
-                _windowInstance.draw(m_text);
+            // Draw passenger count for cities, now centered
+            if (auto* city = registry.try_get<const CityComponent>(entity)) {
+                if (!city->waitingPassengers.empty()) {
+                    m_text.setString(std::to_string(city->waitingPassengers.size()));
+                    sf::FloatRect textBounds = m_text.getLocalBounds();
+                    m_text.setOrigin({textBounds.position.x + textBounds.size.x / 2.0f,
+                                      textBounds.position.y + textBounds.size.y / 2.0f});
+                    m_text.setPosition(position.coordinates);
+                    _windowInstance.draw(m_text);
+                }
             }
+        } else {
+            // Default rendering for other entities
+            sf::CircleShape shape(renderable.radius.value);
+            shape.setFillColor(renderable.color);
+            shape.setOrigin({renderable.radius.value, renderable.radius.value});
+            shape.setPosition(position.coordinates);
+            _windowInstance.draw(shape);
         }
 
-        // Draw highlight if selected
+        // Draw highlight if selected (applies to all entities)
         if (registry.all_of<SelectedComponent>(entity)) {
             sf::CircleShape highlight(renderable.radius.value + 3.0f);
             highlight.setFillColor(sf::Color::Transparent);
