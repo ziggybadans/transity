@@ -50,12 +50,10 @@ void SelectionSystem::onMouseButtonPressed(const MouseButtonPressedEvent& event)
 
     auto& registry = _serviceLocator.registry;
 
-    // Clear the selection component from the previously selected entity
-    if (_serviceLocator.gameState.selectedEntity.has_value()) {
-        auto oldSelectedEntity = _serviceLocator.gameState.selectedEntity.value();
-        if (registry.valid(oldSelectedEntity)) {
-            registry.remove<SelectedComponent>(oldSelectedEntity);
-        }
+    // Clear the selection component from ALL previously selected entities
+    auto selectionView = registry.view<SelectedComponent>();
+    for (auto entity : selectionView) {
+        registry.remove<SelectedComponent>(entity);
     }
 
     entt::entity clickedEntity = entt::null;
