@@ -285,7 +285,7 @@ void UI::drawInteractionModeWindow() {
     float interactionModesWidth = Constants::UI_INTERACTION_MODES_WIDTH;
     float interactionModesHeight = Constants::UI_INTERACTION_MODES_HEIGHT;
     ImVec2 interactionModesPos = ImVec2((displaySize.x - interactionModesWidth) * 0.5f,
-                                        displaySize.y - interactionModesHeight - windowPadding);
+                                        _window.getSize().y - ImGui::GetFrameHeightWithSpacing() * 2.5 - windowPadding);
     ImGui::SetNextWindowPos(interactionModesPos, ImGuiCond_Always);
     ImGui::Begin("Interaction Modes", nullptr, size_flags);
     int currentMode = static_cast<int>(_serviceLocator.gameState.currentInteractionMode);
@@ -356,7 +356,7 @@ void UI::drawSettingsWindow() {
     const float windowPadding = Constants::UI_WINDOW_PADDING;
     ImGuiWindowFlags flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize
                                   | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse;
-    ImVec2 settingsWindowPos = ImVec2(windowPadding, _window.getSize().y - ImGui::GetFrameHeightWithSpacing() * 4 - windowPadding);
+    ImVec2 settingsWindowPos = ImVec2(windowPadding, _window.getSize().y - ImGui::GetFrameHeightWithSpacing() * 2.5 - windowPadding);
     ImGui::SetNextWindowPos(settingsWindowPos, ImGuiCond_Always);
     ImGui::Begin("Settings", nullptr, flags);
 
@@ -386,14 +386,14 @@ void UI::drawInfoPanel() {
     const float windowPadding = Constants::UI_WINDOW_PADDING;
     ImGuiIO& io = ImGui::GetIO();
     ImVec2 displaySize = io.DisplaySize;
+    ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize;
 
     float worldGenSettingsWidth = Constants::UI_WORLD_GEN_SETTINGS_WIDTH;
-    // Position it below the world gen settings window
-    ImVec2 worldGenSettingsPos = ImVec2(displaySize.x - worldGenSettingsWidth - windowPadding, windowPadding);
-    ImGui::SetNextWindowPos(ImVec2(worldGenSettingsPos.x, worldGenSettingsPos.y + ImGui::GetFrameHeightWithSpacing() * 15), ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSize(ImVec2(worldGenSettingsWidth, 0), ImGuiCond_FirstUseEver);
-
-    ImGui::Begin("Info Panel");
+    ImVec2 worldGenSettingsPos = 
+        ImVec2(displaySize.x - worldGenSettingsWidth - windowPadding, windowPadding);
+    ImGui::SetNextWindowPos(ImVec2(worldGenSettingsPos.x, ImGui::GetFrameHeightWithSpacing() * 20), ImGuiCond_Always);
+    ImGui::SetNextWindowSize(ImVec2(worldGenSettingsWidth, 0.0f), ImGuiCond_Always);
+    ImGui::Begin("Info Panel", nullptr, window_flags);
 
     auto& selectedEntityOpt = _serviceLocator.gameState.selectedEntity;
     if (!selectedEntityOpt.has_value()) {
