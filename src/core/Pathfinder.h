@@ -1,18 +1,18 @@
 #pragma once
 
+#include <SFML/System/Vector2.hpp>
 #include <entt/entt.hpp>
 #include <vector>
-#include <SFML/System/Vector2.hpp>
 
 // A simple struct to represent a node in our pathfinding graph.
 struct PathNode {
     entt::entity station;
-    entt::entity line; // The line taken to reach this station
+    entt::entity line;  // The line taken to reach this station
 };
 
 class Pathfinder {
 public:
-    explicit Pathfinder(entt::registry& registry);
+    explicit Pathfinder(entt::registry &registry);
 
     // Finds the shortest path between two stations.
     // Returns a vector of station entities representing the path.
@@ -20,7 +20,7 @@ public:
     std::vector<entt::entity> findPath(entt::entity startStation, entt::entity endStation);
 
 private:
-    entt::registry& _registry;
+    entt::registry &_registry;
 
     // Helper function to calculate the distance between two stations.
     float calculateDistance(entt::entity stationA, entt::entity stationB);

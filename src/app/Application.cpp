@@ -32,8 +32,7 @@ Application::Application() : _colorManager(_eventBus) {
         _renderer->connectToEventBus(_eventBus);
 
         _ui = std::make_unique<UI>(_renderer->getWindowInstance(),
-                                   _renderer->getTerrainRenderSystem(), 
-                                   _game->getServiceLocator());
+                                   _renderer->getTerrainRenderSystem(), _game->getServiceLocator());
         _ui->initialize();
 
     } catch (const std::exception &e) {
@@ -73,13 +72,14 @@ void Application::run() {
             }
 
             _ui->update(frameTime, numStationsInActiveLine);
-            update(TimePerFrame); // Update UI and input every frame
+            update(TimePerFrame);  // Update UI and input every frame
 
             if (_isWindowFocused) {
                 while (_timeAccumulator >= TimePerFrame) {
                     _timeAccumulator -= TimePerFrame;
                     if (_game->getGameState().timeMultiplier > 0.0f) {
-                        sf::Time scaledTimePerFrame = TimePerFrame * _game->getGameState().timeMultiplier;
+                        sf::Time scaledTimePerFrame =
+                            TimePerFrame * _game->getGameState().timeMultiplier;
                         _game->updateSimulation(scaledTimePerFrame);
                     }
                 }
@@ -133,7 +133,7 @@ void Application::render(float interpolation) {
     PerfTimer timer("Application::render", _game->getServiceLocator());
 
     const auto &worldGen = _game->getWorldGenSystem();
-    auto& passengerSpawnAnimationSystem = _game->getPassengerSpawnAnimationSystem();
+    auto &passengerSpawnAnimationSystem = _game->getPassengerSpawnAnimationSystem();
 
     _renderer->renderFrame(_game->getRegistry(), _game->getCamera().getView(), worldGen,
                            passengerSpawnAnimationSystem, interpolation);

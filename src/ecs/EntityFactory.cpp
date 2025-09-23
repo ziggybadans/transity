@@ -167,7 +167,11 @@ entt::entity EntityFactory::createTrain(entt::entity lineEntity) {
         return entt::null;
     }
 
-    _registry.emplace<TrainComponent>(trainEntity, lineEntity);
+    _registry.emplace<TrainTag>(trainEntity);
+    auto &movement = _registry.emplace<TrainMovementComponent>(trainEntity);
+    movement.assignedLine = lineEntity;
+    _registry.emplace<TrainPhysicsComponent>(trainEntity);
+    _registry.emplace<TrainCapacityComponent>(trainEntity);
 
     LOG_DEBUG("EntityFactory", "Train entity (ID: %u) created for line (ID: %u).",
               static_cast<unsigned int>(trainEntity), static_cast<unsigned int>(lineEntity));
@@ -181,26 +185,28 @@ entt::entity EntityFactory::createPassenger(entt::entity origin, entt::entity de
         return entt::null;
     }
 
-    const auto& originPos = _registry.get<PositionComponent>(origin).coordinates;
+    const auto &originPos = _registry.get<PositionComponent>(origin).coordinates;
 
     auto entity = _registry.create();
     _registry.emplace<PositionComponent>(entity, originPos);
-    _registry.emplace<PassengerComponent>(entity, origin, destination, PassengerState::WAITING_FOR_TRAIN);
-    _registry.emplace<PathComponent>(entity); // Initially empty path
+    auto &passenger = _registry.emplace<PassengerComponent>(entity);
+    passenger.originStation = origin;
+    passenger.destinationStation = destination;
+    passenger.currentContainer = origin;       // The passenger starts at the origin station
+    _registry.emplace<PathComponent>(entity);  // Initially empty path
 
     // Add a RenderableComponent to make passengers visible
-    auto& renderable = _registry.emplace<RenderableComponent>(entity);
-    renderable.radius = {5.0f}; // Small circle for passengers
+    auto &renderable = _registry.emplace<RenderableComponent>(entity);
+    renderable.radius = {5.0f};  // Small circle for passengers
     renderable.color = sf::Color::Yellow;
-    renderable.zOrder = {2}; // Render above lines but below stations/trains
+    renderable.zOrder = {2};  // Render above lines but below stations/trains
 
     // Add a NameComponent
     std::string passengerName = "Passenger " + std::to_string(entt::to_integral(entity));
     _registry.emplace<NameComponent>(entity, passengerName);
 
     LOG_DEBUG("EntityFactory", "Passenger entity (ID: %u) created. Origin: %u, Destination: %u.",
-              static_cast<unsigned int>(entity),
-              static_cast<unsigned int>(origin),
+              static_cast<unsigned int>(entity), static_cast<unsigned int>(origin),
               static_cast<unsigned int>(destination));
 
     return entity;

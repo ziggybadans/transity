@@ -1,10 +1,10 @@
 #pragma once
 
 #include "FastNoiseLite.h"
-#include "event/UIEvents.h"
 #include "app/GameState.h"
 #include "event/EventBus.h"
 #include "event/LineEvents.h"
+#include "event/UIEvents.h"
 #include "render/Camera.h"
 #include "systems/world/WorldGenerationSystem.h"
 #include <SFML/Graphics/RenderWindow.hpp>

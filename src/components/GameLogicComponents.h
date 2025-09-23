@@ -21,7 +21,7 @@ struct LineComponent {
     sf::Color color;
     std::vector<entt::entity> stops;
     std::vector<sf::Vector2f> pathPoints;
-    std::vector<sf::Vector2f> pathOffsets; // Add this line
+    std::vector<sf::Vector2f> pathOffsets;  // Add this line
     Thickness thickness = {5.0f};
 };
 
@@ -36,36 +36,39 @@ struct ActiveLineStationTag {
 };
 
 // Enum for the state of a train
-enum class TrainState {
-    STOPPED,
-    ACCELERATING,
-    MOVING,
-    DECELERATING
-};
+enum class TrainState { STOPPED, ACCELERATING, MOVING, DECELERATING };
 
-enum class TrainDirection {
-    FORWARD,
-    BACKWARD
-};
+enum class TrainDirection { FORWARD, BACKWARD };
 
-// A component for train entities.
-struct TrainComponent {
+// A tag to identify train entities
+struct TrainTag {};
+
+// Manages the train's state machine and progress on a line
+struct TrainMovementComponent {
+    TrainState state = TrainState::STOPPED;
+    TrainDirection direction = TrainDirection::FORWARD;
     entt::entity assignedLine;
     int currentSegmentIndex = 0;
     float progressOnSegment = 0.0f;
-    TrainDirection direction = TrainDirection::FORWARD;
-    float maxSpeed = 100.0f;
-    float currentSpeed = 50.0f; // World units per second
-    float acceleration = 25.0f;
-    TrainState state = TrainState::STOPPED;
     float stopTimer = 2.0f;
-    static const float STOP_DURATION; // Changed from static constexpr
-    int capacity = 20;
-    int currentLoad = 0;
-    std::vector<entt::entity> passengers;
+    static const float STOP_DURATION;
+};
 
-    // Fields for curved station approach
-    bool isApproachingStation = false;
+// Manages the train's physics properties
+struct TrainPhysicsComponent {
+    float maxSpeed = 100.0f;
+    float currentSpeed = 50.0f;
+    float acceleration = 25.0f;
+};
+
+// Manages passenger capacity and load
+struct TrainCapacityComponent {
+    int capacity = 20;
+    int currentLoad = 0;  // Add this line
+};
+
+// A temporary component added when a train begins its station approach
+struct StationApproachComponent {
     sf::Vector2f approachCurveStart;
     sf::Vector2f approachCurveControl;
     float decelerationProgress = 0.0f;

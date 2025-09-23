@@ -6,32 +6,34 @@
 #include "render/Renderer.h"
 #include "systems/app/GameStateSystem.h"
 #include "systems/gameplay/CityPlacementSystem.h"
+#include "systems/gameplay/DeletionSystem.h"
 #include "systems/gameplay/LineCreationSystem.h"
+#include "systems/gameplay/LineDataSystem.h"
+#include "systems/gameplay/PassengerMovementSystem.h"
+#include "systems/gameplay/PassengerSpawnSystem.h"
+#include "systems/gameplay/SelectionSystem.h"
 #include "systems/gameplay/StationPlacementSystem.h"
+#include "systems/gameplay/TrainMovementSystem.h"
 #include "systems/rendering/CameraSystem.h"
+#include "systems/rendering/PassengerSpawnAnimationSystem.h"
 #include "systems/rendering/TerrainMeshSystem.h"
 #include "systems/world/ChunkManagerSystem.h"
 #include "systems/world/WorldSetupSystem.h"
-#include "systems/gameplay/TrainMovementSystem.h"
-#include "systems/gameplay/SelectionSystem.h"
-#include "systems/gameplay/PassengerSpawnSystem.h"
-#include "systems/gameplay/PassengerMovementSystem.h"
-#include "systems/gameplay/LineDataSystem.h"
-#include "systems/gameplay/DeletionSystem.h"
-#include "systems/rendering/PassengerSpawnAnimationSystem.h"
 #include "ui/UI.h"
 
-Game::Game(Renderer &renderer, ThreadPool &threadPool, EventBus &eventBus, ColorManager &colorManager)
-    : _renderer(renderer), _eventBus(eventBus), _colorManager(colorManager), _entityFactory(_registry),
-      _worldGenerationSystem(_registry, _eventBus), _pathfinder(_registry),
-      _serviceLocator{_registry,      _eventBus,  _loadingState,      _gameState,
-                      _entityFactory, _camera,    _colorManager,      _worldGenerationSystem,
-                      _renderer,      threadPool, _pathfinder, _performanceMonitor} {
+Game::Game(Renderer &renderer, ThreadPool &threadPool, EventBus &eventBus,
+           ColorManager &colorManager)
+    : _renderer(renderer), _eventBus(eventBus), _colorManager(colorManager),
+      _entityFactory(_registry), _worldGenerationSystem(_registry, _eventBus),
+      _pathfinder(_registry),
+      _serviceLocator{_registry,      _eventBus,  _loadingState, _gameState,
+                      _entityFactory, _camera,    _colorManager, _worldGenerationSystem,
+                      _renderer,      threadPool, _pathfinder,   _performanceMonitor} {
 
     _inputHandler = std::make_unique<InputHandler>(_serviceLocator);
     _systemManager = std::make_unique<SystemManager>(_serviceLocator);
     _simulationSystemManager = std::make_unique<SystemManager>(_serviceLocator);
-                        
+
     // UI, input, and world loading systems that should always run
     _systemManager->addSystem<CameraSystem>();
     _systemManager->addSystem<LineCreationSystem>();

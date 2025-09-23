@@ -25,11 +25,11 @@ TrainRenderSystem::TrainRenderSystem()
 }
 
 void TrainRenderSystem::render(const entt::registry &registry, sf::RenderWindow &window, const sf::Color& highlightColor) {
-    auto view = registry.view<const PositionComponent, const RenderableComponent, const TrainComponent>();
+    auto view = registry.view<const PositionComponent, const RenderableComponent, const TrainTag, const TrainCapacityComponent>();
     for (auto entity : view) {
         const auto &pos = view.get<const PositionComponent>(entity);
         const auto &renderable = view.get<const RenderableComponent>(entity);
-        const auto &train = view.get<const TrainComponent>(entity);
+        const auto &capacity = view.get<const TrainCapacityComponent>(entity);
 
         sf::CircleShape shape(renderable.radius.value);
         shape.setFillColor(renderable.color);
@@ -39,8 +39,8 @@ void TrainRenderSystem::render(const entt::registry &registry, sf::RenderWindow 
         window.draw(shape);
 
         // Draw passenger count
-        if (train.currentLoad > 0) {
-            m_text.setString(std::to_string(train.currentLoad));
+        if (capacity.currentLoad > 0) {
+            m_text.setString(std::to_string(capacity.currentLoad));
             sf::FloatRect textBounds = m_text.getLocalBounds();
             m_text.setOrigin({textBounds.position.x + textBounds.size.x / 2.0f,
                               textBounds.position.y + textBounds.size.y / 2.0f});

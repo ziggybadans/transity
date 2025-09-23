@@ -2,6 +2,7 @@
 #include "Constants.h"
 #include "Logger.h"
 #include "components/GameLogicComponents.h"
+#include "components/PassengerComponents.h"
 #include "components/RenderComponents.h"
 #include "systems/world/WorldGenerationSystem.h"
 #include <SFML/Graphics.hpp>
@@ -23,18 +24,11 @@ sf::Font Renderer::loadFont() {
 Renderer::Renderer(ColorManager &colorManager)
     : _colorManager(colorManager),
       _windowInstance(sf::VideoMode({Constants::WINDOW_WIDTH, Constants::WINDOW_HEIGHT}),
-                      Constants::WINDOW_TITLE,
-                      sf::Style::Default,
-                      sf::State::Windowed,
+                      Constants::WINDOW_TITLE, sf::Style::Default, sf::State::Windowed,
                       sf::ContextSettings{0u, 0u, 8u}),
-      _clearColor(_colorManager.getBackgroundColor()), 
-      _terrainRenderSystem(colorManager),
-      _lineRenderSystem(),
-      _trainRenderSystem(),
-      _pathRenderSystem(),
-      m_font(loadFont()),
-      m_text(m_font)
- {
+      _clearColor(_colorManager.getBackgroundColor()), _terrainRenderSystem(colorManager),
+      _lineRenderSystem(), _trainRenderSystem(), _pathRenderSystem(), m_font(loadFont()),
+      m_text(m_font) {
     LOG_DEBUG("Renderer", "Renderer created and window initialized.");
     _windowInstance.setFramerateLimit(Constants::FRAMERATE_LIMIT);
     m_text.setCharacterSize(24);
@@ -59,11 +53,13 @@ TerrainRenderSystem &Renderer::getTerrainRenderSystem() noexcept {
 }
 
 void Renderer::renderFrame(const entt::registry &registry, const sf::View &view,
-                           const WorldGenerationSystem &worldGen, PassengerSpawnAnimationSystem &passengerSpawnAnimationSystem, float interpolation) {
+                           const WorldGenerationSystem &worldGen,
+                           PassengerSpawnAnimationSystem &passengerSpawnAnimationSystem,
+                           float interpolation) {
     _windowInstance.setView(view);
     _windowInstance.clear(_clearColor);
 
-    const sf::Color& landColor = _colorManager.getLandColor();
+    const sf::Color &landColor = _colorManager.getLandColor();
     sf::Color highlightColor(255 - landColor.r, 255 - landColor.g, 255 - landColor.b);
 
     _terrainRenderSystem.render(registry, _windowInstance, view, worldGen.getParams());
@@ -84,7 +80,7 @@ void Renderer::renderFrame(const entt::registry &registry, const sf::View &view,
 
     for (auto entity : sortedEntities) {
         // Skip rendering trains, as they are handled by TrainRenderSystem
-        if (registry.all_of<TrainComponent>(entity)) {
+        if (registry.all_of<TrainTag>(entity)) {
             continue;
         }
 
@@ -105,20 +101,29 @@ void Renderer::renderFrame(const entt::registry &registry, const sf::View &view,
             // Draw the inner circle
             sf::CircleShape innerCircle(renderable.radius.value - borderThickness);
             innerCircle.setFillColor(renderable.color);
-            innerCircle.setOrigin({renderable.radius.value - borderThickness, renderable.radius.value - borderThickness});
+            innerCircle.setOrigin({renderable.radius.value - borderThickness,
+                                   renderable.radius.value - borderThickness});
             innerCircle.setPosition(position.coordinates);
             _windowInstance.draw(innerCircle);
 
             // Draw passenger count for cities, now centered
-            if (auto* city = registry.try_get<const CityComponent>(entity)) {
-                if (!city->waitingPassengers.empty()) {
-                    m_text.setString(std::to_string(city->waitingPassengers.size()));
-                    sf::FloatRect textBounds = m_text.getLocalBounds();
-                    m_text.setOrigin({textBounds.position.x + textBounds.size.x / 2.0f,
-                                      textBounds.position.y + textBounds.size.y / 2.0f});
-                    m_text.setPosition(position.coordinates);
-                    _windowInstance.draw(m_text);
+            int waitingCount = 0;
+            auto passengerView = registry.view<const PassengerComponent>();
+            for (auto passengerEntity : passengerView) {
+                const auto &passenger =
+                    passengerView.get<const PassengerComponent>(passengerEntity);
+                if (passenger.currentContainer == entity) {
+                    waitingCount++;
                 }
+            }
+
+            if (waitingCount > 0) {
+                m_text.setString(std::to_string(waitingCount));
+                sf::FloatRect textBounds = m_text.getLocalBounds();
+                m_text.setOrigin({textBounds.position.x + textBounds.size.x / 2.0f,
+                                  textBounds.position.y + textBounds.size.y / 2.0f});
+                m_text.setPosition(position.coordinates);
+                _windowInstance.draw(m_text);
             }
         } else {
             // Default rendering for other entities
@@ -141,9 +146,10 @@ void Renderer::renderFrame(const entt::registry &registry, const sf::View &view,
         }
     }
 
-        _trainRenderSystem.render(registry, _windowInstance, highlightColor); // Call the train render system
-        _pathRenderSystem.render(registry, _windowInstance); // Call the path render system
-        passengerSpawnAnimationSystem.render(_windowInstance);
+    _trainRenderSystem.render(registry, _windowInstance,
+                              highlightColor);            // Call the train render system
+    _pathRenderSystem.render(registry, _windowInstance);  // Call the path render system
+    passengerSpawnAnimationSystem.render(_windowInstance);
 }
 
 void Renderer::displayFrame() noexcept {

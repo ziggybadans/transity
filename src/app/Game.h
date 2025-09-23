@@ -2,6 +2,7 @@
 
 #include "GameState.h"
 #include "LoadingState.h"
+#include "core/Pathfinder.h"
 #include "core/ServiceLocator.h"
 #include "ecs/EntityFactory.h"
 #include "ecs/SystemManager.h"
@@ -9,9 +10,8 @@
 #include "render/Camera.h"
 #include "render/ColorManager.h"
 #include "systems/gameplay/CityPlacementSystem.h"
-#include "systems/world/WorldGenerationSystem.h"
 #include "systems/rendering/PassengerSpawnAnimationSystem.h"
-#include "core/Pathfinder.h"
+#include "systems/world/WorldGenerationSystem.h"
 #include <entt/entt.hpp>
 #include <future>
 #include <memory>
@@ -25,7 +25,8 @@ class Pathfinder;
 
 class Game {
 public:
-    Game(Renderer &renderer, ThreadPool &threadPool, EventBus &eventBus, ColorManager &colorManager);
+    Game(Renderer &renderer, ThreadPool &threadPool, EventBus &eventBus,
+         ColorManager &colorManager);
     ~Game();
 
     void startLoading();
@@ -40,7 +41,9 @@ public:
     SystemManager &getSystemManager() { return *_systemManager; }
     ServiceLocator &getServiceLocator() { return _serviceLocator; }
     const WorldGenerationSystem &getWorldGenSystem() const { return _worldGenerationSystem; }
-    PassengerSpawnAnimationSystem &getPassengerSpawnAnimationSystem() { return *_systemManager->getSystem<PassengerSpawnAnimationSystem>(); }
+    PassengerSpawnAnimationSystem &getPassengerSpawnAnimationSystem() {
+        return *_systemManager->getSystem<PassengerSpawnAnimationSystem>();
+    }
 
     std::future<void> &getLoadingFuture() { return _loadingFuture; }
 

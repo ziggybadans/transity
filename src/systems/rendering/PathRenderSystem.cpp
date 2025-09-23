@@ -22,18 +22,8 @@ void PathRenderSystem::render(const entt::registry& registry, sf::RenderWindow& 
 
         // Determine the passenger's current position
         std::optional<sf::Vector2f> currentPosition;
-        if (passenger.state == PassengerState::ON_TRAIN && passenger.currentTrain.has_value()) {
-            entt::entity trainEntity = passenger.currentTrain.value();
-            if (registry.valid(trainEntity) && registry.all_of<PositionComponent>(trainEntity)) {
-                currentPosition = registry.get<const PositionComponent>(trainEntity).coordinates;
-            }
-        } else { // WAITING_FOR_TRAIN or ARRIVED
-            if (path.currentNodeIndex < path.nodes.size()) {
-                entt::entity currentStation = path.nodes[path.currentNodeIndex];
-                if (registry.valid(currentStation) && registry.all_of<PositionComponent>(currentStation)) {
-                    currentPosition = registry.get<const PositionComponent>(currentStation).coordinates;
-                }
-            }
+        if (registry.valid(passenger.currentContainer) && registry.all_of<PositionComponent>(passenger.currentContainer)) {
+            currentPosition = registry.get<const PositionComponent>(passenger.currentContainer).coordinates;
         }
 
         if (!currentPosition.has_value()) {

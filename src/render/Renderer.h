@@ -4,14 +4,14 @@
 #include <SFML/System.hpp>
 #include <entt/entt.hpp>
 
-#include "LineRenderSystem.h"
-#include "TrainRenderSystem.h" // Include the train render system
 #include "event/EventBus.h"
 #include "event/InputEvents.h"
-#include "systems/rendering/TerrainRenderSystem.h"
-#include "systems/rendering/PassengerSpawnAnimationSystem.h"
 #include "render/ColorManager.h"
-#include "PathRenderSystem.h"
+#include "systems/rendering/LineRenderSystem.h"
+#include "systems/rendering/PassengerSpawnAnimationSystem.h"
+#include "systems/rendering/PathRenderSystem.h"
+#include "systems/rendering/TerrainRenderSystem.h"
+#include "systems/rendering/TrainRenderSystem.h"  // Include the train render system
 
 class WorldGenerationSystem;
 
@@ -23,7 +23,9 @@ public:
     void initialize();
     void clear();
     void renderFrame(const entt::registry &registry, const sf::View &view,
-                     const WorldGenerationSystem &worldGen, PassengerSpawnAnimationSystem &passengerSpawnAnimationSystem, float interpolation);
+                     const WorldGenerationSystem &worldGen,
+                     PassengerSpawnAnimationSystem &passengerSpawnAnimationSystem,
+                     float interpolation);
     void displayFrame() noexcept;
     void cleanupResources() noexcept;
     bool isWindowOpen() const noexcept;

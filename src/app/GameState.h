@@ -4,11 +4,7 @@
 #include <entt/entt.hpp>
 #include <optional>
 
-enum class AppState {
-    LOADING,
-    PLAYING,
-    QUITTING
-};
+enum class AppState { LOADING, PLAYING, QUITTING };
 
 struct GameState {
     InteractionMode currentInteractionMode = InteractionMode::SELECT;
