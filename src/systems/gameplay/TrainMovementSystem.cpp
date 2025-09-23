@@ -6,9 +6,6 @@
 #include "Logger.h"
 #include <cmath>
 
-// This should be moved to the TrainMovementComponent definition
-const float TrainMovementComponent::STOP_DURATION = 2.0f;
-
 TrainMovementSystem::TrainMovementSystem(ServiceLocator &serviceLocator)
     : _registry(serviceLocator.registry) {
     LOG_DEBUG("TrainMovementSystem", "TrainMovementSystem created.");

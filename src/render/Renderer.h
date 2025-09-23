@@ -7,11 +7,12 @@
 #include "event/EventBus.h"
 #include "event/InputEvents.h"
 #include "render/ColorManager.h"
+#include "systems/rendering/CityRenderSystem.h"
 #include "systems/rendering/LineRenderSystem.h"
 #include "systems/rendering/PassengerSpawnAnimationSystem.h"
 #include "systems/rendering/PathRenderSystem.h"
 #include "systems/rendering/TerrainRenderSystem.h"
-#include "systems/rendering/TrainRenderSystem.h"  // Include the train render system
+#include "systems/rendering/TrainRenderSystem.h"
 
 class WorldGenerationSystem;
 
@@ -22,7 +23,7 @@ public:
 
     void initialize();
     void clear();
-    void renderFrame(const entt::registry &registry, const sf::View &view,
+    void renderFrame(entt::registry &registry, const sf::View &view,
                      const WorldGenerationSystem &worldGen,
                      PassengerSpawnAnimationSystem &passengerSpawnAnimationSystem,
                      float interpolation);
@@ -38,8 +39,6 @@ public:
     TerrainRenderSystem &getTerrainRenderSystem() noexcept;
 
 private:
-    static sf::Font loadFont();
-
     ColorManager &_colorManager;
     sf::RenderWindow _windowInstance;
     sf::Color _clearColor;
@@ -47,8 +46,7 @@ private:
     LineRenderSystem _lineRenderSystem;
     TrainRenderSystem _trainRenderSystem;
     PathRenderSystem _pathRenderSystem;
-    sf::Font m_font;
-    sf::Text m_text;
+    CityRenderSystem _cityRenderSystem;
 
     void onWindowClose(const WindowCloseEvent &event);
     void onThemeChanged(const ThemeChangedEvent &event);

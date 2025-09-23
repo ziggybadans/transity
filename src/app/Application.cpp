@@ -32,7 +32,8 @@ Application::Application() : _colorManager(_eventBus) {
         _renderer->connectToEventBus(_eventBus);
 
         _ui = std::make_unique<UI>(_renderer->getWindowInstance(),
-                                   _renderer->getTerrainRenderSystem(), _game->getServiceLocator());
+                                   _renderer->getTerrainRenderSystem(), _game->getServiceLocator(),
+                                   *_game);
         _ui->initialize();
 
     } catch (const std::exception &e) {
@@ -54,7 +55,7 @@ void Application::run() {
 
         switch (appState) {
         case AppState::LOADING: {
-            _ui->update(frameTime, 0);
+            _ui->update(frameTime);
             if (_game->getLoadingFuture().wait_for(std::chrono::seconds(0))
                 == std::future_status::ready) {
                 _game->getGameState().currentAppState = AppState::PLAYING;
@@ -71,7 +72,7 @@ void Application::run() {
                     [&numStationsInActiveLine](entt::entity) { numStationsInActiveLine++; });
             }
 
-            _ui->update(frameTime, numStationsInActiveLine);
+            _ui->update(frameTime);
             update(TimePerFrame);  // Update UI and input every frame
 
             if (_isWindowFocused) {

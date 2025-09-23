@@ -13,15 +13,16 @@
 
 class TerrainRenderSystem;
 class ServiceLocator;
+class Game;
 
 class UI {
 public:
     UI(sf::RenderWindow &window, TerrainRenderSystem &terrainRenderSystem,
-       ServiceLocator &serviceLocator);
+       ServiceLocator &serviceLocator, Game &game);
     ~UI();
     void initialize();
     void processEvent(const sf::Event &event);
-    void update(sf::Time deltaTime, size_t numStationsInActiveLine);
+    void update(sf::Time deltaTime);
     void renderFrame();
     void cleanupResources();
 
@@ -37,6 +38,7 @@ private:
     void drawPassengerCreationWindow();
     void drawTimeControlWindow();
 
+    Game &_game;
     sf::RenderWindow &_window;
     ServiceLocator &_serviceLocator;
     TerrainRenderSystem &_terrainRenderSystem;

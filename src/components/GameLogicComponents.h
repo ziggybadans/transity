@@ -5,6 +5,8 @@
 #include <entt/entt.hpp>
 #include <vector>
 
+const float TrainMovementComponent::STOP_DURATION = 2.0f;
+
 // The position of an entity in the world.
 struct PositionComponent {
     sf::Vector2f coordinates;

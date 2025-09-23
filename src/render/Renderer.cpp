@@ -11,28 +11,15 @@
 #include <iostream>
 #include <stdexcept>
 
-sf::Font Renderer::loadFont() {
-    sf::Font font;
-    if (!font.openFromFile("data/fonts/font.TTF")) {
-        const std::string errorMsg = "Failed to load font: data/fonts/font.TTF";
-        LOG_ERROR("Renderer", errorMsg.c_str());
-        throw std::runtime_error(errorMsg);
-    }
-    return font;
-}
-
 Renderer::Renderer(ColorManager &colorManager)
     : _colorManager(colorManager),
       _windowInstance(sf::VideoMode({Constants::WINDOW_WIDTH, Constants::WINDOW_HEIGHT}),
                       Constants::WINDOW_TITLE, sf::Style::Default, sf::State::Windowed,
                       sf::ContextSettings{0u, 0u, 8u}),
       _clearColor(_colorManager.getBackgroundColor()), _terrainRenderSystem(colorManager),
-      _lineRenderSystem(), _trainRenderSystem(), _pathRenderSystem(), m_font(loadFont()),
-      m_text(m_font) {
+      _lineRenderSystem(), _trainRenderSystem(), _pathRenderSystem(), _cityRenderSystem() {
     LOG_DEBUG("Renderer", "Renderer created and window initialized.");
     _windowInstance.setFramerateLimit(Constants::FRAMERATE_LIMIT);
-    m_text.setCharacterSize(24);
-    m_text.setFillColor(sf::Color::Black);
 }
 
 Renderer::~Renderer() {
@@ -52,7 +39,7 @@ TerrainRenderSystem &Renderer::getTerrainRenderSystem() noexcept {
     return _terrainRenderSystem;
 }
 
-void Renderer::renderFrame(const entt::registry &registry, const sf::View &view,
+void Renderer::renderFrame(entt::registry &registry, const sf::View &view,
                            const WorldGenerationSystem &worldGen,
                            PassengerSpawnAnimationSystem &passengerSpawnAnimationSystem,
                            float interpolation) {
@@ -88,43 +75,8 @@ void Renderer::renderFrame(const entt::registry &registry, const sf::View &view,
         const auto &renderable = viewRegistry.get<const RenderableComponent>(entity);
 
         // Special rendering for cities to give them a bordered look
-        if (registry.all_of<CityComponent>(entity)) {
-            float borderThickness = 4.0f;
-
-            // Draw the outer border
-            sf::CircleShape border(renderable.radius.value);
-            border.setFillColor(highlightColor);
-            border.setOrigin({renderable.radius.value, renderable.radius.value});
-            border.setPosition(position.coordinates);
-            _windowInstance.draw(border);
-
-            // Draw the inner circle
-            sf::CircleShape innerCircle(renderable.radius.value - borderThickness);
-            innerCircle.setFillColor(renderable.color);
-            innerCircle.setOrigin({renderable.radius.value - borderThickness,
-                                   renderable.radius.value - borderThickness});
-            innerCircle.setPosition(position.coordinates);
-            _windowInstance.draw(innerCircle);
-
-            // Draw passenger count for cities, now centered
-            int waitingCount = 0;
-            auto passengerView = registry.view<const PassengerComponent>();
-            for (auto passengerEntity : passengerView) {
-                const auto &passenger =
-                    passengerView.get<const PassengerComponent>(passengerEntity);
-                if (passenger.currentContainer == entity) {
-                    waitingCount++;
-                }
-            }
-
-            if (waitingCount > 0) {
-                m_text.setString(std::to_string(waitingCount));
-                sf::FloatRect textBounds = m_text.getLocalBounds();
-                m_text.setOrigin({textBounds.position.x + textBounds.size.x / 2.0f,
-                                  textBounds.position.y + textBounds.size.y / 2.0f});
-                m_text.setPosition(position.coordinates);
-                _windowInstance.draw(m_text);
-            }
+        if (registry.all_of<TrainTag>(entity) || registry.all_of<CityComponent>(entity)) {
+            continue;
         } else {
             // Default rendering for other entities
             sf::CircleShape shape(renderable.radius.value);
@@ -146,6 +98,7 @@ void Renderer::renderFrame(const entt::registry &registry, const sf::View &view,
         }
     }
 
+    _cityRenderSystem.render(registry, _windowInstance, highlightColor);
     _trainRenderSystem.render(registry, _windowInstance,
                               highlightColor);            // Call the train render system
     _pathRenderSystem.render(registry, _windowInstance);  // Call the path render system

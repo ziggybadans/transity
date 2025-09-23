@@ -1,6 +1,7 @@
 #include "UI.h"
 #include "Constants.h"
 #include "Logger.h"
+#include "app/Game.h"
 #include "app/InteractionMode.h"
 #include "components/GameLogicComponents.h"
 #include "components/PassengerComponents.h"
@@ -8,6 +9,7 @@
 #include "event/InputEvents.h"
 #include "imgui-SFML.h"
 #include "imgui.h"
+#include "systems/gameplay/LineCreationSystem.h"
 #include "systems/rendering/TerrainRenderSystem.h"
 #include "systems/world/ChunkManagerSystem.h"
 #include <cstdint>
@@ -30,9 +32,9 @@ const char *trainStateToString(TrainState state) {
 }
 
 UI::UI(sf::RenderWindow &window, TerrainRenderSystem &terrainRenderSystem,
-       ServiceLocator &serviceLocator)
+       ServiceLocator &serviceLocator, Game &game)
     : _window(window), _terrainRenderSystem(terrainRenderSystem), _serviceLocator(serviceLocator),
-      _autoRegenerate(false) {
+      _game(game), _autoRegenerate(false) {
     LOG_DEBUG("UI", "UI instance created.");
     _terrainRenderSystem.setLodEnabled(_isLodEnabled);
 
@@ -59,8 +61,14 @@ void UI::processEvent(const sf::Event &sfEvent) {
     ImGui::SFML::ProcessEvent(_window, sfEvent);
 }
 
-void UI::update(sf::Time deltaTime, size_t numberOfStationsInActiveLine) {
+void UI::update(sf::Time deltaTime) {
     ImGui::SFML::Update(_window, deltaTime);
+
+    size_t numberOfStationsInActiveLine = 0;
+    if (auto *lineCreationSystem = _game.getSystemManager().getSystem<LineCreationSystem>()) {
+        lineCreationSystem->getActiveLineStations(
+            [&numberOfStationsInActiveLine](entt::entity) { numberOfStationsInActiveLine++; });
+    }
 
     const auto appState = _serviceLocator.gameState.currentAppState;
     if (appState == AppState::LOADING) {
