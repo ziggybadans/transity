@@ -16,17 +16,17 @@ Application::Application() : _colorManager(_eventBus) {
     try {
         unsigned int numThreads = std::thread::hardware_concurrency();
         _threadPool = std::make_unique<ThreadPool>(numThreads > 0 ? numThreads : 1);
-        LOG_INFO("Application", "ThreadPool created with %u threads.", numThreads);
+        LOG_DEBUG("Application", "ThreadPool created with %u threads.", numThreads);
 
-        LOG_INFO("Application", "Creating Renderer object...");
+        LOG_DEBUG("Application", "Creating Renderer object...");
         _renderer = std::make_unique<Renderer>(_colorManager);
-        LOG_INFO("Application", "Renderer object created.");
+        LOG_DEBUG("Application", "Renderer object created.");
         _renderer->initialize();
-        LOG_INFO("Application", "Renderer initialized.");
+        LOG_DEBUG("Application", "Renderer initialized.");
 
-        LOG_INFO("Application", "Creating Game object...");
+        LOG_DEBUG("Application", "Creating Game object...");
         _game = std::make_unique<Game>(*_renderer, *_threadPool, _eventBus, _colorManager);
-        LOG_INFO("Application", "Game object created.");
+        LOG_DEBUG("Application", "Game object created.");
         _game->startLoading();
 
         _renderer->connectToEventBus(_eventBus);

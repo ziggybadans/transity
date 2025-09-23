@@ -107,18 +107,18 @@ entt::entity EntityFactory::createEntity(const std::string &archetypeId,
 
     if (_registry.all_of<PositionComponent>(entity)) {
         const auto &pos = _registry.get<PositionComponent>(entity);
-        LOG_DEBUG("EntityFactory", "Entity %u has PositionComponent at (%.1f, %.1f)",
+        LOG_TRACE("EntityFactory", "Entity %u has PositionComponent at (%.1f, %.1f)",
                   static_cast<unsigned int>(entity), pos.coordinates.x, pos.coordinates.y);
     }
     if (_registry.all_of<RenderableComponent>(entity)) {
         const auto &renderable = _registry.get<RenderableComponent>(entity);
-        LOG_DEBUG("EntityFactory", "Entity %u has RenderableComponent with radius %.1f",
+        LOG_TRACE("EntityFactory", "Entity %u has RenderableComponent with radius %.1f",
                   static_cast<unsigned int>(entity), renderable.radius.value);
     }
 
     if (!name.empty()) {
         _registry.emplace<NameComponent>(entity, name);
-        LOG_DEBUG("EntityFactory", "Entity %u assigned name: %s", static_cast<unsigned int>(entity),
+        LOG_TRACE("EntityFactory", "Entity %u assigned name: %s", static_cast<unsigned int>(entity),
                   name.c_str());
     }
 

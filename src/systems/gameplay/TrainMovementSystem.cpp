@@ -6,6 +6,8 @@
 #include "Logger.h"
 #include <cmath>
 
+const float TrainMovementComponent::STOP_DURATION = 2.0f;
+
 TrainMovementSystem::TrainMovementSystem(ServiceLocator &serviceLocator)
     : _registry(serviceLocator.registry) {
     LOG_DEBUG("TrainMovementSystem", "TrainMovementSystem created.");
@@ -43,6 +45,7 @@ void TrainMovementSystem::handleStoppedState(TrainMovementComponent &movement, f
     movement.stopTimer -= timeStep;
     if (movement.stopTimer <= 0.0f) {
         movement.state = TrainState::ACCELERATING;
+        LOG_TRACE("TrainMovementSystem", "Train state changed to ACCELERATING.");
     }
 }
 
@@ -65,6 +68,7 @@ void TrainMovementSystem::handleStationApproach(entt::entity entity, TrainMoveme
     if (physics.currentSpeed <= 0.0f || t >= 1.0f) {
         physics.currentSpeed = 0.0f;
         movement.state = TrainState::STOPPED;
+        LOG_TRACE("TrainMovementSystem", "Train state changed to STOPPED.");
         movement.stopTimer = TrainMovementComponent::STOP_DURATION;
         position.coordinates = p2;
         movement.progressOnSegment = 0.0f;
@@ -74,8 +78,10 @@ void TrainMovementSystem::handleStationApproach(entt::entity entity, TrainMoveme
 
         if (movement.direction == TrainDirection::FORWARD && movement.currentSegmentIndex >= line.stops.size() - 1) {
             movement.direction = TrainDirection::BACKWARD;
+            LOG_TRACE("TrainMovementSystem", "Train direction changed to BACKWARD.");
         } else if (movement.direction == TrainDirection::BACKWARD && movement.currentSegmentIndex <= 0) {
             movement.direction = TrainDirection::FORWARD;
+            LOG_TRACE("TrainMovementSystem", "Train direction changed to FORWARD.");
         }
     }
 }
@@ -108,12 +114,14 @@ void TrainMovementSystem::handleMovement(entt::entity entity, TrainMovementCompo
         if (physics.currentSpeed >= physics.maxSpeed) {
             physics.currentSpeed = physics.maxSpeed;
             movement.state = TrainState::MOVING;
+            LOG_TRACE("TrainMovementSystem", "Train state changed to MOVING.");
         }
     }
 
     float decelerationDistance = (physics.currentSpeed * physics.currentSpeed) / (2.0f * physics.acceleration);
     if (distanceToNextStop <= decelerationDistance && segmentLength > 0) {
         movement.state = TrainState::DECELERATING;
+        LOG_TRACE("TrainMovementSystem", "Train state changed to DECELERATING.");
         
         // Add the StationApproachComponent to begin the curved approach.
         auto& approach = _registry.emplace<StationApproachComponent>(entity);

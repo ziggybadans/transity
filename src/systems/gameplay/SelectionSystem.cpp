@@ -150,10 +150,10 @@ void SelectionSystem::onMouseButtonPressed(const MouseButtonPressedEvent& event)
     if (clickedEntity != entt::null) {
         _serviceLocator.gameState.selectedEntity = clickedEntity;
         registry.emplace<SelectedComponent>(clickedEntity);
-        LOG_INFO("SelectionSystem", "Entity %u selected.", entt::to_integral(clickedEntity));
+        LOG_DEBUG("SelectionSystem", "Entity %u selected.", entt::to_integral(clickedEntity));
     } else {
         if (_serviceLocator.gameState.selectedEntity.has_value()) {
-            LOG_INFO("SelectionSystem", "Selection cleared.");
+            LOG_DEBUG("SelectionSystem", "Selection cleared.");
         }
         _serviceLocator.gameState.selectedEntity = std::nullopt;
     }

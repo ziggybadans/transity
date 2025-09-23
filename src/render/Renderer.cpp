@@ -28,7 +28,6 @@ Renderer::~Renderer() {
 
 void Renderer::initialize() {
     LOG_INFO("Renderer", "Initializing Renderer.");
-    LOG_INFO("Renderer", "Renderer initialized.");
 }
 
 void Renderer::clear() {

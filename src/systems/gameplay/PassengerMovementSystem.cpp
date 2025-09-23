@@ -67,7 +67,7 @@ void PassengerMovementSystem::alightPassengers(entt::entity trainEntity, const T
         if (passenger.destinationStation == currentStopEntity) {
             _registry.destroy(passengerEntity);
             capacity.currentLoad--;
-            LOG_DEBUG("PassengerMovementSystem", "Passenger reached destination.");
+            LOG_TRACE("PassengerMovementSystem", "Passenger reached destination.");
             continue;
         }
 
@@ -81,7 +81,7 @@ void PassengerMovementSystem::alightPassengers(entt::entity trainEntity, const T
                 passenger.currentContainer = currentStopEntity; // Move passenger to the station.
                 path.currentNodeIndex++; 
                 capacity.currentLoad--;
-                LOG_DEBUG("PassengerMovementSystem", "Passenger alighted to transfer.");
+                LOG_TRACE("PassengerMovementSystem", "Passenger alighted to transfer.");
             }
         }
     }
@@ -113,7 +113,7 @@ void PassengerMovementSystem::boardPassengers(entt::entity trainEntity, const Tr
             passenger.state = PassengerState::ON_TRAIN;
             passenger.currentContainer = trainEntity; // Move passenger to the train.
             capacity.currentLoad++;
-            LOG_DEBUG("PassengerMovementSystem", "Passenger boarded train.");
+            LOG_TRACE("PassengerMovementSystem", "Passenger boarded train.");
         }
     }
 }
