@@ -1,14 +1,17 @@
 {
-  "id": "train",
   "version": 1,
+  "id": "train",
   "components": {
     "renderable": {
-      "radius": 25.0,
-      "color": [0, 0, 0, 255],
-      "zOrder": 10
+      "radius": 10.0,
+      "color": [255, 0, 0, 255],
+      "zOrder": 3
     },
-    "clickable": {
-      "boundingRadius": 30.0
+    "train": {},
+    "trainMovement": {},
+    "trainPhysics": {},
+    "trainCapacity": {
+      "capacity": 50
     }
   }
 }

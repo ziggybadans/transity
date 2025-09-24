@@ -7,6 +7,7 @@
 #include <nlohmann/json.hpp>
 #include <optional>
 #include <string>
+#include <functional> // Add this
 
 #include "components/GameLogicComponents.h"
 #include "components/PassengerComponents.h"
@@ -29,6 +30,9 @@ public:
     entt::entity createPassenger(entt::entity origin, entt::entity destination);
 
 private:
+    void registerComponentFactories(); // Add this
+
     entt::registry &_registry;
     std::map<std::string, nlohmann::json> _archetypes;
+    std::map<std::string, std::function<void(entt::entity, const nlohmann::json&)>> _componentFactories; // Add this
 };
