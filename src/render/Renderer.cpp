@@ -52,7 +52,8 @@ void Renderer::renderFrame(entt::registry &registry, const sf::View &view,
     _lineRenderSystem.render(registry, _windowInstance, view, highlightColor);
 
     // The main render view now excludes entities handled by other systems
-    auto viewRegistry = registry.view<const PositionComponent, const RenderableComponent>(entt::exclude<TrainTag, CityComponent>);
+    auto viewRegistry = registry.view<const PositionComponent, const RenderableComponent>(
+        entt::exclude<TrainTag, CityComponent>);
 
     std::vector<entt::entity> sortedEntities;
     for (auto entity : viewRegistry) {

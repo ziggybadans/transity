@@ -1,9 +1,8 @@
 #include "TrainMovementSystem.h"
 #include "components/GameLogicComponents.h"
 #include "Logger.h"
+#include "Constants.h"
 #include <cmath>
-
-const float TrainMovementComponent::STOP_DURATION = 2.0f;
 
 TrainMovementSystem::TrainMovementSystem(entt::registry& registry)
     : _registry(registry) {
@@ -66,7 +65,7 @@ void TrainMovementSystem::handleStationApproach(entt::entity entity, TrainMoveme
         physics.currentSpeed = 0.0f;
         movement.state = TrainState::STOPPED;
         LOG_TRACE("TrainMovementSystem", "Train state changed to STOPPED.");
-        movement.stopTimer = TrainMovementComponent::STOP_DURATION;
+        movement.stopTimer = Constants::TRAIN_STOP_DURATION;
         position.coordinates = p2;
         movement.progressOnSegment = 0.0f;
         

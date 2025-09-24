@@ -24,7 +24,7 @@
 Game::Game(Renderer &renderer, ThreadPool &threadPool, EventBus &eventBus,
            ColorManager &colorManager)
     : _renderer(renderer), _eventBus(eventBus), _colorManager(colorManager),
-      _entityFactory(_registry), _worldGenerationSystem(_registry, _eventBus),
+      _entityFactory(_registry, "data/archetypes"), _worldGenerationSystem(_registry, _eventBus),
       _pathfinder(_registry), _threadPool(threadPool) {
 
     _inputHandler = std::make_unique<InputHandler>(_eventBus, _camera);

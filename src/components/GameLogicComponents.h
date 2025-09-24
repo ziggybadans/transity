@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Constants.h"
 #include "StrongTypes.h"
 #include <SFML/Graphics.hpp>
 #include <entt/entt.hpp>
@@ -51,19 +52,18 @@ struct TrainMovementComponent {
     int currentSegmentIndex = 0;
     float progressOnSegment = 0.0f;
     float stopTimer = 2.0f;
-    static const float STOP_DURATION;
 };
 
 // Manages the train's physics properties
 struct TrainPhysicsComponent {
-    float maxSpeed = 100.0f;
+    float maxSpeed = Constants::TRAIN_MAX_SPEED;
     float currentSpeed = 50.0f;
-    float acceleration = 25.0f;
+    float acceleration = Constants::TRAIN_ACCELERATION;
 };
 
 // Manages passenger capacity and load
 struct TrainCapacityComponent {
-    int capacity = 20;
+    int capacity = Constants::TRAIN_CAPACITY;
     int currentLoad = 0;  // Add this line
 };
 

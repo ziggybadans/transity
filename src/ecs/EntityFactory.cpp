@@ -1,56 +1,53 @@
 #include "EntityFactory.h"
+#include "Constants.h"
 #include "Logger.h"
 #include <SFML/Graphics/Color.hpp>
 #include <filesystem>
 #include <fstream>
 #include <vector>
 
-#include "EntityFactory.h"
-#include "Logger.h"
-#include <SFML/Graphics/Color.hpp>
-#include <filesystem>
-#include <fstream>
-#include <vector>
-
-EntityFactory::EntityFactory(entt::registry &registry) : _registry(registry) {
+EntityFactory::EntityFactory(entt::registry &registry, const std::string &archetypesPath)
+    : _registry(registry) {
     LOG_DEBUG("EntityFactory", "EntityFactory created.");
-    registerComponentFactories(); // Add this call
-    loadArchetypes("data/archetypes");
+    registerComponentFactories();
+    loadArchetypes(archetypesPath);
 }
 
 void EntityFactory::registerComponentFactories() {
-    _componentFactories["renderable"] = [this](entt::entity entity, const nlohmann::json& data) {
-        auto& renderable = _registry.emplace<RenderableComponent>(entity);
+    _componentFactories["renderable"] = [this](entt::entity entity, const nlohmann::json &data) {
+        auto &renderable = _registry.emplace<RenderableComponent>(entity);
         if (data.contains("radius")) renderable.radius = {data["radius"].get<float>()};
         if (data.contains("color") && data["color"].is_array() && data["color"].size() == 4) {
-            renderable.color = sf::Color(data["color"][0].get<int>(), data["color"][1].get<int>(), data["color"][2].get<int>(), data["color"][3].get<int>());
+            renderable.color = sf::Color(data["color"][0].get<int>(), data["color"][1].get<int>(),
+                                         data["color"][2].get<int>(), data["color"][3].get<int>());
         }
         if (data.contains("zOrder")) renderable.zOrder = {data["zOrder"].get<int>()};
     };
-    _componentFactories["clickable"] = [this](entt::entity entity, const nlohmann::json& data) {
-        auto& clickable = _registry.emplace<ClickableComponent>(entity);
-        if (data.contains("boundingRadius")) clickable.boundingRadius = {data["boundingRadius"].get<float>()};
+    _componentFactories["clickable"] = [this](entt::entity entity, const nlohmann::json &data) {
+        auto &clickable = _registry.emplace<ClickableComponent>(entity);
+        if (data.contains("boundingRadius"))
+            clickable.boundingRadius = {data["boundingRadius"].get<float>()};
     };
-    _componentFactories["city"] = [this](entt::entity entity, const nlohmann::json& data) {
+    _componentFactories["city"] = [this](entt::entity entity, const nlohmann::json &data) {
         _registry.emplace<CityComponent>(entity);
     };
-    _componentFactories["train"] = [this](entt::entity entity, const nlohmann::json& data) {
+    _componentFactories["train"] = [this](entt::entity entity, const nlohmann::json &data) {
         _registry.emplace<TrainTag>(entity);
     };
-    _componentFactories["trainMovement"] = [this](entt::entity entity, const nlohmann::json& data) {
+    _componentFactories["trainMovement"] = [this](entt::entity entity, const nlohmann::json &data) {
         _registry.emplace<TrainMovementComponent>(entity);
     };
-    _componentFactories["trainPhysics"] = [this](entt::entity entity, const nlohmann::json& data) {
+    _componentFactories["trainPhysics"] = [this](entt::entity entity, const nlohmann::json &data) {
         _registry.emplace<TrainPhysicsComponent>(entity);
     };
-    _componentFactories["trainCapacity"] = [this](entt::entity entity, const nlohmann::json& data) {
-        auto& capacity = _registry.emplace<TrainCapacityComponent>(entity);
+    _componentFactories["trainCapacity"] = [this](entt::entity entity, const nlohmann::json &data) {
+        auto &capacity = _registry.emplace<TrainCapacityComponent>(entity);
         if (data.contains("capacity")) capacity.capacity = data["capacity"].get<int>();
     };
-    _componentFactories["passenger"] = [this](entt::entity entity, const nlohmann::json& data) {
+    _componentFactories["passenger"] = [this](entt::entity entity, const nlohmann::json &data) {
         _registry.emplace<PassengerComponent>(entity);
     };
-    _componentFactories["path"] = [this](entt::entity entity, const nlohmann::json& data) {
+    _componentFactories["path"] = [this](entt::entity entity, const nlohmann::json &data) {
         _registry.emplace<PathComponent>(entity);
     };
 }
@@ -72,7 +69,7 @@ void EntityFactory::loadArchetypes(const std::string &directoryPath) {
 
                         // For now, we only support version 1.
                         // In a real application, you would add migration logic here.
-                        if (version != 1) {
+                        if (version != Constants::SUPPORTED_ARCHETYPE_VERSION) {  // Modified
                             LOG_ERROR("EntityFactory", "Unsupported archetype version %d for '%s'",
                                       version, id.c_str());
                             continue;
@@ -124,7 +121,8 @@ entt::entity EntityFactory::createEntity(const std::string &archetypeId,
             if (factoryIt != _componentFactories.end()) {
                 factoryIt->second(entity, componentData);
             } else {
-                LOG_WARN("EntityFactory", "No factory found for component '%s' in archetype '%s'.", componentName.c_str(), archetypeId.c_str());
+                LOG_WARN("EntityFactory", "No factory found for component '%s' in archetype '%s'.",
+                         componentName.c_str(), archetypeId.c_str());
             }
         }
     }
@@ -182,7 +180,7 @@ entt::entity EntityFactory::createTrain(entt::entity lineEntity) {
     }
 
     // The TrainTag is now added by the archetype, but we still need to set the assigned line
-    auto& movement = _registry.get<TrainMovementComponent>(trainEntity);
+    auto &movement = _registry.get<TrainMovementComponent>(trainEntity);
     movement.assignedLine = lineEntity;
 
     LOG_DEBUG("EntityFactory", "Train entity (ID: %u) created for line (ID: %u).",
@@ -190,7 +188,6 @@ entt::entity EntityFactory::createTrain(entt::entity lineEntity) {
 
     return trainEntity;
 }
-
 
 entt::entity EntityFactory::createPassenger(entt::entity origin, entt::entity destination) {
     if (!_registry.valid(origin) || !_registry.valid(destination)) {
@@ -200,7 +197,8 @@ entt::entity EntityFactory::createPassenger(entt::entity origin, entt::entity de
 
     const auto &originPos = _registry.get<PositionComponent>(origin).coordinates;
 
-    std::string passengerName = "Passenger " + std::to_string(entt::to_integral(origin)) + "->" + std::to_string(entt::to_integral(destination));
+    std::string passengerName = "Passenger " + std::to_string(entt::to_integral(origin)) + "->"
+                                + std::to_string(entt::to_integral(destination));
     auto entity = createEntity("passenger", originPos, passengerName);
     if (entity == entt::null) {
         LOG_ERROR("EntityFactory", "Failed to create passenger entity from archetype.");
