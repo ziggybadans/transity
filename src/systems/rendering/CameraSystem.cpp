@@ -1,23 +1,22 @@
 #include "CameraSystem.h"
 #include "Constants.h"
 #include "Logger.h"
-#include "core/ServiceLocator.h"
 #include "render/Camera.h"
 #include "render/Renderer.h"
+#include "systems/world/WorldGenerationSystem.h"
 
 #include <algorithm>
-
 #include <cassert>
 
-CameraSystem::CameraSystem(ServiceLocator &serviceLocator)
-    : m_camera(serviceLocator.camera), m_window(serviceLocator.renderer.getWindowInstance()),
-      m_worldGenSystem(serviceLocator.worldGenerationSystem) {
+CameraSystem::CameraSystem(Camera& camera, Renderer& renderer, WorldGenerationSystem& worldGenSystem, EventBus& eventBus)
+    : m_camera(camera), m_window(renderer.getWindowInstance()),
+      m_worldGenSystem(worldGenSystem) {
     m_zoomConnection =
-        serviceLocator.eventBus.sink<CameraZoomEvent>().connect<&CameraSystem::onCameraZoom>(
-            this);  // Change -> to .
+        eventBus.sink<CameraZoomEvent>().connect<&CameraSystem::onCameraZoom>(
+            this);
     m_panConnection =
-        serviceLocator.eventBus.sink<CameraPanEvent>().connect<&CameraSystem::onCameraPan>(
-            this);  // Change -> to .
+        eventBus.sink<CameraPanEvent>().connect<&CameraSystem::onCameraPan>(
+            this);
    LOG_DEBUG("CameraSystem", "CameraSystem created and connected to EventBus.");
 }
 

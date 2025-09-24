@@ -2,13 +2,13 @@
 #include "components/GameLogicComponents.h"
 #include "Logger.h"
 
-DeletionSystem::DeletionSystem(ServiceLocator& serviceLocator)
-    : _serviceLocator(serviceLocator), _registry(serviceLocator.registry) {
-    _deleteEntityConnection = _serviceLocator.eventBus.sink<DeleteEntityEvent>().connect<&DeletionSystem::onDeleteEntity>(this);
+DeletionSystem::DeletionSystem(entt::registry& registry, EventBus& eventBus, GameState& gameState)
+    : _registry(registry), _eventBus(eventBus), _gameState(gameState) {
+    _deleteEntityConnection = _eventBus.sink<DeleteEntityEvent>().connect<&DeletionSystem::onDeleteEntity>(this);
 }
 
 DeletionSystem::~DeletionSystem() {
-    _serviceLocator.eventBus.sink<DeleteEntityEvent>().disconnect(this);
+    _eventBus.sink<DeleteEntityEvent>().disconnect(this);
 }
 
 void DeletionSystem::onDeleteEntity(const DeleteEntityEvent& event) {
@@ -34,7 +34,7 @@ void DeletionSystem::onDeleteEntity(const DeleteEntityEvent& event) {
     LOG_DEBUG("DeletionSystem", "Deleted entity: %u", entt::to_integral(event.entity));
 
     // If the deleted entity was the selected entity, deselect it
-    if (_serviceLocator.gameState.selectedEntity == event.entity) {
-        _serviceLocator.gameState.selectedEntity = std::nullopt;
+    if (_gameState.selectedEntity == event.entity) {
+        _gameState.selectedEntity = std::nullopt;
     }
 }

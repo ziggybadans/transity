@@ -1,15 +1,12 @@
-// src/systems/gameplay/TrainMovementSystem.cpp
-
 #include "TrainMovementSystem.h"
 #include "components/GameLogicComponents.h"
-#include "core/ServiceLocator.h"
 #include "Logger.h"
 #include <cmath>
 
 const float TrainMovementComponent::STOP_DURATION = 2.0f;
 
-TrainMovementSystem::TrainMovementSystem(ServiceLocator &serviceLocator)
-    : _registry(serviceLocator.registry) {
+TrainMovementSystem::TrainMovementSystem(entt::registry& registry)
+    : _registry(registry) {
     LOG_DEBUG("TrainMovementSystem", "TrainMovementSystem created.");
 }
 

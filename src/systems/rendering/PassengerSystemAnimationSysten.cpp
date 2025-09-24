@@ -2,15 +2,14 @@
 #include "components/GameLogicComponents.h"
 #include "components/RenderComponents.h"
 #include "components/PassengerComponents.h"
-#include "core/ServiceLocator.h"
 #include "ecs/EntityFactory.h"
 #include "core/Pathfinder.h"
 #include "Logger.h"
 
-PassengerSpawnAnimationSystem::PassengerSpawnAnimationSystem(ServiceLocator& serviceLocator)
-    : _registry(serviceLocator.registry),
-      _entityFactory(serviceLocator.entityFactory),
-      _pathfinder(serviceLocator.pathfinder) {
+PassengerSpawnAnimationSystem::PassengerSpawnAnimationSystem(entt::registry& registry, EntityFactory& entityFactory, Pathfinder& pathfinder)
+    : _registry(registry),
+      _entityFactory(entityFactory),
+      _pathfinder(pathfinder) {
     LOG_DEBUG("PassengerSpawnAnimationSystem", "PassengerSpawnAnimationSystem created.");
 }
 

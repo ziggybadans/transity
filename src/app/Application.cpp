@@ -1,12 +1,14 @@
 #include "Application.h"
 #include "Constants.h"
 #include "Logger.h"
+#include "app/Game.h"
 #include "app/GameState.h"
 #include "core/PerfTimer.h"
-#include "core/ServiceLocator.h"
 #include "event/InputEvents.h"
 #include "input/InputHandler.h"
+#include "render/Renderer.h"
 #include "systems/gameplay/LineCreationSystem.h"
+#include "ui/UI.h"
 
 #include <stdexcept>
 #include <thread>
@@ -31,9 +33,10 @@ Application::Application() : _colorManager(_eventBus) {
 
         _renderer->connectToEventBus(_eventBus);
 
-        _ui = std::make_unique<UI>(_renderer->getWindowInstance(),
-                                   _renderer->getTerrainRenderSystem(), _game->getServiceLocator(),
-                                   *_game);
+        _ui = std::make_unique<UI>(
+            _renderer->getWindowInstance(), _renderer->getTerrainRenderSystem(), *_game, _eventBus,
+            _game->getGameState(), _game->getLoadingState(), _game->getCamera(),
+            _game->getPerformanceMonitor(), _colorManager, _game->getWorldGenSystem());
         _ui->initialize();
 
     } catch (const std::exception &e) {
@@ -42,6 +45,8 @@ Application::Application() : _colorManager(_eventBus) {
     }
     LOG_INFO("Application", "Application created successfully.");
 }
+
+Application::~Application() = default;
 
 void Application::run() {
     LOG_INFO("Application", "Starting main loop.");
@@ -123,7 +128,7 @@ void Application::processEvents() {
 }
 
 void Application::update(sf::Time dt) {
-    PerfTimer timer("Application::update", _game->getServiceLocator());
+    PerfTimer timer("Application::update", _game->getPerformanceMonitor());
 
     _eventBus.update();
     _game->getInputHandler().update(dt);
@@ -131,7 +136,7 @@ void Application::update(sf::Time dt) {
 }
 
 void Application::render(float interpolation) {
-    PerfTimer timer("Application::render", _game->getServiceLocator());
+    PerfTimer timer("Application::render", _game->getPerformanceMonitor());
 
     const auto &worldGen = _game->getWorldGenSystem();
     auto &passengerSpawnAnimationSystem = _game->getPassengerSpawnAnimationSystem();

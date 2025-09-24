@@ -1,23 +1,24 @@
 #pragma once
 
-#include "TerrainRenderSystem.h"
 #include "ecs/ISystem.h"
-#include "event/UIEvents.h" // Add this include
+#include "event/UIEvents.h"
+#include "event/EventBus.h" 
 #include <entt/entt.hpp>
 
-class ServiceLocator;
+class Renderer;
 class WorldGenerationSystem;
+class TerrainRenderSystem;
 
 class TerrainMeshSystem : public ISystem, public IUpdatable {
 public:
-    explicit TerrainMeshSystem(ServiceLocator &serviceLocator);
+    explicit TerrainMeshSystem(entt::registry& registry, Renderer& renderer, const WorldGenerationSystem& worldGenSystem, EventBus& eventBus);
     void update(sf::Time dt) override;
 
 private:
-    void onThemeChanged(const ThemeChangedEvent &event); // Add this declaration
+    void onThemeChanged(const ThemeChangedEvent &event); 
 
     entt::registry &_registry;
     TerrainRenderSystem &_terrainRenderSystem;
     const WorldGenerationSystem &_worldGenSystem;
-    entt::scoped_connection _themeChangeConnection; // Add this member
+    entt::scoped_connection _themeChangeConnection; 
 };

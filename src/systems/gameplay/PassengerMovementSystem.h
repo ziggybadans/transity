@@ -1,19 +1,16 @@
-// src/systems/gameplay/PassengerMovementSystem.h
-
 #pragma once
 
 #include "ecs/ISystem.h"
 #include <SFML/System/Time.hpp>
 #include <entt/entt.hpp>
 
-struct ServiceLocator;
 struct LineComponent;
 struct TrainMovementComponent;
 struct TrainCapacityComponent;
 
 class PassengerMovementSystem : public ISystem, public IUpdatable {
 public:
-    explicit PassengerMovementSystem(ServiceLocator& serviceLocator);
+    explicit PassengerMovementSystem(entt::registry& registry);
 
     void update(sf::Time dt) override;
 

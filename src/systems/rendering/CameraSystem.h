@@ -1,20 +1,20 @@
 #pragma once
 
 #include "ecs/ISystem.h"
-#include "ecs/SystemManager.h"
 #include "event/InputEvents.h"
-#include "systems/world/WorldGenerationSystem.h"
+#include "event/EventBus.h"
 #include <entt/entt.hpp>
 
-class ServiceLocator;
 class Camera;
+class Renderer;
+class WorldGenerationSystem;
 namespace sf {
 class RenderWindow;
 }
 
 class CameraSystem : public ISystem, public IUpdatable {
 public:
-    explicit CameraSystem(ServiceLocator &serviceLocator);
+    explicit CameraSystem(Camera& camera, Renderer& renderer, WorldGenerationSystem& worldGenSystem, EventBus& eventBus);
     ~CameraSystem();
 
     void update(sf::Time dt) override;
@@ -27,6 +27,6 @@ private:
     sf::RenderWindow &m_window;
     WorldGenerationSystem &m_worldGenSystem;
 
-    entt::connection m_zoomConnection;
-    entt::connection m_panConnection;
+    entt::scoped_connection m_zoomConnection;
+    entt::scoped_connection m_panConnection;
 };

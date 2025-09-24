@@ -1,16 +1,16 @@
 #include "PassengerSpawnSystem.h"
 #include "components/GameLogicComponents.h"
 #include "components/PassengerComponents.h"
-#include "core/ServiceLocator.h"
 #include "ecs/EntityFactory.h"
+#include "core/Pathfinder.h"
 #include "Logger.h"
 #include <vector>
 #include <random>
 
-PassengerSpawnSystem::PassengerSpawnSystem(ServiceLocator& serviceLocator)
-    : _registry(serviceLocator.registry),
-      _entityFactory(serviceLocator.entityFactory),
-      _pathfinder(serviceLocator.pathfinder),
+PassengerSpawnSystem::PassengerSpawnSystem(entt::registry& registry, EntityFactory& entityFactory, Pathfinder& pathfinder)
+    : _registry(registry),
+      _entityFactory(entityFactory),
+      _pathfinder(pathfinder),
       _spawnInterval(sf::seconds(5.0f)), // Spawn a passenger every 5 seconds
       _spawnTimer(_spawnInterval) {
     LOG_DEBUG("PassengerSpawnSystem", "PassengerSpawnSystem created.");

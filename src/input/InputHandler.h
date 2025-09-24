@@ -1,21 +1,21 @@
-
 #pragma once
 
-#include "core/ServiceLocator.h"
+#include "event/EventBus.h"
 #include "event/InputEvents.h"
-#include "event/LineEvents.h"
+#include "render/Camera.h"
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
 
 class InputHandler {
 public:
-    InputHandler(ServiceLocator &serviceLocator);
+    InputHandler(EventBus &eventBus, Camera &camera);
 
     void handleGameEvent(const sf::Event &event, sf::RenderWindow &window);
     void update(sf::Time dt);
 
 private:
-    ServiceLocator &_services;
+    EventBus &_eventBus;
+    Camera &_camera;
 
     float _zoomFactor;
     float _unzoomFactor;

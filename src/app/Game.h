@@ -3,13 +3,12 @@
 #include "GameState.h"
 #include "LoadingState.h"
 #include "core/Pathfinder.h"
-#include "core/ServiceLocator.h"
+#include "core/PerformanceMonitor.h"
 #include "ecs/EntityFactory.h"
 #include "ecs/SystemManager.h"
 #include "event/EventBus.h"
 #include "render/Camera.h"
 #include "render/ColorManager.h"
-#include "systems/gameplay/CityPlacementSystem.h"
 #include "systems/rendering/PassengerSpawnAnimationSystem.h"
 #include "systems/world/WorldGenerationSystem.h"
 #include <entt/entt.hpp>
@@ -37,10 +36,11 @@ public:
     EventBus &getEventBus() { return _eventBus; }
     Camera &getCamera() { return _camera; }
     GameState &getGameState() { return _gameState; }
+    LoadingState &getLoadingState() { return _loadingState; }
     InputHandler &getInputHandler() { return *_inputHandler; }
     SystemManager &getSystemManager() { return *_systemManager; }
-    ServiceLocator &getServiceLocator() { return _serviceLocator; }
-    const WorldGenerationSystem &getWorldGenSystem() const { return _worldGenerationSystem; }
+    WorldGenerationSystem &getWorldGenSystem() { return _worldGenerationSystem; }
+    PerformanceMonitor &getPerformanceMonitor() { return _performanceMonitor; }
     PassengerSpawnAnimationSystem &getPassengerSpawnAnimationSystem() {
         return *_systemManager->getSystem<PassengerSpawnAnimationSystem>();
     }
@@ -60,9 +60,8 @@ private:
     WorldGenerationSystem _worldGenerationSystem;
     PerformanceMonitor _performanceMonitor;
     Pathfinder _pathfinder;
-    ServiceLocator _serviceLocator;
+    ThreadPool &_threadPool;
 
-    std::unique_ptr<ChunkManagerSystem> _chunkManagerSystem;
     std::unique_ptr<SystemManager> _systemManager;
     std::unique_ptr<SystemManager> _simulationSystemManager;
     std::unique_ptr<InputHandler> _inputHandler;

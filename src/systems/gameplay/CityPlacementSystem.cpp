@@ -1,5 +1,4 @@
 #include "CityPlacementSystem.h"
-#include "core/ServiceLocator.h"
 #include "ecs/EntityFactory.h"
 #include "systems/world/WorldGenerationSystem.h"
 #include "Logger.h"
@@ -8,14 +7,16 @@
 #include "systems/rendering/TerrainRenderSystem.h"
 #include "render/Renderer.h" 
 #include "Constants.h"
+#include "app/LoadingState.h"
+#include "core/PerformanceMonitor.h"
 
 #include <vector>
 #include <algorithm>
 #include <random>
 #include <queue>
 
-CityPlacementSystem::CityPlacementSystem(ServiceLocator &serviceLocator)
-    : _serviceLocator(serviceLocator) {
+CityPlacementSystem::CityPlacementSystem(LoadingState& loadingState, WorldGenerationSystem& worldGenerationSystem, EntityFactory& entityFactory, Renderer& renderer, PerformanceMonitor& performanceMonitor)
+    : _loadingState(loadingState), _worldGenerationSystem(worldGenerationSystem), _entityFactory(entityFactory), _renderer(renderer), _performanceMonitor(performanceMonitor) {
     LOG_DEBUG("CityPlacementSystem", "CityPlacementSystem created.");
     _noise.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
     _noise.SetFrequency(0.005f);
@@ -35,23 +36,21 @@ void CityPlacementSystem::init() {
 }
 
 void CityPlacementSystem::placeCities(int numberOfCities) {
-    PerfTimer timer("CityPlacementSystem::placeCities", _serviceLocator, PerfTimer::Purpose::Log);
+    PerfTimer timer("CityPlacementSystem::placeCities", _performanceMonitor, PerfTimer::Purpose::Log);
     LOG_INFO("CityPlacementSystem", "Starting city placement for %d cities...", numberOfCities);
 
-    _serviceLocator.loadingState.message = "Analysing terrain for city placement...";
-    _serviceLocator.loadingState.progress = 0.3f;
+    _loadingState.message = "Analysing terrain for city placement...";
+    _loadingState.progress = 0.3f;
 
-    auto &worldGenSystem = _serviceLocator.worldGenerationSystem;
-    auto &entityFactory = _serviceLocator.entityFactory;
-    const auto &worldGrid = worldGenSystem.getParams();
+    const auto &worldGrid = _worldGenerationSystem.getParams();
     const int mapWidth = worldGrid.worldDimensionsInChunks.x * worldGrid.chunkDimensionsInCells.x;
     const int mapHeight = worldGrid.worldDimensionsInChunks.y * worldGrid.chunkDimensionsInCells.y;
     const float cellSize = worldGrid.cellSize;
 
     precomputeTerrainCache(mapWidth, mapHeight);
 
-    _serviceLocator.loadingState.message = "Calculating suitability maps...";
-    _serviceLocator.loadingState.progress = 0.4f;
+    _loadingState.message = "Calculating suitability maps...";
+    _loadingState.progress = 0.4f;
 
     _suitabilityMaps.water.resize(mapWidth * mapHeight, 0.0f);
     _suitabilityMaps.expandability.resize(mapWidth * mapHeight, 0.0f);
@@ -64,44 +63,44 @@ void CityPlacementSystem::placeCities(int numberOfCities) {
 
     // Calculate and normalize static maps once
     {
-        PerfTimer timer("calculateWaterSuitability", _serviceLocator, PerfTimer::Purpose::Log);
+        PerfTimer timer("calculateWaterSuitability", _performanceMonitor, PerfTimer::Purpose::Log);
         calculateWaterSuitability(mapWidth, mapHeight, _suitabilityMaps.water);
         normalizeMap(_suitabilityMaps.water);
     }
     {
-        PerfTimer timer("calculateExpandabilitySuitability", _serviceLocator, PerfTimer::Purpose::Log);
+        PerfTimer timer("calculateExpandabilitySuitability", _performanceMonitor, PerfTimer::Purpose::Log);
         calculateExpandabilitySuitability(mapWidth, mapHeight, _suitabilityMaps.expandability);
         normalizeMap(_suitabilityMaps.expandability);
     }
     {
-        PerfTimer timer("calculateNoiseSuitability", _serviceLocator, PerfTimer::Purpose::Log);
+        PerfTimer timer("calculateNoiseSuitability", _performanceMonitor, PerfTimer::Purpose::Log);
         calculateNoiseSuitability(mapWidth, mapHeight, _suitabilityMaps.noise);
         normalizeMap(_suitabilityMaps.noise);
     }
 
-    _serviceLocator.loadingState.message = "Placing cities...";
+    _loadingState.message = "Placing cities...";
 
     for (int i = 0; i < numberOfCities; ++i) {
-        PerfTimer loopTimer("CityPlacementLoop iteration " + std::to_string(i), _serviceLocator, PerfTimer::Purpose::Log);
+        PerfTimer loopTimer("CityPlacementLoop iteration " + std::to_string(i), _performanceMonitor, PerfTimer::Purpose::Log);
 
         float cityProgress = static_cast<float>(i) / numberOfCities;
-        _serviceLocator.loadingState.progress = 0.6f + (cityProgress * 0.4f);
+        _loadingState.progress = 0.6f + (cityProgress * 0.4f);
 
         if (i > 0) {
             const auto &lastCity = _placedCities.back();
             {
-                PerfTimer timer("updateDistanceMap", _serviceLocator, PerfTimer::Purpose::Log);
+                PerfTimer timer("updateDistanceMap", _performanceMonitor, PerfTimer::Purpose::Log);
                 updateDistanceMap(lastCity, mapWidth, mapHeight);
             }
             {
-                PerfTimer timer ("calculateProximitySuitability", _serviceLocator, PerfTimer::Purpose::Log);
+                PerfTimer timer ("calculateProximitySuitability", _performanceMonitor, PerfTimer::Purpose::Log);
                 calculateProximitySuitability(mapWidth, mapHeight, _suitabilityMaps.cityProximity);
                 normalizeMap(_suitabilityMaps.cityProximity);
             }
         }
         
         {
-            PerfTimer timer("combineSuitabilityMaps", _serviceLocator, PerfTimer::Purpose::Log);
+            PerfTimer timer("combineSuitabilityMaps", _performanceMonitor, PerfTimer::Purpose::Log);
             combineSuitabilityMaps(mapWidth, mapHeight, _suitabilityMaps, _weights, _suitabilityMaps.final);
         }
 
@@ -113,13 +112,13 @@ void CityPlacementSystem::placeCities(int numberOfCities) {
         }
 
         std::string cityName = "City " + std::to_string(i + 1);
-        entityFactory.createEntity("city", {bestLocation.x * cellSize + cellSize / 2.0f, bestLocation.y * cellSize + cellSize / 2.0f}, cityName);
+        _entityFactory.createEntity("city", {bestLocation.x * cellSize + cellSize / 2.0f, bestLocation.y * cellSize + cellSize / 2.0f}, cityName);
         _placedCities.push_back(bestLocation);
         LOG_DEBUG("CityPlacementSystem", "Placed city %d at (%d, %d)", i + 1, bestLocation.x, bestLocation.y);
     }
 
     LOG_INFO("CityPlacementSystem", "Finished city placement.");
-    _serviceLocator.renderer.getTerrainRenderSystem().setSuitabilityMapData(&_suitabilityMaps, &_terrainCache, worldGrid);
+    _renderer.getTerrainRenderSystem().setSuitabilityMapData(&_suitabilityMaps, &_terrainCache, worldGrid);
 }
 
 void CityPlacementSystem::updateDistanceMap(const sf::Vector2i &newCity, int mapWidth, int mapHeight) {
@@ -180,14 +179,13 @@ void CityPlacementSystem::calculateProximitySuitability(int mapWidth, int mapHei
 }
 
 void CityPlacementSystem::precomputeTerrainCache(int mapWidth, int mapHeight) {
-    PerfTimer timer("CityPlacementSystem::precomputeTerrainCache", _serviceLocator, PerfTimer::Purpose::Log);
-    auto &worldGenSystem = _serviceLocator.worldGenerationSystem;
-    const float cellSize = worldGenSystem.getParams().cellSize;
+    PerfTimer timer("CityPlacementSystem::precomputeTerrainCache", _performanceMonitor, PerfTimer::Purpose::Log);
+    const float cellSize = _worldGenerationSystem.getParams().cellSize;
 
     _terrainCache.resize(mapWidth * mapHeight);
     for (int y = 0; y < mapHeight; ++y) {
         for (int x = 0; x < mapWidth; ++x) {
-            _terrainCache[y * mapWidth + x] = worldGenSystem.getTerrainTypeAt(x * cellSize, y * cellSize);
+            _terrainCache[y * mapWidth + x] = _worldGenerationSystem.getTerrainTypeAt(x * cellSize, y * cellSize);
         }
     }
 }

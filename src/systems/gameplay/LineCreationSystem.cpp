@@ -1,21 +1,20 @@
 #include "LineCreationSystem.h"
 #include "Logger.h"
 #include "components/GameLogicComponents.h"
-#include "core/ServiceLocator.h"
 #include "ecs/EntityFactory.h"
 #include "render/ColorManager.h"
 #include <algorithm>
 #include <utility>
 
-LineCreationSystem::LineCreationSystem(ServiceLocator &serviceLocator)
-    : _registry(serviceLocator.registry), _entityFactory(serviceLocator.entityFactory),
-      _colorManager(serviceLocator.colorManager), _gameState(serviceLocator.gameState) {
+LineCreationSystem::LineCreationSystem(entt::registry& registry, EntityFactory& entityFactory, ColorManager& colorManager, GameState& gameState, EventBus& eventBus)
+    : _registry(registry), _entityFactory(entityFactory),
+      _colorManager(colorManager), _gameState(gameState), _eventBus(eventBus) {
 
-    m_finalizeLineConnection = serviceLocator.eventBus.sink<FinalizeLineEvent>()
+    m_finalizeLineConnection = _eventBus.sink<FinalizeLineEvent>()
                                    .connect<&LineCreationSystem::onFinalizeLine>(this);
-    m_mousePressConnection = serviceLocator.eventBus.sink<MouseButtonPressedEvent>()
+    m_mousePressConnection = _eventBus.sink<MouseButtonPressedEvent>()
                                    .connect<&LineCreationSystem::onMouseButtonPressed>(this);
-    m_cancelLineCreationConnection = serviceLocator.eventBus.sink<CancelLineCreationEvent>()
+    m_cancelLineCreationConnection = _eventBus.sink<CancelLineCreationEvent>()
                                    .connect<&LineCreationSystem::onCancelLineCreation>(this);
   LOG_DEBUG("LineCreationSystem", "LineCreationSystem created and connected to EventBus.");
 }

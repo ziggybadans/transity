@@ -1,14 +1,11 @@
-// src/systems/gameplay/PassengerMovementSystem.cpp
-
 #include "PassengerMovementSystem.h"
 #include "components/GameLogicComponents.h"
 #include "components/PassengerComponents.h"
-#include "core/ServiceLocator.h"
 #include "Logger.h"
 #include <algorithm>
 
-PassengerMovementSystem::PassengerMovementSystem(ServiceLocator& serviceLocator)
-    : _registry(serviceLocator.registry) {
+PassengerMovementSystem::PassengerMovementSystem(entt::registry& registry)
+    : _registry(registry) {
     LOG_DEBUG("PassengerMovementSystem", "PassengerMovementSystem created.");
 }
 

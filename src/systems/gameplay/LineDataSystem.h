@@ -1,16 +1,15 @@
 #pragma once
 
 #include "ecs/ISystem.h"
-#include "core/ServiceLocator.h"
 #include "entt/entt.hpp"
-#include "event/EventBus.h"
 #include "event/LineEvents.h"
+#include "event/EventBus.h"
 
 class EntityFactory;
 
 class LineDataSystem : public ISystem, public IUpdatable {
 public:
-    LineDataSystem(ServiceLocator& serviceLocator);
+    LineDataSystem(entt::registry& registry, EntityFactory& entityFactory, EventBus& eventBus);
     ~LineDataSystem();
     void update(sf::Time dt) override;
 
@@ -20,5 +19,5 @@ private:
 
     entt::registry& _registry;
     EntityFactory& _entityFactory;
-    entt::connection m_addTrainConnection;
+    entt::scoped_connection m_addTrainConnection;
 };

@@ -2,40 +2,39 @@
 #include "Logger.h"
 #include "WorldGenerationSystem.h"
 #include "components/WorldComponents.h"
-#include "core/ServiceLocator.h"
+#include "app/LoadingState.h"
 #include "render/Camera.h"
 #include "render/Renderer.h"
 
 #include <entt/entt.hpp>
 
-WorldSetupSystem::WorldSetupSystem(ServiceLocator &services) : m_services(services) {}
+WorldSetupSystem::WorldSetupSystem(entt::registry& registry, LoadingState& loadingState, WorldGenerationSystem& worldGenerationSystem, Renderer& renderer, Camera& camera) 
+    : _registry(registry), _loadingState(loadingState), _worldGenerationSystem(worldGenerationSystem), _renderer(renderer), _camera(camera) {}
 
 void WorldSetupSystem::init() {
     LOG_INFO("WorldSetupSystem", "Initializing world setup.");
 
-    m_services.loadingState.message = "Creating world grid...";
-    m_services.loadingState.progress = 0.1f;
+    _loadingState.message = "Creating world grid...";
+    _loadingState.progress = 0.1f;
 
-    auto worldGridEntity = m_services.registry.create();
-    m_services.registry.emplace<WorldGridComponent>(worldGridEntity);
+    auto worldGridEntity = _registry.create();
+    _registry.emplace<WorldGridComponent>(worldGridEntity);
     LOG_INFO("WorldSetupSystem", "WorldGridComponent created with default values.");
 
-    m_services.loadingState.message = "Configuring camera...";
-    auto &worldGenSystem = m_services.worldGenerationSystem;
-    sf::Vector2f worldSize = worldGenSystem.getWorldSize();
+    _loadingState.message = "Configuring camera...";
+    sf::Vector2f worldSize = _worldGenerationSystem.getWorldSize();
     sf::Vector2f worldCenter = {worldSize.x / 2.0f, worldSize.y / 2.0f};
 
-    auto &window = m_services.renderer.getWindowInstance();
-    auto &camera = m_services.camera;
+    auto &window = _renderer.getWindowInstance();
 
     float zoomFactor = 4.0f;
     sf::Vector2f initialViewSize = {worldSize.x / zoomFactor, worldSize.y / zoomFactor};
-    camera.setInitialView(window, worldCenter, initialViewSize);
+    _camera.setInitialView(window, worldCenter, initialViewSize);
 
     sf::Vector2u windowSize = window.getSize();
-    camera.onWindowResize(windowSize.x, windowSize.y);
+    _camera.onWindowResize(windowSize.x, windowSize.y);
 
-    m_services.loadingState.progress = 0.2f;
+    _loadingState.progress = 0.2f;
 
     LOG_INFO("WorldSetupSystem", "World setup initialization completed.");
 }

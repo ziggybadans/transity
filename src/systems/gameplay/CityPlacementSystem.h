@@ -7,7 +7,11 @@
 #include <SFML/System/Vector2.hpp>
 #include <vector>
 
-class ServiceLocator;
+struct LoadingState;
+class WorldGenerationSystem;
+class EntityFactory;
+class Renderer;
+class PerformanceMonitor;
 
 struct PlacementWeights {
     float waterAccess = 0.20f;
@@ -26,7 +30,7 @@ struct SuitabilityMaps {
 
 class CityPlacementSystem : public ISystem {
 public:
-    explicit CityPlacementSystem(ServiceLocator &serviceLocator);
+    explicit CityPlacementSystem(LoadingState& loadingState, WorldGenerationSystem& worldGenerationSystem, EntityFactory& entityFactory, Renderer& renderer, PerformanceMonitor& performanceMonitor);
     ~CityPlacementSystem() override;
 
     void init();
@@ -53,7 +57,12 @@ private:
                                   const std::vector<float> &suitabilityMap);
 
 private:
-    ServiceLocator &_serviceLocator;
+    LoadingState& _loadingState;
+    WorldGenerationSystem& _worldGenerationSystem;
+    EntityFactory& _entityFactory;
+    Renderer& _renderer;
+    PerformanceMonitor& _performanceMonitor;
+
     bool _hasRun = false;
     PlacementWeights _weights;
     SuitabilityMaps _suitabilityMaps;

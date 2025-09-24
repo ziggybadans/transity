@@ -2,7 +2,6 @@
 
 #include "ISystem.h"
 #include "Logger.h"
-#include "core/ServiceLocator.h"
 #include <SFML/System/Time.hpp>
 #include <memory>
 #include <typeindex>
@@ -11,12 +10,12 @@
 
 class SystemManager {
 public:
-    explicit SystemManager(ServiceLocator &serviceLocator);
+    SystemManager() = default;
 
     template <typename T, typename... Args> T *addSystem(Args &&...args) {
         static_assert(std::is_base_of<ISystem, T>::value, "System must derive from ISystem");
 
-        auto system = std::make_unique<T>(m_serviceLocator, std::forward<Args>(args)...);
+        auto system = std::make_unique<T>(std::forward<Args>(args)...);
         T *ptr = system.get();
         m_systems[std::type_index(typeid(T))] = std::move(system);
 
@@ -39,7 +38,6 @@ public:
     void update(sf::Time dt);
 
 private:
-    ServiceLocator &m_serviceLocator;
     std::unordered_map<std::type_index, std::unique_ptr<ISystem>> m_systems;
     std::vector<IUpdatable *> m_updatableSystems;
 };

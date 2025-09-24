@@ -1,17 +1,20 @@
-
 #pragma once
 
-#include "Game.h"
 #include "core/ThreadPool.h"
 #include "event/EventBus.h"
-#include "render/Renderer.h"
-#include "ui/UI.h"
+#include "render/ColorManager.h"
 #include <SFML/System/Clock.hpp>
+#include <SFML/System/Time.hpp>
 #include <memory>
+
+class Game;
+class UI;
+class Renderer;
 
 class Application {
 public:
     Application();
+    ~Application();
     void run();
 
 private:

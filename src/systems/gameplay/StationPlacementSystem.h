@@ -1,15 +1,16 @@
 #pragma once
 
 #include "ecs/ISystem.h"
-#include "ecs/SystemManager.h"
 #include "entt/entt.hpp"
 #include "event/InputEvents.h"
+#include "app/GameState.h"
+#include "event/EventBus.h"
 
-class ServiceLocator;
+class EntityFactory;
 
 class StationPlacementSystem : public ISystem, public IUpdatable {
 public:
-    explicit StationPlacementSystem(ServiceLocator &serviceLocator);
+    explicit StationPlacementSystem(entt::registry& registry, EntityFactory& entityFactory, GameState& gameState, EventBus& eventBus);
     ~StationPlacementSystem();
 
     void update(sf::Time dt) override;
@@ -21,5 +22,5 @@ private:
     EntityFactory &_entityFactory;
     GameState &_gameState;
 
-    entt::connection m_mousePressConnection;
+    entt::scoped_connection m_mousePressConnection;
 };

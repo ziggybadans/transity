@@ -1,11 +1,10 @@
 #include "SelectionSystem.h"
-#include "core/ServiceLocator.h"
-#include "app/GameState.h"
 #include "components/GameLogicComponents.h"
 #include "components/PassengerComponents.h"
 #include "components/RenderComponents.h"
 #include "Logger.h"
 #include "imgui.h"
+#include "core/Pathfinder.h"
 #include <SFML/System/Vector2.hpp>
 #include <SFML/Window/Mouse.hpp>
 #include <cmath>
@@ -26,10 +25,12 @@ namespace {
     }
 }
 
-SelectionSystem::SelectionSystem(ServiceLocator& serviceLocator)
-    : _serviceLocator(serviceLocator),
-      _pathfinder(serviceLocator.pathfinder) {
-    _mouseButtonConnection = _serviceLocator.eventBus.sink<MouseButtonPressedEvent>().connect<&SelectionSystem::onMouseButtonPressed>(this);
+SelectionSystem::SelectionSystem(entt::registry& registry, EventBus& eventBus, GameState& gameState, Pathfinder& pathfinder)
+    : _registry(registry),
+      _eventBus(eventBus),
+      _gameState(gameState),
+      _pathfinder(pathfinder) {
+    _mouseButtonConnection = _eventBus.sink<MouseButtonPressedEvent>().connect<&SelectionSystem::onMouseButtonPressed>(this);
     LOG_DEBUG("SelectionSystem", "SelectionSystem created and connected to event bus.");
 }
 
@@ -46,12 +47,9 @@ void SelectionSystem::onMouseButtonPressed(const MouseButtonPressedEvent& event)
         return;
     }
 
-    auto& registry = _serviceLocator.registry;
-    auto& gameState = _serviceLocator.gameState;
-
-    if (gameState.currentInteractionMode == InteractionMode::CREATE_PASSENGER) {
+    if (_gameState.currentInteractionMode == InteractionMode::CREATE_PASSENGER) {
         // Logic for selecting a destination city
-        auto clickableView = registry.view<const PositionComponent, const ClickableComponent, const CityComponent>();
+        auto clickableView = _registry.view<const PositionComponent, const ClickableComponent, const CityComponent>();
         for (auto entity : clickableView) {
             const auto& position = clickableView.get<const PositionComponent>(entity);
             const auto& clickable = clickableView.get<const ClickableComponent>(entity);
@@ -61,24 +59,24 @@ void SelectionSystem::onMouseButtonPressed(const MouseButtonPressedEvent& event)
             float radiusSq = clickable.boundingRadius.value * clickable.boundingRadius.value;
 
             if (distanceSq <= radiusSq) {
-                if (gameState.passengerOriginStation.has_value() && gameState.passengerOriginStation.value() != entity) {
-                    entt::entity origin = gameState.passengerOriginStation.value();
+                if (_gameState.passengerOriginStation.has_value() && _gameState.passengerOriginStation.value() != entity) {
+                    entt::entity origin = _gameState.passengerOriginStation.value();
                     entt::entity destination = entity;
 
                     std::vector<entt::entity> path = _pathfinder.findPath(origin, destination);
 
                     if (!path.empty()) {
                         // Create passenger
-                        auto passenger = registry.create();
-                        registry.emplace<PassengerComponent>(passenger, origin, destination);
+                        auto passenger = _registry.create();
+                        _registry.emplace<PassengerComponent>(passenger, origin, destination);
                         
                         // Add and populate PathComponent
-                        auto& pathComponent = registry.emplace<PathComponent>(passenger);
+                        auto& pathComponent = _registry.emplace<PathComponent>(passenger);
                         pathComponent.nodes = path;
                         pathComponent.currentNodeIndex = 0;
 
                         // Add passenger to origin city's waiting list
-                        auto& originCity = registry.get<CityComponent>(origin);
+                        auto& originCity = _registry.get<CityComponent>(origin);
                         originCity.waitingPassengers.push_back(passenger);
 
                         LOG_INFO("SelectionSystem", "Passenger created from %u to %u with path size %zu", entt::to_integral(origin), entt::to_integral(destination), path.size());
@@ -87,26 +85,26 @@ void SelectionSystem::onMouseButtonPressed(const MouseButtonPressedEvent& event)
                     }
 
                     // Reset state regardless of pathfinding success
-                    gameState.passengerOriginStation = std::nullopt;
-                    _serviceLocator.eventBus.enqueue<InteractionModeChangeEvent>({InteractionMode::SELECT});
+                    _gameState.passengerOriginStation = std::nullopt;
+                    _eventBus.enqueue<InteractionModeChangeEvent>({InteractionMode::SELECT});
                 }
                 return; // Exit after handling click
             }
         }
-    } else if (_serviceLocator.gameState.currentInteractionMode != InteractionMode::SELECT) {
+    } else if (_gameState.currentInteractionMode != InteractionMode::SELECT) {
         return;
     }
 
     // Clear the selection component from ALL previously selected entities
-    auto selectionView = registry.view<SelectedComponent>();
+    auto selectionView = _registry.view<SelectedComponent>();
     for (auto entity : selectionView) {
-        registry.remove<SelectedComponent>(entity);
+        _registry.remove<SelectedComponent>(entity);
     }
 
     entt::entity clickedEntity = entt::null;
 
     // 1. Check for clickable components (stations, etc.)
-    auto clickableView = registry.view<const PositionComponent, const ClickableComponent>();
+    auto clickableView = _registry.view<const PositionComponent, const ClickableComponent>();
     for (auto entity : clickableView) {
         const auto& position = clickableView.get<const PositionComponent>(entity);
         const auto& clickable = clickableView.get<const ClickableComponent>(entity);
@@ -123,7 +121,7 @@ void SelectionSystem::onMouseButtonPressed(const MouseButtonPressedEvent& event)
 
     // 2. If no clickable component was found, check for lines
     if (clickedEntity == entt::null) {
-        auto lineView = registry.view<const LineComponent>();
+        auto lineView = _registry.view<const LineComponent>();
         float minDistanceSq = std::numeric_limits<float>::max();
         const float selectionThresholdSq = 10.0f * 10.0f; // 10px selection radius, squared
 
@@ -132,10 +130,10 @@ void SelectionSystem::onMouseButtonPressed(const MouseButtonPressedEvent& event)
             if (line.stops.size() < 2) continue;
 
             for (size_t i = 0; i < line.stops.size() - 1; ++i) {
-                if (!registry.valid(line.stops[i]) || !registry.valid(line.stops[i + 1])) continue;
+                if (!_registry.valid(line.stops[i]) || !_registry.valid(line.stops[i + 1])) continue;
 
-                const auto& pos1 = registry.get<const PositionComponent>(line.stops[i]).coordinates;
-                const auto& pos2 = registry.get<const PositionComponent>(line.stops[i + 1]).coordinates;
+                const auto& pos1 = _registry.get<const PositionComponent>(line.stops[i]).coordinates;
+                const auto& pos2 = _registry.get<const PositionComponent>(line.stops[i + 1]).coordinates;
 
                 float distSq = distanceToSegmentSq(event.worldPosition, pos1, pos2);
 
@@ -148,13 +146,13 @@ void SelectionSystem::onMouseButtonPressed(const MouseButtonPressedEvent& event)
     }
 
     if (clickedEntity != entt::null) {
-        _serviceLocator.gameState.selectedEntity = clickedEntity;
-        registry.emplace<SelectedComponent>(clickedEntity);
+        _gameState.selectedEntity = clickedEntity;
+        _registry.emplace<SelectedComponent>(clickedEntity);
         LOG_DEBUG("SelectionSystem", "Entity %u selected.", entt::to_integral(clickedEntity));
     } else {
-        if (_serviceLocator.gameState.selectedEntity.has_value()) {
+        if (_gameState.selectedEntity.has_value()) {
             LOG_DEBUG("SelectionSystem", "Selection cleared.");
         }
-        _serviceLocator.gameState.selectedEntity = std::nullopt;
+        _gameState.selectedEntity = std::nullopt;
     }
 }

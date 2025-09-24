@@ -1,16 +1,15 @@
 #pragma once
 
 #include "ecs/ISystem.h"
-#include "core/Pathfinder.h"
 #include <SFML/System/Time.hpp>
 #include <entt/entt.hpp>
 
-class ServiceLocator;
 class EntityFactory;
+class Pathfinder;
 
 class PassengerSpawnSystem : public ISystem, public IUpdatable {
 public:
-    explicit PassengerSpawnSystem(ServiceLocator& serviceLocator);
+    explicit PassengerSpawnSystem(entt::registry& registry, EntityFactory& entityFactory, Pathfinder& pathfinder);
 
     void update(sf::Time dt) override;
 

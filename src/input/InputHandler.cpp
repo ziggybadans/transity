@@ -5,8 +5,8 @@
 #include <string>
 #include <vector>
 
-InputHandler::InputHandler(ServiceLocator &serviceLocator)
-    : _services(serviceLocator), _zoomFactor(Constants::ZOOM_FACTOR),
+InputHandler::InputHandler(EventBus &eventBus, Camera &camera)
+    : _eventBus(eventBus), _camera(camera), _zoomFactor(Constants::ZOOM_FACTOR),
       _unzoomFactor(Constants::UNZOOM_FACTOR) {
     LOG_DEBUG("Input", "InputHandler created.");
 }
@@ -14,7 +14,7 @@ InputHandler::InputHandler(ServiceLocator &serviceLocator)
 void InputHandler::handleGameEvent(const sf::Event &event, sf::RenderWindow &window) {
     if (event.is<sf::Event::Closed>()) {
         LOG_INFO("Input", "Window close event received.");
-        _services.eventBus.enqueue<WindowCloseEvent>();
+        _eventBus.enqueue<WindowCloseEvent>();
     } else if (auto *scrollData = event.getIf<sf::Event::MouseWheelScrolled>()) {
         if (scrollData->wheel == sf::Mouse::Wheel::Vertical) {
             LOG_TRACE("Input", "Mouse wheel scrolled: delta %.1f", scrollData->delta);
@@ -27,16 +27,14 @@ void InputHandler::handleGameEvent(const sf::Event &event, sf::RenderWindow &win
                 LOG_TRACE("Input", "Zoom out event generated.");
             }
             if (zoomDelta != 0.0f) {
-                _services.eventBus.enqueue<CameraZoomEvent>(
-                    {zoomDelta, sf::Mouse::getPosition(window)});
+                _eventBus.enqueue<CameraZoomEvent>({zoomDelta, sf::Mouse::getPosition(window)});
             }
         }
     } else if (auto *pressData = event.getIf<sf::Event::MouseButtonPressed>()) {
         sf::Vector2i pixelPos = pressData->position;
-        sf::Vector2f worldPos = window.mapPixelToCoords(pixelPos, _services.camera.getView());
+        sf::Vector2f worldPos = window.mapPixelToCoords(pixelPos, _camera.getView());
 
-        _services.eventBus.enqueue<MouseButtonPressedEvent>(
-            {pressData->button, pixelPos, worldPos});
+        _eventBus.enqueue<MouseButtonPressedEvent>({pressData->button, pixelPos, worldPos});
 
         LOG_DEBUG("Input", "MouseButtonPressedEvent generated for button %d at world (%.1f, %.1f)",
                   pressData->button, worldPos.x, worldPos.y);
@@ -59,11 +57,11 @@ void InputHandler::update(sf::Time dt) {
     }
 
     if (panDirection.x != 0.f || panDirection.y != 0.f) {
-        const sf::View &view = _services.camera.getView();
+        const sf::View &view = _camera.getView();
         sf::Vector2f viewSize = view.getSize();
         float dynamicCameraSpeed = viewSize.y * Constants::DYNAMIC_CAMERA_SPEED_MULTIPLIER;
         sf::Vector2f panVector = panDirection * dynamicCameraSpeed * dt.asSeconds();
-        _services.eventBus.enqueue<CameraPanEvent>({panVector});
+        _eventBus.enqueue<CameraPanEvent>({panVector});
         LOG_TRACE("Input", "CameraPan event generated with direction (%.1f, %.1f).", panVector.x,
                   panVector.y);
     }

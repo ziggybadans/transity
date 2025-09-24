@@ -4,17 +4,18 @@
 #include <SFML/Graphics.hpp>
 #include <entt/entt.hpp>
 
-class ServiceLocator;
+class EntityFactory;
+class Pathfinder;
 
 class PassengerSpawnAnimationSystem : public ISystem, public IUpdatable {
 public:
-    explicit PassengerSpawnAnimationSystem(ServiceLocator& serviceLocator);
+    explicit PassengerSpawnAnimationSystem(entt::registry& registry, EntityFactory& entityFactory, Pathfinder& pathfinder);
 
     void update(sf::Time dt) override;
     void render(sf::RenderTarget& target);
 
 private:
     entt::registry& _registry;
-    class EntityFactory& _entityFactory;
-    class Pathfinder& _pathfinder;
+    EntityFactory& _entityFactory;
+    Pathfinder& _pathfinder;
 };

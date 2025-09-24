@@ -12,13 +12,17 @@
 #include <SFML/Window/Event.hpp>
 
 class TerrainRenderSystem;
-class ServiceLocator;
 class Game;
+class LoadingState;
+class PerformanceMonitor;
+class ColorManager;
 
 class UI {
 public:
-    UI(sf::RenderWindow &window, TerrainRenderSystem &terrainRenderSystem,
-       ServiceLocator &serviceLocator, Game &game);
+    UI(sf::RenderWindow &window, TerrainRenderSystem &terrainRenderSystem, Game &game,
+       EventBus &eventBus, GameState &gameState, LoadingState &loadingState, Camera &camera,
+       PerformanceMonitor &performanceMonitor, ColorManager &colorManager,
+       WorldGenerationSystem &worldGenerationSystem);
     ~UI();
     void initialize();
     void processEvent(const sf::Event &event);
@@ -40,8 +44,14 @@ private:
 
     Game &_game;
     sf::RenderWindow &_window;
-    ServiceLocator &_serviceLocator;
     TerrainRenderSystem &_terrainRenderSystem;
+    EventBus &_eventBus;
+    GameState &_gameState;
+    LoadingState &_loadingState;
+    Camera &_camera;
+    PerformanceMonitor &_performanceMonitor;
+    ColorManager &_colorManager;
+    WorldGenerationSystem &_worldGenerationSystem;
 
     bool _autoRegenerate;
 

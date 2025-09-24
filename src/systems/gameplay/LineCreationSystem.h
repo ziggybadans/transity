@@ -1,21 +1,21 @@
-
-
 #pragma once
 
 #include "ecs/ISystem.h"
-#include "ecs/SystemManager.h"
 #include "event/InputEvents.h"
 #include "event/LineEvents.h"
+#include "app/GameState.h"
+#include "event/EventBus.h"
 #include <SFML/Graphics/Color.hpp>
 #include <entt/entt.hpp>
 #include <vector>
+#include <functional>
 
-class ServiceLocator;
-class GameState;
+class EntityFactory;
+class ColorManager;
 
 class LineCreationSystem : public ISystem, public IUpdatable {
 public:
-    explicit LineCreationSystem(ServiceLocator &serviceLocator);
+    explicit LineCreationSystem(entt::registry& registry, EntityFactory& entityFactory, ColorManager& colorManager, GameState& gameState, EventBus& eventBus);
     ~LineCreationSystem();
 
     void update(sf::Time dt) override;
@@ -35,8 +35,9 @@ private:
     EntityFactory &_entityFactory;
     ColorManager &_colorManager;
     GameState &_gameState;
+    EventBus& _eventBus;
 
-    entt::connection m_finalizeLineConnection;
-    entt::connection m_mousePressConnection;
-    entt::connection m_cancelLineCreationConnection;
+    entt::scoped_connection m_finalizeLineConnection;
+    entt::scoped_connection m_mousePressConnection;
+    entt::scoped_connection m_cancelLineCreationConnection;
 };

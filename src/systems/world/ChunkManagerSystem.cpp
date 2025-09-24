@@ -2,11 +2,11 @@
 #include "Logger.h"
 #include "components/RenderComponents.h"
 #include "components/WorldComponents.h"
+#include "render/Camera.h"
+#include "core/ThreadPool.h"
 
-ChunkManagerSystem::ChunkManagerSystem(ServiceLocator &serviceLocator,
-                                       WorldGenerationSystem &worldGenSystem, EventBus &eventBus)
-    : _serviceLocator(serviceLocator), _worldGenSystem(worldGenSystem),
-      _registry(serviceLocator.registry), _eventBus(eventBus), _activeChunks() {
+ChunkManagerSystem::ChunkManagerSystem(entt::registry& registry, EventBus& eventBus, WorldGenerationSystem& worldGenSystem, Camera& camera, ThreadPool& threadPool)
+    : _registry(registry), _eventBus(eventBus), _worldGenSystem(worldGenSystem), _camera(camera), _threadPool(threadPool), _activeChunks() {
     _regenerateWorldListener = _eventBus.sink<RegenerateWorldRequestEvent>()
                                    .connect<&ChunkManagerSystem::onRegenerateWorld>(this);
     _swapWorldStateListener =
@@ -90,10 +90,7 @@ void ChunkManagerSystem::update(sf::Time dt) {
 
     processCompletedChunks();
 
-    const auto &camera = _serviceLocator.camera;
-    const auto &worldParams = _worldGenSystem.getParams();
-
-    float zoom = camera.getZoom();
+    float zoom = _camera.getZoom();
     LODLevel currentLOD = LODLevel::LOD0;
     if (zoom < 0.15f) {
         currentLOD = LODLevel::LOD3;
@@ -110,8 +107,9 @@ void ChunkManagerSystem::update(sf::Time dt) {
         chunkState.lodLevel = currentLOD;
     }
 
-    sf::Vector2f cameraCenter = camera.getCenter();
-    sf::Vector2f viewSize = camera.getView().getSize();
+    sf::Vector2f cameraCenter = _camera.getCenter();
+    sf::Vector2f viewSize = _camera.getView().getSize();
+    const auto& worldParams = _worldGenSystem.getParams();
     float cellSize = worldParams.cellSize;
     const auto &chunkDims = worldParams.chunkDimensionsInCells;
 
@@ -162,7 +160,7 @@ void ChunkManagerSystem::loadChunk(const sf::Vector2i &chunkPos) {
     _chunksBeingLoaded.insert(chunkPos);
 
     auto task = [this, chunkPos]() { return _worldGenSystem.generateChunkData(chunkPos); };
-    _chunkLoadFutures.emplace_back(_serviceLocator.threadPool.enqueue(task));
+    _chunkLoadFutures.emplace_back(_threadPool.enqueue(task));
 }
 
 void ChunkManagerSystem::unloadChunk(const sf::Vector2i &chunkPos) {

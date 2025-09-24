@@ -1,7 +1,6 @@
 #pragma once
 
 #include "WorldGenerationSystem.h"
-#include "core/ServiceLocator.h"
 #include "ecs/ISystem.h"
 #include "event/EventBus.h"
 #include "event/InputEvents.h"
@@ -14,6 +13,9 @@
 #include <queue>
 #include <vector>
 
+class Camera;
+class ThreadPool;
+
 struct Vector2iCompare {
     bool operator()(const sf::Vector2i &a, const sf::Vector2i &b) const {
         if (a.x != b.x) return a.x < b.x;
@@ -23,8 +25,7 @@ struct Vector2iCompare {
 
 class ChunkManagerSystem : public ISystem, public IUpdatable {
 public:
-    explicit ChunkManagerSystem(ServiceLocator &serviceLocator,
-                                WorldGenerationSystem &worldGenSystem, EventBus &eventBus);
+    explicit ChunkManagerSystem(entt::registry& registry, EventBus& eventBus, WorldGenerationSystem& worldGenSystem, Camera& camera, ThreadPool& threadPool);
     ~ChunkManagerSystem();
     void update(sf::Time dt) override;
 
@@ -36,12 +37,13 @@ private:
     void processCompletedChunks();
 
     void onImmediateRedraw(const ImmediateRedrawEvent &event);
-    entt::connection _immediateRedrawListener;
+    entt::scoped_connection _immediateRedrawListener;
 
-    ServiceLocator &_serviceLocator;
-    WorldGenerationSystem &_worldGenSystem;
-    entt::registry &_registry;
-    EventBus &_eventBus;
+    entt::registry& _registry;
+    EventBus& _eventBus;
+    WorldGenerationSystem& _worldGenSystem;
+    Camera& _camera;
+    ThreadPool& _threadPool;
 
     std::map<sf::Vector2i, entt::entity, Vector2iCompare> _activeChunks;
     std::set<sf::Vector2i, Vector2iCompare> _chunksBeingLoaded;
@@ -50,10 +52,10 @@ private:
     std::mutex _completedChunksMutex;
     std::queue<GeneratedChunkData> _completedChunks;
 
-    entt::connection _regenerateWorldListener;
+    entt::scoped_connection _regenerateWorldListener;
     int _viewDistance = 4;
 
     void onSwapWorldState(const SwapWorldStateEvent &event);
-    entt::connection _swapWorldStateListener;
+    entt::scoped_connection _swapWorldStateListener;
     std::future<void> _generationFuture;
 };

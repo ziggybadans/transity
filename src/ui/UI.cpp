@@ -3,12 +3,15 @@
 #include "Logger.h"
 #include "app/Game.h"
 #include "app/InteractionMode.h"
+#include "app/LoadingState.h"
 #include "components/GameLogicComponents.h"
 #include "components/PassengerComponents.h"
+#include "core/PerformanceMonitor.h"
 #include "event/DeletionEvents.h"
 #include "event/InputEvents.h"
 #include "imgui-SFML.h"
 #include "imgui.h"
+#include "render/ColorManager.h"
 #include "systems/gameplay/LineCreationSystem.h"
 #include "systems/rendering/TerrainRenderSystem.h"
 #include "systems/world/ChunkManagerSystem.h"
@@ -31,15 +34,19 @@ const char *trainStateToString(TrainState state) {
     }
 }
 
-UI::UI(sf::RenderWindow &window, TerrainRenderSystem &terrainRenderSystem,
-       ServiceLocator &serviceLocator, Game &game)
-    : _window(window), _terrainRenderSystem(terrainRenderSystem), _serviceLocator(serviceLocator),
-      _game(game), _autoRegenerate(false) {
+UI::UI(sf::RenderWindow &window, TerrainRenderSystem &terrainRenderSystem, Game &game,
+       EventBus &eventBus, GameState &gameState, LoadingState &loadingState, Camera &camera,
+       PerformanceMonitor &performanceMonitor, ColorManager &colorManager,
+       WorldGenerationSystem &worldGenerationSystem)
+    : _window(window), _terrainRenderSystem(terrainRenderSystem), _game(game), _eventBus(eventBus),
+      _gameState(gameState), _loadingState(loadingState), _camera(camera),
+      _performanceMonitor(performanceMonitor), _colorManager(colorManager),
+      _worldGenerationSystem(worldGenerationSystem), _autoRegenerate(false) {
     LOG_DEBUG("UI", "UI instance created.");
     _terrainRenderSystem.setLodEnabled(_isLodEnabled);
 
     _themeChangedConnection =
-        _serviceLocator.eventBus.sink<ThemeChangedEvent>().connect<&UI::onThemeChanged>(this);
+        _eventBus.sink<ThemeChangedEvent>().connect<&UI::onThemeChanged>(this);
 }
 
 UI::~UI() {
@@ -70,7 +77,7 @@ void UI::update(sf::Time deltaTime) {
             [&numberOfStationsInActiveLine](entt::entity) { numberOfStationsInActiveLine++; });
     }
 
-    const auto appState = _serviceLocator.gameState.currentAppState;
+    const auto appState = _gameState.currentAppState;
     if (appState == AppState::LOADING) {
         drawLoadingScreen();
         return;
@@ -100,8 +107,8 @@ void UI::drawLoadingScreen() {
     ImGuiIO &io = ImGui::GetIO();
     ImVec2 displaySize = io.DisplaySize;
 
-    const char *message = _serviceLocator.loadingState.message.load();
-    float progress = _serviceLocator.loadingState.progress.load();
+    const char *message = _loadingState.message.load();
+    float progress = _loadingState.progress.load();
 
     ImGui::SetNextWindowPos(ImVec2(displaySize.x * 0.5f, displaySize.y * 0.5f), ImGuiCond_Always,
                             ImVec2(0.5f, 0.5f));
@@ -145,17 +152,15 @@ void UI::drawProfilingWindow(sf::Time deltaTime) {
     ImGui::SetNextWindowPos(debugWindowPos, ImGuiCond_Always);
     ImGui::Begin("Profiling", nullptr, size_flags);
     ImGui::Text("FPS: %.1f", 1.f / deltaTime.asSeconds());
-    ImGui::Text("Zoom: %.2f", _serviceLocator.camera.getZoom());
+    ImGui::Text("Zoom: %.2f", _camera.getZoom());
 
     if (ImGui::CollapsingHeader("Performance Graphs")) {
-        auto &monitor = _serviceLocator.performanceMonitor;
-
-        const auto &renderHistory = monitor.getHistory("Application::render");
+        const auto &renderHistory = _performanceMonitor.getHistory("Application::render");
         if (!renderHistory.empty()) {
             ImGui::PlotLines("Render Time (us)", renderHistory.data(), renderHistory.size(), 0,
                              nullptr, 0.0f, 33000.0f, ImVec2(0, 80));
         }
-        const auto &updateHistory = monitor.getHistory("Application::update");
+        const auto &updateHistory = _performanceMonitor.getHistory("Application::update");
         if (!updateHistory.empty()) {
             ImGui::PlotLines("Update Time (us)", updateHistory.data(), updateHistory.size(), 0,
                              nullptr, 0.0f, 16000.0f, ImVec2(0, 80));
@@ -177,7 +182,7 @@ void UI::drawWorldGenSettingsWindow() {
     ImGui::SetNextWindowSize(ImVec2(worldGenSettingsWidth, 0.0f), ImGuiCond_Always);
     ImGui::Begin("World Generation Settings", nullptr, window_flags);
 
-    WorldGenParams &params = _serviceLocator.worldGenerationSystem.getParams();
+    WorldGenParams &params = _worldGenerationSystem.getParams();
     bool paramsChanged = false;
 
     if (ImGui::Button("New Seed")) {
@@ -247,7 +252,7 @@ void UI::drawWorldGenSettingsWindow() {
     if ((paramsChanged || gridChanged) && _autoRegenerate) {
         LOG_DEBUG("UI", "Settings changed, auto-regenerating world.");
         auto paramsCopy = std::make_shared<WorldGenParams>(params);
-        _serviceLocator.eventBus.enqueue<RegenerateWorldRequestEvent>({paramsCopy});
+        _eventBus.enqueue<RegenerateWorldRequestEvent>({paramsCopy});
     }
 
     ImGui::Separator();
@@ -255,7 +260,7 @@ void UI::drawWorldGenSettingsWindow() {
     if (ImGui::Button("Regenerate World")) {
         LOG_DEBUG("UI", "Regenerate World button clicked.");
         auto paramsCopy = std::make_shared<WorldGenParams>(params);
-        _serviceLocator.eventBus.enqueue<RegenerateWorldRequestEvent>({paramsCopy});
+        _eventBus.enqueue<RegenerateWorldRequestEvent>({paramsCopy});
     }
 
     if (ImGui::Checkbox("Visualize Chunk Borders", &_visualizeChunkBorders)) {
@@ -307,17 +312,17 @@ void UI::drawInteractionModeWindow() {
                _window.getSize().y - ImGui::GetFrameHeightWithSpacing() * 2.5 - windowPadding);
     ImGui::SetNextWindowPos(interactionModesPos, ImGuiCond_Always);
     ImGui::Begin("Interaction Modes", nullptr, size_flags);
-    int currentMode = static_cast<int>(_serviceLocator.gameState.currentInteractionMode);
+    int currentMode = static_cast<int>(_gameState.currentInteractionMode);
 
     if (ImGui::RadioButton("None", &currentMode, static_cast<int>(InteractionMode::SELECT))) {
-        _serviceLocator.eventBus.enqueue(InteractionModeChangeEvent{InteractionMode::SELECT});
+        _eventBus.enqueue(InteractionModeChangeEvent{InteractionMode::SELECT});
         LOG_DEBUG("UI", "Interaction mode change requested: None");
     }
     /*
     ImGui::SameLine();
     if (ImGui::RadioButton("Station Placement", &currentMode,
                            static_cast<int>(InteractionMode::CREATE_STATION))) {
-        _serviceLocator.eventBus.enqueue(
+        _eventBus.enqueue(
             InteractionModeChangeEvent{InteractionMode::CREATE_STATION});
         LOG_DEBUG("UI", "Interaction mode change requested: StationPlacement");
     }
@@ -325,14 +330,14 @@ void UI::drawInteractionModeWindow() {
     ImGui::SameLine();
     if (ImGui::RadioButton("Line Creation", &currentMode,
                            static_cast<int>(InteractionMode::CREATE_LINE))) {
-        _serviceLocator.eventBus.enqueue(InteractionModeChangeEvent{InteractionMode::CREATE_LINE});
+        _eventBus.enqueue(InteractionModeChangeEvent{InteractionMode::CREATE_LINE});
         LOG_DEBUG("UI", "Interaction mode change requested: LineCreation");
     }
     ImGui::End();
 }
 
 void UI::drawLineCreationWindow(size_t numberOfStationsInActiveLine) {
-    if (_serviceLocator.gameState.currentInteractionMode != InteractionMode::CREATE_LINE) {
+    if (_gameState.currentInteractionMode != InteractionMode::CREATE_LINE) {
         return;
     }
 
@@ -357,7 +362,7 @@ void UI::drawLineCreationWindow(size_t numberOfStationsInActiveLine) {
         ImGui::BeginDisabled();
     }
     if (ImGui::Button("Finalize Line")) {
-        _serviceLocator.eventBus.enqueue<FinalizeLineEvent>({});
+        _eventBus.enqueue<FinalizeLineEvent>({});
         LOG_DEBUG("UI", "Line finalization requested.");
     }
     if (numberOfStationsInActiveLine < 2) {
@@ -366,7 +371,7 @@ void UI::drawLineCreationWindow(size_t numberOfStationsInActiveLine) {
 
     ImGui::SameLine();
     if (ImGui::Button("Cancel Line")) {
-        _serviceLocator.eventBus.enqueue<CancelLineCreationEvent>({});
+        _eventBus.enqueue<CancelLineCreationEvent>({});
     }
     ImGui::End();
 }
@@ -384,13 +389,13 @@ void UI::drawSettingsWindow() {
     ImGui::Text("Theme");
     ImGui::SameLine();
 
-    int currentTheme = static_cast<int>(_serviceLocator.colorManager.getTheme());
+    int currentTheme = static_cast<int>(_colorManager.getTheme());
     if (ImGui::RadioButton("Light", &currentTheme, static_cast<int>(Theme::Light))) {
-        _serviceLocator.colorManager.setTheme(Theme::Light);
+        _colorManager.setTheme(Theme::Light);
     }
     ImGui::SameLine();
     if (ImGui::RadioButton("Dark", &currentTheme, static_cast<int>(Theme::Dark))) {
-        _serviceLocator.colorManager.setTheme(Theme::Dark);
+        _colorManager.setTheme(Theme::Dark);
     }
     ImGui::End();
 }
@@ -417,11 +422,11 @@ void UI::drawInfoPanel() {
     ImGui::SetNextWindowSize(ImVec2(worldGenSettingsWidth, 0.0f), ImGuiCond_Always);
     ImGui::Begin("Info Panel", nullptr, window_flags);
 
-    auto &selectedEntityOpt = _serviceLocator.gameState.selectedEntity;
+    auto &selectedEntityOpt = _gameState.selectedEntity;
     if (!selectedEntityOpt.has_value()) {
         ImGui::Text("No information available.");
     } else {
-        auto &registry = _serviceLocator.registry;
+        auto &registry = _game.getRegistry();
         auto entity = selectedEntityOpt.value();
 
         if (registry.valid(entity)) {
@@ -434,8 +439,8 @@ void UI::drawInfoPanel() {
                 ImGui::Text("Connected Lines: %zu", city->connectedLines.size());
                 ImGui::Text("Waiting Passengers: %zu", city->waitingPassengers.size());
                 if (ImGui::Button("Create Passenger")) {
-                    _serviceLocator.gameState.passengerOriginStation = entity;
-                    _serviceLocator.eventBus.enqueue<InteractionModeChangeEvent>(
+                    _gameState.passengerOriginStation = entity;
+                    _eventBus.enqueue<InteractionModeChangeEvent>(
                         {InteractionMode::CREATE_PASSENGER});
                 }
 
@@ -461,7 +466,7 @@ void UI::drawInfoPanel() {
                                                 + std::to_string(entt::to_integral(passengerEntity))
                                                 + " -> " + destinationName;
                             if (ImGui::Selectable(label.c_str())) {
-                                _serviceLocator.gameState.selectedEntity = passengerEntity;
+                                _gameState.selectedEntity = passengerEntity;
                             }
                         }
                     }
@@ -478,23 +483,36 @@ void UI::drawInfoPanel() {
                 ImGui::Text("Passengers: %d/%d", capacity.currentLoad, capacity.capacity);
 
                 if (ImGui::Button("Delete Train")) {
-                    _serviceLocator.eventBus.enqueue<DeleteEntityEvent>({entity});
+                    _eventBus.enqueue<DeleteEntityEvent>({entity});
                     LOG_DEBUG("UI", "Delete train %u requested.", entt::to_integral(entity));
                 }
 
                 // The logic for listing passengers on a train needs to be updated
                 // to query passengers by their currentContainer.
                 if (ImGui::CollapsingHeader("Passengers")) {
-                    int passengerCount = 0;
                     auto passengerView = registry.view<PassengerComponent>();
+                    bool foundPassengers = false;
                     for (auto passengerEntity : passengerView) {
-                        auto &passenger = passengerView.get<PassengerComponent>(passengerEntity);
+                        auto& passenger = passengerView.get<PassengerComponent>(passengerEntity);
                         if (passenger.currentContainer == entity) {
-                            passengerCount++;
-                            // ... (rest of the logic to display passenger info is the same)
+                            foundPassengers = true;
+                            auto destinationStation = passenger.destinationStation;
+
+                            std::string destinationName = "Unknown";
+                            if (registry.valid(destinationStation)) {
+                                if (auto* name = registry.try_get<NameComponent>(destinationStation)) {
+                                    destinationName = name->name;
+                                }
+                            }
+
+                            std::string label = "Passenger " + std::to_string(entt::to_integral(passengerEntity)) + " -> " + destinationName;
+                            if (ImGui::Selectable(label.c_str())) {
+                                _gameState.selectedEntity = passengerEntity;
+                            }
                         }
                     }
-                    if (passengerCount == 0) {
+
+                    if (!foundPassengers) {
                         ImGui::Text("No passengers on board.");
                     }
                 }
@@ -513,13 +531,13 @@ void UI::drawInfoPanel() {
                 }
 
                 if (ImGui::Button("Add Train")) {
-                    _serviceLocator.eventBus.enqueue<AddTrainToLineEvent>({entity});
+                    _eventBus.enqueue<AddTrainToLineEvent>({entity});
                     LOG_DEBUG("UI", "Add train to line %u requested.", entt::to_integral(entity));
                 }
 
                 ImGui::SameLine();
                 if (ImGui::Button("Delete Line")) {
-                    _serviceLocator.eventBus.enqueue<DeleteEntityEvent>({entity});
+                    _eventBus.enqueue<DeleteEntityEvent>({entity});
                     LOG_DEBUG("UI", "Delete line %u requested.", entt::to_integral(entity));
                 }
 
@@ -596,7 +614,7 @@ void UI::drawInfoPanel() {
 
                             std::string fullLabel = trainLabel + " (" + location + ")";
                             if (ImGui::Selectable(fullLabel.c_str())) {
-                                _serviceLocator.gameState.selectedEntity = trainEntity;
+                                _gameState.selectedEntity = trainEntity;
                                 LOG_DEBUG("UI", "Train %u selected from line info panel.",
                                           entt::to_integral(trainEntity));
                             }
@@ -617,7 +635,7 @@ void UI::drawInfoPanel() {
                                          : "Stop " + std::to_string(entt::to_integral(stopEntity));
                                 std::string label = std::to_string(i + 1) + ". " + stopName;
                                 if (ImGui::Selectable(label.c_str())) {
-                                    _serviceLocator.gameState.selectedEntity = stopEntity;
+                                    _gameState.selectedEntity = stopEntity;
                                     LOG_DEBUG("UI", "Stop %u selected from line info panel.",
                                               entt::to_integral(stopEntity));
                                 }
@@ -689,7 +707,7 @@ void UI::drawInfoPanel() {
 }
 
 void UI::drawPassengerCreationWindow() {
-    if (_serviceLocator.gameState.currentInteractionMode != InteractionMode::CREATE_PASSENGER) {
+    if (_gameState.currentInteractionMode != InteractionMode::CREATE_PASSENGER) {
         return;
     }
 
@@ -713,7 +731,7 @@ void UI::drawPassengerCreationWindow() {
     ImGui::Text("Select a destination city for the new passenger.");
 
     if (ImGui::Button("Cancel")) {
-        _serviceLocator.eventBus.enqueue<InteractionModeChangeEvent>({InteractionMode::SELECT});
+        _eventBus.enqueue<InteractionModeChangeEvent>({InteractionMode::SELECT});
     }
     ImGui::End();
 }
@@ -726,33 +744,33 @@ void UI::drawTimeControlWindow() {
     ImGui::SetNextWindowPos(ImVec2(windowPadding, windowPadding));
     ImGui::Begin("Time Controls", nullptr, flags);
 
-    float currentMultiplier = _serviceLocator.gameState.timeMultiplier;
+    float currentMultiplier = _gameState.timeMultiplier;
     ImVec4 activeColor = ImGui::GetStyle().Colors[ImGuiCol_ButtonActive];
 
     // Pause Button
     if (currentMultiplier == 0.0f) ImGui::PushStyleColor(ImGuiCol_Button, activeColor);
-    if (ImGui::Button("||")) _serviceLocator.gameState.timeMultiplier = 0.0f;
+    if (ImGui::Button("||")) _gameState.timeMultiplier = 0.0f;
     if (currentMultiplier == 0.0f) ImGui::PopStyleColor();
 
     ImGui::SameLine();
 
     // 1x Button
     if (currentMultiplier == 1.0f) ImGui::PushStyleColor(ImGuiCol_Button, activeColor);
-    if (ImGui::Button("1x")) _serviceLocator.gameState.timeMultiplier = 1.0f;
+    if (ImGui::Button("1x")) _gameState.timeMultiplier = 1.0f;
     if (currentMultiplier == 1.0f) ImGui::PopStyleColor();
 
     ImGui::SameLine();
 
     // 2x Button
     if (currentMultiplier == 2.0f) ImGui::PushStyleColor(ImGuiCol_Button, activeColor);
-    if (ImGui::Button("2x")) _serviceLocator.gameState.timeMultiplier = 2.0f;
+    if (ImGui::Button("2x")) _gameState.timeMultiplier = 2.0f;
     if (currentMultiplier == 2.0f) ImGui::PopStyleColor();
 
     ImGui::SameLine();
 
     // 3x Button
     if (currentMultiplier == 3.0f) ImGui::PushStyleColor(ImGuiCol_Button, activeColor);
-    if (ImGui::Button("3x")) _serviceLocator.gameState.timeMultiplier = 3.0f;
+    if (ImGui::Button("3x")) _gameState.timeMultiplier = 3.0f;
     if (currentMultiplier == 3.0f) ImGui::PopStyleColor();
 
     ImGui::End();
