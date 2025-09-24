@@ -1,64 +1,24 @@
 #pragma once
 
-#include "FastNoiseLite.h"
 #include "app/GameState.h"
-#include "event/EventBus.h"
-#include "event/LineEvents.h"
-#include "event/UIEvents.h"
-#include "render/Camera.h"
-#include "systems/world/WorldGenerationSystem.h"
+#include "app/LoadingState.h"
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/System/Time.hpp>
 #include <SFML/Window/Event.hpp>
 
-class TerrainRenderSystem;
-class Game;
-class LoadingState;
-class PerformanceMonitor;
-class ColorManager;
-
 class UI {
 public:
-    UI(sf::RenderWindow &window, TerrainRenderSystem &terrainRenderSystem, Game &game,
-       EventBus &eventBus, GameState &gameState, LoadingState &loadingState, Camera &camera,
-       PerformanceMonitor &performanceMonitor, ColorManager &colorManager,
-       WorldGenerationSystem &worldGenerationSystem);
+    UI(sf::RenderWindow &window, LoadingState &loadingState);
     ~UI();
     void initialize();
     void processEvent(const sf::Event &event);
-    void update(sf::Time deltaTime);
+    void update(sf::Time deltaTime, AppState appState);
     void renderFrame();
     void cleanupResources();
 
 private:
     void drawLoadingScreen();
-    void drawProfilingWindow(sf::Time deltaTime);
-    void drawSettingsWindow();
-    void onThemeChanged(const ThemeChangedEvent &event);
-    void drawWorldGenSettingsWindow();
-    void drawInteractionModeWindow();
-    void drawLineCreationWindow(size_t numStationsInActiveLine);
-    void drawInfoPanel();
-    void drawPassengerCreationWindow();
-    void drawTimeControlWindow();
 
-    Game &_game;
     sf::RenderWindow &_window;
-    TerrainRenderSystem &_terrainRenderSystem;
-    EventBus &_eventBus;
-    GameState &_gameState;
     LoadingState &_loadingState;
-    Camera &_camera;
-    PerformanceMonitor &_performanceMonitor;
-    ColorManager &_colorManager;
-    WorldGenerationSystem &_worldGenerationSystem;
-
-    bool _autoRegenerate;
-
-    bool _visualizeChunkBorders = false;
-    bool _visualizeCellBorders = false;
-    bool _visualizeSuitabilityMap = false;
-    int _selectedSuitabilityMap = 4;
-    bool _isLodEnabled = false;
-    entt::scoped_connection _themeChangedConnection;
 };

@@ -9,6 +9,7 @@
 #include "render/Renderer.h"
 #include "systems/gameplay/LineCreationSystem.h"
 #include "ui/UI.h"
+#include "ui/UIManager.h" // Make sure this is included
 
 #include <stdexcept>
 #include <thread>
@@ -33,11 +34,12 @@ Application::Application() : _colorManager(_eventBus) {
 
         _renderer->connectToEventBus(_eventBus);
 
-        _ui = std::make_unique<UI>(
-            _renderer->getWindowInstance(), _renderer->getTerrainRenderSystem(), *_game, _eventBus,
-            _game->getGameState(), _game->getLoadingState(), _game->getCamera(),
-            _game->getPerformanceMonitor(), _colorManager, _game->getWorldGenSystem());
+        _ui = std::make_unique<UI>(_renderer->getWindowInstance(), _game->getLoadingState());
         _ui->initialize();
+
+        _uiManager = std::make_unique<UIManager>(_game->getRegistry(), _eventBus, _game->getWorldGenSystem(),
+                                               _renderer->getTerrainRenderSystem(), _game->getPerformanceMonitor(),
+                                               _game->getCamera(), _game->getGameState(), _colorManager, _renderer->getWindowInstance());
 
     } catch (const std::exception &e) {
         LOG_FATAL("Application", "Failed during initialization: %s", e.what());
@@ -60,7 +62,7 @@ void Application::run() {
 
         switch (appState) {
         case AppState::LOADING: {
-            _ui->update(frameTime);
+            _ui->update(frameTime, appState); // Fix this call
             if (_game->getLoadingFuture().wait_for(std::chrono::seconds(0))
                 == std::future_status::ready) {
                 _game->getGameState().currentAppState = AppState::PLAYING;
@@ -77,8 +79,9 @@ void Application::run() {
                     [&numStationsInActiveLine](entt::entity) { numStationsInActiveLine++; });
             }
 
-            _ui->update(frameTime);
-            update(TimePerFrame);  // Update UI and input every frame
+            _ui->update(frameTime, appState); // Fix this call
+            _uiManager->draw(frameTime, numStationsInActiveLine);
+            update(TimePerFrame);
 
             if (_isWindowFocused) {
                 while (_timeAccumulator >= TimePerFrame) {

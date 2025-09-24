@@ -3,6 +3,7 @@
 #include "core/ThreadPool.h"
 #include "event/EventBus.h"
 #include "render/ColorManager.h"
+#include "ui/UIManager.h"
 #include <SFML/System/Clock.hpp>
 #include <SFML/System/Time.hpp>
 #include <memory>
@@ -30,6 +31,7 @@ private:
     std::unique_ptr<Game> _game;
     std::unique_ptr<UI> _ui;
     std::unique_ptr<Renderer> _renderer;
+    std::unique_ptr<UIManager> _uiManager;
 
     sf::Clock _deltaClock;
     sf::Time _timeAccumulator;

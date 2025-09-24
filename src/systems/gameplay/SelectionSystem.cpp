@@ -5,6 +5,7 @@
 #include "Logger.h"
 #include "imgui.h"
 #include "core/Pathfinder.h"
+#include "event/UIEvents.h" // Add this include
 #include <SFML/System/Vector2.hpp>
 #include <SFML/Window/Mouse.hpp>
 #include <cmath>
@@ -146,13 +147,15 @@ void SelectionSystem::onMouseButtonPressed(const MouseButtonPressedEvent& event)
     }
 
     if (clickedEntity != entt::null) {
-        _gameState.selectedEntity = clickedEntity;
+        _gameState.selectedEntity = clickedEntity; // This line will be removed later
         _registry.emplace<SelectedComponent>(clickedEntity);
+        _eventBus.enqueue<EntitySelectedEvent>({clickedEntity}); // Fire event
         LOG_DEBUG("SelectionSystem", "Entity %u selected.", entt::to_integral(clickedEntity));
     } else {
         if (_gameState.selectedEntity.has_value()) {
             LOG_DEBUG("SelectionSystem", "Selection cleared.");
         }
-        _gameState.selectedEntity = std::nullopt;
+        _gameState.selectedEntity = std::nullopt; // This line will be removed later
+        _eventBus.enqueue<EntityDeselectedEvent>({}); // Fire event
     }
 }
