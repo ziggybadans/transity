@@ -2,13 +2,16 @@
 #include "Constants.h"
 #include "Logger.h"
 #include "event/UIEvents.h"
-#include "systems/world/WorldGenerationSystem.h"
-#include "systems/rendering/TerrainRenderSystem.h"
 #include "imgui.h"
+#include "systems/rendering/TerrainRenderSystem.h"
+#include "systems/world/WorldGenerationSystem.h"
 #include <cstdlib>
 
-WorldGenSettingsUI::WorldGenSettingsUI(EventBus& eventBus, WorldGenerationSystem& worldGenerationSystem, TerrainRenderSystem& terrainRenderSystem)
-    : _eventBus(eventBus), _worldGenerationSystem(worldGenerationSystem), _terrainRenderSystem(terrainRenderSystem) {
+WorldGenSettingsUI::WorldGenSettingsUI(EventBus &eventBus,
+                                       WorldGenerationSystem &worldGenerationSystem,
+                                       TerrainRenderSystem &terrainRenderSystem)
+    : _eventBus(eventBus), _worldGenerationSystem(worldGenerationSystem),
+      _terrainRenderSystem(terrainRenderSystem) {
     LOG_DEBUG("WorldGenSettingsUI", "WorldGenSettingsUI instance created.");
     _terrainRenderSystem.setLodEnabled(_isLodEnabled);
 }

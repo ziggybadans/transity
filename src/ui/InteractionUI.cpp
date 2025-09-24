@@ -2,11 +2,11 @@
 #include "Constants.h"
 #include "Logger.h"
 #include "app/InteractionMode.h"
-#include "event/LineEvents.h"
 #include "event/InputEvents.h"
+#include "event/LineEvents.h"
 #include "imgui.h"
 
-InteractionUI::InteractionUI(GameState& gameState, EventBus& eventBus, sf::RenderWindow& window)
+InteractionUI::InteractionUI(GameState &gameState, EventBus &eventBus, sf::RenderWindow &window)
     : _gameState(gameState), _eventBus(eventBus), _window(window) {
     LOG_DEBUG("InteractionUI", "InteractionUI instance created.");
 }
@@ -23,7 +23,7 @@ void InteractionUI::draw(size_t numberOfStationsInActiveLine) {
 
 void InteractionUI::drawInteractionModeWindow() {
     const float windowPadding = Constants::UI_WINDOW_PADDING;
-    ImGuiIO& io = ImGui::GetIO();
+    ImGuiIO &io = ImGui::GetIO();
     ImVec2 displaySize = io.DisplaySize;
     ImGuiWindowFlags size_flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize
                                   | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse;
@@ -55,18 +55,18 @@ void InteractionUI::drawLineCreationWindow(size_t numberOfStationsInActiveLine) 
     }
 
     const float windowPadding = Constants::UI_WINDOW_PADDING;
-    ImGuiIO& io = ImGui::GetIO();
+    ImGuiIO &io = ImGui::GetIO();
     ImVec2 displaySize = io.DisplaySize;
     ImGuiWindowFlags size_flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize
                                   | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse;
 
     float interactionModesWidth = Constants::UI_INTERACTION_MODES_WIDTH;
-    ImVec2 interactionModesPos = ImVec2((displaySize.x - interactionModesWidth) * 0.5f,
-                                        displaySize.y - ImGui::GetFrameHeightWithSpacing() * 2.5 - windowPadding);
+    ImVec2 interactionModesPos =
+        ImVec2((displaySize.x - interactionModesWidth) * 0.5f,
+               displaySize.y - ImGui::GetFrameHeightWithSpacing() * 2.5 - windowPadding);
 
-    ImVec2 lineCreationWindowPos =
-        ImVec2(interactionModesPos.x,
-               interactionModesPos.y - ImGui::GetFrameHeightWithSpacing() * 2.0f);
+    ImVec2 lineCreationWindowPos = ImVec2(
+        interactionModesPos.x, interactionModesPos.y - ImGui::GetFrameHeightWithSpacing() * 2.0f);
     ImGui::SetNextWindowPos(lineCreationWindowPos, ImGuiCond_Always);
     ImGui::Begin("Line Creation", nullptr, size_flags);
 
@@ -94,18 +94,18 @@ void InteractionUI::drawPassengerCreationWindow() {
     }
 
     const float windowPadding = Constants::UI_WINDOW_PADDING;
-    ImGuiIO& io = ImGui::GetIO();
+    ImGuiIO &io = ImGui::GetIO();
     ImVec2 displaySize = io.DisplaySize;
     ImGuiWindowFlags size_flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize
                                   | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse;
 
     float interactionModesWidth = Constants::UI_INTERACTION_MODES_WIDTH;
-    ImVec2 interactionModesPos = ImVec2((displaySize.x - interactionModesWidth) * 0.5f,
-                                        displaySize.y - ImGui::GetFrameHeightWithSpacing() * 2.5 - windowPadding);
+    ImVec2 interactionModesPos =
+        ImVec2((displaySize.x - interactionModesWidth) * 0.5f,
+               displaySize.y - ImGui::GetFrameHeightWithSpacing() * 2.5 - windowPadding);
 
-    ImVec2 passengerCreationWindowPos =
-        ImVec2(interactionModesPos.x,
-               interactionModesPos.y - ImGui::GetFrameHeightWithSpacing() * 2.0f);
+    ImVec2 passengerCreationWindowPos = ImVec2(
+        interactionModesPos.x, interactionModesPos.y - ImGui::GetFrameHeightWithSpacing() * 2.0f);
     ImGui::SetNextWindowPos(passengerCreationWindowPos, ImGuiCond_Always);
     ImGui::Begin("Passenger Creation", nullptr, size_flags);
 

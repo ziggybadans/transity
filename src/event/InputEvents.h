@@ -43,3 +43,7 @@ struct ToggleNoiseVisualizationEvent {
 };
 
 struct ImmediateRedrawEvent {};
+
+struct StartPassengerCreationEvent {
+    entt::entity originStation;
+};

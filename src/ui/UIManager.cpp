@@ -1,19 +1,23 @@
 #include "UIManager.h"
-#include "event/EventBus.h"
-#include "systems/world/WorldGenerationSystem.h"
-#include "systems/rendering/TerrainRenderSystem.h"
-#include "core/PerformanceMonitor.h"
-#include "render/Camera.h"
 #include "app/GameState.h"
+#include "core/PerformanceMonitor.h"
+#include "event/EventBus.h"
+#include "render/Camera.h"
 #include "render/ColorManager.h"
+#include "systems/rendering/TerrainRenderSystem.h"
+#include "systems/world/WorldGenerationSystem.h"
 #include <SFML/Graphics/RenderWindow.hpp>
 
-UIManager::UIManager(entt::registry& registry, EventBus& eventBus, WorldGenerationSystem& worldGenerationSystem,
-                   TerrainRenderSystem& terrainRenderSystem, PerformanceMonitor& performanceMonitor,
-                   Camera& camera, GameState& gameState, ColorManager& colorManager, sf::RenderWindow& window) {
+UIManager::UIManager(entt::registry &registry, EventBus &eventBus,
+                     WorldGenerationSystem &worldGenerationSystem,
+                     TerrainRenderSystem &terrainRenderSystem,
+                     PerformanceMonitor &performanceMonitor, Camera &camera, GameState &gameState,
+                     ColorManager &colorManager, sf::RenderWindow &window) {
     _infoPanelUI = std::make_unique<InfoPanelUI>(registry, eventBus);
-    _worldGenSettingsUI = std::make_unique<WorldGenSettingsUI>(eventBus, worldGenerationSystem, terrainRenderSystem);
-    _debugUI = std::make_unique<DebugUI>(performanceMonitor, camera, gameState, colorManager, eventBus, window);
+    _worldGenSettingsUI =
+        std::make_unique<WorldGenSettingsUI>(eventBus, worldGenerationSystem, terrainRenderSystem);
+    _debugUI = std::make_unique<DebugUI>(performanceMonitor, camera, gameState, colorManager,
+                                         eventBus, window);
     _interactionUI = std::make_unique<InteractionUI>(gameState, eventBus, window);
 }
 

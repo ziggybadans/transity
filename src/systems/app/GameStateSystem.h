@@ -15,8 +15,10 @@ public:
 
 private:
     void onInteractionModeChange(const InteractionModeChangeEvent &event);
+    void onStartPassengerCreation(const StartPassengerCreationEvent &event); // Add this
 
     EventBus& _eventBus;
     GameState& _gameState;
     entt::scoped_connection _interactionModeChangeListener;
+    entt::scoped_connection _startPassengerCreationListener; // Add this
 };

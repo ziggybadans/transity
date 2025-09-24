@@ -1,8 +1,8 @@
 #include "UI.h"
+#include "Logger.h"
 #include "app/LoadingState.h"
 #include "imgui-SFML.h"
 #include "imgui.h"
-#include "Logger.h"
 #include <cstdlib>
 
 UI::UI(sf::RenderWindow &window, LoadingState &loadingState)

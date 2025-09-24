@@ -7,15 +7,16 @@ class TerrainRenderSystem;
 
 class WorldGenSettingsUI {
 public:
-    WorldGenSettingsUI(EventBus& eventBus, WorldGenerationSystem& worldGenerationSystem, TerrainRenderSystem& terrainRenderSystem);
+    WorldGenSettingsUI(EventBus &eventBus, WorldGenerationSystem &worldGenerationSystem,
+                       TerrainRenderSystem &terrainRenderSystem);
     ~WorldGenSettingsUI();
 
     void draw();
 
 private:
-    EventBus& _eventBus;
-    WorldGenerationSystem& _worldGenerationSystem;
-    TerrainRenderSystem& _terrainRenderSystem;
+    EventBus &_eventBus;
+    WorldGenerationSystem &_worldGenerationSystem;
+    TerrainRenderSystem &_terrainRenderSystem;
 
     bool _autoRegenerate = false;
     bool _visualizeChunkBorders = false;

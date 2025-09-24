@@ -1,13 +1,13 @@
 #pragma once
 
-#include "InfoPanelUI.h"
-#include "WorldGenSettingsUI.h"
 #include "DebugUI.h"
+#include "InfoPanelUI.h"
 #include "InteractionUI.h"
+#include "WorldGenSettingsUI.h"
 #include "event/EventBus.h"
+#include <SFML/System/Time.hpp>
 #include <entt/entt.hpp>
 #include <memory>
-#include <SFML/System/Time.hpp>
 
 class WorldGenerationSystem;
 class TerrainRenderSystem;
@@ -15,13 +15,17 @@ class PerformanceMonitor;
 class Camera;
 class GameState;
 class ColorManager;
-namespace sf { class RenderWindow; }
+namespace sf {
+class RenderWindow;
+}
 
 class UIManager {
 public:
-    UIManager(entt::registry& registry, EventBus& eventBus, WorldGenerationSystem& worldGenerationSystem,
-              TerrainRenderSystem& terrainRenderSystem, PerformanceMonitor& performanceMonitor,
-              Camera& camera, GameState& gameState, ColorManager& colorManager, sf::RenderWindow& window);
+    UIManager(entt::registry &registry, EventBus &eventBus,
+              WorldGenerationSystem &worldGenerationSystem,
+              TerrainRenderSystem &terrainRenderSystem, PerformanceMonitor &performanceMonitor,
+              Camera &camera, GameState &gameState, ColorManager &colorManager,
+              sf::RenderWindow &window);
     ~UIManager();
 
     void draw(sf::Time deltaTime, size_t numStationsInActiveLine);

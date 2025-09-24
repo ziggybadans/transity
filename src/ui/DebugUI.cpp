@@ -1,15 +1,18 @@
 #include "DebugUI.h"
 #include "Constants.h"
 #include "Logger.h"
-#include "render/Camera.h"
-#include "core/PerformanceMonitor.h"
 #include "app/GameState.h"
-#include "render/ColorManager.h"
+#include "core/PerformanceMonitor.h"
 #include "imgui.h"
+#include "render/Camera.h"
+#include "render/ColorManager.h"
 
-DebugUI::DebugUI(PerformanceMonitor& performanceMonitor, Camera& camera, GameState& gameState, ColorManager& colorManager, EventBus& eventBus, sf::RenderWindow& window)
-    : _performanceMonitor(performanceMonitor), _camera(camera), _gameState(gameState), _colorManager(colorManager), _window(window) {
-    _themeChangedConnection = eventBus.sink<ThemeChangedEvent>().connect<&DebugUI::onThemeChanged>(this);
+DebugUI::DebugUI(PerformanceMonitor &performanceMonitor, Camera &camera, GameState &gameState,
+                 ColorManager &colorManager, EventBus &eventBus, sf::RenderWindow &window)
+    : _performanceMonitor(performanceMonitor), _camera(camera), _gameState(gameState),
+      _colorManager(colorManager), _window(window) {
+    _themeChangedConnection =
+        eventBus.sink<ThemeChangedEvent>().connect<&DebugUI::onThemeChanged>(this);
     LOG_DEBUG("DebugUI", "DebugUI instance created.");
 }
 
@@ -23,7 +26,7 @@ void DebugUI::draw(sf::Time deltaTime) {
     drawSettingsWindow();
 }
 
-void DebugUI::onThemeChanged(const ThemeChangedEvent& event) {
+void DebugUI::onThemeChanged(const ThemeChangedEvent &event) {
     if (event.theme == Theme::Light) {
         ImGui::StyleColorsLight();
     } else {
@@ -36,28 +39,30 @@ void DebugUI::drawProfilingWindow(sf::Time deltaTime) {
     ImGuiWindowFlags size_flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize
                                   | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse;
 
-    ImGui::SetNextWindowPos(ImVec2(windowPadding, windowPadding));    
-    ImGui::Begin("Time Controls", nullptr,                 
-        ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove                     
-        | ImGuiWindowFlags_AlwaysAutoResize);    
-    ImVec2 timeControlWindowSize = ImGui::GetWindowSize();    
-    ImGui::End();    
-    
-    ImVec2 debugWindowPos =        
-        ImVec2(windowPadding, windowPadding + timeControlWindowSize.y + windowPadding);    
+    ImGui::SetNextWindowPos(ImVec2(windowPadding, windowPadding));
+    ImGui::Begin("Time Controls", nullptr,
+                 ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove
+                     | ImGuiWindowFlags_AlwaysAutoResize);
+    ImVec2 timeControlWindowSize = ImGui::GetWindowSize();
+    ImGui::End();
+
+    ImVec2 debugWindowPos =
+        ImVec2(windowPadding, windowPadding + timeControlWindowSize.y + windowPadding);
     ImGui::SetNextWindowPos(debugWindowPos, ImGuiCond_Always);
     ImGui::Begin("Profiling", nullptr, size_flags);
     ImGui::Text("FPS: %.1f", 1.f / deltaTime.asSeconds());
     ImGui::Text("Zoom: %.2f", _camera.getZoom());
 
     if (ImGui::CollapsingHeader("Performance Graphs")) {
-        const auto& renderHistory = _performanceMonitor.getHistory("Application::render");
+        const auto &renderHistory = _performanceMonitor.getHistory("Application::render");
         if (!renderHistory.empty()) {
-            ImGui::PlotLines("Render Time (us)", renderHistory.data(), renderHistory.size(), 0, nullptr, 0.0f, 33000.0f, ImVec2(0, 80));
+            ImGui::PlotLines("Render Time (us)", renderHistory.data(), renderHistory.size(), 0,
+                             nullptr, 0.0f, 33000.0f, ImVec2(0, 80));
         }
-        const auto& updateHistory = _performanceMonitor.getHistory("Application::update");
+        const auto &updateHistory = _performanceMonitor.getHistory("Application::update");
         if (!updateHistory.empty()) {
-            ImGui::PlotLines("Update Time (us)", updateHistory.data(), updateHistory.size(), 0, nullptr, 0.0f, 16000.0f, ImVec2(0, 80));
+            ImGui::PlotLines("Update Time (us)", updateHistory.data(), updateHistory.size(), 0,
+                             nullptr, 0.0f, 16000.0f, ImVec2(0, 80));
         }
     }
     ImGui::End();
@@ -65,7 +70,8 @@ void DebugUI::drawProfilingWindow(sf::Time deltaTime) {
 
 void DebugUI::drawTimeControlWindow() {
     const float windowPadding = Constants::UI_WINDOW_PADDING;
-    ImGuiWindowFlags flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize;
+    ImGuiWindowFlags flags =
+        ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize;
 
     ImGui::SetNextWindowPos(ImVec2(windowPadding, windowPadding));
     ImGui::Begin("Time Controls", nullptr, flags);
@@ -102,8 +108,10 @@ void DebugUI::drawSettingsWindow() {
     const float windowPadding = Constants::UI_WINDOW_PADDING;
     ImGuiWindowFlags flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize
                              | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse;
-    
-    ImVec2 settingsWindowPos = ImVec2(windowPadding, _window.getSize().y - ImGui::GetFrameHeightWithSpacing() * 2.5 - windowPadding);
+
+    ImVec2 settingsWindowPos =
+        ImVec2(windowPadding,
+               _window.getSize().y - ImGui::GetFrameHeightWithSpacing() * 2.5 - windowPadding);
     ImGui::SetNextWindowPos(settingsWindowPos, ImGuiCond_Always);
     ImGui::Begin("Settings", nullptr, flags);
 
