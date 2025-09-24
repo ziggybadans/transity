@@ -51,7 +51,8 @@ void Renderer::renderFrame(entt::registry &registry, const sf::View &view,
     _terrainRenderSystem.render(registry, _windowInstance, view, worldGen.getParams());
     _lineRenderSystem.render(registry, _windowInstance, view, highlightColor);
 
-    auto viewRegistry = registry.view<const PositionComponent, const RenderableComponent>();
+    // The main render view now excludes entities handled by other systems
+    auto viewRegistry = registry.view<const PositionComponent, const RenderableComponent>(entt::exclude<TrainTag, CityComponent>);
 
     std::vector<entt::entity> sortedEntities;
     for (auto entity : viewRegistry) {
@@ -65,25 +66,15 @@ void Renderer::renderFrame(entt::registry &registry, const sf::View &view,
     });
 
     for (auto entity : sortedEntities) {
-        // Skip rendering trains, as they are handled by TrainRenderSystem
-        if (registry.all_of<TrainTag>(entity)) {
-            continue;
-        }
-
         const auto &position = viewRegistry.get<const PositionComponent>(entity);
         const auto &renderable = viewRegistry.get<const RenderableComponent>(entity);
 
-        // Special rendering for cities to give them a bordered look
-        if (registry.all_of<TrainTag>(entity) || registry.all_of<CityComponent>(entity)) {
-            continue;
-        } else {
-            // Default rendering for other entities
-            sf::CircleShape shape(renderable.radius.value);
-            shape.setFillColor(renderable.color);
-            shape.setOrigin({renderable.radius.value, renderable.radius.value});
-            shape.setPosition(position.coordinates);
-            _windowInstance.draw(shape);
-        }
+        // Default rendering for all other entities
+        sf::CircleShape shape(renderable.radius.value);
+        shape.setFillColor(renderable.color);
+        shape.setOrigin({renderable.radius.value, renderable.radius.value});
+        shape.setPosition(position.coordinates);
+        _windowInstance.draw(shape);
 
         // Draw highlight if selected (applies to all entities)
         if (registry.all_of<SelectedComponent>(entity)) {
@@ -98,9 +89,8 @@ void Renderer::renderFrame(entt::registry &registry, const sf::View &view,
     }
 
     _cityRenderSystem.render(registry, _windowInstance, highlightColor);
-    _trainRenderSystem.render(registry, _windowInstance,
-                              highlightColor);            // Call the train render system
-    _pathRenderSystem.render(registry, _windowInstance);  // Call the path render system
+    _trainRenderSystem.render(registry, _windowInstance, highlightColor);
+    _pathRenderSystem.render(registry, _windowInstance);
     passengerSpawnAnimationSystem.render(_windowInstance);
 }
 
