@@ -77,9 +77,13 @@ void Application::run() {
         }
         case AppState::PLAYING: {
             size_t numStationsInActiveLine = 0;
+            size_t numPointsInActiveLine = 0;
             if (_game->getRegistry().ctx().contains<ActiveLine>()) {
+                const auto &activeLine = _game->getRegistry().ctx().get<ActiveLine>();
+                numPointsInActiveLine = activeLine.points.size();
                 numStationsInActiveLine =
-                    _game->getRegistry().ctx().get<ActiveLine>().points.size();
+                    std::count_if(activeLine.points.begin(), activeLine.points.end(),
+                                  [](const LinePoint &p) { return p.type == LinePointType::STOP; });
             }
 
             bool isLineSelected = false;
@@ -91,7 +95,7 @@ void Application::run() {
             }
 
             _ui->update(frameTime, appState);
-            _uiManager->draw(frameTime, numStationsInActiveLine);
+            _uiManager->draw(frameTime, numStationsInActiveLine, numPointsInActiveLine);
             update(TimePerFrame);
 
             if (_isWindowFocused) {

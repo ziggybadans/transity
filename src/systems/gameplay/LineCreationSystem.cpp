@@ -62,6 +62,11 @@ void LineCreationSystem::onMouseButtonPressed(const MouseButtonPressedEvent &eve
 void LineCreationSystem::addPointToLine(const sf::Vector2f& position, entt::entity stationEntity) {
     auto& activeLine = _registry.ctx().get<ActiveLine>();
 
+    if (activeLine.points.empty() && stationEntity == entt::null) {
+        LOG_WARN("LineCreationSystem", "The first point of a line must be a station.");
+        return;
+    }
+
     if (stationEntity != entt::null) {
         if (!activeLine.points.empty()) {
             const auto& lastPoint = activeLine.points.back();
@@ -88,6 +93,11 @@ void LineCreationSystem::finalizeLine() {
                  "Not enough points to finalize line. Need at least 2, have %zu.",
                  activeLine.points.size());
         clearCurrentLine();
+        return;
+    }
+
+    if (activeLine.points.back().type != LinePointType::STOP) {
+        LOG_WARN("LineCreationSystem", "Cannot finalize line: the last point must be a station.");
         return;
     }
 

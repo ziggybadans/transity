@@ -38,6 +38,7 @@ struct LineComponent {
 struct LineEditingComponent {
     std::optional<size_t> selectedPointIndex;
     std::optional<size_t> draggedPointIndex;
+    std::optional<sf::Vector2f> originalPointPosition;
 };
 
 // A component that makes an entity clickable.

@@ -28,7 +28,7 @@ public:
               sf::RenderWindow &window);
     ~UIManager();
 
-    void draw(sf::Time deltaTime, size_t numStationsInActiveLine);
+    void draw(sf::Time deltaTime, size_t numStationsInActiveLine, size_t numPointsInActiveLine);
 
 private:
     std::unique_ptr<InfoPanelUI> _infoPanelUI;

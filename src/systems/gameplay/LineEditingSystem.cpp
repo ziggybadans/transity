@@ -67,6 +67,7 @@ void LineEditingSystem::onMouseButtonPressed(const MouseButtonPressedEvent& even
     auto& line = _registry.get<LineComponent>(selectedLine);
     auto& editingState = _registry.get<LineEditingComponent>(selectedLine);
     editingState.selectedPointIndex = std::nullopt;
+    editingState.originalPointPosition = std::nullopt;
 
     for (size_t i = 0; i < line.points.size(); ++i) {
         sf::Vector2f diff = line.points[i].position - event.worldPosition;
@@ -74,6 +75,12 @@ void LineEditingSystem::onMouseButtonPressed(const MouseButtonPressedEvent& even
         if (distanceSq <= 128.f) { // 8.f radius squared
             editingState.draggedPointIndex = i;
             editingState.selectedPointIndex = i;
+            
+            bool isEndpoint = (i == 0 || i == line.points.size() - 1);
+            if (isEndpoint && line.points[i].type == LinePointType::STOP) {
+                editingState.originalPointPosition = line.points[i].position;
+            }
+
             LOG_DEBUG("LineEditingSystem", "Dragging point %zu", i);
             return;
         }
@@ -126,12 +133,17 @@ void LineEditingSystem::onMouseButtonReleased(const MouseButtonReleasedEvent& ev
         }
 
         if (!snapped) {
-            point.type = LinePointType::CONTROL_POINT;
-            point.stationEntity = entt::null;
+            if (editingState.originalPointPosition.has_value()) {
+                point.position = editingState.originalPointPosition.value();
+            } else {
+                point.type = LinePointType::CONTROL_POINT;
+                point.stationEntity = entt::null;
+            }
         }
     }
 
     editingState.draggedPointIndex = std::nullopt;
+    editingState.originalPointPosition = std::nullopt;
     LOG_DEBUG("LineEditingSystem", "Stopped dragging point");
 }
 

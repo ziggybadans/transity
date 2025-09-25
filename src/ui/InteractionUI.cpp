@@ -15,9 +15,9 @@ InteractionUI::~InteractionUI() {
     LOG_DEBUG("InteractionUI", "InteractionUI instance destroyed.");
 }
 
-void InteractionUI::draw(size_t numberOfStationsInActiveLine) {
+void InteractionUI::draw(size_t numberOfStationsInActiveLine, size_t numberOfPointsInActiveLine) {
     drawInteractionModeWindow();
-    drawLineCreationWindow(numberOfStationsInActiveLine);
+    drawLineCreationWindow(numberOfStationsInActiveLine, numberOfPointsInActiveLine);
     drawPassengerCreationWindow();
 }
 
@@ -49,7 +49,8 @@ void InteractionUI::drawInteractionModeWindow() {
     ImGui::End();
 }
 
-void InteractionUI::drawLineCreationWindow(size_t numberOfStationsInActiveLine) {
+void InteractionUI::drawLineCreationWindow(size_t numberOfStationsInActiveLine,
+                                           size_t numberOfPointsInActiveLine) {
     if (_gameState.currentInteractionMode != InteractionMode::CREATE_LINE) {
         return;
     }
@@ -60,13 +61,10 @@ void InteractionUI::drawLineCreationWindow(size_t numberOfStationsInActiveLine) 
     ImGuiWindowFlags size_flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize
                                   | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse;
 
-    float interactionModesWidth = Constants::UI_INTERACTION_MODES_WIDTH;
-    ImVec2 interactionModesPos =
-        ImVec2((displaySize.x - interactionModesWidth) * 0.5f,
-               displaySize.y - ImGui::GetFrameHeightWithSpacing() * 2.5 - windowPadding);
-
-    ImVec2 lineCreationWindowPos = ImVec2(
-        interactionModesPos.x, interactionModesPos.y - ImGui::GetFrameHeightWithSpacing() * 2.0f);
+    float lineCreationWindowWidth = Constants::UI_LINE_CREATION_WINDOW_WIDTH;
+    ImVec2 lineCreationWindowPos =
+        ImVec2(displaySize.x - lineCreationWindowWidth - windowPadding,
+               _window.getSize().y - ImGui::GetFrameHeightWithSpacing() * 2.5 - windowPadding);
     ImGui::SetNextWindowPos(lineCreationWindowPos, ImGuiCond_Always);
     ImGui::Begin("Line Creation", nullptr, size_flags);
 
@@ -82,8 +80,15 @@ void InteractionUI::drawLineCreationWindow(size_t numberOfStationsInActiveLine) 
     }
 
     ImGui::SameLine();
+
+    if (numberOfPointsInActiveLine == 0) {
+        ImGui::BeginDisabled();
+    }
     if (ImGui::Button("Cancel Line")) {
         _eventBus.enqueue<CancelLineCreationEvent>({});
+    }
+    if (numberOfPointsInActiveLine == 0) {
+        ImGui::EndDisabled();
     }
     ImGui::End();
 }
