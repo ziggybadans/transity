@@ -42,21 +42,23 @@ void LineDataSystem::processParallelSegments() {
     auto lineView = _registry.view<LineComponent>();
     for (auto entity : lineView) {
         auto &line = lineView.get<LineComponent>(entity);
-        if (line.stops.size() < 2) {
+        if (line.points.size() < 2) {
             line.pathOffsets.clear();
             continue;
         }
 
-        line.pathOffsets.assign(line.stops.size() - 1, {0.f, 0.f});
+        line.pathOffsets.assign(line.points.size() - 1, {0.f, 0.f});
 
-        for (size_t i = 0; i < line.stops.size() - 1; ++i) {
-            entt::entity station1 = line.stops[i];
-            entt::entity station2 = line.stops[i + 1];
+        for (size_t i = 0; i < line.points.size() - 1; ++i) {
+            if (line.points[i].type == LinePointType::STOP && line.points[i+1].type == LinePointType::STOP) {
+                entt::entity station1 = line.points[i].stationEntity;
+                entt::entity station2 = line.points[i+1].stationEntity;
 
-            if (station1 > station2) {
-                std::swap(station1, station2);
+                if (station1 > station2) {
+                    std::swap(station1, station2);
+                }
+                segmentMap[{station1, station2}].push_back({entity, i});
             }
-            segmentMap[{station1, station2}].push_back({entity, i});
         }
     }
 
@@ -70,7 +72,7 @@ void LineDataSystem::processParallelSegments() {
             // Separate lines by direction relative to the canonical segment
             for (const auto& lineInfo : lines) {
                 auto& line = _registry.get<LineComponent>(lineInfo.first);
-                if (line.stops[lineInfo.second] == segment.first) {
+                if (line.points[lineInfo.second].stationEntity == segment.first) {
                     reverseLines.push_back(lineInfo);
                 } else {
                     forwardLines.push_back(lineInfo);

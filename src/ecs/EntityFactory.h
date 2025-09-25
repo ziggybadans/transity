@@ -3,7 +3,7 @@
 #include <SFML/Graphics/Color.hpp>
 #include <SFML/System.hpp>
 #include <entt/entt.hpp>
-#include <functional>  // Add this
+#include <functional>
 #include <map>
 #include <nlohmann/json.hpp>
 #include <optional>
@@ -25,15 +25,15 @@ public:
     void loadArchetypes(const std::string &directoryPath);
     entt::entity createEntity(const std::string &archetypeId, const sf::Vector2f &position,
                               const std::string &name = "");
-    entt::entity createLine(const std::vector<entt::entity> &stops, const sf::Color &color);
+    entt::entity createLine(const std::vector<LinePoint> &points, const sf::Color &color);
     entt::entity createTrain(entt::entity lineEntity);
     entt::entity createPassenger(entt::entity origin, entt::entity destination);
 
 private:
-    void registerComponentFactories();  // Add this
+    void registerComponentFactories();
 
     entt::registry &_registry;
     std::map<std::string, nlohmann::json> _archetypes;
     std::map<std::string, std::function<void(entt::entity, const nlohmann::json &)>>
-        _componentFactories;  // Add this
+        _componentFactories;
 };

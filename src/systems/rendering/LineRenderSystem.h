@@ -7,8 +7,4 @@
 class LineRenderSystem {
 public:
     void render(const entt::registry &registry, sf::RenderWindow &window, const sf::View &view, const sf::Color& highlightColor);
-
-private:
-    std::vector<std::pair<int, entt::entity>> m_taggedStationsPairs;
-    std::vector<entt::entity> m_activeLineStations;
 };

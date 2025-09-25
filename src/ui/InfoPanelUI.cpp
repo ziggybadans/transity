@@ -8,8 +8,8 @@
 #include "event/InputEvents.h"
 #include "event/LineEvents.h"
 #include "imgui.h"
+#include <numeric>
 
-// Helper function from the original UI.cpp
 const char *trainStateToString(TrainState state) {
     switch (state) {
     case TrainState::STOPPED:
@@ -151,7 +151,12 @@ void InfoPanelUI::draw() {
                 }
             } else if (auto *line = _registry.try_get<LineComponent>(entity)) {
                 ImGui::Text("Type: Line");
-                ImGui::Text("Stops: %zu", line->stops.size());
+                size_t stopCount =
+                    std::accumulate(line->points.begin(), line->points.end(), 0,
+                                    [](size_t acc, const LinePoint &p) {
+                                        return acc + (p.type == LinePointType::STOP ? 1 : 0);
+                                    });
+                ImGui::Text("Stops: %zu", stopCount);
 
                 float color[4] = {line->color.r / 255.f, line->color.g / 255.f,
                                   line->color.b / 255.f, line->color.a / 255.f};
@@ -198,8 +203,11 @@ void InfoPanelUI::draw() {
                             std::string location;
                             if (movement.state == TrainState::STOPPED) {
                                 entt::entity currentStopEntity = entt::null;
-                                if (movement.currentSegmentIndex < line->stops.size()) {
-                                    currentStopEntity = line->stops[movement.currentSegmentIndex];
+                                if (movement.currentSegmentIndex < line->points.size()
+                                    && line->points[movement.currentSegmentIndex].type
+                                           == LinePointType::STOP) {
+                                    currentStopEntity =
+                                        line->points[movement.currentSegmentIndex].stationEntity;
                                 }
 
                                 if (_registry.valid(currentStopEntity)) {
@@ -212,31 +220,32 @@ void InfoPanelUI::draw() {
                                     location = "At an unknown station";
                                 }
                             } else {
-                                if (movement.currentSegmentIndex < line->stops.size() - 1) {
-                                    entt::entity stop1_entity =
-                                        line->stops[movement.currentSegmentIndex];
-                                    entt::entity stop2_entity =
-                                        line->stops[movement.currentSegmentIndex + 1];
-
-                                    if (_registry.valid(stop1_entity)
-                                        && _registry.valid(stop2_entity)) {
-                                        auto *name1 =
-                                            _registry.try_get<NameComponent>(stop1_entity);
-                                        auto *name2 =
-                                            _registry.try_get<NameComponent>(stop2_entity);
-
-                                        std::string station1Name = name1 ? name1->name : "Unknown";
-                                        std::string station2Name = name2 ? name2->name : "Unknown";
-
-                                        if (movement.direction == TrainDirection::FORWARD) {
-                                            location =
-                                                "Between " + station1Name + " and " + station2Name;
-                                        } else {
-                                            location =
-                                                "Between " + station2Name + " and " + station1Name;
+                                int nextStopIdx = -1;
+                                if (movement.direction == TrainDirection::FORWARD) {
+                                    for (size_t i = movement.currentSegmentIndex;
+                                         i < line->points.size(); ++i) {
+                                        if (line->points[i].type == LinePointType::STOP) {
+                                            nextStopIdx = i;
+                                            break;
                                         }
+                                    }
+                                } else {
+                                    for (int i = movement.currentSegmentIndex; i >= 0; --i) {
+                                        if (line->points[i].type == LinePointType::STOP) {
+                                            nextStopIdx = i;
+                                            break;
+                                        }
+                                    }
+                                }
+
+                                if (nextStopIdx != -1) {
+                                    entt::entity stop_entity =
+                                        line->points[nextStopIdx].stationEntity;
+                                    if (_registry.valid(stop_entity)) {
+                                        auto *name = _registry.try_get<NameComponent>(stop_entity);
+                                        location = "Towards " + (name ? name->name : "Unknown");
                                     } else {
-                                        location = "Between unknown stations";
+                                        location = "Towards unknown station";
                                     }
                                 } else {
                                     location = "In transit";
@@ -252,19 +261,23 @@ void InfoPanelUI::draw() {
                 }
 
                 if (ImGui::CollapsingHeader("Stops")) {
-                    if (line->stops.empty()) {
+                    if (stopCount == 0) {
                         ImGui::Text("This line has no stops.");
                     } else {
-                        for (size_t i = 0; i < line->stops.size(); ++i) {
-                            entt::entity stopEntity = line->stops[i];
-                            if (_registry.valid(stopEntity)) {
-                                auto *name = _registry.try_get<NameComponent>(stopEntity);
-                                std::string stopName =
-                                    name ? name->name
-                                         : "Stop " + std::to_string(entt::to_integral(stopEntity));
-                                std::string label = std::to_string(i + 1) + ". " + stopName;
-                                if (ImGui::Selectable(label.c_str())) {
-                                    _eventBus.enqueue<EntitySelectedEvent>({stopEntity});
+                        int stopNum = 1;
+                        for (const auto &point : line->points) {
+                            if (point.type == LinePointType::STOP) {
+                                entt::entity stopEntity = point.stationEntity;
+                                if (_registry.valid(stopEntity)) {
+                                    auto *name = _registry.try_get<NameComponent>(stopEntity);
+                                    std::string stopName =
+                                        name ? name->name
+                                             : "Stop "
+                                                   + std::to_string(entt::to_integral(stopEntity));
+                                    std::string label = std::to_string(stopNum++) + ". " + stopName;
+                                    if (ImGui::Selectable(label.c_str())) {
+                                        _eventBus.enqueue<EntitySelectedEvent>({stopEntity});
+                                    }
                                 }
                             }
                         }

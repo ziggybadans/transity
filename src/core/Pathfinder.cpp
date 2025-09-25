@@ -9,14 +9,7 @@
 
 Pathfinder::Pathfinder(entt::registry &registry) : _registry(registry) {}
 
-float Pathfinder::calculateDistance(entt::entity stationA, entt::entity stationB) {
-    if (!_registry.valid(stationA) || !_registry.valid(stationB)
-        || !_registry.all_of<PositionComponent>(stationA)
-        || !_registry.all_of<PositionComponent>(stationB)) {
-        return std::numeric_limits<float>::max();
-    }
-    const auto &posA = _registry.get<PositionComponent>(stationA).coordinates;
-    const auto &posB = _registry.get<PositionComponent>(stationB).coordinates;
+float Pathfinder::calculateDistance(const sf::Vector2f &posA, const sf::Vector2f &posB) {
     sf::Vector2f diff = posB - posA;
     return std::sqrt(diff.x * diff.x + diff.y * diff.y);
 }
@@ -41,48 +34,58 @@ std::vector<entt::entity> Pathfinder::findPath(entt::entity startStation, entt::
         pq.pop();
 
         if (u == endStation) {
-            break;  // Found the shortest path
+            break;
         }
 
         if (!_registry.valid(u) || !_registry.all_of<CityComponent>(u)) continue;
         auto &city = _registry.get<CityComponent>(u);
 
-        // Explore neighbors (adjacent stations on the same line)
         for (auto lineEntity : city.connectedLines) {
             if (!_registry.valid(lineEntity) || !_registry.all_of<LineComponent>(lineEntity))
                 continue;
             auto &line = _registry.get<LineComponent>(lineEntity);
 
-            auto it = std::find(line.stops.begin(), line.stops.end(), u);
-            if (it == line.stops.end()) continue;
+            auto it = std::find_if(line.points.begin(), line.points.end(), [u](const LinePoint &p) {
+                return p.type == LinePointType::STOP && p.stationEntity == u;
+            });
+            if (it == line.points.end()) continue;
 
-            size_t currentIndex = std::distance(line.stops.begin(), it);
+            size_t currentIndex = std::distance(line.points.begin(), it);
 
-            // Check previous stop on the line
-            if (currentIndex > 0) {
-                entt::entity v = line.stops[currentIndex - 1];
-                float weight = calculateDistance(u, v);
-                if (distances[u] + weight < distances[v]) {
-                    distances[v] = distances[u] + weight;
-                    predecessors[v] = u;
-                    pq.push({distances[v], v});
+            // Check previous stops on the line
+            float distanceToPrev = 0;
+            for (int i = currentIndex - 1; i >= 0; --i) {
+                distanceToPrev +=
+                    calculateDistance(line.points[i + 1].position, line.points[i].position);
+                if (line.points[i].type == LinePointType::STOP) {
+                    entt::entity v = line.points[i].stationEntity;
+                    if (distances[u] + distanceToPrev < distances[v]) {
+                        distances[v] = distances[u] + distanceToPrev;
+                        predecessors[v] = u;
+                        pq.push({distances[v], v});
+                    }
+                    break;
                 }
             }
 
-            // Check next stop on the line
-            if (currentIndex < line.stops.size() - 1) {
-                entt::entity v = line.stops[currentIndex + 1];
-                float weight = calculateDistance(u, v);
-                if (distances[u] + weight < distances[v]) {
-                    distances[v] = distances[u] + weight;
-                    predecessors[v] = u;
-                    pq.push({distances[v], v});
+            // Check next stops on the line
+            float distanceToNext = 0;
+            for (size_t i = currentIndex + 1; i < line.points.size(); ++i) {
+                distanceToNext +=
+                    calculateDistance(line.points[i - 1].position, line.points[i].position);
+                if (line.points[i].type == LinePointType::STOP) {
+                    entt::entity v = line.points[i].stationEntity;
+                    if (distances[u] + distanceToNext < distances[v]) {
+                        distances[v] = distances[u] + distanceToNext;
+                        predecessors[v] = u;
+                        pq.push({distances[v], v});
+                    }
+                    break;
                 }
             }
         }
     }
 
-    // Reconstruct path
     std::vector<entt::entity> path;
     entt::entity current = endStation;
     while (current != entt::null && predecessors.count(current)) {
@@ -96,7 +99,7 @@ std::vector<entt::entity> Pathfinder::findPath(entt::entity startStation, entt::
     if (path.empty() || path.front() != startStation) {
         LOG_WARN("Pathfinder", "No path found from station %u to %u.",
                  static_cast<unsigned>(startStation), static_cast<unsigned>(endStation));
-        return {};  // Return empty path if none found
+        return {};
     }
 
     LOG_DEBUG("Pathfinder", "Path found with %zu stops.", path.size());

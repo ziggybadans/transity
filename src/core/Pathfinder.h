@@ -22,6 +22,6 @@ public:
 private:
     entt::registry &_registry;
 
-    // Helper function to calculate the distance between two stations.
-    float calculateDistance(entt::entity stationA, entt::entity stationB);
+    // Helper function to calculate the distance between two points.
+    float calculateDistance(const sf::Vector2f &posA, const sf::Vector2f &posB);
 };

@@ -9,7 +9,7 @@
 #include "render/Renderer.h"
 #include "systems/gameplay/LineCreationSystem.h"
 #include "ui/UI.h"
-#include "ui/UIManager.h"  // Make sure this is included
+#include "ui/UIManager.h"
 
 #include <stdexcept>
 #include <thread>
@@ -69,7 +69,6 @@ void Application::run() {
                 _game->getGameState().currentAppState = AppState::PLAYING;
                 LOG_INFO("Application", "Loading complete, switching to PLAYING state.");
 
-                // Reset timers to prevent simulation catch-up
                 _timeAccumulator = sf::Time::Zero;
                 _deltaClock.restart();
             }
@@ -78,13 +77,12 @@ void Application::run() {
         }
         case AppState::PLAYING: {
             size_t numStationsInActiveLine = 0;
-            if (auto lineCreationSystem =
-                    _game->getSystemManager().getSystem<LineCreationSystem>()) {
-                lineCreationSystem->getActiveLineStations(
-                    [&numStationsInActiveLine](entt::entity) { numStationsInActiveLine++; });
+            if (_game->getRegistry().ctx().contains<ActiveLine>()) {
+                numStationsInActiveLine =
+                    _game->getRegistry().ctx().get<ActiveLine>().points.size();
             }
 
-            _ui->update(frameTime, appState);  // Fix this call
+            _ui->update(frameTime, appState);
             _uiManager->draw(frameTime, numStationsInActiveLine);
             update(TimePerFrame);
 

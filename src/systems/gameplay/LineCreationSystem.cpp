@@ -3,6 +3,7 @@
 #include "components/GameLogicComponents.h"
 #include "ecs/EntityFactory.h"
 #include "render/ColorManager.h"
+#include "imgui.h"
 #include <algorithm>
 #include <utility>
 
@@ -27,12 +28,16 @@ LineCreationSystem::~LineCreationSystem() {
 }
 
 void LineCreationSystem::onMouseButtonPressed(const MouseButtonPressedEvent &event) {
+    if (ImGui::GetIO().WantCaptureMouse) {
+        return;
+    }
+
     if (_gameState.currentInteractionMode == InteractionMode::CREATE_LINE
         && event.button == sf::Mouse::Button::Left) {
         LOG_DEBUG("LineCreationSystem", "Mouse click in CREATE_LINE mode at world (%.1f, %.1f).",
                   event.worldPosition.x, event.worldPosition.y);
 
-        auto view = _registry.view<PositionComponent, ClickableComponent, CityComponent>(); // <-- Add CityComponent here
+        auto view = _registry.view<PositionComponent, ClickableComponent, CityComponent>();
         for (auto entity_id : view) {
             const auto &pos = view.get<PositionComponent>(entity_id);
             const auto &clickable = view.get<ClickableComponent>(entity_id);
@@ -45,137 +50,78 @@ void LineCreationSystem::onMouseButtonPressed(const MouseButtonPressedEvent &eve
                 LOG_DEBUG("LineCreationSystem", "Station entity %u clicked.",
                           static_cast<unsigned int>(entity_id));
 
-                addStationToLine(entity_id);
+                addPointToLine(pos.coordinates, entity_id);
                 return;
             }
         }
+
+        addPointToLine(event.worldPosition);
     }
 }
 
-void LineCreationSystem::addStationToLine(entt::entity stationEntity) {
-    if (_registry.valid(stationEntity) && _registry.all_of<PositionComponent>(stationEntity)) {
-        int currentHighestOrder = -1;
-        entt::entity lastStationEntity = entt::null;
-        auto view = _registry.view<ActiveLineStationTag>();
-        for (auto entity : view) {
-            const auto &tag = view.get<ActiveLineStationTag>(entity);
-            if (tag.order.value > currentHighestOrder) {
-                currentHighestOrder = tag.order.value;
-                lastStationEntity = entity;
+void LineCreationSystem::addPointToLine(const sf::Vector2f& position, entt::entity stationEntity) {
+    auto& activeLine = _registry.ctx().get<ActiveLine>();
+
+    if (stationEntity != entt::null) {
+        if (!activeLine.points.empty()) {
+            const auto& lastPoint = activeLine.points.back();
+            if (lastPoint.type == LinePointType::STOP && lastPoint.stationEntity == stationEntity) {
+                LOG_WARN("LineCreationSystem",
+                         "Station %u is already the last point in the active line.",
+                         static_cast<unsigned int>(stationEntity));
+                return;
             }
         }
-
-        if (lastStationEntity == stationEntity) {
-            LOG_WARN("LineCreationSystem",
-                     "Station %u is already the last station in the active line.",
-                     static_cast<unsigned int>(stationEntity));
-            return;
-        }
-
-        _registry.emplace_or_replace<ActiveLineStationTag>(stationEntity,
-                                                           StationOrder{currentHighestOrder + 1});
-        LOG_DEBUG("LineCreationSystem", "Station %u tagged for active line with order %d.",
-                  static_cast<unsigned int>(stationEntity), currentHighestOrder + 1);
+        activeLine.points.push_back({LinePointType::STOP, position, stationEntity});
+        LOG_DEBUG("LineCreationSystem", "Station %u added to active line.", static_cast<unsigned int>(stationEntity));
     } else {
-        LOG_WARN("LineCreationSystem", "Attempted to add invalid station entity: %u",
-                 static_cast<unsigned int>(stationEntity));
+        activeLine.points.push_back({LinePointType::CONTROL_POINT, position});
+        LOG_DEBUG("LineCreationSystem", "Control point added to active line at (%.1f, %.1f).", position.x, position.y);
     }
 }
 
 void LineCreationSystem::finalizeLine() {
-    std::vector<std::pair<int, entt::entity>> taggedStations;
-    auto view = _registry.view<ActiveLineStationTag>();
-    for (auto entity : view) {
-        taggedStations.push_back({view.get<ActiveLineStationTag>(entity).order.value, entity});
-    }
+    auto& activeLine = _registry.ctx().get<ActiveLine>();
 
-    std::sort(taggedStations.begin(), taggedStations.end());
-
-    if (taggedStations.size() < 2) {
+    if (activeLine.points.size() < 2) {
         LOG_WARN("LineCreationSystem",
-                 "Not enough stations tagged to finalize line. Need at least 2, have %zu.",
-                 taggedStations.size());
-        for (const auto &pair : taggedStations) {
-            _registry.remove<ActiveLineStationTag>(pair.second);
-        }
+                 "Not enough points to finalize line. Need at least 2, have %zu.",
+                 activeLine.points.size());
+        clearCurrentLine();
         return;
     }
 
-    LOG_DEBUG("LineCreationSystem", "Finalizing line with %zu tagged stations.",
-              taggedStations.size());
-
-    std::vector<entt::entity> stopsInOrder;
-    for (const auto &pair : taggedStations) {
-        stopsInOrder.push_back(pair.second);
-    }
+    LOG_DEBUG("LineCreationSystem", "Finalizing line with %zu points.",
+              activeLine.points.size());
 
     sf::Color chosenColor = _colorManager.getNextLineColor();
-    entt::entity lineEntity = _entityFactory.createLine(stopsInOrder, chosenColor);
+    entt::entity lineEntity = _entityFactory.createLine(activeLine.points, chosenColor);
 
     if (lineEntity == entt::null) {
         LOG_ERROR("LineCreationSystem", "Failed to create line entity.");
-        for (entt::entity station_ent : stopsInOrder) {
-            if (_registry.valid(station_ent)) {
-                _registry.remove<ActiveLineStationTag>(station_ent);
-            }
-        }
+        clearCurrentLine();
         return;
     }
 
-    for (entt::entity stationEnt : stopsInOrder) {
-        if (_registry.valid(stationEnt) && _registry.all_of<CityComponent>(stationEnt)) {
-            auto &stationComp = _registry.get<CityComponent>(stationEnt);
+    for (const auto& point : activeLine.points) {
+        if (point.type == LinePointType::STOP) {
+            auto& stationComp = _registry.get<CityComponent>(point.stationEntity);
             stationComp.connectedLines.push_back(lineEntity);
             LOG_DEBUG("LineCreationSystem", "Connected line %u to station %u",
-                      static_cast<unsigned int>(lineEntity), static_cast<unsigned int>(stationEnt));
-        } else {
-            LOG_WARN("LineCreationSystem",
-                     "Station entity %u in line is invalid or missing CityComponent during "
-                     "finalization.",
-                     static_cast<unsigned int>(stationEnt));
+                      static_cast<unsigned int>(lineEntity), static_cast<unsigned int>(point.stationEntity));
         }
     }
 
-    for (entt::entity stationEnt : stopsInOrder) {
-        if (_registry.valid(stationEnt)) {
-            _registry.remove<ActiveLineStationTag>(stationEnt);
-        }
-    }
-    LOG_DEBUG("LineCreationSystem", "Created line entity with ID: %u and removed tags.",
+    LOG_DEBUG("LineCreationSystem", "Created line entity with ID: %u.",
              static_cast<unsigned int>(lineEntity));
 
     clearCurrentLine();
 }
 
 void LineCreationSystem::clearCurrentLine() noexcept {
-    LOG_DEBUG("LineCreationSystem",
-              "Clearing active line stations (removing ActiveLineStationTag).");
-    auto view = _registry.view<ActiveLineStationTag>();
-    std::vector<entt::entity> entitiesToClear;
-    for (auto entity : view) {
-        entitiesToClear.push_back(entity);
-    }
-    for (auto entity : entitiesToClear) {
-        _registry.remove<ActiveLineStationTag>(entity);
-    }
-    if (!entitiesToClear.empty()) {
-        LOG_DEBUG("LineCreationSystem", "Cleared %zu active line station tags.",
-                  entitiesToClear.size());
-    }
-}
-
-void LineCreationSystem::getActiveLineStations(
-    std::function<void(entt::entity)> callback) const noexcept {
-    auto view = _registry.view<PositionComponent, ActiveLineStationTag>();
-    std::vector<std::pair<int, entt::entity>> taggedStations;
-    for (auto entity : view) {
-        taggedStations.push_back({view.get<ActiveLineStationTag>(entity).order.value, entity});
-    }
-    std::sort(taggedStations.begin(), taggedStations.end());
-
-    for (const auto &pair : taggedStations) {
-        callback(pair.second);
-    }
+    LOG_DEBUG("LineCreationSystem", "Clearing active line.");
+    _registry.ctx().erase<ActiveLine>();
+    _registry.ctx().emplace<ActiveLine>();
 }
 
 void LineCreationSystem::onFinalizeLine(const FinalizeLineEvent &event) {
@@ -183,7 +129,11 @@ void LineCreationSystem::onFinalizeLine(const FinalizeLineEvent &event) {
     finalizeLine();
 }
 
-void LineCreationSystem::update(sf::Time dt) {}
+void LineCreationSystem::update(sf::Time dt) {
+    if (_gameState.currentInteractionMode == InteractionMode::CREATE_LINE && !_registry.ctx().contains<ActiveLine>()) {
+        _registry.ctx().emplace<ActiveLine>();
+    }
+}
 
 void LineCreationSystem::onCancelLineCreation(const CancelLineCreationEvent &event) {
     LOG_DEBUG("LineCreationSystem", "Processing CancelLineCreationEvent.");

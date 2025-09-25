@@ -67,9 +67,7 @@ void EntityFactory::loadArchetypes(const std::string &directoryPath) {
                         const std::string id = archetypeJson["id"];
                         const int version = archetypeJson["version"];
 
-                        // For now, we only support version 1.
-                        // In a real application, you would add migration logic here.
-                        if (version != Constants::SUPPORTED_ARCHETYPE_VERSION) {  // Modified
+                        if (version != Constants::SUPPORTED_ARCHETYPE_VERSION) {
                             LOG_ERROR("EntityFactory", "Unsupported archetype version %d for '%s'",
                                       version, id.c_str());
                             continue;
@@ -139,21 +137,21 @@ entt::entity EntityFactory::createEntity(const std::string &archetypeId,
     return entity;
 }
 
-entt::entity EntityFactory::createLine(const std::vector<entt::entity> &stops,
+entt::entity EntityFactory::createLine(const std::vector<LinePoint> &points,
                                        const sf::Color &color) {
-    LOG_DEBUG("EntityFactory", "Request to create line entity with %zu stops.", stops.size());
-    if (stops.size() < 2) {
-        LOG_ERROR("EntityFactory", "Cannot create line with less than 2 stops.");
+    LOG_DEBUG("EntityFactory", "Request to create line entity with %zu points.", points.size());
+    if (points.size() < 2) {
+        LOG_ERROR("EntityFactory", "Cannot create line with less than 2 points.");
         return entt::null;
     }
 
     auto entity = _registry.create();
     auto &lineComponent = _registry.emplace<LineComponent>(entity);
-    lineComponent.stops = stops;
+    lineComponent.points = points;
     lineComponent.color = color;
 
-    LOG_DEBUG("EntityFactory", "Line entity (ID: %u) created successfully with %zu stops.",
-              static_cast<unsigned int>(entity), stops.size());
+    LOG_DEBUG("EntityFactory", "Line entity (ID: %u) created successfully with %zu points.",
+              static_cast<unsigned int>(entity), points.size());
 
     return entity;
 }
@@ -165,12 +163,12 @@ entt::entity EntityFactory::createTrain(entt::entity lineEntity) {
     }
 
     const auto &line = _registry.get<LineComponent>(lineEntity);
-    if (line.stops.empty()) {
+    if (line.points.empty()) {
         LOG_ERROR("EntityFactory", "Cannot create train for a line with no stops.");
         return entt::null;
     }
 
-    const auto &firstStopPos = _registry.get<PositionComponent>(line.stops.front()).coordinates;
+    const auto &firstStopPos = line.points.front().position;
 
     std::string trainName = "Train " + std::to_string(entt::to_integral(lineEntity));
     auto trainEntity = createEntity("train", firstStopPos, trainName);
@@ -179,7 +177,6 @@ entt::entity EntityFactory::createTrain(entt::entity lineEntity) {
         return entt::null;
     }
 
-    // The TrainTag is now added by the archetype, but we still need to set the assigned line
     auto &movement = _registry.get<TrainMovementComponent>(trainEntity);
     movement.assignedLine = lineEntity;
 

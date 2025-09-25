@@ -5,6 +5,7 @@
 #include "event/LineEvents.h"
 #include "app/GameState.h"
 #include "event/EventBus.h"
+#include "components/GameLogicComponents.h"
 #include <SFML/Graphics/Color.hpp>
 #include <entt/entt.hpp>
 #include <vector>
@@ -12,6 +13,10 @@
 
 class EntityFactory;
 class ColorManager;
+
+struct ActiveLine {
+    std::vector<LinePoint> points;
+};
 
 class LineCreationSystem : public ISystem, public IUpdatable {
 public:
@@ -21,14 +26,13 @@ public:
     void update(sf::Time dt) override;
 
     void clearCurrentLine() noexcept;
-    void getActiveLineStations(std::function<void(entt::entity)> callback) const noexcept;
 
 private:
     void onFinalizeLine(const FinalizeLineEvent &event);
     void onMouseButtonPressed(const MouseButtonPressedEvent &event);
     void onCancelLineCreation(const CancelLineCreationEvent &event);
 
-    void addStationToLine(entt::entity stationEntity);
+    void addPointToLine(const sf::Vector2f& position, entt::entity stationEntity = entt::null);
     void finalizeLine();
 
     entt::registry &_registry;

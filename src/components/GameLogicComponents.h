@@ -18,11 +18,18 @@ struct CityComponent {
 };
 
 // A component for line entities.
+enum class LinePointType { STOP, CONTROL_POINT };
+
+struct LinePoint {
+    LinePointType type;
+    sf::Vector2f position;
+    entt::entity stationEntity = entt::null;
+};
+
 struct LineComponent {
     sf::Color color;
-    std::vector<entt::entity> stops;
-    std::vector<sf::Vector2f> pathPoints;
-    std::vector<sf::Vector2f> pathOffsets;  // Add this line
+    std::vector<LinePoint> points;
+    std::vector<sf::Vector2f> pathOffsets;
     Thickness thickness = {5.0f};
 };
 
