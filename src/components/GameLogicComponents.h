@@ -31,7 +31,7 @@ struct LineComponent {
     sf::Color color;
     std::vector<LinePoint> points;
     std::vector<sf::Vector2f> pathOffsets;
-    Thickness thickness = {5.0f};
+    Thickness thickness = {Constants::DEFAULT_LINE_THICKNESS};
 };
 
 // A component to manage the state of line editing.
@@ -66,13 +66,13 @@ struct TrainMovementComponent {
     entt::entity assignedLine;
     int currentSegmentIndex = 0;
     float progressOnSegment = 0.0f;
-    float stopTimer = 2.0f;
+    float stopTimer = Constants::TRAIN_STOP_DURATION;
 };
 
 // Manages the train's physics properties
 struct TrainPhysicsComponent {
     float maxSpeed = Constants::TRAIN_MAX_SPEED;
-    float currentSpeed = 50.0f;
+    float currentSpeed = Constants::TRAIN_DEFAULT_INITIAL_SPEED;
     float acceleration = Constants::TRAIN_ACCELERATION;
 };
 
@@ -101,7 +101,7 @@ struct NameComponent {
 // A component to manage the passenger spawn animation.
 struct PassengerSpawnAnimationComponent {
     float progress = 0.0f;
-    float duration = 1.0f;
+    float duration = Constants::PASSENGER_SPAWN_ANIMATION_DURATION;
     entt::entity originCity;
     entt::entity destinationCity;
 };

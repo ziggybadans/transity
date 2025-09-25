@@ -4,6 +4,7 @@
 #include "entt/entt.hpp"
 #include "components/WorldComponents.h"
 #include "FastNoiseLite.h"
+#include "Constants.h"
 #include <SFML/System/Vector2.hpp>
 #include <SFML/System/Time.hpp>
 #include <vector>
@@ -16,10 +17,10 @@ class Renderer;
 class PerformanceMonitor;
 
 struct PlacementWeights {
-    float waterAccess = 0.20f;
-    float landExpandability = 0.25f;
-    float cityProximity = 0.35f;
-    float randomness = 0.20f;
+    float waterAccess = Constants::SUITABILITY_WEIGHT_WATER;
+    float landExpandability = Constants::SUITABILITY_WEIGHT_EXPANDABILITY;
+    float cityProximity = Constants::SUITABILITY_WEIGHT_PROXIMITY;
+    float randomness = Constants::SUITABILITY_WEIGHT_RANDOMNESS;
 };
 
 struct SuitabilityMaps {
@@ -78,10 +79,10 @@ private:
     FastNoiseLite _noise;
 
     float _timeSinceLastCity = 0.0f;
-    float _minSpawnInterval = 15.0f;
-    float _maxSpawnInterval = 180.0f; // 3 minutes
     float _currentSpawnInterval;
-    int _maxCities = 50;
+    float _minSpawnInterval = Constants::MIN_CITY_SPAWN_INTERVAL_S;
+    float _maxSpawnInterval = Constants::MAX_CITY_SPAWN_INTERVAL_S;
+    int _maxCities = Constants::MAX_CITIES;
     bool _initialPlacementDone = false;
 
     std::mt19937 _rng;

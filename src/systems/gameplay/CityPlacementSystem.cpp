@@ -25,7 +25,7 @@ CityPlacementSystem::CityPlacementSystem(LoadingState& loadingState, WorldGenera
 {
     LOG_DEBUG("CityPlacementSystem", "CityPlacementSystem created.");
     _noise.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
-    _noise.SetFrequency(0.005f);
+    _noise.SetFrequency(Constants::CITY_PLACEMENT_NOISE_FREQUENCY);
     _noise.SetSeed(std::random_device{}());
 
     // Set the first spawn interval
@@ -104,7 +104,7 @@ void CityPlacementSystem::initialPlacement() {
 
     LOG_INFO("CityPlacementSystem", "Placing initial settlements...");
     _loadingState.message = "Placing initial settlements...";
-    for (int i = 0; i < 3; ++i) {
+    for (int i = 0; i < Constants::INITIAL_CITY_COUNT; ++i) {
         if (i > 0) {
             const auto &lastCity = _placedCities.back();
             updateDistanceMap(lastCity, mapWidth, mapHeight);
@@ -205,7 +205,7 @@ void CityPlacementSystem::updateDistanceMap(const sf::Vector2i &newCity, int map
 }
 
 void CityPlacementSystem::calculateProximitySuitability(int mapWidth, int mapHeight, std::vector<float> &map) {
-    const float idealDist = 80.0f; // The single threshold value
+    const float idealDist = Constants::CITY_PROXIMITY_IDEAL_DISTANCE; // The single threshold value
 
     for (int i = 0; i < mapWidth * mapHeight; ++i) {
         if (_distanceToNearestCity[i] == std::numeric_limits<int>::max()) {
@@ -240,7 +240,7 @@ void CityPlacementSystem::precomputeTerrainCache(int mapWidth, int mapHeight) {
 }
 
 void CityPlacementSystem::calculateWaterSuitability(int mapWidth, int mapHeight, std::vector<float> &map) {
-    const int maxDist = 60; // Max distance in cells to consider for water bonus
+    const int maxDist = Constants::WATER_SUITABILITY_MAX_DISTANCE; // Max distance in cells to consider for water bonus
 
     std::vector<int> dist(mapWidth * mapHeight, -1);
     std::queue<sf::Vector2i> q;
@@ -362,10 +362,10 @@ void CityPlacementSystem::normalizeMap(std::vector<float> &map) {
 }
 
 sf::Vector2i CityPlacementSystem::findRandomSuitableLocation(int mapWidth, int mapHeight, const std::vector<float>& suitabilityMap) {
-    const int maxAttempts = 100; // Try 100 random spots before giving up for this cycle
+    const int maxAttempts = Constants::FIND_RANDOM_CITY_LOCATION_ATTEMPTS; // Try 100 random spots before giving up for this cycle
     std::uniform_int_distribution<> disX(0, mapWidth - 1);
     std::uniform_int_distribution<> disY(0, mapHeight - 1);
-    std::uniform_real_distribution<float> threshold_dist(0.4f, 0.7f); // Lowered the threshold range
+    std::uniform_real_distribution<float> threshold_dist(Constants::FIND_RANDOM_CITY_MIN_SUITABILITY, Constants::FIND_RANDOM_CITY_MAX_SUITABILITY); // Lowered the threshold range
 
     for (int i = 0; i < maxAttempts; ++i) {
         int x = disX(_rng);
@@ -399,8 +399,8 @@ sf::Vector2i CityPlacementSystem::findBestLocation(int mapWidth, int mapHeight, 
     std::uniform_int_distribution<> disX(0, mapWidth - 1);
     std::uniform_int_distribution<> disY(0, mapHeight - 1);
 
-    const int numSamples = 5000;
-    const int numTopCandidates = 50;
+    const int numSamples = Constants::FIND_BEST_CITY_LOCATION_SAMPLES;
+    const int numTopCandidates = Constants::FIND_BEST_CITY_LOCATION_TOP_CANDIDATES;
     std::vector<std::pair<float, sf::Vector2i>> candidates;
     candidates.reserve(numSamples);
 
