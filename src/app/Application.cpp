@@ -3,6 +3,7 @@
 #include "Logger.h"
 #include "app/Game.h"
 #include "app/GameState.h"
+#include "components/GameLogicComponents.h"
 #include "core/PerfTimer.h"
 #include "event/InputEvents.h"
 #include "input/InputHandler.h"
@@ -10,7 +11,6 @@
 #include "systems/gameplay/LineCreationSystem.h"
 #include "ui/UI.h"
 #include "ui/UIManager.h"
-#include "components/GameLogicComponents.h"
 
 #include <stdexcept>
 #include <thread>
@@ -83,14 +83,15 @@ void Application::run() {
             }
 
             bool isLineSelected = false;
-            if (const auto& selectedEntity = _game->getGameState().selectedEntity; selectedEntity.has_value()) {
+            if (const auto &selectedEntity = _game->getGameState().selectedEntity;
+                selectedEntity.has_value()) {
                 if (_game->getRegistry().all_of<LineComponent>(selectedEntity.value())) {
                     isLineSelected = true;
                 }
             }
 
             _ui->update(frameTime, appState);
-            _uiManager->draw(frameTime, numStationsInActiveLine, isLineSelected);
+            _uiManager->draw(frameTime, numStationsInActiveLine);
             update(TimePerFrame);
 
             if (_isWindowFocused) {
@@ -153,8 +154,9 @@ void Application::render(float interpolation) {
     const auto &worldGen = _game->getWorldGenSystem();
     auto &passengerSpawnAnimationSystem = _game->getPassengerSpawnAnimationSystem();
 
-    _renderer->renderFrame(_game->getRegistry(), _game->getGameState(), _game->getCamera().getView(), worldGen,
-                           passengerSpawnAnimationSystem, interpolation);
+    _renderer->renderFrame(_game->getRegistry(), _game->getGameState(),
+                           _game->getCamera().getView(), worldGen, passengerSpawnAnimationSystem,
+                           interpolation);
     _ui->renderFrame();
     _renderer->displayFrame();
 }

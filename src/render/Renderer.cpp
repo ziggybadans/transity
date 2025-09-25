@@ -11,9 +11,8 @@
 #include <iostream>
 #include <stdexcept>
 
-Renderer::Renderer(ColorManager &colorManager, sf::RenderWindow& window)
-    : _colorManager(colorManager),
-      _windowInstance(window),
+Renderer::Renderer(ColorManager &colorManager, sf::RenderWindow &window)
+    : _colorManager(colorManager), _windowInstance(window),
       _clearColor(_colorManager.getBackgroundColor()), _terrainRenderSystem(colorManager),
       _lineRenderSystem(), _trainRenderSystem(), _pathRenderSystem(), _cityRenderSystem(),
       _lineEditingRenderSystem(_windowInstance) {
@@ -37,7 +36,7 @@ TerrainRenderSystem &Renderer::getTerrainRenderSystem() noexcept {
     return _terrainRenderSystem;
 }
 
-void Renderer::renderFrame(entt::registry &registry, GameState& gameState, const sf::View &view,
+void Renderer::renderFrame(entt::registry &registry, GameState &gameState, const sf::View &view,
                            const WorldGenerationSystem &worldGen,
                            PassengerSpawnAnimationSystem &passengerSpawnAnimationSystem,
                            float interpolation) {

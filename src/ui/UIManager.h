@@ -28,7 +28,7 @@ public:
               sf::RenderWindow &window);
     ~UIManager();
 
-    void draw(sf::Time deltaTime, size_t numStationsInActiveLine, bool isLineSelected);
+    void draw(sf::Time deltaTime, size_t numStationsInActiveLine);
 
 private:
     std::unique_ptr<InfoPanelUI> _infoPanelUI;

@@ -9,13 +9,12 @@ public:
     InteractionUI(GameState &gameState, EventBus &eventBus, sf::RenderWindow &window);
     ~InteractionUI();
 
-    void draw(size_t numberOfStationsInActiveLine, bool isLineSelected);
+    void draw(size_t numberOfStationsInActiveLine);
 
 private:
-    void drawInteractionModeWindow(bool isLineSelected);
+    void drawInteractionModeWindow();
     void drawLineCreationWindow(size_t numStationsInActiveLine);
     void drawPassengerCreationWindow();
-    void drawLineEditingWindow();
 
     GameState &_gameState;
     EventBus &_eventBus;

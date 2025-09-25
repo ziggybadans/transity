@@ -51,7 +51,7 @@ void InputHandler::handleGameEvent(const sf::Event &event, sf::RenderWindow &win
         sf::Vector2f worldPos = window.mapPixelToCoords(pixelPos, _camera.getView());
 
         _eventBus.enqueue<MouseMovedEvent>({pixelPos, worldPos});
-    } else if (auto* keyData = event.getIf<sf::Event::KeyPressed>()) {
+    } else if (auto *keyData = event.getIf<sf::Event::KeyPressed>()) {
         _eventBus.enqueue<KeyPressedEvent>({keyData->code});
     }
 }

@@ -4,6 +4,7 @@
 #include "StrongTypes.h"
 #include <SFML/Graphics.hpp>
 #include <entt/entt.hpp>
+#include <optional>
 #include <vector>
 
 // The position of an entity in the world.
@@ -31,6 +32,12 @@ struct LineComponent {
     std::vector<LinePoint> points;
     std::vector<sf::Vector2f> pathOffsets;
     Thickness thickness = {5.0f};
+};
+
+// A component to manage the state of line editing.
+struct LineEditingComponent {
+    std::optional<size_t> selectedPointIndex;
+    std::optional<size_t> draggedPointIndex;
 };
 
 // A component that makes an entity clickable.

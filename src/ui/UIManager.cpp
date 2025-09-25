@@ -13,7 +13,7 @@ UIManager::UIManager(entt::registry &registry, EventBus &eventBus,
                      TerrainRenderSystem &terrainRenderSystem,
                      PerformanceMonitor &performanceMonitor, Camera &camera, GameState &gameState,
                      ColorManager &colorManager, sf::RenderWindow &window) {
-    _infoPanelUI = std::make_unique<InfoPanelUI>(registry, eventBus);
+    _infoPanelUI = std::make_unique<InfoPanelUI>(registry, eventBus, gameState);
     _worldGenSettingsUI =
         std::make_unique<WorldGenSettingsUI>(eventBus, worldGenerationSystem, terrainRenderSystem);
     _debugUI = std::make_unique<DebugUI>(performanceMonitor, camera, gameState, colorManager,
@@ -23,9 +23,9 @@ UIManager::UIManager(entt::registry &registry, EventBus &eventBus,
 
 UIManager::~UIManager() = default;
 
-void UIManager::draw(sf::Time deltaTime, size_t numStationsInActiveLine, bool isLineSelected) {
+void UIManager::draw(sf::Time deltaTime, size_t numStationsInActiveLine) {
     _infoPanelUI->draw();
     _worldGenSettingsUI->draw();
     _debugUI->draw(deltaTime);
-    _interactionUI->draw(numStationsInActiveLine, isLineSelected);
+    _interactionUI->draw(numStationsInActiveLine);
 }

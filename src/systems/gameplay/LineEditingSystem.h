@@ -5,7 +5,6 @@
 #include "app/GameState.h"
 #include "event/InputEvents.h"
 #include <entt/entt.hpp>
-#include <optional>
 
 class LineEditingSystem : public ISystem {
 public:
@@ -13,6 +12,7 @@ public:
     ~LineEditingSystem();
 
 private:
+    void onInteractionModeChange(const InteractionModeChangeEvent& event);
     void onMouseButtonPressed(const MouseButtonPressedEvent& event);
     void onMouseButtonReleased(const MouseButtonReleasedEvent& event);
     void onMouseMoved(const MouseMovedEvent& event);
@@ -22,11 +22,9 @@ private:
     EventBus& _eventBus;
     GameState& _gameState;
 
+    entt::scoped_connection _interactionModeChangeConnection;
     entt::scoped_connection _mouseButtonPressedConnection;
     entt::scoped_connection _mouseButtonReleasedConnection;
     entt::scoped_connection _mouseMovedConnection;
     entt::scoped_connection _keyPressedConnection;
-
-    std::optional<size_t> _draggedPointIndex;
-    std::optional<size_t> _selectedPointIndex;
 };

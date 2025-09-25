@@ -18,17 +18,27 @@ void LineEditingRenderSystem::draw(entt::registry& registry, GameState& gameStat
     }
 
     entt::entity selectedLine = gameState.selectedEntity.value();
-    if (!registry.all_of<LineComponent>(selectedLine)) {
+    if (!registry.all_of<LineComponent, LineEditingComponent>(selectedLine)) {
         return;
     }
 
     const auto& line = registry.get<LineComponent>(selectedLine);
+    const auto& editingState = registry.get<LineEditingComponent>(selectedLine);
 
-    for (const auto& point : line.points) {
-        sf::CircleShape circle(5.f);
-        circle.setOrigin({5.f, 5.f});
+    for (size_t i = 0; i < line.points.size(); ++i) {
+        const auto& point = line.points[i];
+        sf::CircleShape circle;
         circle.setPosition(point.position);
-        circle.setFillColor(sf::Color::White);
+
+        if (editingState.selectedPointIndex.has_value() && editingState.selectedPointIndex.value() == i) {
+            circle.setRadius(10.f);
+            circle.setOrigin({10.f, 10.f});
+            circle.setFillColor(sf::Color::Red);
+        } else {
+            circle.setRadius(8.f);
+            circle.setOrigin({8.f, 8.f});
+            circle.setFillColor(sf::Color::White);
+        }
         _window.draw(circle);
     }
 }

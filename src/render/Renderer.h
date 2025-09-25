@@ -4,28 +4,28 @@
 #include <SFML/System.hpp>
 #include <entt/entt.hpp>
 
+#include "app/GameState.h"
 #include "event/EventBus.h"
 #include "event/InputEvents.h"
 #include "render/ColorManager.h"
 #include "systems/rendering/CityRenderSystem.h"
-#include "systems/rendering/LineRenderSystem.h"
 #include "systems/rendering/LineEditingRenderSystem.h"
+#include "systems/rendering/LineRenderSystem.h"
 #include "systems/rendering/PassengerSpawnAnimationSystem.h"
 #include "systems/rendering/PathRenderSystem.h"
 #include "systems/rendering/TerrainRenderSystem.h"
 #include "systems/rendering/TrainRenderSystem.h"
-#include "app/GameState.h"
 
 class WorldGenerationSystem;
 
 class Renderer {
 public:
-    Renderer(ColorManager &colorManager, sf::RenderWindow& window);
+    Renderer(ColorManager &colorManager, sf::RenderWindow &window);
     ~Renderer();
 
     void initialize();
     void clear();
-    void renderFrame(entt::registry &registry, GameState& gameState, const sf::View &view,
+    void renderFrame(entt::registry &registry, GameState &gameState, const sf::View &view,
                      const WorldGenerationSystem &worldGen,
                      PassengerSpawnAnimationSystem &passengerSpawnAnimationSystem,
                      float interpolation);

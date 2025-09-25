@@ -25,8 +25,9 @@ const char *trainStateToString(TrainState state) {
     }
 }
 
-InfoPanelUI::InfoPanelUI(entt::registry &registry, EventBus &eventBus)
-    : _registry(registry), _eventBus(eventBus), _selectedEntity(std::nullopt) {
+InfoPanelUI::InfoPanelUI(entt::registry &registry, EventBus &eventBus, GameState &gameState)
+    : _registry(registry), _eventBus(eventBus), _gameState(gameState),
+      _selectedEntity(std::nullopt) {
     _entitySelectedConnection =
         _eventBus.sink<EntitySelectedEvent>().connect<&InfoPanelUI::onEntitySelected>(this);
     _entityDeselectedConnection =
@@ -167,6 +168,17 @@ void InfoPanelUI::draw() {
                     line->color.a = static_cast<std::uint8_t>(color[3] * 255);
                 }
 
+                if (_gameState.currentInteractionMode == InteractionMode::EDIT_LINE) {
+                    if (ImGui::Button("Done")) {
+                        _eventBus.enqueue<InteractionModeChangeEvent>({InteractionMode::SELECT});
+                    }
+                } else {
+                    if (ImGui::Button("Edit Line")) {
+                        _eventBus.enqueue<InteractionModeChangeEvent>({InteractionMode::EDIT_LINE});
+                    }
+                }
+
+                ImGui::SameLine();
                 if (ImGui::Button("Add Train")) {
                     _eventBus.enqueue<AddTrainToLineEvent>({entity});
                 }
