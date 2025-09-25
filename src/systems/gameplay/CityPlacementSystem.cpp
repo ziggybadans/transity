@@ -54,17 +54,16 @@ void CityPlacementSystem::update(sf::Time dt) {
 
     if (_timeSinceLastCity >= _currentSpawnInterval) {
         if (placeNewCity()) {
-            _timeSinceLastCity = 0.0f;
-            
-            // Set a new random interval for the next city
+            // On success, set a new random interval for the next city
             std::uniform_real_distribution<float> dist(_minSpawnInterval, _maxSpawnInterval);
             _currentSpawnInterval = dist(_rng);
-            LOG_DEBUG("CityPlacementSystem", "New spawn interval set to %.2f seconds.", _currentSpawnInterval);
-
+            LOG_INFO("CityPlacementSystem", "New city placed. Next attempt in %.2f seconds.", _currentSpawnInterval);
         } else {
-            // If placement fails, wait a shorter time to retry
-            _timeSinceLastCity = _currentSpawnInterval * 0.8f;
+            // On failure, log it. The timer will be reset below.
+            LOG_INFO("CityPlacementSystem", "Placement attempt failed. Trying again in %.2f seconds.", _currentSpawnInterval);
         }
+        // Reset the timer regardless of success or failure.
+        _timeSinceLastCity = 0.0f;
     }
 }
 
@@ -72,50 +71,50 @@ void CityPlacementSystem::initialPlacement() {
     PerfTimer timer("CityPlacementSystem::initialPlacement", _performanceMonitor, PerfTimer::Purpose::Log);
     LOG_INFO("CityPlacementSystem", "Starting initial city placement...");
 
-    _loadingState.message = "Analysing terrain for city placement...";
-    _loadingState.progress = 0.3f;
-
     const auto &worldGrid = _worldGenerationSystem.getParams();
     const int mapWidth = worldGrid.worldDimensionsInChunks.x * worldGrid.chunkDimensionsInCells.x;
     const int mapHeight = worldGrid.worldDimensionsInChunks.y * worldGrid.chunkDimensionsInCells.y;
+    const float cellSize = worldGrid.cellSize;
 
     precomputeTerrainCache(mapWidth, mapHeight);
-
-    _loadingState.message = "Calculating suitability maps...";
-    _loadingState.progress = 0.4f;
 
     _suitabilityMaps.water.resize(mapWidth * mapHeight, 0.0f);
     _suitabilityMaps.expandability.resize(mapWidth * mapHeight, 0.0f);
     _suitabilityMaps.cityProximity.resize(mapWidth * mapHeight, 1.0f);
     _suitabilityMaps.final.resize(mapWidth * mapHeight, 0.0f);
     _suitabilityMaps.noise.resize(mapWidth * mapHeight, 0.0f);
-
     _distanceToNearestCity.assign(mapWidth * mapHeight, std::numeric_limits<int>::max());
-    _suitabilityMaps.cityProximity.assign(mapWidth * mapHeight, 1.0f);
 
-    {
-        PerfTimer timer("calculateWaterSuitability", _performanceMonitor, PerfTimer::Purpose::Log);
-        calculateWaterSuitability(mapWidth, mapHeight, _suitabilityMaps.water);
-        normalizeMap(_suitabilityMaps.water);
-    }
-    {
-        PerfTimer timer("calculateExpandabilitySuitability", _performanceMonitor, PerfTimer::Purpose::Log);
-        calculateExpandabilitySuitability(mapWidth, mapHeight, _suitabilityMaps.expandability);
-        normalizeMap(_suitabilityMaps.expandability);
-    }
-    {
-        PerfTimer timer("calculateNoiseSuitability", _performanceMonitor, PerfTimer::Purpose::Log);
-        calculateNoiseSuitability(mapWidth, mapHeight, _suitabilityMaps.noise);
-        normalizeMap(_suitabilityMaps.noise);
-    }
+    calculateWaterSuitability(mapWidth, mapHeight, _suitabilityMaps.water);
+    normalizeMap(_suitabilityMaps.water);
+    calculateExpandabilitySuitability(mapWidth, mapHeight, _suitabilityMaps.expandability);
+    normalizeMap(_suitabilityMaps.expandability);
+    calculateNoiseSuitability(mapWidth, mapHeight, _suitabilityMaps.noise);
+    normalizeMap(_suitabilityMaps.noise);
 
-    _loadingState.message = "Placing initial settlements...";
+    LOG_INFO("CityPlacementSystem", "Placing initial settlements...");
     for (int i = 0; i < 3; ++i) {
-        float cityProgress = static_cast<float>(i) / 3;
-        _loadingState.progress = 0.6f + (cityProgress * 0.4f);
-        if (!placeNewCity()) {
-            LOG_ERROR("CityPlacementSystem", "Failed to place initial city %d.", i + 1);
+        if (i > 0) {
+            const auto &lastCity = _placedCities.back();
+            updateDistanceMap(lastCity, mapWidth, mapHeight);
+            calculateProximitySuitability(mapWidth, mapHeight, _suitabilityMaps.cityProximity);
+            normalizeMap(_suitabilityMaps.cityProximity);
         }
+        
+        combineSuitabilityMaps(mapWidth, mapHeight, _suitabilityMaps, _weights, _suitabilityMaps.final);
+        sf::Vector2i bestLocation = findBestLocation(mapWidth, mapHeight, _suitabilityMaps.final);
+
+        if (bestLocation.x == -1) {
+            LOG_ERROR("CityPlacementSystem", "Failed to place initial city %d.", i + 1);
+            continue;
+        }
+
+        std::string cityName = "City " + std::to_string(_placedCities.size() + 1);
+        _entityFactory.createEntity("city", {bestLocation.x * cellSize + cellSize / 2.0f, bestLocation.y * cellSize + cellSize / 2.0f}, cityName);
+        _placedCities.push_back(bestLocation);
+        LOG_INFO("CityPlacementSystem", "Placed initial city %d at (%d, %d)", _placedCities.size(), bestLocation.x, bestLocation.y);
+        
+        updateDistanceMap(bestLocation, mapWidth, mapHeight);
     }
 
     LOG_INFO("CityPlacementSystem", "Finished initial city placement.");
@@ -132,34 +131,27 @@ bool CityPlacementSystem::placeNewCity() {
     const int mapHeight = worldGrid.worldDimensionsInChunks.y * worldGrid.chunkDimensionsInCells.y;
     const float cellSize = worldGrid.cellSize;
 
-    // Recalculate the proximity map, which changes after each city is placed.
-    {
-        PerfTimer timer ("calculateProximitySuitability", _performanceMonitor, PerfTimer::Purpose::Log);
-        calculateProximitySuitability(mapWidth, mapHeight, _suitabilityMaps.cityProximity);
-        normalizeMap(_suitabilityMaps.cityProximity);
-    }
-    
-    {
-        PerfTimer timer("combineSuitabilityMaps", _performanceMonitor, PerfTimer::Purpose::Log);
-        combineSuitabilityMaps(mapWidth, mapHeight, _suitabilityMaps, _weights, _suitabilityMaps.final);
-    }
+    const auto &lastCity = _placedCities.back();
+    updateDistanceMap(lastCity, mapWidth, mapHeight);
+    calculateProximitySuitability(mapWidth, mapHeight, _suitabilityMaps.cityProximity);
+    normalizeMap(_suitabilityMaps.cityProximity);
+    combineSuitabilityMaps(mapWidth, mapHeight, _suitabilityMaps, _weights, _suitabilityMaps.final);
 
-    sf::Vector2i bestLocation = findBestLocation(mapWidth, mapHeight, _suitabilityMaps.final);
+    sf::Vector2i location = findRandomSuitableLocation(mapWidth, mapHeight, _suitabilityMaps.final);
 
-    if (bestLocation.x == -1) {
-        LOG_WARN("CityPlacementSystem", "No suitable location found for new city.");
+    if (location.x == -1) {
+        LOG_INFO("CityPlacementSystem", "Random location did not meet suitability threshold. Trying again later.");
         return false;
     }
 
     std::string cityName = "City " + std::to_string(_placedCities.size() + 1);
-    _entityFactory.createEntity("city", {bestLocation.x * cellSize + cellSize / 2.0f, bestLocation.y * cellSize + cellSize / 2.0f}, cityName);
-    _placedCities.push_back(bestLocation);
-    LOG_TRACE("CityPlacementSystem", "Placed new city %d at (%d, %d)", _placedCities.size(), bestLocation.x, bestLocation.y);
-
-    _renderer.getTerrainRenderSystem().setSuitabilityMapsDirty();
+    _entityFactory.createEntity("city", {location.x * cellSize + cellSize / 2.0f, location.y * cellSize + cellSize / 2.0f}, cityName);
+    _placedCities.push_back(location);
+    LOG_INFO("CityPlacementSystem", "Placed new city %d at (%d, %d)", _placedCities.size(), location.x, location.y);
     
-    // After placing the new city, update the master distance map for the next cycle.
-    updateDistanceMap(bestLocation, mapWidth, mapHeight);
+    updateDistanceMap(location, mapWidth, mapHeight);
+
+    _renderer.getTerrainRenderSystem().setSuitabilityMapData(&_suitabilityMaps, &_terrainCache, worldGrid);
 
     return true;
 }
@@ -355,6 +347,38 @@ void CityPlacementSystem::normalizeMap(std::vector<float> &map) {
     }
 }
 
+sf::Vector2i CityPlacementSystem::findRandomSuitableLocation(int mapWidth, int mapHeight, const std::vector<float>& suitabilityMap) {
+    const int maxAttempts = 100; // Try 100 random spots before giving up for this cycle
+    std::uniform_int_distribution<> disX(0, mapWidth - 1);
+    std::uniform_int_distribution<> disY(0, mapHeight - 1);
+    std::uniform_real_distribution<float> threshold_dist(0.4f, 0.7f); // Lowered the threshold range
+
+    for (int i = 0; i < maxAttempts; ++i) {
+        int x = disX(_rng);
+        int y = disY(_rng);
+        float threshold = threshold_dist(_rng);
+        float suitability = suitabilityMap[y * mapWidth + x];
+
+        if (suitability >= threshold) {
+            LOG_DEBUG("CityPlacementSystem", "Found suitable random location at (%d, %d) on attempt %d with suitability %.2f (threshold %.2f)", x, y, i + 1, suitability, threshold);
+            return {x, y};
+        }
+    }
+
+    return {-1, -1}; // Indicate failure after all attempts
+}
+
+void CityPlacementSystem::calculateNoiseSuitability(int mapWidth, int mapHeight, std::vector<float> &map) {
+    for (int y = 0; y < mapHeight; ++y) {
+        for (int x = 0; x < mapWidth; ++x) {
+            // Get noise value, which is in the range [-1, 1]
+            float noiseVal = _noise.GetNoise((float)x, (float)y);
+            // Map it to [0, 1]
+            map[y * mapWidth + x] = (noiseVal + 1.0f) / 2.0f;
+        }
+    }
+}
+
 sf::Vector2i CityPlacementSystem::findBestLocation(int mapWidth, int mapHeight, const std::vector<float> &suitabilityMap) {
     std::random_device rd;
     std::mt19937 gen(rd());
@@ -380,25 +404,12 @@ sf::Vector2i CityPlacementSystem::findBestLocation(int mapWidth, int mapHeight, 
         return {-1, -1};
     }
 
-    // Sort candidates by suitability in descending order
     std::sort(candidates.begin(), candidates.end(), [](const auto& a, const auto& b) {
         return a.first > b.first;
     });
 
-    // Pick one of the top N candidates
     int topN = std::min((int)candidates.size(), numTopCandidates);
     std::uniform_int_distribution<> disTop(0, topN - 1);
     
     return candidates[disTop(gen)].second;
-}
-
-void CityPlacementSystem::calculateNoiseSuitability(int mapWidth, int mapHeight, std::vector<float> &map) {
-    for (int y = 0; y < mapHeight; ++y) {
-        for (int x = 0; x < mapWidth; ++x) {
-            // Get noise value, which is in the range [-1, 1]
-            float noiseVal = _noise.GetNoise((float)x, (float)y);
-            // Map it to [0, 1]
-            map[y * mapWidth + x] = (noiseVal + 1.0f) / 2.0f;
-        }
-    }
 }

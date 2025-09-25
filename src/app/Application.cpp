@@ -68,7 +68,7 @@ void Application::run() {
                 == std::future_status::ready) {
                 _game->getGameState().currentAppState = AppState::PLAYING;
                 LOG_INFO("Application", "Loading complete, switching to PLAYING state.");
-                
+
                 // Reset timers to prevent simulation catch-up
                 _timeAccumulator = sf::Time::Zero;
                 _deltaClock.restart();

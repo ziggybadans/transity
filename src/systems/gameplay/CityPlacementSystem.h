@@ -59,6 +59,8 @@ private:
 
     sf::Vector2i findBestLocation(int mapWidth, int mapHeight,
                                   const std::vector<float> &suitabilityMap);
+    sf::Vector2i findRandomSuitableLocation(int mapWidth, int mapHeight,
+                                            const std::vector<float> &suitabilityMap);
 
 private:
     LoadingState& _loadingState;
@@ -76,8 +78,8 @@ private:
     FastNoiseLite _noise;
 
     float _timeSinceLastCity = 0.0f;
-    float _minSpawnInterval = 3.0f;
-    float _maxSpawnInterval = 5.0f; // 3 minutes
+    float _minSpawnInterval = 15.0f;
+    float _maxSpawnInterval = 180.0f; // 3 minutes
     float _currentSpawnInterval;
     int _maxCities = 50;
     bool _initialPlacementDone = false;
