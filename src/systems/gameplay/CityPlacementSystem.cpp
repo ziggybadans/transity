@@ -16,11 +16,21 @@
 #include <queue>
 
 CityPlacementSystem::CityPlacementSystem(LoadingState& loadingState, WorldGenerationSystem& worldGenerationSystem, EntityFactory& entityFactory, Renderer& renderer, PerformanceMonitor& performanceMonitor)
-    : _loadingState(loadingState), _worldGenerationSystem(worldGenerationSystem), _entityFactory(entityFactory), _renderer(renderer), _performanceMonitor(performanceMonitor) {
+    : _loadingState(loadingState), 
+      _worldGenerationSystem(worldGenerationSystem), 
+      _entityFactory(entityFactory), 
+      _renderer(renderer), 
+      _performanceMonitor(performanceMonitor),
+      _rng(std::random_device{}()) // Seed the random number generator
+{
     LOG_DEBUG("CityPlacementSystem", "CityPlacementSystem created.");
     _noise.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
     _noise.SetFrequency(0.005f);
     _noise.SetSeed(std::random_device{}());
+
+    // Set the first spawn interval
+    std::uniform_real_distribution<float> dist(_minSpawnInterval, _maxSpawnInterval);
+    _currentSpawnInterval = dist(_rng);
 }
 
 CityPlacementSystem::~CityPlacementSystem() {
@@ -32,12 +42,35 @@ const SuitabilityMaps &CityPlacementSystem::getSuitabilityMaps() const {
 }
 
 void CityPlacementSystem::init() {
-    placeCities(Constants::NUM_CITIES_TO_GENERATE);
+    initialPlacement();
 }
 
-void CityPlacementSystem::placeCities(int numberOfCities) {
-    PerfTimer timer("CityPlacementSystem::placeCities", _performanceMonitor, PerfTimer::Purpose::Log);
-    LOG_INFO("CityPlacementSystem", "Starting city placement for %d cities...", numberOfCities);
+void CityPlacementSystem::update(sf::Time dt) {
+    if (!_initialPlacementDone || _placedCities.size() >= _maxCities) {
+        return;
+    }
+
+    _timeSinceLastCity += dt.asSeconds();
+
+    if (_timeSinceLastCity >= _currentSpawnInterval) {
+        if (placeNewCity()) {
+            _timeSinceLastCity = 0.0f;
+            
+            // Set a new random interval for the next city
+            std::uniform_real_distribution<float> dist(_minSpawnInterval, _maxSpawnInterval);
+            _currentSpawnInterval = dist(_rng);
+            LOG_DEBUG("CityPlacementSystem", "New spawn interval set to %.2f seconds.", _currentSpawnInterval);
+
+        } else {
+            // If placement fails, wait a shorter time to retry
+            _timeSinceLastCity = _currentSpawnInterval * 0.8f;
+        }
+    }
+}
+
+void CityPlacementSystem::initialPlacement() {
+    PerfTimer timer("CityPlacementSystem::initialPlacement", _performanceMonitor, PerfTimer::Purpose::Log);
+    LOG_INFO("CityPlacementSystem", "Starting initial city placement...");
 
     _loadingState.message = "Analysing terrain for city placement...";
     _loadingState.progress = 0.3f;
@@ -45,7 +78,6 @@ void CityPlacementSystem::placeCities(int numberOfCities) {
     const auto &worldGrid = _worldGenerationSystem.getParams();
     const int mapWidth = worldGrid.worldDimensionsInChunks.x * worldGrid.chunkDimensionsInCells.x;
     const int mapHeight = worldGrid.worldDimensionsInChunks.y * worldGrid.chunkDimensionsInCells.y;
-    const float cellSize = worldGrid.cellSize;
 
     precomputeTerrainCache(mapWidth, mapHeight);
 
@@ -61,7 +93,6 @@ void CityPlacementSystem::placeCities(int numberOfCities) {
     _distanceToNearestCity.assign(mapWidth * mapHeight, std::numeric_limits<int>::max());
     _suitabilityMaps.cityProximity.assign(mapWidth * mapHeight, 1.0f);
 
-    // Calculate and normalize static maps once
     {
         PerfTimer timer("calculateWaterSuitability", _performanceMonitor, PerfTimer::Purpose::Log);
         calculateWaterSuitability(mapWidth, mapHeight, _suitabilityMaps.water);
@@ -78,47 +109,59 @@ void CityPlacementSystem::placeCities(int numberOfCities) {
         normalizeMap(_suitabilityMaps.noise);
     }
 
-    _loadingState.message = "Placing cities...";
-
-    for (int i = 0; i < numberOfCities; ++i) {
-        PerfTimer loopTimer("CityPlacementLoop iteration " + std::to_string(i), _performanceMonitor, PerfTimer::Purpose::Log);
-
-        float cityProgress = static_cast<float>(i) / numberOfCities;
+    _loadingState.message = "Placing initial settlements...";
+    for (int i = 0; i < 3; ++i) {
+        float cityProgress = static_cast<float>(i) / 3;
         _loadingState.progress = 0.6f + (cityProgress * 0.4f);
-
-        if (i > 0) {
-            const auto &lastCity = _placedCities.back();
-            {
-                PerfTimer timer("updateDistanceMap", _performanceMonitor, PerfTimer::Purpose::Log);
-                updateDistanceMap(lastCity, mapWidth, mapHeight);
-            }
-            {
-                PerfTimer timer ("calculateProximitySuitability", _performanceMonitor, PerfTimer::Purpose::Log);
-                calculateProximitySuitability(mapWidth, mapHeight, _suitabilityMaps.cityProximity);
-                normalizeMap(_suitabilityMaps.cityProximity);
-            }
+        if (!placeNewCity()) {
+            LOG_ERROR("CityPlacementSystem", "Failed to place initial city %d.", i + 1);
         }
-        
-        {
-            PerfTimer timer("combineSuitabilityMaps", _performanceMonitor, PerfTimer::Purpose::Log);
-            combineSuitabilityMaps(mapWidth, mapHeight, _suitabilityMaps, _weights, _suitabilityMaps.final);
-        }
-
-        sf::Vector2i bestLocation = findBestLocation(mapWidth, mapHeight, _suitabilityMaps.final);
-
-        if (bestLocation.x == -1) {
-            LOG_WARN("CityPlacementSystem", "No suitable location found for city %d. Halting.", i + 1);
-            break;
-        }
-
-        std::string cityName = "City " + std::to_string(i + 1);
-        _entityFactory.createEntity("city", {bestLocation.x * cellSize + cellSize / 2.0f, bestLocation.y * cellSize + cellSize / 2.0f}, cityName);
-        _placedCities.push_back(bestLocation);
-        LOG_DEBUG("CityPlacementSystem", "Placed city %d at (%d, %d)", i + 1, bestLocation.x, bestLocation.y);
     }
 
-    LOG_INFO("CityPlacementSystem", "Finished city placement.");
+    LOG_INFO("CityPlacementSystem", "Finished initial city placement.");
     _renderer.getTerrainRenderSystem().setSuitabilityMapData(&_suitabilityMaps, &_terrainCache, worldGrid);
+    _initialPlacementDone = true;
+}
+
+// Replace the existing placeNewCity method with this cleaner version
+bool CityPlacementSystem::placeNewCity() {
+    PerfTimer timer("CityPlacementSystem::placeNewCity", _performanceMonitor, PerfTimer::Purpose::Log);
+
+    const auto &worldGrid = _worldGenerationSystem.getParams();
+    const int mapWidth = worldGrid.worldDimensionsInChunks.x * worldGrid.chunkDimensionsInCells.x;
+    const int mapHeight = worldGrid.worldDimensionsInChunks.y * worldGrid.chunkDimensionsInCells.y;
+    const float cellSize = worldGrid.cellSize;
+
+    // Recalculate the proximity map, which changes after each city is placed.
+    {
+        PerfTimer timer ("calculateProximitySuitability", _performanceMonitor, PerfTimer::Purpose::Log);
+        calculateProximitySuitability(mapWidth, mapHeight, _suitabilityMaps.cityProximity);
+        normalizeMap(_suitabilityMaps.cityProximity);
+    }
+    
+    {
+        PerfTimer timer("combineSuitabilityMaps", _performanceMonitor, PerfTimer::Purpose::Log);
+        combineSuitabilityMaps(mapWidth, mapHeight, _suitabilityMaps, _weights, _suitabilityMaps.final);
+    }
+
+    sf::Vector2i bestLocation = findBestLocation(mapWidth, mapHeight, _suitabilityMaps.final);
+
+    if (bestLocation.x == -1) {
+        LOG_WARN("CityPlacementSystem", "No suitable location found for new city.");
+        return false;
+    }
+
+    std::string cityName = "City " + std::to_string(_placedCities.size() + 1);
+    _entityFactory.createEntity("city", {bestLocation.x * cellSize + cellSize / 2.0f, bestLocation.y * cellSize + cellSize / 2.0f}, cityName);
+    _placedCities.push_back(bestLocation);
+    LOG_TRACE("CityPlacementSystem", "Placed new city %d at (%d, %d)", _placedCities.size(), bestLocation.x, bestLocation.y);
+
+    _renderer.getTerrainRenderSystem().setSuitabilityMapsDirty();
+    
+    // After placing the new city, update the master distance map for the next cycle.
+    updateDistanceMap(bestLocation, mapWidth, mapHeight);
+
+    return true;
 }
 
 void CityPlacementSystem::updateDistanceMap(const sf::Vector2i &newCity, int mapWidth, int mapHeight) {
@@ -270,7 +313,6 @@ void CityPlacementSystem::calculateExpandabilitySuitability(int mapWidth, int ma
             if (y1 > 0) sum -= sat[(y1 - 1) * mapWidth + x2];
             if (x1 > 0 && y1 > 0) sum += sat[(y1 - 1) * mapWidth + (x1 - 1)];
             
-            //map[y * mapWidth + x] = static_cast<float>(sum);
             float area = static_cast<float>((x2 - x1 + 1) * (y2 - y1 + 1));
             float landRatio = static_cast<float>(sum) / area;
             map[y * mapWidth + x] = landRatio * landRatio; // Square to favor higher ratios

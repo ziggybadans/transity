@@ -5,7 +5,9 @@
 #include "components/WorldComponents.h"
 #include "FastNoiseLite.h"
 #include <SFML/System/Vector2.hpp>
+#include <SFML/System/Time.hpp>
 #include <vector>
+#include <random>
 
 struct LoadingState;
 class WorldGenerationSystem;
@@ -28,17 +30,19 @@ struct SuitabilityMaps {
     std::vector<float> final;
 };
 
-class CityPlacementSystem : public ISystem {
+class CityPlacementSystem : public ISystem, public IUpdatable {
 public:
     explicit CityPlacementSystem(LoadingState& loadingState, WorldGenerationSystem& worldGenerationSystem, EntityFactory& entityFactory, Renderer& renderer, PerformanceMonitor& performanceMonitor);
     ~CityPlacementSystem() override;
 
     void init();
+    void update(sf::Time dt) override; // This will now correctly override IUpdatable::update
 
     const SuitabilityMaps &getSuitabilityMaps() const;
 
 private:
-    void placeCities(int numberOfCities);
+    void initialPlacement();
+    bool placeNewCity();
     
     void precomputeTerrainCache(int mapWidth, int mapHeight);
 
@@ -63,11 +67,20 @@ private:
     Renderer& _renderer;
     PerformanceMonitor& _performanceMonitor;
 
-    bool _hasRun = false;
     PlacementWeights _weights;
     SuitabilityMaps _suitabilityMaps;
     std::vector<sf::Vector2i> _placedCities;
     std::vector<TerrainType> _terrainCache;
     std::vector<int> _distanceToNearestCity;
+
     FastNoiseLite _noise;
+
+    float _timeSinceLastCity = 0.0f;
+    float _minSpawnInterval = 3.0f;
+    float _maxSpawnInterval = 5.0f; // 3 minutes
+    float _currentSpawnInterval;
+    int _maxCities = 50;
+    bool _initialPlacementDone = false;
+
+    std::mt19937 _rng;
 };

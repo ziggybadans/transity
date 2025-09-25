@@ -35,6 +35,7 @@ public:
     void setVisualizeSuitabilityMap(bool visualize) noexcept { _visualizeSuitabilityMap = visualize; }
     void setSuitabilityMapData(const SuitabilityMaps *maps, const std::vector<TerrainType> *terrainCache, const WorldGenParams &worldParams);
     void setSuitabilityMapType(SuitabilityMapType type) { _suitabilityMapType = type; }
+    void setSuitabilityMapsDirty() { _suitabilityMapsDirty = true; }
     void setLodEnabled(bool enabled) noexcept;
     void regenerateSuitabilityMaps(const WorldGenParams &worldParams);
 

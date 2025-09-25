@@ -63,11 +63,15 @@ void Application::run() {
 
         switch (appState) {
         case AppState::LOADING: {
-            _ui->update(frameTime, appState);  // Fix this call
+            _ui->update(frameTime, appState);
             if (_game->getLoadingFuture().wait_for(std::chrono::seconds(0))
                 == std::future_status::ready) {
                 _game->getGameState().currentAppState = AppState::PLAYING;
                 LOG_INFO("Application", "Loading complete, switching to PLAYING state.");
+                
+                // Reset timers to prevent simulation catch-up
+                _timeAccumulator = sf::Time::Zero;
+                _deltaClock.restart();
             }
             renderLoad();
             break;
