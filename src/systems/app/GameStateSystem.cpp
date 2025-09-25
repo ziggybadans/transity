@@ -18,7 +18,16 @@ GameStateSystem::~GameStateSystem() {
 }
 
 void GameStateSystem::onInteractionModeChange(const InteractionModeChangeEvent &event) {
+    InteractionMode oldMode = _gameState.currentInteractionMode;
     _gameState.currentInteractionMode = event.newMode;
+
+    if (event.newMode == InteractionMode::EDIT_LINE) {
+        _gameState.preEditTimeMultiplier = _gameState.timeMultiplier;
+        _gameState.timeMultiplier = 0.0f;
+    } else if (oldMode == InteractionMode::EDIT_LINE) {
+        _gameState.timeMultiplier = _gameState.preEditTimeMultiplier;
+    }
+
     LOG_DEBUG("GameStateSystem", "Interaction mode changed to: %d", static_cast<int>(event.newMode));
 }
 

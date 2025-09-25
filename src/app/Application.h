@@ -4,6 +4,7 @@
 #include "event/EventBus.h"
 #include "render/ColorManager.h"
 #include "ui/UIManager.h"
+#include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/System/Clock.hpp>
 #include <SFML/System/Time.hpp>
 #include <memory>
@@ -24,6 +25,7 @@ private:
     void render(float interpolation);
     void renderLoad();
 
+    sf::RenderWindow _window;
     EventBus _eventBus;
     ColorManager _colorManager;
     std::unique_ptr<ThreadPool> _threadPool;

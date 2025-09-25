@@ -10,37 +10,37 @@
 #include "systems/gameplay/LineCreationSystem.h"
 #include "ui/UI.h"
 #include "ui/UIManager.h"
+#include "components/GameLogicComponents.h"
 
 #include <stdexcept>
 #include <thread>
 
-Application::Application() : _colorManager(_eventBus) {
+Application::Application()
+    : _window(sf::VideoMode({Constants::WINDOW_WIDTH, Constants::WINDOW_HEIGHT}),
+              Constants::WINDOW_TITLE, sf::Style::Default, sf::State::Windowed,
+              sf::ContextSettings{0u, 0u, 8u}),
+      _colorManager(_eventBus) {
     LOG_INFO("Application", "Application creation started.");
     try {
         unsigned int numThreads = std::thread::hardware_concurrency();
         _threadPool = std::make_unique<ThreadPool>(numThreads > 0 ? numThreads : 1);
         LOG_DEBUG("Application", "ThreadPool created with %u threads.", numThreads);
 
-        LOG_DEBUG("Application", "Creating Renderer object...");
-        _renderer = std::make_unique<Renderer>(_colorManager);
-        LOG_DEBUG("Application", "Renderer object created.");
+        _renderer = std::make_unique<Renderer>(_colorManager, _window);
         _renderer->initialize();
-        LOG_DEBUG("Application", "Renderer initialized.");
 
-        LOG_DEBUG("Application", "Creating Game object...");
         _game = std::make_unique<Game>(*_renderer, *_threadPool, _eventBus, _colorManager);
-        LOG_DEBUG("Application", "Game object created.");
         _game->startLoading();
 
         _renderer->connectToEventBus(_eventBus);
 
-        _ui = std::make_unique<UI>(_renderer->getWindowInstance(), _game->getLoadingState());
+        _ui = std::make_unique<UI>(_window, _game->getLoadingState());
         _ui->initialize();
 
         _uiManager = std::make_unique<UIManager>(
             _game->getRegistry(), _eventBus, _game->getWorldGenSystem(),
             _renderer->getTerrainRenderSystem(), _game->getPerformanceMonitor(), _game->getCamera(),
-            _game->getGameState(), _colorManager, _renderer->getWindowInstance());
+            _game->getGameState(), _colorManager, _window);
 
     } catch (const std::exception &e) {
         LOG_FATAL("Application", "Failed during initialization: %s", e.what());
@@ -82,8 +82,15 @@ void Application::run() {
                     _game->getRegistry().ctx().get<ActiveLine>().points.size();
             }
 
+            bool isLineSelected = false;
+            if (const auto& selectedEntity = _game->getGameState().selectedEntity; selectedEntity.has_value()) {
+                if (_game->getRegistry().all_of<LineComponent>(selectedEntity.value())) {
+                    isLineSelected = true;
+                }
+            }
+
             _ui->update(frameTime, appState);
-            _uiManager->draw(frameTime, numStationsInActiveLine);
+            _uiManager->draw(frameTime, numStationsInActiveLine, isLineSelected);
             update(TimePerFrame);
 
             if (_isWindowFocused) {
@@ -113,7 +120,7 @@ void Application::run() {
 }
 
 void Application::processEvents() {
-    while (auto optEvent = _renderer->getWindowInstance().pollEvent()) {
+    while (auto optEvent = _window.pollEvent()) {
         if (optEvent) {
             const sf::Event &currentEvent = *optEvent;
 
@@ -126,8 +133,7 @@ void Application::processEvents() {
             _ui->processEvent(currentEvent);
             if (_isWindowFocused) {
 
-                _game->getInputHandler().handleGameEvent(currentEvent,
-                                                         _renderer->getWindowInstance());
+                _game->getInputHandler().handleGameEvent(currentEvent, _window);
             }
         }
     }
@@ -147,7 +153,7 @@ void Application::render(float interpolation) {
     const auto &worldGen = _game->getWorldGenSystem();
     auto &passengerSpawnAnimationSystem = _game->getPassengerSpawnAnimationSystem();
 
-    _renderer->renderFrame(_game->getRegistry(), _game->getCamera().getView(), worldGen,
+    _renderer->renderFrame(_game->getRegistry(), _game->getGameState(), _game->getCamera().getView(), worldGen,
                            passengerSpawnAnimationSystem, interpolation);
     _ui->renderFrame();
     _renderer->displayFrame();

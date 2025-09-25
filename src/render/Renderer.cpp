@@ -11,13 +11,12 @@
 #include <iostream>
 #include <stdexcept>
 
-Renderer::Renderer(ColorManager &colorManager)
+Renderer::Renderer(ColorManager &colorManager, sf::RenderWindow& window)
     : _colorManager(colorManager),
-      _windowInstance(sf::VideoMode({Constants::WINDOW_WIDTH, Constants::WINDOW_HEIGHT}),
-                      Constants::WINDOW_TITLE, sf::Style::Default, sf::State::Windowed,
-                      sf::ContextSettings{0u, 0u, 8u}),
+      _windowInstance(window),
       _clearColor(_colorManager.getBackgroundColor()), _terrainRenderSystem(colorManager),
-      _lineRenderSystem(), _trainRenderSystem(), _pathRenderSystem(), _cityRenderSystem() {
+      _lineRenderSystem(), _trainRenderSystem(), _pathRenderSystem(), _cityRenderSystem(),
+      _lineEditingRenderSystem(_windowInstance) {
     LOG_DEBUG("Renderer", "Renderer created and window initialized.");
     _windowInstance.setFramerateLimit(Constants::FRAMERATE_LIMIT);
 }
@@ -38,7 +37,7 @@ TerrainRenderSystem &Renderer::getTerrainRenderSystem() noexcept {
     return _terrainRenderSystem;
 }
 
-void Renderer::renderFrame(entt::registry &registry, const sf::View &view,
+void Renderer::renderFrame(entt::registry &registry, GameState& gameState, const sf::View &view,
                            const WorldGenerationSystem &worldGen,
                            PassengerSpawnAnimationSystem &passengerSpawnAnimationSystem,
                            float interpolation) {
@@ -93,6 +92,7 @@ void Renderer::renderFrame(entt::registry &registry, const sf::View &view,
     _trainRenderSystem.render(registry, _windowInstance, highlightColor);
     _pathRenderSystem.render(registry, _windowInstance);
     passengerSpawnAnimationSystem.render(_windowInstance);
+    _lineEditingRenderSystem.draw(registry, gameState);
 }
 
 void Renderer::displayFrame() noexcept {

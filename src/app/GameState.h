@@ -12,4 +12,5 @@ struct GameState {
     std::optional<entt::entity> selectedEntity;
     std::optional<entt::entity> passengerOriginStation;
     float timeMultiplier = 1.0f;
+    float preEditTimeMultiplier = 1.0f;
 };

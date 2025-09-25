@@ -9,6 +9,7 @@
 #include "systems/gameplay/DeletionSystem.h"
 #include "systems/gameplay/LineCreationSystem.h"
 #include "systems/gameplay/LineDataSystem.h"
+#include "systems/gameplay/LineEditingSystem.h"
 #include "systems/gameplay/PassengerMovementSystem.h"
 #include "systems/gameplay/PassengerSpawnSystem.h"
 #include "systems/gameplay/SelectionSystem.h"
@@ -38,6 +39,7 @@ Game::Game(Renderer &renderer, ThreadPool &threadPool, EventBus &eventBus,
     _systemManager->addSystem<GameStateSystem>(_eventBus, _gameState);
     _systemManager->addSystem<SelectionSystem>(_registry, _eventBus, _gameState, _pathfinder);
     _systemManager->addSystem<DeletionSystem>(_registry, _eventBus, _gameState);
+    _systemManager->addSystem<LineEditingSystem>(_registry, _eventBus, _gameState);
     _systemManager->addSystem<ChunkManagerSystem>(_registry, _eventBus, _worldGenerationSystem,
                                                   _camera, _threadPool);
     _systemManager->addSystem<TerrainMeshSystem>(_registry, _renderer, _worldGenerationSystem,

@@ -15,13 +15,14 @@ InteractionUI::~InteractionUI() {
     LOG_DEBUG("InteractionUI", "InteractionUI instance destroyed.");
 }
 
-void InteractionUI::draw(size_t numberOfStationsInActiveLine) {
-    drawInteractionModeWindow();
+void InteractionUI::draw(size_t numberOfStationsInActiveLine, bool isLineSelected) {
+    drawInteractionModeWindow(isLineSelected);
     drawLineCreationWindow(numberOfStationsInActiveLine);
     drawPassengerCreationWindow();
+    drawLineEditingWindow();
 }
 
-void InteractionUI::drawInteractionModeWindow() {
+void InteractionUI::drawInteractionModeWindow(bool isLineSelected) {
     const float windowPadding = Constants::UI_WINDOW_PADDING;
     ImGuiIO &io = ImGui::GetIO();
     ImVec2 displaySize = io.DisplaySize;
@@ -45,6 +46,17 @@ void InteractionUI::drawInteractionModeWindow() {
                            static_cast<int>(InteractionMode::CREATE_LINE))) {
         _eventBus.enqueue(InteractionModeChangeEvent{InteractionMode::CREATE_LINE});
         LOG_DEBUG("UI", "Interaction mode change requested: LineCreation");
+    }
+    ImGui::SameLine();
+    if (!isLineSelected) {
+        ImGui::BeginDisabled();
+    }
+    if (ImGui::RadioButton("Edit Line", &currentMode, static_cast<int>(InteractionMode::EDIT_LINE))) {
+        _eventBus.enqueue(InteractionModeChangeEvent{InteractionMode::EDIT_LINE});
+        LOG_DEBUG("UI", "Interaction mode change requested: Edit Line");
+    }
+    if (!isLineSelected) {
+        ImGui::EndDisabled();
     }
     ImGui::End();
 }
@@ -112,6 +124,33 @@ void InteractionUI::drawPassengerCreationWindow() {
     ImGui::Text("Select a destination city for the new passenger.");
 
     if (ImGui::Button("Cancel")) {
+        _eventBus.enqueue<InteractionModeChangeEvent>({InteractionMode::SELECT});
+    }
+    ImGui::End();
+}
+
+void InteractionUI::drawLineEditingWindow() {
+    if (_gameState.currentInteractionMode != InteractionMode::EDIT_LINE) {
+        return;
+    }
+
+    const float windowPadding = Constants::UI_WINDOW_PADDING;
+    ImGuiIO &io = ImGui::GetIO();
+    ImVec2 displaySize = io.DisplaySize;
+    ImGuiWindowFlags size_flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize
+                                  | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse;
+
+    float interactionModesWidth = Constants::UI_INTERACTION_MODES_WIDTH;
+    ImVec2 interactionModesPos =
+        ImVec2((displaySize.x - interactionModesWidth) * 0.5f,
+               displaySize.y - ImGui::GetFrameHeightWithSpacing() * 2.5 - windowPadding);
+
+    ImVec2 lineEditingWindowPos = ImVec2(
+        interactionModesPos.x, interactionModesPos.y - ImGui::GetFrameHeightWithSpacing() * 2.0f);
+    ImGui::SetNextWindowPos(lineEditingWindowPos, ImGuiCond_Always);
+    ImGui::Begin("Line Editing", nullptr, size_flags);
+
+    if (ImGui::Button("Done")) {
         _eventBus.enqueue<InteractionModeChangeEvent>({InteractionMode::SELECT});
     }
     ImGui::End();

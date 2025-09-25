@@ -38,6 +38,21 @@ void InputHandler::handleGameEvent(const sf::Event &event, sf::RenderWindow &win
 
         LOG_DEBUG("Input", "MouseButtonPressedEvent generated for button %d at world (%.1f, %.1f)",
                   pressData->button, worldPos.x, worldPos.y);
+    } else if (auto *releaseData = event.getIf<sf::Event::MouseButtonReleased>()) {
+        sf::Vector2i pixelPos = releaseData->position;
+        sf::Vector2f worldPos = window.mapPixelToCoords(pixelPos, _camera.getView());
+
+        _eventBus.enqueue<MouseButtonReleasedEvent>({releaseData->button, pixelPos, worldPos});
+
+        LOG_DEBUG("Input", "MouseButtonReleasedEvent generated for button %d at world (%.1f, %.1f)",
+                  releaseData->button, worldPos.x, worldPos.y);
+    } else if (auto *moveData = event.getIf<sf::Event::MouseMoved>()) {
+        sf::Vector2i pixelPos = moveData->position;
+        sf::Vector2f worldPos = window.mapPixelToCoords(pixelPos, _camera.getView());
+
+        _eventBus.enqueue<MouseMovedEvent>({pixelPos, worldPos});
+    } else if (auto* keyData = event.getIf<sf::Event::KeyPressed>()) {
+        _eventBus.enqueue<KeyPressedEvent>({keyData->code});
     }
 }
 

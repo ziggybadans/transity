@@ -1,18 +1,32 @@
-
-
 #pragma once
 
 #include "app/InteractionMode.h"
 #include "world/WorldData.h"
 #include <SFML/System/Vector2.hpp>
+#include <SFML/Window/Keyboard.hpp>
 #include <SFML/Window/Mouse.hpp>
 #include <entt/entt.hpp>
 #include <memory>
 
 struct WindowCloseEvent {};
 
+struct KeyPressedEvent {
+    sf::Keyboard::Key code;
+};
+
 struct MouseButtonPressedEvent {
     sf::Mouse::Button button;
+    sf::Vector2i pixelPosition;
+    sf::Vector2f worldPosition;
+};
+
+struct MouseButtonReleasedEvent {
+    sf::Mouse::Button button;
+    sf::Vector2i pixelPosition;
+    sf::Vector2f worldPosition;
+};
+
+struct MouseMovedEvent {
     sf::Vector2i pixelPosition;
     sf::Vector2f worldPosition;
 };

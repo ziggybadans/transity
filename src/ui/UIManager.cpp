@@ -23,9 +23,9 @@ UIManager::UIManager(entt::registry &registry, EventBus &eventBus,
 
 UIManager::~UIManager() = default;
 
-void UIManager::draw(sf::Time deltaTime, size_t numStationsInActiveLine) {
+void UIManager::draw(sf::Time deltaTime, size_t numStationsInActiveLine, bool isLineSelected) {
     _infoPanelUI->draw();
     _worldGenSettingsUI->draw();
     _debugUI->draw(deltaTime);
-    _interactionUI->draw(numStationsInActiveLine);
+    _interactionUI->draw(numStationsInActiveLine, isLineSelected);
 }

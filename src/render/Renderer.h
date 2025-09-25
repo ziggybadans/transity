@@ -9,21 +9,23 @@
 #include "render/ColorManager.h"
 #include "systems/rendering/CityRenderSystem.h"
 #include "systems/rendering/LineRenderSystem.h"
+#include "systems/rendering/LineEditingRenderSystem.h"
 #include "systems/rendering/PassengerSpawnAnimationSystem.h"
 #include "systems/rendering/PathRenderSystem.h"
 #include "systems/rendering/TerrainRenderSystem.h"
 #include "systems/rendering/TrainRenderSystem.h"
+#include "app/GameState.h"
 
 class WorldGenerationSystem;
 
 class Renderer {
 public:
-    Renderer(ColorManager &colorManager);
+    Renderer(ColorManager &colorManager, sf::RenderWindow& window);
     ~Renderer();
 
     void initialize();
     void clear();
-    void renderFrame(entt::registry &registry, const sf::View &view,
+    void renderFrame(entt::registry &registry, GameState& gameState, const sf::View &view,
                      const WorldGenerationSystem &worldGen,
                      PassengerSpawnAnimationSystem &passengerSpawnAnimationSystem,
                      float interpolation);
@@ -40,13 +42,14 @@ public:
 
 private:
     ColorManager &_colorManager;
-    sf::RenderWindow _windowInstance;
+    sf::RenderWindow &_windowInstance;
     sf::Color _clearColor;
     TerrainRenderSystem _terrainRenderSystem;
     LineRenderSystem _lineRenderSystem;
     TrainRenderSystem _trainRenderSystem;
     PathRenderSystem _pathRenderSystem;
     CityRenderSystem _cityRenderSystem;
+    LineEditingRenderSystem _lineEditingRenderSystem;
 
     void onWindowClose(const WindowCloseEvent &event);
     void onThemeChanged(const ThemeChangedEvent &event);
