@@ -76,6 +76,8 @@ void CityPlacementSystem::initialPlacement() {
     const int mapHeight = worldGrid.worldDimensionsInChunks.y * worldGrid.chunkDimensionsInCells.y;
     const float cellSize = worldGrid.cellSize;
 
+    _loadingState.message = "Analyzing terrain...";
+    _loadingState.progress = 0.3f;
     precomputeTerrainCache(mapWidth, mapHeight);
 
     _suitabilityMaps.water.resize(mapWidth * mapHeight, 0.0f);
@@ -85,14 +87,23 @@ void CityPlacementSystem::initialPlacement() {
     _suitabilityMaps.noise.resize(mapWidth * mapHeight, 0.0f);
     _distanceToNearestCity.assign(mapWidth * mapHeight, std::numeric_limits<int>::max());
 
+    _loadingState.message = "Assessing water access...";
     calculateWaterSuitability(mapWidth, mapHeight, _suitabilityMaps.water);
     normalizeMap(_suitabilityMaps.water);
+    _loadingState.progress = 0.4f;
+
+    _loadingState.message = "Evaluating expansion potential...";
     calculateExpandabilitySuitability(mapWidth, mapHeight, _suitabilityMaps.expandability);
     normalizeMap(_suitabilityMaps.expandability);
+    _loadingState.progress = 0.5f;
+
+    _loadingState.message = "Adding environmental noise...";
     calculateNoiseSuitability(mapWidth, mapHeight, _suitabilityMaps.noise);
     normalizeMap(_suitabilityMaps.noise);
+    _loadingState.progress = 0.6f;
 
     LOG_INFO("CityPlacementSystem", "Placing initial settlements...");
+    _loadingState.message = "Placing initial settlements...";
     for (int i = 0; i < 3; ++i) {
         if (i > 0) {
             const auto &lastCity = _placedCities.back();
@@ -115,11 +126,14 @@ void CityPlacementSystem::initialPlacement() {
         LOG_INFO("CityPlacementSystem", "Placed initial city %d at (%d, %d)", _placedCities.size(), bestLocation.x, bestLocation.y);
         
         updateDistanceMap(bestLocation, mapWidth, mapHeight);
+        _loadingState.progress = 0.7f + (i * 0.1f);
     }
 
     LOG_INFO("CityPlacementSystem", "Finished initial city placement.");
     _renderer.getTerrainRenderSystem().setSuitabilityMapData(&_suitabilityMaps, &_terrainCache, worldGrid);
     _initialPlacementDone = true;
+    _loadingState.progress = 1.0f;
+    _loadingState.message = "Finalizing world...";
 }
 
 // Replace the existing placeNewCity method with this cleaner version

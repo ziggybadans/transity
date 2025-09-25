@@ -7,6 +7,9 @@
       "color": [255, 0, 0, 255],
       "zOrder": 3
     },
+    "clickable": {
+      "boundingRadius": 10.0
+    },
     "train": {},
     "trainMovement": {},
     "trainPhysics": {},
