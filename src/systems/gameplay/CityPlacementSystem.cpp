@@ -154,6 +154,15 @@ void CityPlacementSystem::initialPlacement() {
         _loadingState.progress = 0.7f + (i * 0.1f);
     }
 
+    LOG_INFO("CityPlacementSystem", "Calculating initial town and suburb suitability maps...");
+    calculateSuburbProximitySuitability(mapWidth, mapHeight, _suitabilityMaps.suburbProximity);
+    normalizeMap(_suitabilityMaps.suburbProximity);
+    calculateTownProximitySuitability(mapWidth, mapHeight, _suitabilityMaps.townProximity);
+    normalizeMap(_suitabilityMaps.townProximity);
+
+    // Re-combine the final maps with the new proximity data
+    combineSuitabilityMaps(mapWidth, mapHeight, _weights);
+
     LOG_INFO("CityPlacementSystem", "Finished initial city placement.");
     _renderer.getTerrainRenderSystem().setSuitabilityMapData(&_suitabilityMaps, &_terrainCache, worldGrid);
     _initialPlacementDone = true;
