@@ -21,6 +21,7 @@ class InputHandler;
 class ChunkManagerSystem;
 class ThreadPool;
 class Pathfinder;
+class CityPlacementSystem;
 
 class Game {
 public:
@@ -41,6 +42,9 @@ public:
     SystemManager &getSystemManager() { return *_systemManager; }
     WorldGenerationSystem &getWorldGenSystem() { return _worldGenerationSystem; }
     PerformanceMonitor &getPerformanceMonitor() { return _performanceMonitor; }
+    CityPlacementSystem &getCityPlacementSystem() {
+        return *_simulationSystemManager->getSystem<CityPlacementSystem>();
+    }
     PassengerSpawnAnimationSystem &getPassengerSpawnAnimationSystem() {
         return *_systemManager->getSystem<PassengerSpawnAnimationSystem>();
     }

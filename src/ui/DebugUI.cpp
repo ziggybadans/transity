@@ -20,9 +20,9 @@ DebugUI::~DebugUI() {
     LOG_DEBUG("DebugUI", "DebugUI instance destroyed.");
 }
 
-void DebugUI::draw(sf::Time deltaTime) {
+void DebugUI::draw(sf::Time deltaTime, const CityPlacementDebugInfo& cityPlacementDebugInfo) {
     drawTimeControlWindow();
-    drawProfilingWindow(deltaTime);
+    drawProfilingWindow(deltaTime, cityPlacementDebugInfo);
     drawSettingsWindow();
 }
 
@@ -34,7 +34,7 @@ void DebugUI::onThemeChanged(const ThemeChangedEvent &event) {
     }
 }
 
-void DebugUI::drawProfilingWindow(sf::Time deltaTime) {
+void DebugUI::drawProfilingWindow(sf::Time deltaTime, const CityPlacementDebugInfo& cityPlacementDebugInfo) {
     const float windowPadding = Constants::UI_WINDOW_PADDING;
     ImGuiWindowFlags size_flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize
                                   | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse;
@@ -65,6 +65,16 @@ void DebugUI::drawProfilingWindow(sf::Time deltaTime) {
                              nullptr, 0.0f, 16000.0f, ImVec2(0, 80));
         }
     }
+
+    if (ImGui::CollapsingHeader("City Placement")) {
+        ImGui::Text("Next City In: %.2fs", cityPlacementDebugInfo.timeToNextPlacement);
+        const char* cityType = cityPlacementDebugInfo.nextCityType == CityType::TOWN ? "Town" : "Suburb";
+        ImGui::Text("Next City Type: %s", cityType);
+        ImGui::Text("Last Placement: %s", cityPlacementDebugInfo.lastPlacementSuccess ? "Success" : "Failure");
+        ImGui::Text("Town Suitability: %.2f%%", cityPlacementDebugInfo.townSuitabilityPercentage);
+        ImGui::Text("Suburb Suitability: %.2f%%", cityPlacementDebugInfo.suburbSuitabilityPercentage);
+    }
+
     ImGui::End();
 }
 

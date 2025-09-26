@@ -41,6 +41,14 @@ struct PlacedCityInfo {
     CityType type;
 };
 
+struct CityPlacementDebugInfo {
+    float timeToNextPlacement = 0.0f;
+    CityType nextCityType = CityType::TOWN;
+    bool lastPlacementSuccess = false;
+    float townSuitabilityPercentage = 0.0f;
+    float suburbSuitabilityPercentage = 0.0f;
+};
+
 class CityPlacementSystem : public ISystem, public IUpdatable {
 public:
     explicit CityPlacementSystem(LoadingState& loadingState, WorldGenerationSystem& worldGenerationSystem, EntityFactory& entityFactory, Renderer& renderer, PerformanceMonitor& performanceMonitor);
@@ -50,6 +58,7 @@ public:
     void update(sf::Time dt) override;
 
     const SuitabilityMaps &getSuitabilityMaps() const;
+    CityPlacementDebugInfo getDebugInfo();
 
 private:
     void initialPlacement();
@@ -73,6 +82,7 @@ private:
                                   const std::vector<float> &suitabilityMap);
     sf::Vector2i findRandomSuitableLocation(int mapWidth, int mapHeight,
                                             const std::vector<float> &suitabilityMap);
+    void determineNextCityType();
 
 private:
     LoadingState& _loadingState;
@@ -96,6 +106,8 @@ private:
     float _maxSpawnInterval = Constants::MAX_CITY_SPAWN_INTERVAL_S;
     int _maxCities = Constants::MAX_CITIES;
     bool _initialPlacementDone = false;
+    bool _lastPlacementSuccess = false;
+    CityType _nextCityType = CityType::TOWN;
 
     std::mt19937 _rng;
 };

@@ -2,6 +2,7 @@
 
 #include "event/EventBus.h"
 #include "event/UIEvents.h"
+#include "systems/gameplay/CityPlacementSystem.h"
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/System/Time.hpp>
 
@@ -16,12 +17,12 @@ public:
             ColorManager &colorManager, EventBus &eventBus, sf::RenderWindow &window);
     ~DebugUI();
 
-    void draw(sf::Time deltaTime);
+    void draw(sf::Time deltaTime, const CityPlacementDebugInfo& cityPlacementDebugInfo);
 
 private:
     void onThemeChanged(const ThemeChangedEvent &event);
 
-    void drawProfilingWindow(sf::Time deltaTime);
+    void drawProfilingWindow(sf::Time deltaTime, const CityPlacementDebugInfo& cityPlacementDebugInfo);
     void drawTimeControlWindow();
     void drawSettingsWindow();
 

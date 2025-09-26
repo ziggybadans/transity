@@ -40,7 +40,7 @@ Application::Application()
         _uiManager = std::make_unique<UIManager>(
             _game->getRegistry(), _eventBus, _game->getWorldGenSystem(),
             _renderer->getTerrainRenderSystem(), _game->getPerformanceMonitor(), _game->getCamera(),
-            _game->getGameState(), _colorManager, _window);
+            _game->getGameState(), _colorManager, _window, _game->getCityPlacementSystem());
 
     } catch (const std::exception &e) {
         LOG_FATAL("Application", "Failed during initialization: %s", e.what());

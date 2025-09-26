@@ -31,6 +31,7 @@ CityPlacementSystem::CityPlacementSystem(LoadingState& loadingState, WorldGenera
     // Set the first spawn interval
     std::uniform_real_distribution<float> dist(_minSpawnInterval, _maxSpawnInterval);
     _currentSpawnInterval = dist(_rng);
+    determineNextCityType();
 }
 
 CityPlacementSystem::~CityPlacementSystem() {
@@ -39,6 +40,36 @@ CityPlacementSystem::~CityPlacementSystem() {
 
 const SuitabilityMaps &CityPlacementSystem::getSuitabilityMaps() const {
     return _suitabilityMaps;
+}
+
+CityPlacementDebugInfo CityPlacementSystem::getDebugInfo() {
+    CityPlacementDebugInfo info;
+    info.timeToNextPlacement = _currentSpawnInterval - _timeSinceLastCity;
+    info.nextCityType = _nextCityType;
+    info.lastPlacementSuccess = _lastPlacementSuccess;
+
+    int townSuitableCount = 0;
+    int suburbSuitableCount = 0;
+    int totalLandCells = 0;
+
+    for (size_t i = 0; i < _suitabilityMaps.townFinal.size(); ++i) {
+        if (_terrainCache[i] == TerrainType::LAND) {
+            totalLandCells++;
+            if (_suitabilityMaps.townFinal[i] >= Constants::FIND_RANDOM_CITY_MIN_SUITABILITY) {
+                townSuitableCount++;
+            }
+            if (_suitabilityMaps.suburbFinal[i] >= Constants::FIND_RANDOM_CITY_MIN_SUITABILITY) {
+                suburbSuitableCount++;
+            }
+        }
+    }
+
+    if (totalLandCells > 0) {
+        info.townSuitabilityPercentage = static_cast<float>(townSuitableCount) / totalLandCells * 100.0f;
+        info.suburbSuitabilityPercentage = static_cast<float>(suburbSuitableCount) / totalLandCells * 100.0f;
+    }
+
+    return info;
 }
 
 void CityPlacementSystem::init() {
@@ -53,7 +84,8 @@ void CityPlacementSystem::update(sf::Time dt) {
     _timeSinceLastCity += dt.asSeconds();
 
     if (_timeSinceLastCity >= _currentSpawnInterval) {
-        if (placeNewCity()) {
+        _lastPlacementSuccess = placeNewCity();
+        if (_lastPlacementSuccess) {
             // On success, set a new random interval for the next city
             std::uniform_real_distribution<float> dist(_minSpawnInterval, _maxSpawnInterval);
             _currentSpawnInterval = dist(_rng);
@@ -64,6 +96,7 @@ void CityPlacementSystem::update(sf::Time dt) {
         }
         // Reset the timer regardless of success or failure.
         _timeSinceLastCity = 0.0f;
+        determineNextCityType();
     }
 }
 
@@ -157,11 +190,8 @@ bool CityPlacementSystem::placeNewCity() {
     normalizeMap(_suitabilityMaps.townProximity);
     combineSuitabilityMaps(mapWidth, mapHeight, _weights);
 
-    std::uniform_real_distribution<float> dist(0.0, 1.0);
-    CityType cityTypeToPlace = (dist(_rng) < 0.5f) ? CityType::TOWN : CityType::SUBURB;
-
     sf::Vector2i location = {-1, -1};
-    if (cityTypeToPlace == CityType::TOWN) {
+    if (_nextCityType == CityType::TOWN) {
         location = findRandomSuitableLocation(mapWidth, mapHeight, _suitabilityMaps.townFinal);
     } else {
         location = findRandomSuitableLocation(mapWidth, mapHeight, _suitabilityMaps.suburbFinal);
@@ -172,9 +202,9 @@ bool CityPlacementSystem::placeNewCity() {
         return false;
     }
 
-    std::string cityName = (cityTypeToPlace == CityType::TOWN ? "Town " : "Suburb ") + std::to_string(_placedCities.size() + 1);
-    _entityFactory.createEntity("city", {location.x * cellSize + cellSize / 2.0f, location.y * cellSize + cellSize / 2.0f}, cityTypeToPlace, cityName);
-    PlacedCityInfo newCity = {location, cityTypeToPlace};
+    std::string cityName = (_nextCityType == CityType::TOWN ? "Town " : "Suburb ") + std::to_string(_placedCities.size() + 1);
+    _entityFactory.createEntity("city", {location.x * cellSize + cellSize / 2.0f, location.y * cellSize + cellSize / 2.0f}, _nextCityType, cityName);
+    PlacedCityInfo newCity = {location, _nextCityType};
     _placedCities.push_back(newCity);
     LOG_INFO("CityPlacementSystem", "Placed new city %d at (%d, %d)", _placedCities.size(), location.x, location.y);
     
@@ -477,4 +507,9 @@ sf::Vector2i CityPlacementSystem::findBestLocation(int mapWidth, int mapHeight, 
     std::uniform_int_distribution<> disTop(0, topN - 1);
     
     return candidates[disTop(gen)].second;
+}
+
+void CityPlacementSystem::determineNextCityType() {
+    std::uniform_real_distribution<float> dist(0.0, 1.0);
+    _nextCityType = (dist(_rng) < 0.5f) ? CityType::TOWN : CityType::SUBURB;
 }

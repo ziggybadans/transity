@@ -6,13 +6,16 @@
 #include "render/ColorManager.h"
 #include "systems/rendering/TerrainRenderSystem.h"
 #include "systems/world/WorldGenerationSystem.h"
+#include "systems/gameplay/CityPlacementSystem.h"
 #include <SFML/Graphics/RenderWindow.hpp>
 
 UIManager::UIManager(entt::registry &registry, EventBus &eventBus,
                      WorldGenerationSystem &worldGenerationSystem,
                      TerrainRenderSystem &terrainRenderSystem,
                      PerformanceMonitor &performanceMonitor, Camera &camera, GameState &gameState,
-                     ColorManager &colorManager, sf::RenderWindow &window) {
+                     ColorManager &colorManager, sf::RenderWindow &window,
+                     CityPlacementSystem& cityPlacementSystem)
+    : _cityPlacementSystem(cityPlacementSystem) {
     _infoPanelUI = std::make_unique<InfoPanelUI>(registry, eventBus, gameState);
     _worldGenSettingsUI =
         std::make_unique<WorldGenSettingsUI>(eventBus, worldGenerationSystem, terrainRenderSystem);
@@ -27,6 +30,7 @@ void UIManager::draw(sf::Time deltaTime, size_t numStationsInActiveLine,
                      size_t numPointsInActiveLine) {
     _infoPanelUI->draw();
     _worldGenSettingsUI->draw();
-    _debugUI->draw(deltaTime);
+    CityPlacementDebugInfo cityPlacementDebugInfo = _cityPlacementSystem.getDebugInfo();
+    _debugUI->draw(deltaTime, cityPlacementDebugInfo);
     _interactionUI->draw(numStationsInActiveLine, numPointsInActiveLine);
 }
