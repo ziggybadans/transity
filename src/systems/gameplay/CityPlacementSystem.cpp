@@ -9,18 +9,20 @@
 #include "Constants.h"
 #include "app/LoadingState.h"
 #include "core/PerformanceMonitor.h"
+#include "core/ThreadPool.h"
 
 #include <vector>
 #include <algorithm>
 #include <random>
 #include <queue>
 
-CityPlacementSystem::CityPlacementSystem(LoadingState& loadingState, WorldGenerationSystem& worldGenerationSystem, EntityFactory& entityFactory, Renderer& renderer, PerformanceMonitor& performanceMonitor)
+CityPlacementSystem::CityPlacementSystem(LoadingState& loadingState, WorldGenerationSystem& worldGenerationSystem, EntityFactory& entityFactory, Renderer& renderer, PerformanceMonitor& performanceMonitor, ThreadPool& threadPool)
     : _loadingState(loadingState), 
       _worldGenerationSystem(worldGenerationSystem), 
       _entityFactory(entityFactory), 
       _renderer(renderer), 
       _performanceMonitor(performanceMonitor),
+      _threadPool(threadPool),
       _rng(std::random_device{}()) // Seed the random number generator
 {
     LOG_DEBUG("CityPlacementSystem", "CityPlacementSystem created.");
@@ -39,6 +41,7 @@ CityPlacementSystem::~CityPlacementSystem() {
 }
 
 const SuitabilityMaps &CityPlacementSystem::getSuitabilityMaps() const {
+    std::lock_guard<std::mutex> lock(_mapUpdateMutex);
     return _suitabilityMaps;
 }
 
@@ -167,19 +170,14 @@ bool CityPlacementSystem::placeNewCity() {
     const int mapHeight = worldGrid.worldDimensionsInChunks.y * worldGrid.chunkDimensionsInCells.y;
     const float cellSize = worldGrid.cellSize;
 
-    calculateCapitalProximitySuitability(mapWidth, mapHeight, _suitabilityMaps.cityProximity);
-    normalizeMap(_suitabilityMaps.cityProximity);
-    calculateSuburbProximitySuitability(mapWidth, mapHeight, _suitabilityMaps.suburbProximity);
-    normalizeMap(_suitabilityMaps.suburbProximity);
-    calculateTownProximitySuitability(mapWidth, mapHeight, _suitabilityMaps.townProximity);
-    normalizeMap(_suitabilityMaps.townProximity);
-    combineSuitabilityMaps(mapWidth, mapHeight, _weights);
-
     sf::Vector2i location = {-1, -1};
-    if (_nextCityType == CityType::TOWN) {
-        location = findRandomSuitableLocation(mapWidth, mapHeight, _suitabilityMaps.townFinal);
-    } else {
-        location = findRandomSuitableLocation(mapWidth, mapHeight, _suitabilityMaps.suburbFinal);
+    {
+        std::lock_guard<std::mutex> lock(_mapUpdateMutex);
+        if (_nextCityType == CityType::TOWN) {
+            location = findRandomSuitableLocation(mapWidth, mapHeight, _suitabilityMaps.townFinal);
+        } else {
+            location = findRandomSuitableLocation(mapWidth, mapHeight, _suitabilityMaps.suburbFinal);
+        }
     }
 
     if (location.x == -1) {
@@ -193,11 +191,33 @@ bool CityPlacementSystem::placeNewCity() {
     _placedCities.push_back(newCity);
     LOG_INFO("CityPlacementSystem", "Placed new city %d at (%d, %d)", _placedCities.size(), location.x, location.y);
     
-    updateDistanceMaps(newCity, mapWidth, mapHeight);
-
-    _renderer.getTerrainRenderSystem().setSuitabilityMapData(&_suitabilityMaps, &_terrainCache, worldGrid);
+    asyncUpdateMaps(newCity);
 
     return true;
+}
+
+void CityPlacementSystem::asyncUpdateMaps(PlacedCityInfo newCity) {
+    _threadPool.enqueue([this, newCity] {
+        PerfTimer timer("CityPlacementSystem::asyncUpdateMaps", _performanceMonitor, PerfTimer::Purpose::Log);
+        std::lock_guard<std::mutex> lock(_mapUpdateMutex);
+
+        const auto &worldGrid = _worldGenerationSystem.getParams();
+        const int mapWidth = worldGrid.worldDimensionsInChunks.x * worldGrid.chunkDimensionsInCells.x;
+        const int mapHeight = worldGrid.worldDimensionsInChunks.y * worldGrid.chunkDimensionsInCells.y;
+
+        updateDistanceMaps(newCity, mapWidth, mapHeight);
+
+        calculateCapitalProximitySuitability(mapWidth, mapHeight, _suitabilityMaps.cityProximity);
+        normalizeMap(_suitabilityMaps.cityProximity);
+        calculateSuburbProximitySuitability(mapWidth, mapHeight, _suitabilityMaps.suburbProximity);
+        normalizeMap(_suitabilityMaps.suburbProximity);
+        calculateTownProximitySuitability(mapWidth, mapHeight, _suitabilityMaps.townProximity);
+        normalizeMap(_suitabilityMaps.townProximity);
+        combineSuitabilityMaps(mapWidth, mapHeight, _weights);
+
+        _renderer.getTerrainRenderSystem().setSuitabilityMapData(&_suitabilityMaps, &_terrainCache, worldGrid);
+        LOG_DEBUG("CityPlacementSystem", "Async map update complete for city at (%d, %d).", newCity.position.x, newCity.position.y);
+    });
 }
 
 void CityPlacementSystem::updateDistanceMaps(const PlacedCityInfo &newCity, int mapWidth, int mapHeight) {
@@ -500,6 +520,7 @@ void CityPlacementSystem::determineNextCityType() {
 }
 
 void CityPlacementSystem::updateDebugInfo() {
+    std::lock_guard<std::mutex> lock(_mapUpdateMutex);
     int townSuitableCount = 0;
     int suburbSuitableCount = 0;
     int totalLandCells = 0;

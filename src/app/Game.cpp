@@ -51,7 +51,7 @@ Game::Game(Renderer &renderer, ThreadPool &threadPool, EventBus &eventBus,
     _simulationSystemManager->addSystem<WorldSetupSystem>(
         _registry, _loadingState, _worldGenerationSystem, _renderer, _camera);
     _simulationSystemManager->addSystem<CityPlacementSystem>(
-        _loadingState, _worldGenerationSystem, _entityFactory, _renderer, _performanceMonitor);
+        _loadingState, _worldGenerationSystem, _entityFactory, _renderer, _performanceMonitor, _threadPool);
     _simulationSystemManager->addSystem<LineDataSystem>(_registry, _entityFactory, _eventBus);
     _simulationSystemManager->addSystem<TrainMovementSystem>(_registry);
     _simulationSystemManager->addSystem<PassengerMovementSystem>(_registry);

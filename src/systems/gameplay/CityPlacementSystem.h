@@ -10,12 +10,14 @@
 #include <SFML/System/Time.hpp>
 #include <vector>
 #include <random>
+#include <mutex>
 
 struct LoadingState;
 class WorldGenerationSystem;
 class EntityFactory;
 class Renderer;
 class PerformanceMonitor;
+class ThreadPool;
 
 struct PlacementWeights {
     float waterAccess = Constants::SUITABILITY_WEIGHT_WATER;
@@ -51,7 +53,7 @@ struct CityPlacementDebugInfo {
 
 class CityPlacementSystem : public ISystem, public IUpdatable {
 public:
-    explicit CityPlacementSystem(LoadingState& loadingState, WorldGenerationSystem& worldGenerationSystem, EntityFactory& entityFactory, Renderer& renderer, PerformanceMonitor& performanceMonitor);
+    explicit CityPlacementSystem(LoadingState& loadingState, WorldGenerationSystem& worldGenerationSystem, EntityFactory& entityFactory, Renderer& renderer, PerformanceMonitor& performanceMonitor, ThreadPool& threadPool);
     ~CityPlacementSystem() override;
 
     void init();
@@ -63,6 +65,7 @@ public:
 private:
     void initialPlacement();
     bool placeNewCity();
+    void asyncUpdateMaps(PlacedCityInfo newCity);
     
     void precomputeTerrainCache(int mapWidth, int mapHeight);
 
@@ -91,6 +94,7 @@ private:
     EntityFactory& _entityFactory;
     Renderer& _renderer;
     PerformanceMonitor& _performanceMonitor;
+    ThreadPool& _threadPool;
 
     PlacementWeights _weights;
     SuitabilityMaps _suitabilityMaps;
@@ -115,4 +119,5 @@ private:
     const float _debugInfoUpdateInterval = 1.0f;
 
     std::mt19937 _rng;
+    mutable std::mutex _mapUpdateMutex;
 };
