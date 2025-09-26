@@ -58,7 +58,7 @@ public:
     void update(sf::Time dt) override;
 
     const SuitabilityMaps &getSuitabilityMaps() const;
-    CityPlacementDebugInfo getDebugInfo();
+    CityPlacementDebugInfo getDebugInfo() const;
 
 private:
     void initialPlacement();
@@ -83,6 +83,7 @@ private:
     sf::Vector2i findRandomSuitableLocation(int mapWidth, int mapHeight,
                                             const std::vector<float> &suitabilityMap);
     void determineNextCityType();
+    void updateDebugInfo();
 
 private:
     LoadingState& _loadingState;
@@ -108,6 +109,10 @@ private:
     bool _initialPlacementDone = false;
     bool _lastPlacementSuccess = false;
     CityType _nextCityType = CityType::TOWN;
+
+    CityPlacementDebugInfo _debugInfo;
+    float _debugInfoUpdateTimer = 0.0f;
+    const float _debugInfoUpdateInterval = 1.0f;
 
     std::mt19937 _rng;
 };

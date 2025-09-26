@@ -42,33 +42,11 @@ const SuitabilityMaps &CityPlacementSystem::getSuitabilityMaps() const {
     return _suitabilityMaps;
 }
 
-CityPlacementDebugInfo CityPlacementSystem::getDebugInfo() {
-    CityPlacementDebugInfo info;
+CityPlacementDebugInfo CityPlacementSystem::getDebugInfo() const {
+    CityPlacementDebugInfo info = _debugInfo;
     info.timeToNextPlacement = _currentSpawnInterval - _timeSinceLastCity;
     info.nextCityType = _nextCityType;
     info.lastPlacementSuccess = _lastPlacementSuccess;
-
-    int townSuitableCount = 0;
-    int suburbSuitableCount = 0;
-    int totalLandCells = 0;
-
-    for (size_t i = 0; i < _suitabilityMaps.townFinal.size(); ++i) {
-        if (_terrainCache[i] == TerrainType::LAND) {
-            totalLandCells++;
-            if (_suitabilityMaps.townFinal[i] >= Constants::FIND_RANDOM_CITY_MIN_SUITABILITY) {
-                townSuitableCount++;
-            }
-            if (_suitabilityMaps.suburbFinal[i] >= Constants::FIND_RANDOM_CITY_MIN_SUITABILITY) {
-                suburbSuitableCount++;
-            }
-        }
-    }
-
-    if (totalLandCells > 0) {
-        info.townSuitabilityPercentage = static_cast<float>(townSuitableCount) / totalLandCells * 100.0f;
-        info.suburbSuitabilityPercentage = static_cast<float>(suburbSuitableCount) / totalLandCells * 100.0f;
-    }
-
     return info;
 }
 
@@ -97,6 +75,12 @@ void CityPlacementSystem::update(sf::Time dt) {
         // Reset the timer regardless of success or failure.
         _timeSinceLastCity = 0.0f;
         determineNextCityType();
+    }
+
+    _debugInfoUpdateTimer += dt.asSeconds();
+    if (_debugInfoUpdateTimer >= _debugInfoUpdateInterval) {
+        updateDebugInfo();
+        _debugInfoUpdateTimer = 0.0f;
     }
 }
 
@@ -172,6 +156,7 @@ void CityPlacementSystem::initialPlacement() {
     _initialPlacementDone = true;
     _loadingState.progress = 1.0f;
     _loadingState.message = "Finalizing world...";
+    updateDebugInfo();
 }
 
 bool CityPlacementSystem::placeNewCity() {
@@ -512,4 +497,36 @@ sf::Vector2i CityPlacementSystem::findBestLocation(int mapWidth, int mapHeight, 
 void CityPlacementSystem::determineNextCityType() {
     std::uniform_real_distribution<float> dist(0.0, 1.0);
     _nextCityType = (dist(_rng) < 0.5f) ? CityType::TOWN : CityType::SUBURB;
+}
+
+void CityPlacementSystem::updateDebugInfo() {
+    int townSuitableCount = 0;
+    int suburbSuitableCount = 0;
+    int totalLandCells = 0;
+
+    if (_suitabilityMaps.townFinal.empty() || _terrainCache.empty()) {
+        _debugInfo.townSuitabilityPercentage = 0.0f;
+        _debugInfo.suburbSuitabilityPercentage = 0.0f;
+        return;
+    }
+
+    for (size_t i = 0; i < _suitabilityMaps.townFinal.size(); ++i) {
+        if (_terrainCache[i] == TerrainType::LAND) {
+            totalLandCells++;
+            if (_suitabilityMaps.townFinal[i] >= Constants::FIND_RANDOM_CITY_MIN_SUITABILITY) {
+                townSuitableCount++;
+            }
+            if (_suitabilityMaps.suburbFinal[i] >= Constants::FIND_RANDOM_CITY_MIN_SUITABILITY) {
+                suburbSuitableCount++;
+            }
+        }
+    }
+
+    if (totalLandCells > 0) {
+        _debugInfo.townSuitabilityPercentage = static_cast<float>(townSuitableCount) / totalLandCells * 100.0f;
+        _debugInfo.suburbSuitabilityPercentage = static_cast<float>(suburbSuitableCount) / totalLandCells * 100.0f;
+    } else {
+        _debugInfo.townSuitabilityPercentage = 0.0f;
+        _debugInfo.suburbSuitabilityPercentage = 0.0f;
+    }
 }
