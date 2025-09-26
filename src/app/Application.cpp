@@ -55,6 +55,9 @@ void Application::run() {
     LOG_INFO("Application", "Starting main loop.");
     while (_renderer->isWindowOpen()) {
         sf::Time frameTime = _deltaClock.restart();
+        if (frameTime > sf::milliseconds(250)) {
+            frameTime = sf::milliseconds(250);
+        }
         _timeAccumulator += frameTime;
 
         processEvents();
@@ -98,14 +101,12 @@ void Application::run() {
             _uiManager->draw(frameTime, numStationsInActiveLine, numPointsInActiveLine);
             update(TimePerFrame);
 
-            if (_isWindowFocused) {
-                while (_timeAccumulator >= TimePerFrame) {
-                    _timeAccumulator -= TimePerFrame;
-                    if (_game->getGameState().timeMultiplier > 0.0f) {
-                        sf::Time scaledTimePerFrame =
-                            TimePerFrame * _game->getGameState().timeMultiplier;
-                        _game->updateSimulation(scaledTimePerFrame);
-                    }
+            while (_timeAccumulator >= TimePerFrame) {
+                _timeAccumulator -= TimePerFrame;
+                if (_game->getGameState().timeMultiplier > 0.0f) {
+                    sf::Time scaledTimePerFrame =
+                        TimePerFrame * _game->getGameState().timeMultiplier;
+                    _game->updateSimulation(scaledTimePerFrame);
                 }
             }
 
@@ -136,10 +137,7 @@ void Application::processEvents() {
             }
 
             _ui->processEvent(currentEvent);
-            if (_isWindowFocused) {
-
-                _game->getInputHandler().handleGameEvent(currentEvent, _window);
-            }
+            _game->getInputHandler().handleGameEvent(currentEvent, _window);
         }
     }
 }
