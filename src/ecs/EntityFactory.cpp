@@ -137,6 +137,21 @@ entt::entity EntityFactory::createEntity(const std::string &archetypeId,
     return entity;
 }
 
+entt::entity EntityFactory::createEntity(const std::string &archetypeId,
+                                         const sf::Vector2f &position, CityType cityType,
+                                         const std::string &name) {
+    auto entity = createEntity(archetypeId, position, name);
+    if (entity != entt::null) {
+        if (_registry.all_of<CityComponent>(entity)) {
+            auto &cityComponent = _registry.get<CityComponent>(entity);
+            cityComponent.type = cityType;
+        } else {
+            _registry.emplace<CityComponent>(entity, cityType);
+        }
+    }
+    return entity;
+}
+
 entt::entity EntityFactory::createLine(const std::vector<LinePoint> &points,
                                        const sf::Color &color) {
     LOG_DEBUG("EntityFactory", "Request to create line entity with %zu points.", points.size());

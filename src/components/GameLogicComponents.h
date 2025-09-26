@@ -12,8 +12,16 @@ struct PositionComponent {
     sf::Vector2f coordinates;
 };
 
+// Enum for the type of city.
+enum class CityType {
+    CAPITAL,
+    TOWN,
+    SUBURB
+};
+
 // A component for city entities.
 struct CityComponent {
+    CityType type;
     std::vector<entt::entity> connectedLines;
     std::vector<entt::entity> waitingPassengers;
 };

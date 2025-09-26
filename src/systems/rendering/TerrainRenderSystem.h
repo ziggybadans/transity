@@ -22,7 +22,9 @@ public:
         Expandability,
         CityProximity,
         Noise,
-        Final
+        Final,
+        Town,
+        Suburb
     };
 
     explicit TerrainRenderSystem(ColorManager &colorManager);

@@ -3,6 +3,7 @@
 #include "ecs/ISystem.h"
 #include "entt/entt.hpp"
 #include "components/WorldComponents.h"
+#include "components/GameLogicComponents.h"
 #include "FastNoiseLite.h"
 #include "Constants.h"
 #include <SFML/System/Vector2.hpp>
@@ -29,6 +30,15 @@ struct SuitabilityMaps {
     std::vector<float> cityProximity;
     std::vector<float> noise;
     std::vector<float> final;
+    std::vector<float> townProximity;
+    std::vector<float> suburbProximity;
+    std::vector<float> townFinal;
+    std::vector<float> suburbFinal;
+};
+
+struct PlacedCityInfo {
+    sf::Vector2i position;
+    CityType type;
 };
 
 class CityPlacementSystem : public ISystem, public IUpdatable {
@@ -37,7 +47,7 @@ public:
     ~CityPlacementSystem() override;
 
     void init();
-    void update(sf::Time dt) override; // This will now correctly override IUpdatable::update
+    void update(sf::Time dt) override;
 
     const SuitabilityMaps &getSuitabilityMaps() const;
 
@@ -51,11 +61,12 @@ private:
     void calculateExpandabilitySuitability(int mapWidth, int mapHeight, std::vector<float> &map);
     void calculateNoiseSuitability(int mapWidth, int mapHeight, std::vector<float> &map);
 
-    void updateDistanceMap(const sf::Vector2i &newCity, int mapWidth, int mapHeight);
-    void calculateProximitySuitability(int mapWidth, int mapHeight, std::vector<float> &map);
+    void updateDistanceMaps(const PlacedCityInfo &newCity, int mapWidth, int mapHeight);
+    void calculateCapitalProximitySuitability(int mapWidth, int mapHeight, std::vector<float> &map);
+    void calculateSuburbProximitySuitability(int mapWidth, int mapHeight, std::vector<float> &map);
+    void calculateTownProximitySuitability(int mapWidth, int mapHeight, std::vector<float> &map);
 
-    void combineSuitabilityMaps(int mapWidth, int mapHeight, const SuitabilityMaps &maps,
-                                const PlacementWeights &weights, std::vector<float> &finalMap);
+    void combineSuitabilityMaps(int mapWidth, int mapHeight, const PlacementWeights &weights);
     void normalizeMap(std::vector<float> &map);
 
     sf::Vector2i findBestLocation(int mapWidth, int mapHeight,
@@ -72,9 +83,10 @@ private:
 
     PlacementWeights _weights;
     SuitabilityMaps _suitabilityMaps;
-    std::vector<sf::Vector2i> _placedCities;
+    std::vector<PlacedCityInfo> _placedCities;
     std::vector<TerrainType> _terrainCache;
-    std::vector<int> _distanceToNearestCity;
+    std::vector<int> _distanceToNearestCapital;
+    std::vector<int> _distanceToNearestTown;
 
     FastNoiseLite _noise;
 

@@ -254,8 +254,6 @@ void TerrainRenderSystem::regenerateSuitabilityMaps(const WorldGenParams &worldP
 
         sf::VertexArray suitabilityTriangles(sf::PrimitiveType::Triangles);
         for (size_t i = 0; i < data.size(); ++i) {
-            // For maps other than the water map itself, don't visualize anything on water tiles.
-            // In the water map, non-zero values represent water.
             if (type != SuitabilityMapType::Water && _suitabilityMaps->water[i] > 0.0f) {
                 if ((*_terrainCache)[i] == TerrainType::WATER) {
                     continue;
@@ -293,6 +291,8 @@ void TerrainRenderSystem::regenerateSuitabilityMaps(const WorldGenParams &worldP
     regenerate(SuitabilityMapType::CityProximity, _suitabilityMaps->cityProximity);
     regenerate(SuitabilityMapType::Noise, _suitabilityMaps->noise);
     regenerate(SuitabilityMapType::Final, _suitabilityMaps->final);
+    regenerate(SuitabilityMapType::Town, _suitabilityMaps->townFinal);
+    regenerate(SuitabilityMapType::Suburb, _suitabilityMaps->suburbFinal);
 
     _suitabilityMapsDirty = false;
 }

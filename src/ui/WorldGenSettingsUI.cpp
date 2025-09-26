@@ -133,7 +133,7 @@ void WorldGenSettingsUI::draw() {
     }
     ImGui::SameLine();
     ImGui::BeginDisabled(!_visualizeSuitabilityMap);
-    const char *items[] = {"Water", "Expandability", "City Proximity", "Noise", "Final"};
+    const char *items[] = {"Water", "Expandability", "City Proximity", "Noise", "Final", "Town", "Suburb"};
     if (ImGui::Combo("##SuitabilityMap", &_selectedSuitabilityMap, items, IM_ARRAYSIZE(items))) {
         _terrainRenderSystem.setSuitabilityMapType(
             static_cast<TerrainRenderSystem::SuitabilityMapType>(_selectedSuitabilityMap + 1));

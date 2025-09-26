@@ -53,6 +53,9 @@ namespace Constants {
     constexpr float CITY_PROXIMITY_IDEAL_DISTANCE = 80.0f;
     constexpr int WATER_SUITABILITY_MAX_DISTANCE = 60;
     constexpr int EXPANDABILITY_SUITABILITY_RADIUS = 20;
+    constexpr float SUBURB_PROXIMITY_RANGE_CAPITAL = 100.0f;
+    constexpr float SUBURB_PROXIMITY_RANGE_TOWN = 50.0f;
+    constexpr float TOWN_PROXIMITY_MIN_DISTANCE = 50.0f;
 
     // City Finding Algorithm
     constexpr int FIND_BEST_CITY_LOCATION_SAMPLES = 5000;

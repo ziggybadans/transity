@@ -3,6 +3,9 @@
 #include <SFML/Graphics.hpp>
 #include <entt/entt.hpp>
 
+struct PositionComponent;
+struct RenderableComponent;
+
 class CityRenderSystem {
 public:
     CityRenderSystem();
@@ -10,6 +13,9 @@ public:
 
 private:
     static sf::Font loadFont();
+    void renderCapital(sf::RenderWindow& window, const PositionComponent& position, const RenderableComponent& renderable, const sf::Color& highlightColor);
+    void renderTown(sf::RenderWindow& window, const PositionComponent& position, const RenderableComponent& renderable, const sf::Color& highlightColor);
+    void renderSuburb(sf::RenderWindow& window, const PositionComponent& position, const RenderableComponent& renderable, const sf::Color& highlightColor);
 
     sf::Font m_font;
     sf::Text m_text;
