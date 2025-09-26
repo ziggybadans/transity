@@ -1,8 +1,8 @@
 #include "WorldGenSettingsUI.h"
 #include "Constants.h"
 #include "Logger.h"
-#include "event/UIEvents.h"
 #include "event/DeletionEvents.h"
+#include "event/UIEvents.h"
 #include "imgui.h"
 #include "systems/rendering/TerrainRenderSystem.h"
 #include "systems/world/WorldGenerationSystem.h"
@@ -134,7 +134,8 @@ void WorldGenSettingsUI::draw() {
     }
     ImGui::SameLine();
     ImGui::BeginDisabled(!_visualizeSuitabilityMap);
-    const char *items[] = {"Water", "Expandability", "City Proximity", "Noise", "Final", "Town", "Suburb"};
+    const char *items[] = {"Water", "Expandability", "City Proximity", "Noise",
+                           "Final", "Town",          "Suburb"};
     if (ImGui::Combo("##SuitabilityMap", &_selectedSuitabilityMap, items, IM_ARRAYSIZE(items))) {
         _terrainRenderSystem.setSuitabilityMapType(
             static_cast<TerrainRenderSystem::SuitabilityMapType>(_selectedSuitabilityMap + 1));
@@ -149,21 +150,23 @@ void WorldGenSettingsUI::draw() {
 
     ImGui::Separator();
 
-    ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(0.0f, 0.6f, 0.6f));
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV(0.0f, 0.7f, 0.7f));
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV(0.0f, 0.8f, 0.8f));
+    ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4) ImColor::HSV(0.0f, 0.6f, 0.6f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4) ImColor::HSV(0.0f, 0.7f, 0.7f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4) ImColor::HSV(0.0f, 0.8f, 0.8f));
     if (ImGui::Button("Delete All Entities")) {
         ImGui::OpenPopup("Delete All Confirmation");
     }
     ImGui::PopStyleColor(3);
 
-    if (ImGui::BeginPopupModal("Delete All Confirmation", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
-        ImGui::Text("Are you sure you want to delete all entities?\nThis action cannot be undone.\n\n");
+    if (ImGui::BeginPopupModal("Delete All Confirmation", NULL,
+                               ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::Text(
+            "Are you sure you want to delete all entities?\nThis action cannot be undone.\n\n");
         ImGui::Separator();
 
-        ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor::HSV(0.0f, 0.6f, 0.6f));
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4)ImColor::HSV(0.0f, 0.7f, 0.7f));
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4)ImColor::HSV(0.0f, 0.8f, 0.8f));
+        ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4) ImColor::HSV(0.0f, 0.6f, 0.6f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4) ImColor::HSV(0.0f, 0.7f, 0.7f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4) ImColor::HSV(0.0f, 0.8f, 0.8f));
         if (ImGui::Button("OK", ImVec2(120, 0))) {
             _eventBus.enqueue<DeleteAllEntitiesEvent>({});
             ImGui::CloseCurrentPopup();

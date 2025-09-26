@@ -4,9 +4,9 @@
 #include "event/EventBus.h"
 #include "render/Camera.h"
 #include "render/ColorManager.h"
+#include "systems/gameplay/CityPlacementSystem.h"
 #include "systems/rendering/TerrainRenderSystem.h"
 #include "systems/world/WorldGenerationSystem.h"
-#include "systems/gameplay/CityPlacementSystem.h"
 #include <SFML/Graphics/RenderWindow.hpp>
 
 UIManager::UIManager(entt::registry &registry, EventBus &eventBus,
@@ -14,7 +14,7 @@ UIManager::UIManager(entt::registry &registry, EventBus &eventBus,
                      TerrainRenderSystem &terrainRenderSystem,
                      PerformanceMonitor &performanceMonitor, Camera &camera, GameState &gameState,
                      ColorManager &colorManager, sf::RenderWindow &window,
-                     CityPlacementSystem& cityPlacementSystem)
+                     CityPlacementSystem &cityPlacementSystem)
     : _cityPlacementSystem(cityPlacementSystem) {
     _infoPanelUI = std::make_unique<InfoPanelUI>(registry, eventBus, gameState);
     _worldGenSettingsUI =

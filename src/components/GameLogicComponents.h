@@ -13,11 +13,7 @@ struct PositionComponent {
 };
 
 // Enum for the type of city.
-enum class CityType {
-    CAPITAL,
-    TOWN,
-    SUBURB
-};
+enum class CityType { CAPITAL, TOWN, SUBURB };
 
 // A component for city entities.
 struct CityComponent {
@@ -46,7 +42,7 @@ struct LineComponent {
     std::vector<sf::Vector2f> pathOffsets;
     std::vector<sf::Vector2f> curvePoints;
     std::vector<size_t> curveSegmentIndices;
-    std::vector<StopInfo> stops; // Add this line
+    std::vector<StopInfo> stops;  // Add this line
     float totalDistance = 0.0f;
     Thickness thickness = {Constants::DEFAULT_LINE_THICKNESS};
 };
@@ -81,7 +77,7 @@ struct TrainMovementComponent {
     TrainState state = TrainState::STOPPED;
     TrainDirection direction = TrainDirection::FORWARD;
     entt::entity assignedLine;
-    float distanceAlongCurve = 0.0f; // Change this
+    float distanceAlongCurve = 0.0f;  // Change this
     float stopTimer = Constants::TRAIN_STOP_DURATION;
 };
 

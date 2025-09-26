@@ -41,8 +41,8 @@ namespace Constants {
     // City Placement
     constexpr int INITIAL_CITY_COUNT = 3;
     constexpr int MAX_CITIES = 50;
-    constexpr float MIN_CITY_SPAWN_INTERVAL_S = 5.0f;
-    constexpr float MAX_CITY_SPAWN_INTERVAL_S = 6.0f;
+    constexpr float MIN_CITY_SPAWN_INTERVAL_S = 15.0f;
+    constexpr float MAX_CITY_SPAWN_INTERVAL_S = 180.0f;
     constexpr float CITY_PLACEMENT_NOISE_FREQUENCY = 0.005f;
 
     // City Suitability

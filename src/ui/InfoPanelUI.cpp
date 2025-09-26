@@ -217,17 +217,21 @@ void InfoPanelUI::draw() {
                                 entt::entity currentStopEntity = entt::null;
                                 float min_dist = -1.f;
 
-                                for(const auto& stop : line->stops) {
-                                    float dist = std::abs(stop.distanceAlongCurve - movement.distanceAlongCurve);
-                                    if(min_dist < 0 || dist < min_dist) {
+                                for (const auto &stop : line->stops) {
+                                    float dist = std::abs(stop.distanceAlongCurve
+                                                          - movement.distanceAlongCurve);
+                                    if (min_dist < 0 || dist < min_dist) {
                                         min_dist = dist;
                                         currentStopEntity = stop.stationEntity;
                                     }
                                 }
 
                                 if (_registry.valid(currentStopEntity)) {
-                                    auto *stationName = _registry.try_get<NameComponent>(currentStopEntity);
-                                    location = "At " + (stationName ? stationName->name : "Unknown Station");
+                                    auto *stationName =
+                                        _registry.try_get<NameComponent>(currentStopEntity);
+                                    location =
+                                        "At "
+                                        + (stationName ? stationName->name : "Unknown Station");
                                 } else {
                                     location = "At an unknown station";
                                 }
@@ -236,20 +240,22 @@ void InfoPanelUI::draw() {
                                 float min_dist = -1.f;
 
                                 if (movement.direction == TrainDirection::FORWARD) {
-                                    for(const auto& stop : line->stops) {
+                                    for (const auto &stop : line->stops) {
                                         if (stop.distanceAlongCurve > movement.distanceAlongCurve) {
-                                            float dist = stop.distanceAlongCurve - movement.distanceAlongCurve;
-                                            if(min_dist < 0 || dist < min_dist) {
+                                            float dist = stop.distanceAlongCurve
+                                                         - movement.distanceAlongCurve;
+                                            if (min_dist < 0 || dist < min_dist) {
                                                 min_dist = dist;
                                                 nextStopEntity = stop.stationEntity;
                                             }
                                         }
                                     }
-                                } else { // BACKWARD
-                                    for(const auto& stop : line->stops) {
+                                } else {  // BACKWARD
+                                    for (const auto &stop : line->stops) {
                                         if (stop.distanceAlongCurve < movement.distanceAlongCurve) {
-                                            float dist = movement.distanceAlongCurve - stop.distanceAlongCurve;
-                                            if(min_dist < 0 || dist < min_dist) {
+                                            float dist = movement.distanceAlongCurve
+                                                         - stop.distanceAlongCurve;
+                                            if (min_dist < 0 || dist < min_dist) {
                                                 min_dist = dist;
                                                 nextStopEntity = stop.stationEntity;
                                             }

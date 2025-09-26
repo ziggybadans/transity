@@ -117,13 +117,17 @@ void SelectionSystem::onMouseButtonPressed(const MouseButtonPressedEvent& event)
         float minDistanceSq = std::numeric_limits<float>::max();
         const float selectionThresholdSq = 10.0f * 10.0f;
 
+
         for (auto entity : lineView) {
             const auto& line = lineView.get<const LineComponent>(entity);
-            if (line.points.size() < 2) continue;
+            if (line.curvePoints.size() < 2) continue;
 
-            for (size_t i = 0; i < line.points.size() - 1; ++i) {
-                const auto& pos1 = line.points[i].position;
-                const auto& pos2 = line.points[i + 1].position;
+            for (size_t i = 0; i < line.curvePoints.size() - 1; ++i) {
+                size_t segmentIndex = line.curveSegmentIndices[i];
+                const sf::Vector2f offset = (segmentIndex < line.pathOffsets.size()) ? line.pathOffsets[segmentIndex] : sf::Vector2f(0, 0);
+
+                const auto& pos1 = line.curvePoints[i] + offset;
+                const auto& pos2 = line.curvePoints[i + 1] + offset;
 
                 float distSq = distanceToSegmentSq(event.worldPosition, pos1, pos2);
 
