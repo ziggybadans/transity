@@ -12,7 +12,7 @@ void LineRenderSystem::render(const entt::registry &registry, sf::RenderWindow &
     auto lineView = registry.view<const LineComponent>();
     for (auto entity : lineView) {
         const auto &lineComp = lineView.get<const LineComponent>(entity);
-        if (lineComp.points.size() < 2) continue;
+        if (lineComp.curvePoints.size() < 2) continue;
 
         bool isSelected = registry.all_of<SelectedComponent>(entity);
         sf::Color lineColor = isSelected ? highlightColor : lineComp.color;
@@ -20,59 +20,26 @@ void LineRenderSystem::render(const entt::registry &registry, sf::RenderWindow &
 
         sf::VertexArray lineVertices(sf::PrimitiveType::TriangleStrip);
 
-        for (size_t i = 0; i < lineComp.points.size(); ++i) {
-            const auto& current_pos = lineComp.points[i].position;
+        for (size_t i = 0; i < lineComp.curvePoints.size(); ++i) {
+            const auto& current_pos = lineComp.curvePoints[i];
+            sf::Vector2f dir;
 
-            if (i == 0) { // First point
-                const auto& next_pos = lineComp.points[i + 1].position;
-                sf::Vector2f dir = next_pos - current_pos;
-                float len = std::sqrt(dir.x * dir.x + dir.y * dir.y);
-                if (len == 0) continue;
-                sf::Vector2f perp(-dir.y / len, dir.x / len);
-                
-                const sf::Vector2f offset = (i < lineComp.pathOffsets.size()) ? lineComp.pathOffsets[i] : sf::Vector2f(0, 0);
-                sf::Vector2f thicknessOffset = (thickness / 2.f) * perp;
-
-                lineVertices.append({current_pos + offset - thicknessOffset, lineColor});
-                lineVertices.append({current_pos + offset + thicknessOffset, lineColor});
-            } else if (i == lineComp.points.size() - 1) { // Last point
-                const auto& prev_pos = lineComp.points[i - 1].position;
-                sf::Vector2f dir = current_pos - prev_pos;
-                float len = std::sqrt(dir.x * dir.x + dir.y * dir.y);
-                if (len == 0) continue;
-                sf::Vector2f perp(-dir.y / len, dir.x / len);
-
-                const sf::Vector2f offset = ((i - 1) < lineComp.pathOffsets.size()) ? lineComp.pathOffsets[i - 1] : sf::Vector2f(0, 0);
-                sf::Vector2f thicknessOffset = (thickness / 2.f) * perp;
-
-                lineVertices.append({current_pos + offset - thicknessOffset, lineColor});
-                lineVertices.append({current_pos + offset + thicknessOffset, lineColor});
-            } else { // Intermediate point (join)
-                const auto& prev_pos = lineComp.points[i - 1].position;
-                const auto& next_pos = lineComp.points[i + 1].position;
-
-                // End of incoming segment
-                sf::Vector2f dir_in = current_pos - prev_pos;
-                float len_in = std::sqrt(dir_in.x * dir_in.x + dir_in.y * dir_in.y);
-                if (len_in == 0) continue;
-                sf::Vector2f perp_in(-dir_in.y / len_in, dir_in.x / len_in);
-                const sf::Vector2f offset_in = ((i - 1) < lineComp.pathOffsets.size()) ? lineComp.pathOffsets[i - 1] : sf::Vector2f(0, 0);
-                sf::Vector2f thicknessOffset_in = (thickness / 2.f) * perp_in;
-                
-                lineVertices.append({current_pos + offset_in - thicknessOffset_in, lineColor});
-                lineVertices.append({current_pos + offset_in + thicknessOffset_in, lineColor});
-
-                // Start of outgoing segment
-                sf::Vector2f dir_out = next_pos - current_pos;
-                float len_out = std::sqrt(dir_out.x * dir_out.x + dir_out.y * dir_out.y);
-                if (len_out == 0) continue;
-                sf::Vector2f perp_out(-dir_out.y / len_out, dir_out.x / len_out);
-                const sf::Vector2f offset_out = (i < lineComp.pathOffsets.size()) ? lineComp.pathOffsets[i] : sf::Vector2f(0, 0);
-                sf::Vector2f thicknessOffset_out = (thickness / 2.f) * perp_out;
-
-                lineVertices.append({current_pos + offset_out - thicknessOffset_out, lineColor});
-                lineVertices.append({current_pos + offset_out + thicknessOffset_out, lineColor});
+            if (i < lineComp.curvePoints.size() - 1) {
+                dir = lineComp.curvePoints[i+1] - current_pos;
+            } else {
+                dir = current_pos - lineComp.curvePoints[i-1];
             }
+
+            float len = std::sqrt(dir.x * dir.x + dir.y * dir.y);
+            if (len == 0) continue;
+            sf::Vector2f perp(-dir.y / len, dir.x / len);
+            
+            size_t segmentIndex = lineComp.curveSegmentIndices[i];
+            const sf::Vector2f offset = (segmentIndex < lineComp.pathOffsets.size()) ? lineComp.pathOffsets[segmentIndex] : sf::Vector2f(0, 0);
+            sf::Vector2f thicknessOffset = (thickness / 2.f) * perp;
+
+            lineVertices.append({current_pos + offset - thicknessOffset, lineColor});
+            lineVertices.append({current_pos + offset + thicknessOffset, lineColor});
         }
         window.draw(lineVertices);
     }

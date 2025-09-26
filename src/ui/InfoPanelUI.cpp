@@ -215,50 +215,51 @@ void InfoPanelUI::draw() {
                             std::string location;
                             if (movement.state == TrainState::STOPPED) {
                                 entt::entity currentStopEntity = entt::null;
-                                if (movement.currentSegmentIndex < line->points.size()
-                                    && line->points[movement.currentSegmentIndex].type
-                                           == LinePointType::STOP) {
-                                    currentStopEntity =
-                                        line->points[movement.currentSegmentIndex].stationEntity;
+                                float min_dist = -1.f;
+
+                                for(const auto& stop : line->stops) {
+                                    float dist = std::abs(stop.distanceAlongCurve - movement.distanceAlongCurve);
+                                    if(min_dist < 0 || dist < min_dist) {
+                                        min_dist = dist;
+                                        currentStopEntity = stop.stationEntity;
+                                    }
                                 }
 
                                 if (_registry.valid(currentStopEntity)) {
-                                    auto *stationName =
-                                        _registry.try_get<NameComponent>(currentStopEntity);
-                                    location =
-                                        "At "
-                                        + (stationName ? stationName->name : "Unknown Station");
+                                    auto *stationName = _registry.try_get<NameComponent>(currentStopEntity);
+                                    location = "At " + (stationName ? stationName->name : "Unknown Station");
                                 } else {
                                     location = "At an unknown station";
                                 }
                             } else {
-                                int nextStopIdx = -1;
+                                entt::entity nextStopEntity = entt::null;
+                                float min_dist = -1.f;
+
                                 if (movement.direction == TrainDirection::FORWARD) {
-                                    for (size_t i = movement.currentSegmentIndex;
-                                         i < line->points.size(); ++i) {
-                                        if (line->points[i].type == LinePointType::STOP) {
-                                            nextStopIdx = i;
-                                            break;
+                                    for(const auto& stop : line->stops) {
+                                        if (stop.distanceAlongCurve > movement.distanceAlongCurve) {
+                                            float dist = stop.distanceAlongCurve - movement.distanceAlongCurve;
+                                            if(min_dist < 0 || dist < min_dist) {
+                                                min_dist = dist;
+                                                nextStopEntity = stop.stationEntity;
+                                            }
                                         }
                                     }
-                                } else {
-                                    for (int i = movement.currentSegmentIndex; i >= 0; --i) {
-                                        if (line->points[i].type == LinePointType::STOP) {
-                                            nextStopIdx = i;
-                                            break;
+                                } else { // BACKWARD
+                                    for(const auto& stop : line->stops) {
+                                        if (stop.distanceAlongCurve < movement.distanceAlongCurve) {
+                                            float dist = movement.distanceAlongCurve - stop.distanceAlongCurve;
+                                            if(min_dist < 0 || dist < min_dist) {
+                                                min_dist = dist;
+                                                nextStopEntity = stop.stationEntity;
+                                            }
                                         }
                                     }
                                 }
 
-                                if (nextStopIdx != -1) {
-                                    entt::entity stop_entity =
-                                        line->points[nextStopIdx].stationEntity;
-                                    if (_registry.valid(stop_entity)) {
-                                        auto *name = _registry.try_get<NameComponent>(stop_entity);
-                                        location = "Towards " + (name ? name->name : "Unknown");
-                                    } else {
-                                        location = "Towards unknown station";
-                                    }
+                                if (_registry.valid(nextStopEntity)) {
+                                    auto *name = _registry.try_get<NameComponent>(nextStopEntity);
+                                    location = "Towards " + (name ? name->name : "Unknown");
                                 } else {
                                     location = "In transit";
                                 }

@@ -55,9 +55,8 @@ bool PassengerMovementSystem::isTrainGoingToNextNode(const TrainMovementComponen
 void PassengerMovementSystem::alightPassengers(entt::entity trainEntity, const TrainMovementComponent& movement, TrainCapacityComponent& capacity) {
     if (!_registry.valid(movement.assignedLine)) return;
     const auto& line = _registry.get<LineComponent>(movement.assignedLine);
-    if (movement.currentSegmentIndex >= line.points.size() || line.points[movement.currentSegmentIndex].type != LinePointType::STOP) return;
     
-    entt::entity currentStopEntity = line.points[movement.currentSegmentIndex].stationEntity;
+    entt::entity currentStopEntity = getCurrentStop(movement, line);
     if (!_registry.valid(currentStopEntity)) return;
 
     auto passengerView = _registry.view<PassengerComponent, PathComponent>();
@@ -92,9 +91,8 @@ void PassengerMovementSystem::alightPassengers(entt::entity trainEntity, const T
 void PassengerMovementSystem::boardPassengers(entt::entity trainEntity, const TrainMovementComponent& movement, TrainCapacityComponent& capacity) {
     if (!_registry.valid(movement.assignedLine)) return;
     const auto& line = _registry.get<LineComponent>(movement.assignedLine);
-    if (movement.currentSegmentIndex >= line.points.size() || line.points[movement.currentSegmentIndex].type != LinePointType::STOP) return;
     
-    entt::entity currentStopEntity = line.points[movement.currentSegmentIndex].stationEntity;
+    entt::entity currentStopEntity = getCurrentStop(movement, line);
     if (!_registry.valid(currentStopEntity)) return;
 
     auto passengerView = _registry.view<PassengerComponent, PathComponent>();
@@ -118,4 +116,37 @@ void PassengerMovementSystem::boardPassengers(entt::entity trainEntity, const Tr
             LOG_TRACE("PassengerMovementSystem", "Passenger boarded train.");
         }
     }
+}
+
+entt::entity PassengerMovementSystem::getCurrentStop(const TrainMovementComponent& movement, const LineComponent& line) {
+    if (line.points.empty()) {
+        return entt::null;
+    }
+
+    float minDistance = -1.0f;
+    entt::entity closestStop = entt::null;
+
+    float currentCurveDistance = 0.0f;
+    size_t nextPointIndex = 0;
+    for(size_t i = 0; i < line.curvePoints.size(); ++i) {
+        if (nextPointIndex < line.points.size()) {
+            const auto& p = line.points[nextPointIndex];
+            if (line.curvePoints[i] == p.position) {
+                if (p.type == LinePointType::STOP) {
+                    float distanceToTrain = std::abs(currentCurveDistance - movement.distanceAlongCurve);
+                    if (closestStop == entt::null || distanceToTrain < minDistance) {
+                        minDistance = distanceToTrain;
+                        closestStop = p.stationEntity;
+                    }
+                }
+                nextPointIndex++;
+            }
+        }
+        if (i < line.curvePoints.size() - 1) {
+            const auto& p1 = line.curvePoints[i];
+            const auto& p2 = line.curvePoints[i + 1];
+            currentCurveDistance += std::sqrt(std::pow(p2.x - p1.x, 2) + std::pow(p2.y - p1.y, 2));
+        }
+    }
+    return closestStop;
 }

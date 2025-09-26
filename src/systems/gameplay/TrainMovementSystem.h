@@ -3,11 +3,13 @@
 #include "ecs/ISystem.h"
 #include <SFML/System/Time.hpp>
 #include <entt/entt.hpp>
+#include <vector>
+#include <SFML/System/Vector2.hpp>
 
 struct PositionComponent;
 struct TrainMovementComponent;
 struct TrainPhysicsComponent;
-struct StationApproachComponent;
+struct LineComponent;
 
 class TrainMovementSystem : public ISystem, public IUpdatable {
 public:
@@ -16,11 +18,8 @@ public:
     void update(sf::Time dt) override;
 
 private:
-    void handleStoppedState(TrainMovementComponent &movement, float timeStep);
-    
-    void handleMovement(entt::entity entity, TrainMovementComponent &movement, TrainPhysicsComponent &physics, PositionComponent &position, float timeStep);
-    
-    void handleStationApproach(entt::entity entity, TrainMovementComponent &movement, TrainPhysicsComponent &physics, PositionComponent &position, StationApproachComponent &approach, float timeStep);
+    sf::Vector2f getPositionAtDistance(const LineComponent& line, float distance);
+    std::vector<float> getStopDistances(const LineComponent& line);
 
     entt::registry &_registry;
 };

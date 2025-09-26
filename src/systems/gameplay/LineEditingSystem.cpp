@@ -2,6 +2,7 @@
 #include "components/GameLogicComponents.h"
 #include "components/WorldComponents.h"
 #include "Logger.h"
+#include "core/Curve.h"
 #include <algorithm>
 #include <limits>
 
@@ -15,6 +16,25 @@ namespace {
         sf::Vector2f projection = v + t * (w - v);
         sf::Vector2f d = p - projection;
         return d.x * d.x + d.y * d.y;
+    }
+
+    void regenerateCurve(LineComponent& line) {
+        if (line.points.size() < 2) {
+            line.curvePoints.clear();
+            line.curveSegmentIndices.clear();
+            return;
+        }
+
+        std::vector<sf::Vector2f> controlPoints;
+        controlPoints.reserve(line.points.size());
+        for (const auto& p : line.points) {
+            controlPoints.push_back(p.position);
+        }
+        
+        CurveData curveData = Curve::generateCatmullRom(controlPoints);
+        line.curvePoints = curveData.points;
+        line.totalDistance = Curve::calculateCurveLength(line.curvePoints);
+        line.stops = Curve::calculateStopInfo(line.points, line.curvePoints); // Add this
     }
 }
 
@@ -91,7 +111,8 @@ void LineEditingSystem::onMouseButtonPressed(const MouseButtonPressedEvent& even
         const auto& p2 = line.points[i+1].position;
         if (distanceToSegmentSq(event.worldPosition, p1, p2) < 64.f) { // 8.f radius squared
             line.points.insert(line.points.begin() + i + 1, {LinePointType::CONTROL_POINT, event.worldPosition, entt::null});
-            LOG_DEBUG("LineEditingSystem", "Added point to line");
+            regenerateCurve(line);
+            LOG_DEBUG("LineEditingSystem", "Added point to line and regenerated curve");
             return;
         }
     }
@@ -140,6 +161,8 @@ void LineEditingSystem::onMouseButtonReleased(const MouseButtonReleasedEvent& ev
                 point.stationEntity = entt::null;
             }
         }
+
+        regenerateCurve(line);
     }
 
     editingState.draggedPointIndex = std::nullopt;
@@ -168,6 +191,8 @@ void LineEditingSystem::onMouseMoved(const MouseMovedEvent& event) {
 
     auto& line = _registry.get<LineComponent>(selectedLine);
     line.points[editingState.draggedPointIndex.value()].position = event.worldPosition;
+
+    regenerateCurve(line);
 }
 
 void LineEditingSystem::onKeyPressed(const KeyPressedEvent& event) {
@@ -192,6 +217,7 @@ void LineEditingSystem::onKeyPressed(const KeyPressedEvent& event) {
     auto& line = _registry.get<LineComponent>(selectedLine);
     if (line.points.size() > 2) {
         line.points.erase(line.points.begin() + editingState.selectedPointIndex.value());
+        regenerateCurve(line);
         editingState.selectedPointIndex = std::nullopt;
         editingState.draggedPointIndex = std::nullopt;
         LOG_DEBUG("LineEditingSystem", "Deleted point from line");

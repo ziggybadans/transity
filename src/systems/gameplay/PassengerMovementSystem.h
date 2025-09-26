@@ -17,6 +17,7 @@ public:
 private:
     void alightPassengers(entt::entity trainEntity, const TrainMovementComponent& movement, TrainCapacityComponent& capacity);
     void boardPassengers(entt::entity trainEntity, const TrainMovementComponent& movement, TrainCapacityComponent& capacity);
+    entt::entity getCurrentStop(const TrainMovementComponent& movement, const LineComponent& line);
 
     bool isTrainGoingToNextNode(const TrainMovementComponent& movement, const LineComponent& line, entt::entity currentStopEntity, entt::entity nextNodeInPath);
 

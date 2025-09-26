@@ -1,7 +1,7 @@
 #include "ColorManager.h"
 
 ColorManager::ColorManager(EventBus &eventBus)
-    : _eventBus(eventBus), _activeTheme(Theme::Light), _currentLineColorIndex(0) {
+    : _eventBus(eventBus), _activeTheme(Theme::Dark), _currentLineColorIndex(0) {
     // Define themes
     _themes[Theme::Light] = {sf::Color(173, 216, 230),  // backgroundColor
                              sf::Color(255, 255, 255),  // landColor

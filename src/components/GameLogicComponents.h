@@ -35,10 +35,19 @@ struct LinePoint {
     entt::entity stationEntity = entt::null;
 };
 
+struct StopInfo {
+    entt::entity stationEntity;
+    float distanceAlongCurve;
+};
+
 struct LineComponent {
     sf::Color color;
     std::vector<LinePoint> points;
     std::vector<sf::Vector2f> pathOffsets;
+    std::vector<sf::Vector2f> curvePoints;
+    std::vector<size_t> curveSegmentIndices;
+    std::vector<StopInfo> stops; // Add this line
+    float totalDistance = 0.0f;
     Thickness thickness = {Constants::DEFAULT_LINE_THICKNESS};
 };
 
@@ -72,8 +81,7 @@ struct TrainMovementComponent {
     TrainState state = TrainState::STOPPED;
     TrainDirection direction = TrainDirection::FORWARD;
     entt::entity assignedLine;
-    int currentSegmentIndex = 0;
-    float progressOnSegment = 0.0f;
+    float distanceAlongCurve = 0.0f; // Change this
     float stopTimer = Constants::TRAIN_STOP_DURATION;
 };
 

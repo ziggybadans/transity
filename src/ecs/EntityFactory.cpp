@@ -1,6 +1,7 @@
 #include "EntityFactory.h"
 #include "Constants.h"
 #include "Logger.h"
+#include "core/Curve.h"
 #include <SFML/Graphics/Color.hpp>
 #include <filesystem>
 #include <fstream>
@@ -165,8 +166,19 @@ entt::entity EntityFactory::createLine(const std::vector<LinePoint> &points,
     lineComponent.points = points;
     lineComponent.color = color;
 
-    LOG_DEBUG("EntityFactory", "Line entity (ID: %u) created successfully with %zu points.",
-              static_cast<unsigned int>(entity), points.size());
+    std::vector<sf::Vector2f> controlPoints;
+    for (const auto& point : points) {
+        controlPoints.push_back(point.position);
+    }
+    
+    CurveData curveData = Curve::generateCatmullRom(controlPoints);
+    lineComponent.curvePoints = curveData.points;
+    lineComponent.curveSegmentIndices = curveData.segmentIndices;
+    lineComponent.totalDistance = Curve::calculateCurveLength(lineComponent.curvePoints);
+    lineComponent.stops = Curve::calculateStopInfo(lineComponent.points, lineComponent.curvePoints); // Add this
+
+    LOG_DEBUG("EntityFactory", "Line entity (ID: %u) created successfully with %zu points and %zu curve points.",
+              static_cast<unsigned int>(entity), points.size(), lineComponent.curvePoints.size());
 
     return entity;
 }
