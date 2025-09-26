@@ -5,3 +5,5 @@
 struct DeleteEntityEvent {
     entt::entity entity;
 };
+
+struct DeleteAllEntitiesEvent {};

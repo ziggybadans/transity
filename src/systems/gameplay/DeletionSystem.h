@@ -13,9 +13,11 @@ public:
 
 private:
     void onDeleteEntity(const DeleteEntityEvent& event);
+    void onDeleteAllEntities(const DeleteAllEntitiesEvent& event);
 
     entt::registry& _registry;
     EventBus& _eventBus;
     GameState& _gameState;
     entt::scoped_connection _deleteEntityConnection;
+    entt::scoped_connection _deleteAllEntitiesConnection;
 };

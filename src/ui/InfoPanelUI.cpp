@@ -56,7 +56,7 @@ void InfoPanelUI::draw() {
     float worldGenSettingsWidth = Constants::UI_WORLD_GEN_SETTINGS_WIDTH;
     ImVec2 worldGenSettingsPos =
         ImVec2(displaySize.x - worldGenSettingsWidth - windowPadding, windowPadding);
-    ImGui::SetNextWindowPos(ImVec2(worldGenSettingsPos.x, ImGui::GetFrameHeightWithSpacing() * 20),
+    ImGui::SetNextWindowPos(ImVec2(worldGenSettingsPos.x, ImGui::GetFrameHeightWithSpacing() * 21),
                             ImGuiCond_Always);
     ImGui::SetNextWindowSize(ImVec2(worldGenSettingsWidth, 0.0f), ImGuiCond_Always);
     ImGui::Begin("Info Panel", nullptr, window_flags);
