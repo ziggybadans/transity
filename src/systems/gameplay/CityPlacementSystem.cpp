@@ -300,6 +300,7 @@ void CityPlacementSystem::calculateSuburbProximitySuitability(int mapWidth, int 
 
 void CityPlacementSystem::calculateTownProximitySuitability(int mapWidth, int mapHeight, std::vector<float> &map) {
     const float min_dist = Constants::TOWN_PROXIMITY_MIN_DISTANCE;
+    const float max_dist = Constants::TOWN_PROXIMITY_MAX_DISTANCE;
 
     for (int i = 0; i < mapWidth * mapHeight; ++i) {
         float distToCapital = static_cast<float>(_distanceToNearestCapital[i]);
@@ -308,8 +309,10 @@ void CityPlacementSystem::calculateTownProximitySuitability(int mapWidth, int ma
 
         if (minDist < min_dist) {
             map[i] = 0.0f;
-        } else {
+        } else if (minDist > max_dist) {
             map[i] = 1.0f;
+        } else {
+            map[i] = (minDist - min_dist) / (max_dist - min_dist);
         }
     }
 }

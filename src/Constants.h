@@ -41,8 +41,8 @@ namespace Constants {
     // City Placement
     constexpr int INITIAL_CITY_COUNT = 3;
     constexpr int MAX_CITIES = 50;
-    constexpr float MIN_CITY_SPAWN_INTERVAL_S = 15.0f;
-    constexpr float MAX_CITY_SPAWN_INTERVAL_S = 180.0f;
+    constexpr float MIN_CITY_SPAWN_INTERVAL_S = 5.0f;
+    constexpr float MAX_CITY_SPAWN_INTERVAL_S = 6.0f;
     constexpr float CITY_PLACEMENT_NOISE_FREQUENCY = 0.005f;
 
     // City Suitability
@@ -56,6 +56,7 @@ namespace Constants {
     constexpr float SUBURB_PROXIMITY_RANGE_CAPITAL = 100.0f;
     constexpr float SUBURB_PROXIMITY_RANGE_TOWN = 50.0f;
     constexpr float TOWN_PROXIMITY_MIN_DISTANCE = 50.0f;
+    constexpr float TOWN_PROXIMITY_MAX_DISTANCE = 150.0f;
 
     // City Finding Algorithm
     constexpr int FIND_BEST_CITY_LOCATION_SAMPLES = 5000;
