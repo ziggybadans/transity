@@ -43,6 +43,15 @@ void LineCreationSystem::onMouseButtonPressed(const MouseButtonPressedEvent &eve
 
     if (_gameState.currentInteractionMode == InteractionMode::CREATE_LINE
         && event.button == sf::Mouse::Button::Left) {
+        
+        auto& preview = _registry.ctx().get<LinePreview>();
+
+        // Check if snapping to a city
+        if (preview.snapInfo && preview.snapInfo->snappedToPointIndex == (size_t)-1) {
+            addPointToLine(preview.snapInfo->snappedToEntity);
+            return;
+        }
+
         LOG_DEBUG("LineCreationSystem", "Mouse click in CREATE_LINE mode at world (%.1f, %.1f).",
                   event.worldPosition.x, event.worldPosition.y);
 
@@ -64,7 +73,6 @@ void LineCreationSystem::onMouseButtonPressed(const MouseButtonPressedEvent &eve
             }
         }
 
-        auto& preview = _registry.ctx().get<LinePreview>();
         if (preview.snapPosition && preview.snapInfo) {
             addPointToLine(*preview.snapPosition, entt::null, preview.snapInfo);
         } else {
@@ -97,6 +105,30 @@ void LineCreationSystem::addPointToLine(const sf::Vector2f& position, entt::enti
     } else {
         activeLine.points.push_back({LinePointType::CONTROL_POINT, position, entt::null, snapInfo});
         LOG_DEBUG("LineCreationSystem", "Control point added to active line at (%.1f, %.1f).", position.x, position.y);
+    }
+}
+
+void LineCreationSystem::addPointToLine(entt::entity stationEntity) {
+    auto& activeLine = _registry.ctx().get<ActiveLine>();
+    const auto& pos = _registry.get<PositionComponent>(stationEntity).coordinates;
+
+    if (activeLine.points.empty() && !_registry.all_of<CityComponent>(stationEntity)) {
+        LOG_WARN("LineCreationSystem", "The first point of a line must be a station.");
+        return;
+    }
+
+    if (_registry.all_of<CityComponent>(stationEntity)) {
+        if (!activeLine.points.empty()) {
+            const auto& lastPoint = activeLine.points.back();
+            if (lastPoint.type == LinePointType::STOP && lastPoint.stationEntity == stationEntity) {
+                LOG_WARN("LineCreationSystem",
+                         "Station %u is already the last point in the active line.",
+                         static_cast<unsigned int>(stationEntity));
+                return;
+            }
+        }
+        activeLine.points.push_back({LinePointType::STOP, pos, stationEntity});
+        LOG_DEBUG("LineCreationSystem", "Station %u added to active line.", static_cast<unsigned int>(stationEntity));
     }
 }
 
@@ -205,8 +237,6 @@ void LineCreationSystem::onFinalizeLine(const FinalizeLineEvent &event) {
     finalizeLine();
 }
 
-// In src/systems/gameplay/LineCreationSystem.cpp
-
 void LineCreationSystem::update(sf::Time dt) {
     if (_gameState.currentInteractionMode != InteractionMode::CREATE_LINE) {
         return;
@@ -224,6 +254,7 @@ void LineCreationSystem::update(sf::Time dt) {
     const float SNAP_RADIUS_SQUARED = Constants::LINE_SNAP_RADIUS * Constants::LINE_SNAP_RADIUS;
     float closestDistSq = SNAP_RADIUS_SQUARED;
 
+    // Existing line control point snapping
     auto lineView = _registry.view<const LineComponent>();
     for (auto entity : lineView) {
         const auto& lineComp = lineView.get<const LineComponent>(entity);
@@ -241,40 +272,68 @@ void LineCreationSystem::update(sf::Time dt) {
         }
     }
 
+    // ADD THIS: City snapping
+    auto cityView = _registry.view<const CityComponent, const PositionComponent>();
+    for (auto entity : cityView) {
+        const auto& pos = cityView.get<const PositionComponent>(entity);
+        sf::Vector2f diff = mousePos - pos.coordinates;
+        float distSq = diff.x * diff.x + diff.y * diff.y;
+
+        if (distSq < closestDistSq) {
+            closestDistSq = distSq;
+            // For cities, we don't have a line entity or point index, so we create a temporary one
+            // The entity is the city itself, and we can use a sentinel value for the index.
+            preview.snapInfo = SnapInfo{entity, (size_t)-1};
+        }
+    }
+
+
     if (preview.snapInfo) {
-        const auto& targetLine = _registry.get<LineComponent>(preview.snapInfo->snappedToEntity);
-        const auto& targetPoint = targetLine.points[preview.snapInfo->snappedToPointIndex];
+        sf::Vector2f targetPointPos;
+        sf::Vector2f tangent;
 
-        sf::Vector2f p_prev, p_next;
-        if (preview.snapInfo->snappedToPointIndex > 0) {
-            p_prev = targetLine.points[preview.snapInfo->snappedToPointIndex - 1].position;
-        } else if (targetLine.points.size() > 1) {
-            p_prev = targetPoint.position - (targetLine.points[1].position - targetPoint.position);
+        // Check if we snapped to a line or a city
+        if (preview.snapInfo->snappedToPointIndex != (size_t)-1) {
+            // Snapped to a line control point
+            const auto& targetLine = _registry.get<LineComponent>(preview.snapInfo->snappedToEntity);
+            const auto& targetPoint = targetLine.points[preview.snapInfo->snappedToPointIndex];
+            targetPointPos = targetPoint.position;
+
+            sf::Vector2f p_prev, p_next;
+            if (preview.snapInfo->snappedToPointIndex > 0) {
+                p_prev = targetLine.points[preview.snapInfo->snappedToPointIndex - 1].position;
+            } else if (targetLine.points.size() > 1) {
+                p_prev = targetPoint.position - (targetLine.points[1].position - targetPoint.position);
+            } else {
+                p_prev = targetPoint.position;
+            }
+
+            if (preview.snapInfo->snappedToPointIndex < targetLine.points.size() - 1) {
+                p_next = targetLine.points[preview.snapInfo->snappedToPointIndex + 1].position;
+            } else if (targetLine.points.size() > 1) {
+                p_next = targetPoint.position + (targetPoint.position - targetLine.points[targetLine.points.size() - 2].position);
+            } else {
+                p_next = targetPoint.position;
+            }
+            tangent = p_next - p_prev;
         } else {
-            p_prev = targetPoint.position;
+            // Snapped to a city
+            targetPointPos = _registry.get<PositionComponent>(preview.snapInfo->snappedToEntity).coordinates;
+            // For a city, we don't have a line to get a tangent from.
+            // We can't calculate a perpendicular offset without a tangent.
+            // For now, let's just snap to the center. The user can then add a control point to create an offset.
+            // A more advanced implementation could look at connected lines to infer a tangent.
+            tangent = {1.f, 0.f}; // Default tangent
         }
 
-        if (preview.snapInfo->snappedToPointIndex < targetLine.points.size() - 1) {
-            p_next = targetLine.points[preview.snapInfo->snappedToPointIndex + 1].position;
-        } else if (targetLine.points.size() > 1) {
-            p_next = targetPoint.position + (targetPoint.position - targetLine.points[targetLine.points.size() - 2].position);
-        } else {
-            p_next = targetPoint.position;
-        }
-
-        sf::Vector2f tangent = p_next - p_prev;
         float len = std::sqrt(tangent.x * tangent.x + tangent.y * tangent.y);
         if (len > 0) {
             tangent /= len;
-        } else {
-            tangent = {1.f, 0.f};
         }
         
         sf::Vector2f perpendicular = {-tangent.y, tangent.x};
-        sf::Vector2f mouse_vec = mousePos - targetPoint.position;
+        sf::Vector2f mouse_vec = mousePos - targetPointPos;
         float dot_product_with_perp = mouse_vec.x * perpendicular.x + mouse_vec.y * perpendicular.y;
-
-        LOG_DEBUG("LineCreationSystem", "Snap debug: dot_product=%.2f, perp=(%.2f, %.2f)", dot_product_with_perp, perpendicular.x, perpendicular.y);
 
         sf::Vector2f side_offset;
         if (dot_product_with_perp > 0) {
@@ -282,7 +341,13 @@ void LineCreationSystem::update(sf::Time dt) {
         } else {
             side_offset = -perpendicular * Constants::LINE_PARALLEL_OFFSET;
         }
-        preview.snapPosition = targetPoint.position + side_offset;
+        
+        if (preview.snapInfo->snappedToPointIndex != (size_t)-1) {
+            preview.snapPosition = targetPointPos + side_offset;
+        } else {
+            // For cities, just snap to the center for now.
+            preview.snapPosition = targetPointPos;
+        }
     }
 }
 

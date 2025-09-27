@@ -47,7 +47,11 @@ void Renderer::renderFrame(entt::registry &registry, GameState &gameState, const
     sf::Color highlightColor(255 - landColor.r, 255 - landColor.g, 255 - landColor.b);
 
     _terrainRenderSystem.render(registry, _windowInstance, view, worldGen.getParams());
-    _lineRenderSystem.render(registry, _windowInstance, view, highlightColor);
+    
+    // Render cities before lines so control points appear on top
+    _cityRenderSystem.render(registry, _windowInstance, gameState, highlightColor);
+    
+    _lineRenderSystem.render(registry, _windowInstance, gameState, view, highlightColor);
 
     // The main render view now excludes entities handled by other systems
     auto viewRegistry = registry.view<const PositionComponent, const RenderableComponent>(
@@ -87,7 +91,6 @@ void Renderer::renderFrame(entt::registry &registry, GameState &gameState, const
         }
     }
 
-    _cityRenderSystem.render(registry, _windowInstance, highlightColor);
     _trainRenderSystem.render(registry, _windowInstance, highlightColor);
     _pathRenderSystem.render(registry, _windowInstance);
     passengerSpawnAnimationSystem.render(_windowInstance);

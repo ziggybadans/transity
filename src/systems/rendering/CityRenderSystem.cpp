@@ -3,6 +3,7 @@
 #include "components/GameLogicComponents.h"
 #include "components/PassengerComponents.h"
 #include "components/RenderComponents.h"
+#include "app/InteractionMode.h"
 #include <stdexcept>
 
 sf::Font CityRenderSystem::loadFont() {
@@ -20,7 +21,7 @@ CityRenderSystem::CityRenderSystem() : m_font(loadFont()), m_text(m_font) {
     m_text.setFillColor(sf::Color::Black);
 }
 
-void CityRenderSystem::render(entt::registry& registry, sf::RenderWindow& window, const sf::Color& highlightColor) {
+void CityRenderSystem::render(entt::registry& registry, sf::RenderWindow& window, const GameState& gameState, const sf::Color& highlightColor) {
     auto cityView = registry.view<const CityComponent, const PositionComponent, const RenderableComponent>();
 
     for (auto entity : cityView) {
@@ -30,13 +31,16 @@ void CityRenderSystem::render(entt::registry& registry, sf::RenderWindow& window
 
         switch (city.type) {
             case CityType::CAPITAL:
-                renderCapital(window, position, renderable, highlightColor);
+                // Pass gameState
+                renderCapital(window, position, renderable, gameState, highlightColor);
                 break;
             case CityType::TOWN:
-                renderTown(window, position, renderable, highlightColor);
+                // Pass gameState
+                renderTown(window, position, renderable, gameState, highlightColor);
                 break;
             case CityType::SUBURB:
-                renderSuburb(window, position, renderable, highlightColor);
+                // Pass gameState
+                renderSuburb(window, position, renderable, gameState, highlightColor);
                 break;
         }
 
@@ -61,7 +65,7 @@ void CityRenderSystem::render(entt::registry& registry, sf::RenderWindow& window
     }
 }
 
-void CityRenderSystem::renderCapital(sf::RenderWindow& window, const PositionComponent& position, const RenderableComponent& renderable, const sf::Color& highlightColor) {
+void CityRenderSystem::renderCapital(sf::RenderWindow& window, const PositionComponent& position, const RenderableComponent& renderable, const GameState& gameState, const sf::Color& highlightColor) {
     float borderThickness = 4.0f;
     float size = renderable.radius.value * 2.0f;
 
@@ -75,13 +79,19 @@ void CityRenderSystem::renderCapital(sf::RenderWindow& window, const PositionCom
     sf::RectangleShape innerSquare;
     float innerSize = (renderable.radius.value - borderThickness) * 2.0f;
     innerSquare.setSize({innerSize, innerSize});
-    innerSquare.setFillColor(renderable.color);
+
+    sf::Color innerColor = renderable.color;
+    if (gameState.currentInteractionMode == InteractionMode::CREATE_LINE) {
+        innerColor.a = 128; // 50% opacity
+    }
+    innerSquare.setFillColor(innerColor);
+
     innerSquare.setOrigin({innerSize / 2.0f, innerSize / 2.0f});
     innerSquare.setPosition(position.coordinates);
     window.draw(innerSquare);
 }
 
-void CityRenderSystem::renderTown(sf::RenderWindow& window, const PositionComponent& position, const RenderableComponent& renderable, const sf::Color& highlightColor) {
+void CityRenderSystem::renderTown(sf::RenderWindow& window, const PositionComponent& position, const RenderableComponent& renderable, const GameState& gameState, const sf::Color& highlightColor) {
     float borderThickness = 4.0f;
 
     sf::CircleShape border(renderable.radius.value);
@@ -91,14 +101,20 @@ void CityRenderSystem::renderTown(sf::RenderWindow& window, const PositionCompon
     window.draw(border);
 
     sf::CircleShape innerCircle(renderable.radius.value - borderThickness);
-    innerCircle.setFillColor(renderable.color);
+
+    sf::Color innerColor = renderable.color;
+    if (gameState.currentInteractionMode == InteractionMode::CREATE_LINE) {
+        innerColor.a = 128; // 50% opacity
+    }
+    innerCircle.setFillColor(innerColor);
+
     innerCircle.setOrigin({renderable.radius.value - borderThickness,
                            renderable.radius.value - borderThickness});
     innerCircle.setPosition(position.coordinates);
     window.draw(innerCircle);
 }
 
-void CityRenderSystem::renderSuburb(sf::RenderWindow& window, const PositionComponent& position, const RenderableComponent& renderable, const sf::Color& highlightColor) {
+void CityRenderSystem::renderSuburb(sf::RenderWindow& window, const PositionComponent& position, const RenderableComponent& renderable, const GameState& gameState, const sf::Color& highlightColor) {
     float borderThickness = 4.0f;
 
     sf::CircleShape border(renderable.radius.value, 3);
@@ -108,7 +124,13 @@ void CityRenderSystem::renderSuburb(sf::RenderWindow& window, const PositionComp
     window.draw(border);
 
     sf::CircleShape innerTriangle(renderable.radius.value - borderThickness, 3);
-    innerTriangle.setFillColor(renderable.color);
+    
+    sf::Color innerColor = renderable.color;
+    if (gameState.currentInteractionMode == InteractionMode::CREATE_LINE) {
+        innerColor.a = 128; // 50% opacity
+    }
+    innerTriangle.setFillColor(innerColor);
+
     innerTriangle.setOrigin({renderable.radius.value - borderThickness,
                              renderable.radius.value - borderThickness});
     innerTriangle.setPosition(position.coordinates);

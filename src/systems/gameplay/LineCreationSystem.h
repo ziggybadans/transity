@@ -39,6 +39,7 @@ private:
     void onMouseMoved(const MouseMovedEvent &event);
 
     void addPointToLine(const sf::Vector2f& position, entt::entity stationEntity = entt::null, std::optional<SnapInfo> snapInfo = std::nullopt);
+    void addPointToLine(entt::entity stationEntity);
     void finalizeLine();
 
     entt::registry &_registry;

@@ -3,11 +3,12 @@
 #include "Logger.h"
 #include "components/GameLogicComponents.h"
 #include "systems/gameplay/LineCreationSystem.h" // For ActiveLine
+#include "app/InteractionMode.h"
 #include <algorithm>
 #include <vector>
 #include "core/Curve.h"
 
-void LineRenderSystem::render(const entt::registry &registry, sf::RenderWindow &window,
+void LineRenderSystem::render(const entt::registry &registry, sf::RenderWindow &window, const GameState& gameState,
                               const sf::View &view, const sf::Color& highlightColor) {
     // Render finalized lines
     auto lineView = registry.view<const LineComponent>();
@@ -48,44 +49,45 @@ void LineRenderSystem::render(const entt::registry &registry, sf::RenderWindow &
     // Render active line being created
     if (registry.ctx().contains<ActiveLine>()) {
         const auto& activeLine = registry.ctx().get<ActiveLine>();
-        if (activeLine.points.empty()) return;
+        if (!activeLine.points.empty()) {
+            sf::Vector2f mousePos = window.mapPixelToCoords(sf::Mouse::getPosition(window), view);
 
-        sf::Vector2f mousePos = window.mapPixelToCoords(sf::Mouse::getPosition(window), view);
+            if (registry.ctx().contains<LinePreview>()) {
+                const auto& preview = registry.ctx().get<LinePreview>();
+                if (preview.snapPosition) {
+                    mousePos = *preview.snapPosition;
+                }
+            }
+            
+            std::vector<sf::Vector2f> previewPoints;
+            for(const auto& p : activeLine.points) {
+                previewPoints.push_back(p.position);
+            }
+            previewPoints.push_back(mousePos);
 
-        // Add this block
-        if (registry.ctx().contains<LinePreview>()) {
-            const auto& preview = registry.ctx().get<LinePreview>();
-            if (preview.snapPosition) {
-                mousePos = *preview.snapPosition;
+            auto curveData = Curve::generateCatmullRom(previewPoints);
+
+            sf::VertexArray lineVertices(sf::PrimitiveType::LineStrip);
+            for(const auto& p : curveData.points) {
+                lineVertices.append({p, sf::Color::Yellow});
+            }
+            window.draw(lineVertices);
+
+            // Draw control point markers for the active line
+            sf::CircleShape controlPointMarker(4.f);
+            controlPointMarker.setFillColor(sf::Color::Yellow);
+            controlPointMarker.setOrigin(sf::Vector2f(4.f, 4.f));
+            for(const auto& point : activeLine.points) {
+                if (point.type == LinePointType::CONTROL_POINT) {
+                    controlPointMarker.setPosition(point.position);
+                    window.draw(controlPointMarker);
+                }
             }
         }
-        
-        std::vector<sf::Vector2f> previewPoints;
-        for(const auto& p : activeLine.points) {
-            previewPoints.push_back(p.position);
-        }
-        previewPoints.push_back(mousePos);
+    }
 
-        auto curveData = Curve::generateCatmullRom(previewPoints);
-
-        sf::VertexArray lineVertices(sf::PrimitiveType::LineStrip);
-        for(const auto& p : curveData.points) {
-            lineVertices.append({p, sf::Color::Yellow});
-        }
-        window.draw(lineVertices);
-
-        // Draw control point markers
-        sf::CircleShape controlPointMarker(4.f);
-        controlPointMarker.setFillColor(sf::Color::Yellow);
-        controlPointMarker.setOrigin(sf::Vector2f(4.f, 4.f));
-        for(const auto& point : activeLine.points) {
-            if (point.type == LinePointType::CONTROL_POINT) {
-                controlPointMarker.setPosition(point.position);
-                window.draw(controlPointMarker);
-            }
-        }
-
-        // ADDED: Draw control points of all existing lines
+    // If in line creation mode, draw all snappable control points
+    if (gameState.currentInteractionMode == InteractionMode::CREATE_LINE) {
         sf::CircleShape existingControlPointMarker(6.f);
         existingControlPointMarker.setFillColor(sf::Color::Transparent);
         existingControlPointMarker.setOutlineColor(sf::Color::White);
@@ -101,6 +103,13 @@ void LineRenderSystem::render(const entt::registry &registry, sf::RenderWindow &
                     window.draw(existingControlPointMarker);
                 }
             }
+        }
+
+        auto cityView = registry.view<const CityComponent, const PositionComponent>();
+        for (auto entity : cityView) {
+            const auto& pos = cityView.get<const PositionComponent>(entity);
+            existingControlPointMarker.setPosition(pos.coordinates);
+            window.draw(existingControlPointMarker);
         }
     }
 }
