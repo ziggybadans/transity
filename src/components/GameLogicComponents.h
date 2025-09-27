@@ -39,7 +39,8 @@ struct LinePoint {
     LinePointType type;
     sf::Vector2f position;
     entt::entity stationEntity = entt::null;
-    std::optional<SnapInfo> snapInfo; // ADD THIS
+    std::optional<SnapInfo> snapInfo;
+    float snapSide = 0.f; // Add this. 0 for center, -1 for left, 1 for right.
 };
 
 struct LineComponent {

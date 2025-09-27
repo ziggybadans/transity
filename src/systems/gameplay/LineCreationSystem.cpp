@@ -5,6 +5,7 @@
 #include "render/ColorManager.h"
 #include "imgui.h"
 #include "Constants.h"
+#include "core/Curve.h"
 #include <algorithm>
 #include <utility>
 
@@ -18,8 +19,8 @@ LineCreationSystem::LineCreationSystem(entt::registry& registry, EntityFactory& 
                                    .connect<&LineCreationSystem::onMouseButtonPressed>(this);
     m_cancelLineCreationConnection = _eventBus.sink<CancelLineCreationEvent>()
                                    .connect<&LineCreationSystem::onCancelLineCreation>(this);
-    m_mouseMoveConnection = _eventBus.sink<MouseMovedEvent>() // ADD THIS
-                                  .connect<&LineCreationSystem::onMouseMoved>(this); // ADD THIS
+    m_mouseMoveConnection = _eventBus.sink<MouseMovedEvent>()
+                                  .connect<&LineCreationSystem::onMouseMoved>(this);
     _registry.ctx().emplace<LinePreview>();
     LOG_DEBUG("LineCreationSystem", "LineCreationSystem created and connected to EventBus.");
 }
@@ -28,15 +29,13 @@ LineCreationSystem::~LineCreationSystem() {
     m_finalizeLineConnection.release();
     m_mousePressConnection.release();
     m_cancelLineCreationConnection.release();
-    m_mouseMoveConnection.release(); // ADD THIS
+    m_mouseMoveConnection.release();
     LOG_DEBUG("LineCreationSystem", "LineCreationSystem destroyed and disconnected from EventBus.");
 }
 
 void LineCreationSystem::onMouseMoved(const MouseMovedEvent &event) {
     _currentMouseWorldPos = event.worldPosition;
 }
-
-// In src/systems/gameplay/LineCreationSystem.cpp
 
 void LineCreationSystem::onMouseButtonPressed(const MouseButtonPressedEvent &event) {
     if (ImGui::GetIO().WantCaptureMouse) {
@@ -46,21 +45,15 @@ void LineCreationSystem::onMouseButtonPressed(const MouseButtonPressedEvent &eve
     if (_gameState.currentInteractionMode == InteractionMode::CREATE_LINE && event.button == sf::Mouse::Button::Left) {
         auto& preview = _registry.ctx().get<LinePreview>();
 
-        // Priority 1: Use the snap if it's available.
         if (preview.snapPosition && preview.snapInfo) {
             entt::entity stationEntity = entt::null;
-            // Check if the snap is to a city.
             if (preview.snapInfo->snappedToPointIndex == (size_t)-1) {
                 stationEntity = preview.snapInfo->snappedToEntity;
             }
-            
-            // Add the point at the calculated snapped position.
-            addPointToLine(*preview.snapPosition, stationEntity, preview.snapInfo);
+            addPointToLine(*preview.snapPosition, stationEntity, preview.snapInfo, preview.snapSide);
             return;
         }
 
-        // Priority 2: If no snap, check for a direct click on a station.
-        // This handles cases where the mouse is not close enough to snap, but still on a station.
         auto view = _registry.view<PositionComponent, ClickableComponent, CityComponent>();
         for (auto entity_id : view) {
             const auto &pos = view.get<PositionComponent>(entity_id);
@@ -69,19 +62,16 @@ void LineCreationSystem::onMouseButtonPressed(const MouseButtonPressedEvent &eve
             float distanceSquared = (diff.x * diff.x) + diff.y * diff.y;
 
             if (distanceSquared <= clickable.boundingRadius.value * clickable.boundingRadius.value) {
-                // Add the station at its center, as there's no snap info.
                 addPointToLine(pos.coordinates, entity_id);
                 return;
             }
         }
 
-        // Priority 3: If no snap and not on a station, add a free control point.
         addPointToLine(event.worldPosition);
     }
 }
 
-
-void LineCreationSystem::addPointToLine(const sf::Vector2f& position, entt::entity stationEntity, std::optional<SnapInfo> snapInfo) {
+void LineCreationSystem::addPointToLine(const sf::Vector2f& position, entt::entity stationEntity, std::optional<SnapInfo> snapInfo, float snapSide) {
     auto& activeLine = _registry.ctx().get<ActiveLine>();
 
     if (activeLine.points.empty() && stationEntity == entt::null) {
@@ -93,41 +83,15 @@ void LineCreationSystem::addPointToLine(const sf::Vector2f& position, entt::enti
         if (!activeLine.points.empty()) {
             const auto& lastPoint = activeLine.points.back();
             if (lastPoint.type == LinePointType::STOP && lastPoint.stationEntity == stationEntity) {
-                LOG_WARN("LineCreationSystem",
-                         "Station %u is already the last point in the active line.",
-                         static_cast<unsigned int>(stationEntity));
+                LOG_WARN("LineCreationSystem", "Station %u is already the last point in the active line.", static_cast<unsigned int>(stationEntity));
                 return;
             }
         }
-        activeLine.points.push_back({LinePointType::STOP, position, stationEntity});
+        activeLine.points.push_back({LinePointType::STOP, position, stationEntity, snapInfo, snapSide});
         LOG_DEBUG("LineCreationSystem", "Station %u added to active line.", static_cast<unsigned int>(stationEntity));
     } else {
-        activeLine.points.push_back({LinePointType::CONTROL_POINT, position, entt::null, snapInfo});
+        activeLine.points.push_back({LinePointType::CONTROL_POINT, position, entt::null, snapInfo, snapSide});
         LOG_DEBUG("LineCreationSystem", "Control point added to active line at (%.1f, %.1f).", position.x, position.y);
-    }
-}
-
-void LineCreationSystem::addPointToLine(entt::entity stationEntity) {
-    auto& activeLine = _registry.ctx().get<ActiveLine>();
-    const auto& pos = _registry.get<PositionComponent>(stationEntity).coordinates;
-
-    if (activeLine.points.empty() && !_registry.all_of<CityComponent>(stationEntity)) {
-        LOG_WARN("LineCreationSystem", "The first point of a line must be a station.");
-        return;
-    }
-
-    if (_registry.all_of<CityComponent>(stationEntity)) {
-        if (!activeLine.points.empty()) {
-            const auto& lastPoint = activeLine.points.back();
-            if (lastPoint.type == LinePointType::STOP && lastPoint.stationEntity == stationEntity) {
-                LOG_WARN("LineCreationSystem",
-                         "Station %u is already the last point in the active line.",
-                         static_cast<unsigned int>(stationEntity));
-                return;
-            }
-        }
-        activeLine.points.push_back({LinePointType::STOP, pos, stationEntity});
-        LOG_DEBUG("LineCreationSystem", "Station %u added to active line.", static_cast<unsigned int>(stationEntity));
     }
 }
 
@@ -135,9 +99,7 @@ void LineCreationSystem::finalizeLine() {
     auto& activeLine = _registry.ctx().get<ActiveLine>();
 
     if (activeLine.points.size() < 2) {
-        LOG_WARN("LineCreationSystem",
-                 "Not enough points to finalize line. Need at least 2, have %zu.",
-                 activeLine.points.size());
+        LOG_WARN("LineCreationSystem", "Not enough points to finalize line. Need at least 2, have %zu.", activeLine.points.size());
         clearCurrentLine();
         return;
     }
@@ -146,9 +108,6 @@ void LineCreationSystem::finalizeLine() {
         LOG_WARN("LineCreationSystem", "Cannot finalize line: the last point must be a station.");
         return;
     }
-
-    LOG_DEBUG("LineCreationSystem", "Finalizing line with %zu points.",
-              activeLine.points.size());
 
     sf::Color chosenColor = _colorManager.getNextLineColor();
     entt::entity lineEntity = _entityFactory.createLine(activeLine.points, chosenColor);
@@ -160,67 +119,68 @@ void LineCreationSystem::finalizeLine() {
     }
 
     auto& newLineComp = _registry.get<LineComponent>(lineEntity);
-    for (size_t i = 0; i < activeLine.points.size() -1; ++i) {
-        const auto& point1 = activeLine.points[i];
-        const auto& point2 = activeLine.points[i+1];
+    for (size_t i = 0; i < activeLine.points.size() - 1; ++i) {
+        const auto& p1 = activeLine.points[i];
+        const auto& p2 = activeLine.points[i+1];
 
-        if (point1.snapInfo && point2.snapInfo && point1.snapInfo->snappedToEntity == point2.snapInfo->snappedToEntity) {
+        if (p1.snapInfo && p2.snapInfo && p1.snapSide != 0.f && p1.snapSide == p2.snapSide) {
+            sf::Vector2f original_p1_pos, original_p2_pos;
+
+            if (p1.snapInfo->snappedToPointIndex != (size_t)-1) {
+                const auto& line = _registry.get<LineComponent>(p1.snapInfo->snappedToEntity);
+                original_p1_pos = line.points[p1.snapInfo->snappedToPointIndex].position;
+            } else {
+                original_p1_pos = _registry.get<PositionComponent>(p1.snapInfo->snappedToEntity).coordinates;
+            }
+
+            if (p2.snapInfo->snappedToPointIndex != (size_t)-1) {
+                const auto& line = _registry.get<LineComponent>(p2.snapInfo->snappedToEntity);
+                original_p2_pos = line.points[p2.snapInfo->snappedToPointIndex].position;
+            } else {
+                original_p2_pos = _registry.get<PositionComponent>(p2.snapInfo->snappedToEntity).coordinates;
+            }
+
+            sf::Vector2f tangent = original_p2_pos - original_p1_pos;
+            if (auto len = std::sqrt(tangent.x * tangent.x + tangent.y * tangent.y); len > 0) {
+                tangent /= len;
+            } else {
+                continue;
+            }
+
+            sf::Vector2f perpendicular = {-tangent.y, tangent.x};
             
-            const auto& snappedLineComp = _registry.get<LineComponent>(point1.snapInfo->snappedToEntity);
-            
-            size_t snappedIndex1 = point1.snapInfo->snappedToPointIndex;
-            size_t snappedIndex2 = point2.snapInfo->snappedToPointIndex;
-
-            if (snappedIndex1 > snappedIndex2) std::swap(snappedIndex1, snappedIndex2);
-
-            for (size_t j = snappedIndex1; j < snappedIndex2; ++j) {
-                const auto& snappedPoint = snappedLineComp.points[j];
-                const auto& nextSnappedPoint = snappedLineComp.points[j+1];
-
-                sf::Vector2f tangent = nextSnappedPoint.position - snappedPoint.position;
-                float len = std::sqrt(tangent.x * tangent.x + tangent.y * tangent.y);
-                if (len > 0) tangent /= len;
-                else continue;
-
-                sf::Vector2f perpendicular = {-tangent.y, tangent.x};
-
-                sf::Vector2f dir_to_new_point = point1.position - snappedLineComp.points[point1.snapInfo->snappedToPointIndex].position;
-                float dot_product = dir_to_new_point.x * perpendicular.x + dir_to_new_point.y * perpendicular.y;
-
-                if (j < newLineComp.pathOffsets.size()) {
-                    if (dot_product > 0) {
-                        newLineComp.pathOffsets[j] = perpendicular * Constants::LINE_PARALLEL_OFFSET;
-                    } else {
-                        newLineComp.pathOffsets[j] = -perpendicular * Constants::LINE_PARALLEL_OFFSET;
-                    }
-                }
+            if (i < newLineComp.pathOffsets.size()) {
+                newLineComp.pathOffsets[i] = perpendicular * p1.snapSide * Constants::LINE_PARALLEL_OFFSET;
             }
         }
     }
 
     if (newLineComp.points.size() > 1) {
-        // Check first segment
         if (newLineComp.pathOffsets.size() > 0 && newLineComp.pathOffsets[0] != sf::Vector2f(0,0)) {
             newLineComp.points[0].position += newLineComp.pathOffsets[0];
         }
-        // Check last segment
         size_t lastSegmentIndex = newLineComp.curveSegmentIndices.back();
         if (newLineComp.pathOffsets.size() > lastSegmentIndex && newLineComp.pathOffsets[lastSegmentIndex] != sf::Vector2f(0,0)) {
             newLineComp.points.back().position += newLineComp.pathOffsets[lastSegmentIndex];
         }
     }
+    
+    std::vector<sf::Vector2f> controlPoints;
+    for (const auto &point : newLineComp.points) {
+        controlPoints.push_back(point.position);
+    }
+    CurveData curveData = Curve::generateCatmullRom(controlPoints);
+    newLineComp.curvePoints = curveData.points;
+    newLineComp.curveSegmentIndices = curveData.segmentIndices;
+    newLineComp.totalDistance = Curve::calculateCurveLength(newLineComp.curvePoints);
+    newLineComp.stops = Curve::calculateStopInfo(newLineComp.points, newLineComp.curvePoints);
 
-    for (const auto& point : activeLine.points) {
+    for (const auto& point : newLineComp.points) {
         if (point.type == LinePointType::STOP) {
             auto& stationComp = _registry.get<CityComponent>(point.stationEntity);
             stationComp.connectedLines.push_back(lineEntity);
-            LOG_DEBUG("LineCreationSystem", "Connected line %u to station %u",
-                      static_cast<unsigned int>(lineEntity), static_cast<unsigned int>(point.stationEntity));
         }
     }
-
-    LOG_DEBUG("LineCreationSystem", "Created line entity with ID: %u.",
-             static_cast<unsigned int>(lineEntity));
 
     clearCurrentLine();
 }
@@ -236,8 +196,6 @@ void LineCreationSystem::onFinalizeLine(const FinalizeLineEvent &event) {
     finalizeLine();
 }
 
-// In src/systems/gameplay/LineCreationSystem.cpp
-
 void LineCreationSystem::update(sf::Time dt) {
     if (_gameState.currentInteractionMode != InteractionMode::CREATE_LINE) {
         return;
@@ -250,14 +208,13 @@ void LineCreationSystem::update(sf::Time dt) {
     preview.snapPosition.reset();
     preview.snapInfo.reset();
     preview.snapSide = 0.f;
-    preview.snapTangent.reset(); // Reset the new fields
+    preview.snapTangent.reset();
 
     sf::Vector2f mousePos = _currentMouseWorldPos;
 
     const float SNAP_RADIUS_SQUARED = Constants::LINE_SNAP_RADIUS * Constants::LINE_SNAP_RADIUS;
     float closestDistSq = SNAP_RADIUS_SQUARED;
 
-    // Line control point snapping
     auto lineView = _registry.view<const LineComponent>();
     for (auto entity : lineView) {
         const auto& lineComp = lineView.get<const LineComponent>(entity);
@@ -274,7 +231,6 @@ void LineCreationSystem::update(sf::Time dt) {
         }
     }
 
-    // City snapping
     auto cityView = _registry.view<const CityComponent, const PositionComponent>();
     for (auto entity : cityView) {
         const auto& pos = cityView.get<const PositionComponent>(entity);
@@ -291,7 +247,7 @@ void LineCreationSystem::update(sf::Time dt) {
         sf::Vector2f tangent;
         bool tangentFound = false;
 
-        if (preview.snapInfo->snappedToPointIndex != (size_t)-1) { // Snapped to line control point
+        if (preview.snapInfo->snappedToPointIndex != (size_t)-1) {
             const auto& targetLine = _registry.get<LineComponent>(preview.snapInfo->snappedToEntity);
             const auto& targetPoint = targetLine.points[preview.snapInfo->snappedToPointIndex];
             targetPointPos = targetPoint.position;
@@ -299,18 +255,18 @@ void LineCreationSystem::update(sf::Time dt) {
             sf::Vector2f p_prev, p_next;
             if (preview.snapInfo->snappedToPointIndex > 0) {
                 p_prev = targetLine.points[preview.snapInfo->snappedToPointIndex - 1].position;
-            } else { // First point
+            } else {
                 p_prev = targetPoint.position - (targetLine.points[1].position - targetPoint.position);
             }
 
             if (preview.snapInfo->snappedToPointIndex < targetLine.points.size() - 1) {
                 p_next = targetLine.points[preview.snapInfo->snappedToPointIndex + 1].position;
-            } else { // Last point
+            } else {
                 p_next = targetPoint.position + (targetPoint.position - targetLine.points[targetLine.points.size() - 2].position);
             }
             tangent = p_next - p_prev;
             tangentFound = true;
-        } else { // Snapped to city
+        } else {
             entt::entity cityEntity = preview.snapInfo->snappedToEntity;
             targetPointPos = _registry.get<PositionComponent>(cityEntity).coordinates;
             const auto& cityComp = _registry.get<CityComponent>(cityEntity);
@@ -356,12 +312,11 @@ void LineCreationSystem::update(sf::Time dt) {
                 }
             }
             
-            if (!tangentFound) { // Fallback for isolated cities or first point
+            if (!tangentFound) {
                 const auto& activeLine = _registry.ctx().get<ActiveLine>();
                 if (!activeLine.points.empty()) {
                     tangent = targetPointPos - activeLine.points.back().position;
                 } else {
-                    // No basis for an offset, so snap to center
                     preview.snapPosition = targetPointPos;
                     return;
                 }
@@ -375,13 +330,16 @@ void LineCreationSystem::update(sf::Time dt) {
 
         sf::Vector2f perpendicular = {-tangent.y, tangent.x};
         sf::Vector2f mouseVec = mousePos - targetPointPos;
-        float dotProductWithPerp = mouseVec.x * perpendicular.x + mouseVec.y * perpendicular.y;
+        float perp_dist = mouseVec.x * perpendicular.x + mouseVec.y * perpendicular.y;
 
-        preview.snapSide = (dotProductWithPerp > 0) ? 1.f : -1.f;
-
-        sf::Vector2f sideOffset = perpendicular * preview.snapSide * Constants::LINE_PARALLEL_OFFSET;
-        
-        preview.snapPosition = targetPointPos + sideOffset;
+        if (std::abs(perp_dist) < Constants::LINE_CENTER_SNAP_RADIUS) {
+            preview.snapSide = 0.f;
+            preview.snapPosition = targetPointPos;
+        } else {
+            preview.snapSide = (perp_dist > 0) ? 1.f : -1.f;
+            sf::Vector2f sideOffset = perpendicular * preview.snapSide * Constants::LINE_PARALLEL_OFFSET;
+            preview.snapPosition = targetPointPos + sideOffset;
+        }
     }
 }
 

@@ -114,7 +114,7 @@ void LineRenderSystem::render(const entt::registry &registry, sf::RenderWindow &
 
         if (registry.ctx().contains<LinePreview>()) {
             const auto& preview = registry.ctx().get<LinePreview>();
-            if (preview.snapInfo && preview.snapTangent && preview.snapSide != 0.f) {
+            if (preview.snapInfo && preview.snapTangent) {
                 sf::Vector2f targetPos;
                 if (preview.snapInfo->snappedToPointIndex != (size_t)-1) { // Snapped to line
                     const auto& line = registry.get<LineComponent>(preview.snapInfo->snappedToEntity);
@@ -123,22 +123,32 @@ void LineRenderSystem::render(const entt::registry &registry, sf::RenderWindow &
                     targetPos = registry.get<PositionComponent>(preview.snapInfo->snappedToEntity).coordinates;
                 }
 
-                sf::VertexArray halfCircle(sf::PrimitiveType::TriangleFan);
-                halfCircle.append({targetPos, sf::Color(255, 255, 255, 100)}); // Center point
+                if (preview.snapSide != 0.f) {
+                    // Draw half circle for side snap
+                    sf::VertexArray halfCircle(sf::PrimitiveType::TriangleFan);
+                    halfCircle.append({targetPos, sf::Color(255, 255, 255, 100)}); // Center point
 
-                sf::Vector2f perpendicular = {-(*preview.snapTangent).y, (*preview.snapTangent).x};
-                perpendicular *= preview.snapSide; // Point to the correct side
+                    sf::Vector2f perpendicular = {-(*preview.snapTangent).y, (*preview.snapTangent).x};
+                    perpendicular *= preview.snapSide; // Point to the correct side
 
-                const int segments = 10;
-                const float radius = 6.f; // Match the control point marker radius
-                float startAngle = std::atan2(perpendicular.y, perpendicular.x) - (3.14159265f / 2.f);
+                    const int segments = 10;
+                    const float radius = 6.f; // Match the control point marker radius
+                    float startAngle = std::atan2(perpendicular.y, perpendicular.x) - (3.14159265f / 2.f);
 
-                for (int i = 0; i <= segments; ++i) {
-                    float angle = startAngle + (3.14159265f * i / segments);
-                    sf::Vector2f pointPos = targetPos + sf::Vector2f(std::cos(angle) * radius, std::sin(angle) * radius);
-                    halfCircle.append({pointPos, sf::Color(255, 255, 255, 100)});
+                    for (int i = 0; i <= segments; ++i) {
+                        float angle = startAngle + (3.14159265f * i / segments);
+                        sf::Vector2f pointPos = targetPos + sf::Vector2f(std::cos(angle) * radius, std::sin(angle) * radius);
+                        halfCircle.append({pointPos, sf::Color(255, 255, 255, 100)});
+                    }
+                    window.draw(halfCircle);
+                } else {
+                    // Draw full circle for center snap
+                    sf::CircleShape centerSnapIndicator(6.f);
+                    centerSnapIndicator.setFillColor(sf::Color(255, 255, 255, 100));
+                    centerSnapIndicator.setOrigin({6.f, 6.f});
+                    centerSnapIndicator.setPosition(targetPos);
+                    window.draw(centerSnapIndicator);
                 }
-                window.draw(halfCircle);
             }
         }
     }

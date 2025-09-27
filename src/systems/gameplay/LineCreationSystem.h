@@ -40,7 +40,7 @@ private:
     void onCancelLineCreation(const CancelLineCreationEvent &event);
     void onMouseMoved(const MouseMovedEvent &event);
 
-    void addPointToLine(const sf::Vector2f& position, entt::entity stationEntity = entt::null, std::optional<SnapInfo> snapInfo = std::nullopt);
+    void addPointToLine(const sf::Vector2f& position, entt::entity stationEntity = entt::null, std::optional<SnapInfo> snapInfo = std::nullopt, float snapSide = 0.f);
     void addPointToLine(entt::entity stationEntity);
     void finalizeLine();
 
