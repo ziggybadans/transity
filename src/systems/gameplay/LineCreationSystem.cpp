@@ -205,6 +205,8 @@ void LineCreationSystem::onFinalizeLine(const FinalizeLineEvent &event) {
     finalizeLine();
 }
 
+// In src/systems/gameplay/LineCreationSystem.cpp
+
 void LineCreationSystem::update(sf::Time dt) {
     if (_gameState.currentInteractionMode != InteractionMode::CREATE_LINE) {
         return;
@@ -269,7 +271,18 @@ void LineCreationSystem::update(sf::Time dt) {
         }
         
         sf::Vector2f perpendicular = {-tangent.y, tangent.x};
-        preview.snapPosition = targetPoint.position + perpendicular * Constants::LINE_PARALLEL_OFFSET;
+        sf::Vector2f mouse_vec = mousePos - targetPoint.position;
+        float dot_product_with_perp = mouse_vec.x * perpendicular.x + mouse_vec.y * perpendicular.y;
+
+        LOG_DEBUG("LineCreationSystem", "Snap debug: dot_product=%.2f, perp=(%.2f, %.2f)", dot_product_with_perp, perpendicular.x, perpendicular.y);
+
+        sf::Vector2f side_offset;
+        if (dot_product_with_perp > 0) {
+            side_offset = perpendicular * Constants::LINE_PARALLEL_OFFSET;
+        } else {
+            side_offset = -perpendicular * Constants::LINE_PARALLEL_OFFSET;
+        }
+        preview.snapPosition = targetPoint.position + side_offset;
     }
 }
 
