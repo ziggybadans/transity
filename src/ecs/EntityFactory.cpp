@@ -178,6 +178,16 @@ entt::entity EntityFactory::createLine(const std::vector<LinePoint> &points,
     lineComponent.stops =
         Curve::calculateStopInfo(lineComponent.points, lineComponent.curvePoints);  // Add this
 
+    if (!curveData.segmentIndices.empty()) {
+        size_t max_segment_index = 0;
+        for(size_t index : curveData.segmentIndices) {
+            if (index > max_segment_index) {
+                max_segment_index = index;
+            }
+        }
+        lineComponent.pathOffsets.resize(max_segment_index + 1, sf::Vector2f(0, 0));
+    }
+
     LOG_DEBUG("EntityFactory",
               "Line entity (ID: %u) created successfully with %zu points and %zu curve points.",
               static_cast<unsigned int>(entity), points.size(), lineComponent.curvePoints.size());

@@ -67,6 +67,8 @@ namespace Constants {
 
     // Line
     constexpr float DEFAULT_LINE_THICKNESS = 5.0f;
+    const float LINE_SNAP_RADIUS = 20.0f;
+    const float LINE_PARALLEL_OFFSET = 12.0f;
 
     // Train
     constexpr float TRAIN_DEFAULT_INITIAL_SPEED = 50.0f;

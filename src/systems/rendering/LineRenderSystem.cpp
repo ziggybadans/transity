@@ -51,6 +51,14 @@ void LineRenderSystem::render(const entt::registry &registry, sf::RenderWindow &
         if (activeLine.points.empty()) return;
 
         sf::Vector2f mousePos = window.mapPixelToCoords(sf::Mouse::getPosition(window), view);
+
+        // Add this block
+        if (registry.ctx().contains<LinePreview>()) {
+            const auto& preview = registry.ctx().get<LinePreview>();
+            if (preview.snapPosition) {
+                mousePos = *preview.snapPosition;
+            }
+        }
         
         std::vector<sf::Vector2f> previewPoints;
         for(const auto& p : activeLine.points) {
@@ -74,6 +82,24 @@ void LineRenderSystem::render(const entt::registry &registry, sf::RenderWindow &
             if (point.type == LinePointType::CONTROL_POINT) {
                 controlPointMarker.setPosition(point.position);
                 window.draw(controlPointMarker);
+            }
+        }
+
+        // ADDED: Draw control points of all existing lines
+        sf::CircleShape existingControlPointMarker(6.f);
+        existingControlPointMarker.setFillColor(sf::Color::Transparent);
+        existingControlPointMarker.setOutlineColor(sf::Color::White);
+        existingControlPointMarker.setOutlineThickness(1.f);
+        existingControlPointMarker.setOrigin(sf::Vector2f(6.f, 6.f));
+
+        auto allLinesView = registry.view<const LineComponent>();
+        for (auto entity : allLinesView) {
+            const auto& lineComp = allLinesView.get<const LineComponent>(entity);
+            for (const auto& point : lineComp.points) {
+                if (point.type == LinePointType::CONTROL_POINT) {
+                    existingControlPointMarker.setPosition(point.position);
+                    window.draw(existingControlPointMarker);
+                }
             }
         }
     }

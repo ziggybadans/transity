@@ -18,6 +18,11 @@ struct ActiveLine {
     std::vector<LinePoint> points;
 };
 
+struct LinePreview {
+    std::optional<sf::Vector2f> snapPosition;
+    std::optional<SnapInfo> snapInfo;
+};
+
 class LineCreationSystem : public ISystem, public IUpdatable {
 public:
     explicit LineCreationSystem(entt::registry& registry, EntityFactory& entityFactory, ColorManager& colorManager, GameState& gameState, EventBus& eventBus);
@@ -31,8 +36,9 @@ private:
     void onFinalizeLine(const FinalizeLineEvent &event);
     void onMouseButtonPressed(const MouseButtonPressedEvent &event);
     void onCancelLineCreation(const CancelLineCreationEvent &event);
+    void onMouseMoved(const MouseMovedEvent &event);
 
-    void addPointToLine(const sf::Vector2f& position, entt::entity stationEntity = entt::null);
+    void addPointToLine(const sf::Vector2f& position, entt::entity stationEntity = entt::null, std::optional<SnapInfo> snapInfo = std::nullopt);
     void finalizeLine();
 
     entt::registry &_registry;
@@ -40,8 +46,10 @@ private:
     ColorManager &_colorManager;
     GameState &_gameState;
     EventBus& _eventBus;
+    sf::Vector2f _currentMouseWorldPos;
 
     entt::scoped_connection m_finalizeLineConnection;
     entt::scoped_connection m_mousePressConnection;
     entt::scoped_connection m_cancelLineCreationConnection;
+    entt::scoped_connection m_mouseMoveConnection;
 };

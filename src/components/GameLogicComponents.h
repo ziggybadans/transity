@@ -25,15 +25,21 @@ struct CityComponent {
 // A component for line entities.
 enum class LinePointType { STOP, CONTROL_POINT };
 
+struct StopInfo {
+    entt::entity stationEntity;
+    float distanceAlongCurve;
+};
+
+struct SnapInfo {
+    entt::entity snappedToEntity;
+    size_t snappedToPointIndex;
+};
+
 struct LinePoint {
     LinePointType type;
     sf::Vector2f position;
     entt::entity stationEntity = entt::null;
-};
-
-struct StopInfo {
-    entt::entity stationEntity;
-    float distanceAlongCurve;
+    std::optional<SnapInfo> snapInfo; // ADD THIS
 };
 
 struct LineComponent {
