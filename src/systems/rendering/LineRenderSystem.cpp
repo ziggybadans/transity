@@ -111,5 +111,35 @@ void LineRenderSystem::render(const entt::registry &registry, sf::RenderWindow &
             existingControlPointMarker.setPosition(pos.coordinates);
             window.draw(existingControlPointMarker);
         }
+
+        if (registry.ctx().contains<LinePreview>()) {
+            const auto& preview = registry.ctx().get<LinePreview>();
+            if (preview.snapInfo && preview.snapTangent && preview.snapSide != 0.f) {
+                sf::Vector2f targetPos;
+                if (preview.snapInfo->snappedToPointIndex != (size_t)-1) { // Snapped to line
+                    const auto& line = registry.get<LineComponent>(preview.snapInfo->snappedToEntity);
+                    targetPos = line.points[preview.snapInfo->snappedToPointIndex].position;
+                } else { // Snapped to city
+                    targetPos = registry.get<PositionComponent>(preview.snapInfo->snappedToEntity).coordinates;
+                }
+
+                sf::VertexArray halfCircle(sf::PrimitiveType::TriangleFan);
+                halfCircle.append({targetPos, sf::Color(255, 255, 255, 100)}); // Center point
+
+                sf::Vector2f perpendicular = {-(*preview.snapTangent).y, (*preview.snapTangent).x};
+                perpendicular *= preview.snapSide; // Point to the correct side
+
+                const int segments = 10;
+                const float radius = 6.f; // Match the control point marker radius
+                float startAngle = std::atan2(perpendicular.y, perpendicular.x) - (3.14159265f / 2.f);
+
+                for (int i = 0; i <= segments; ++i) {
+                    float angle = startAngle + (3.14159265f * i / segments);
+                    sf::Vector2f pointPos = targetPos + sf::Vector2f(std::cos(angle) * radius, std::sin(angle) * radius);
+                    halfCircle.append({pointPos, sf::Color(255, 255, 255, 100)});
+                }
+                window.draw(halfCircle);
+            }
+        }
     }
 }

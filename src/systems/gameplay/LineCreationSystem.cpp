@@ -249,6 +249,8 @@ void LineCreationSystem::update(sf::Time dt) {
     auto& preview = _registry.ctx().get<LinePreview>();
     preview.snapPosition.reset();
     preview.snapInfo.reset();
+    preview.snapSide = 0.f;
+    preview.snapTangent.reset(); // Reset the new fields
 
     sf::Vector2f mousePos = _currentMouseWorldPos;
 
@@ -369,14 +371,15 @@ void LineCreationSystem::update(sf::Time dt) {
         if (auto len = std::sqrt(tangent.x * tangent.x + tangent.y * tangent.y); len > 0) {
             tangent /= len;
         }
+        preview.snapTangent = tangent;
 
         sf::Vector2f perpendicular = {-tangent.y, tangent.x};
         sf::Vector2f mouseVec = mousePos - targetPointPos;
         float dotProductWithPerp = mouseVec.x * perpendicular.x + mouseVec.y * perpendicular.y;
 
-        sf::Vector2f sideOffset = (dotProductWithPerp > 0) 
-            ? perpendicular * Constants::LINE_PARALLEL_OFFSET 
-            : -perpendicular * Constants::LINE_PARALLEL_OFFSET;
+        preview.snapSide = (dotProductWithPerp > 0) ? 1.f : -1.f;
+
+        sf::Vector2f sideOffset = perpendicular * preview.snapSide * Constants::LINE_PARALLEL_OFFSET;
         
         preview.snapPosition = targetPointPos + sideOffset;
     }

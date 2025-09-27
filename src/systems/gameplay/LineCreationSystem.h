@@ -21,6 +21,8 @@ struct ActiveLine {
 struct LinePreview {
     std::optional<sf::Vector2f> snapPosition;
     std::optional<SnapInfo> snapInfo;
+    float snapSide = 0.f; // Will be -1.f or 1.f
+    std::optional<sf::Vector2f> snapTangent;
 };
 
 class LineCreationSystem : public ISystem, public IUpdatable {
