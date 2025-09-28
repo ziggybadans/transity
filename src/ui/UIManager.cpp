@@ -19,7 +19,7 @@ UIManager::UIManager(entt::registry &registry, EventBus &eventBus,
     _infoPanelUI = std::make_unique<InfoPanelUI>(registry, eventBus, gameState);
     _worldGenSettingsUI =
         std::make_unique<WorldGenSettingsUI>(eventBus, worldGenerationSystem, terrainRenderSystem);
-    _debugUI = std::make_unique<DebugUI>(performanceMonitor, camera, gameState, colorManager,
+    _debugUI = std::make_unique<DebugUI>(registry, performanceMonitor, camera, gameState, colorManager,
                                          eventBus, window);
     _interactionUI = std::make_unique<InteractionUI>(gameState, eventBus, window);
 }

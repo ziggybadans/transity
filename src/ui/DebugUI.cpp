@@ -6,10 +6,11 @@
 #include "imgui.h"
 #include "render/Camera.h"
 #include "render/ColorManager.h"
+#include "components/GameLogicComponents.h"
 
-DebugUI::DebugUI(PerformanceMonitor &performanceMonitor, Camera &camera, GameState &gameState,
+DebugUI::DebugUI(entt::registry& registry, PerformanceMonitor &performanceMonitor, Camera &camera, GameState &gameState,
                  ColorManager &colorManager, EventBus &eventBus, sf::RenderWindow &window)
-    : _performanceMonitor(performanceMonitor), _camera(camera), _gameState(gameState),
+    : _registry(registry), _performanceMonitor(performanceMonitor), _camera(camera), _gameState(gameState),
       _colorManager(colorManager), _window(window) {
     _themeChangedConnection =
         eventBus.sink<ThemeChangedEvent>().connect<&DebugUI::onThemeChanged>(this);
@@ -53,6 +54,11 @@ void DebugUI::drawProfilingWindow(sf::Time deltaTime,
     ImGui::Begin("Profiling", nullptr, size_flags);
     ImGui::Text("FPS: %.1f", 1.f / deltaTime.asSeconds());
     ImGui::Text("Zoom: %.2f", _camera.getZoom());
+    auto scoreView = _registry.view<GameScoreComponent>();
+    if (!scoreView.empty()) {
+        auto& scoreComponent = scoreView.get<GameScoreComponent>(scoreView.front());
+        ImGui::Text("Score: %d", scoreComponent.score);
+    }
 
     if (ImGui::CollapsingHeader("Performance Graphs")) {
         const auto &renderHistory = _performanceMonitor.getHistory("Application::render");

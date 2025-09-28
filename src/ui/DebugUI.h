@@ -13,8 +13,8 @@ class ColorManager;
 
 class DebugUI {
 public:
-    DebugUI(PerformanceMonitor &performanceMonitor, Camera &camera, GameState &gameState,
-            ColorManager &colorManager, EventBus &eventBus, sf::RenderWindow &window);
+    DebugUI(entt::registry& registry, PerformanceMonitor &performanceMonitor, Camera &camera, GameState &gameState,
+        ColorManager &colorManager, EventBus &eventBus, sf::RenderWindow &window);
     ~DebugUI();
 
     void draw(sf::Time deltaTime, const CityPlacementDebugInfo &cityPlacementDebugInfo);
@@ -32,6 +32,7 @@ private:
     GameState &_gameState;
     ColorManager &_colorManager;
     sf::RenderWindow &_window;
+    entt::registry& _registry;
 
     entt::scoped_connection _themeChangedConnection;
 };

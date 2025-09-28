@@ -30,6 +30,19 @@ void DeletionSystem::onDeleteEntity(const DeleteEntityEvent& event) {
         for (auto trainEntity : trainView) {
             auto& movement = trainView.get<TrainMovementComponent>(trainEntity);
             if (movement.assignedLine == event.entity) {
+                // Before deleting the train, process its passengers
+                auto passengerView = _registry.view<PassengerComponent>();
+                for (auto passengerEntity : passengerView) {
+                    auto& passenger = passengerView.get<PassengerComponent>(passengerEntity);
+                    if (passenger.currentContainer == trainEntity) {
+                        // This passenger is on the train being deleted.
+                        // Reset their state so they can be repathed or deleted by the subsequent logic.
+                        passenger.state = PassengerState::WAITING_FOR_TRAIN;
+                        passenger.currentContainer = passenger.originStation; // Safest place to return them
+                        LOG_DEBUG("DeletionSystem", "Reset passenger %u on deleted train %u.", entt::to_integral(passengerEntity), entt::to_integral(trainEntity));
+                    }
+                }
+
                 _registry.destroy(trainEntity);
                 LOG_DEBUG("DeletionSystem", "Deleted train %u because its line was deleted.", entt::to_integral(trainEntity));
             }

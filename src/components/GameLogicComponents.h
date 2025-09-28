@@ -159,3 +159,8 @@ struct PassengerSpawnAnimationComponent {
     entt::entity originCity;
     entt::entity destinationCity;
 };
+
+// A component for storing the game score.
+struct GameScoreComponent {
+    int score = 0;
+};

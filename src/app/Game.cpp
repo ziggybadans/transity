@@ -20,6 +20,8 @@
 #include "systems/world/ChunkManagerSystem.h"
 #include "systems/world/WorldSetupSystem.h"
 #include "systems/gameplay/SharedSegmentSystem.h"
+#include "systems/gameplay/ScoreSystem.h"
+#include "systems/gameplay/LineDataSystem.h"
 #include "ui/UI.h"
 
 Game::Game(Renderer &renderer, ThreadPool &threadPool, EventBus &eventBus,
@@ -58,6 +60,8 @@ Game::Game(Renderer &renderer, ThreadPool &threadPool, EventBus &eventBus,
     _simulationSystemManager->addSystem<PassengerMovementSystem>(_registry);
     _simulationSystemManager->addSystem<PassengerSpawnSystem>(_registry, _entityFactory,
                                                               _pathfinder);
+    _simulationSystemManager->addSystem<ScoreSystem>(_registry);
+    _simulationSystemManager->addSystem<LineDataSystem>(_registry, _entityFactory, _eventBus);
 
     LOG_INFO("Game", "Game instance created and systems registered.");
 }

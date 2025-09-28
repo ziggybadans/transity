@@ -75,6 +75,7 @@ namespace Constants {
     // Train
     constexpr float TRAIN_DEFAULT_INITIAL_SPEED = 50.0f;
     constexpr float TRAIN_STOP_DURATION = 2.0f;
+    constexpr float TRAIN_MIN_SPEED = 5.0f;
     constexpr float TRAIN_MAX_SPEED = 100.0f;
     constexpr float TRAIN_ACCELERATION = 25.0f;
     constexpr int TRAIN_CAPACITY = 20;
