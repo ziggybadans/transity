@@ -13,3 +13,7 @@ struct CancelLineCreationEvent {};
 struct AddTrainToLineEvent {
     entt::entity lineEntity;
 };
+
+struct LineModifiedEvent {
+    entt::entity lineEntity;
+};

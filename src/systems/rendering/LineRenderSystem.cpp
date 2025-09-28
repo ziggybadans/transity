@@ -8,7 +8,7 @@
 #include <vector>
 #include "core/Curve.h"
 
-void drawBarberPolePolyline(sf::RenderWindow& window, const std::vector<sf::Vector2f>& points, float thickness, const std::vector<sf::Color>& colors) {
+void drawBarberPolePolyline(sf::RenderWindow& window, const std::vector<sf::Vector2f>& points, float thickness, const std::vector<sf::Color>& colors, float phaseOffset) {
     if (points.size() < 2 || colors.empty()) return;
 
     float totalLength = 0.f;
@@ -23,7 +23,7 @@ void drawBarberPolePolyline(sf::RenderWindow& window, const std::vector<sf::Vect
     if (totalLength == 0.f) return;
 
     const float stripeLength = 10.0f;
-    const float animationOffset = 0.0f; // Static pattern
+    const float animationOffset = phaseOffset;
 
     float distanceAlongPath = 0.f;
     for (size_t i = 0; i < points.size() - 1; ++i) {
@@ -96,6 +96,21 @@ void LineRenderSystem::render(const entt::registry &registry, sf::RenderWindow &
                     colors.push_back(registry.get<LineComponent>(line_entity).color);
                 }
 
+                // Find the index of the current line in the shared segment
+                int lineIndex = -1;
+                for (int k = 0; k < it->second->lines.size(); ++k) {
+                    if (it->second->lines[k] == entity) {
+                        lineIndex = k;
+                        break;
+                    }
+                }
+
+                // Calculate phase offset
+                float phaseOffset = 0.0f;
+                if (lineIndex != -1) {
+                    phaseOffset = (10.0f / it->second->lines.size()) * lineIndex;
+                }
+
                 // Collect all points for this continuous curve
                 std::vector<sf::Vector2f> polyline;
                 polyline.push_back(lineComp.curvePoints[i]);
@@ -105,7 +120,7 @@ void LineRenderSystem::render(const entt::registry &registry, sf::RenderWindow &
                     j++;
                 }
 
-                drawBarberPolePolyline(window, polyline, thickness, colors);
+                drawBarberPolePolyline(window, polyline, thickness, colors, phaseOffset);
                 
                 i = j; // Advance i past this curve
             } else {

@@ -7,6 +7,14 @@
 #include <optional>
 #include <vector>
 
+struct Vector2fComparatorForMap {
+    bool operator()(const sf::Vector2f& a, const sf::Vector2f& b) const {
+        if (a.x < b.x) return true;
+        if (a.x > b.x) return false;
+        return a.y < b.y;
+    }
+};
+
 // The position of an entity in the world.
 struct PositionComponent {
     sf::Vector2f coordinates;
@@ -51,9 +59,15 @@ struct SharedSegment {
 
 // A global context structure to hold all shared segments in the game world.
 struct SharedSegmentsContext {
-    // A map where the key is a pair of point indices (from a canonical line)
-    // and the value is the shared segment information.
-    std::map<std::pair<size_t, size_t>, SharedSegment> segments;
+    std::map<std::pair<sf::Vector2f, sf::Vector2f>, SharedSegment, 
+             std::function<bool(const std::pair<sf::Vector2f, sf::Vector2f>&, const std::pair<sf::Vector2f, sf::Vector2f>&)>> segments{
+        [](const std::pair<sf::Vector2f, sf::Vector2f>& a, const std::pair<sf::Vector2f, sf::Vector2f>& b) {
+            Vector2fComparatorForMap cmp;
+            if (cmp(a.first, b.first)) return true;
+            if (cmp(b.first, a.first)) return false;
+            return cmp(a.second, b.second);
+        }
+    };
 };
 
 struct LineComponent {

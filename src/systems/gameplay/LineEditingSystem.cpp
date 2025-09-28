@@ -4,6 +4,7 @@
 #include "Logger.h"
 #include "Constants.h"
 #include "core/Curve.h"
+#include "event/LineEvents.h"
 #include <algorithm>
 #include <limits>
 
@@ -113,6 +114,7 @@ void LineEditingSystem::onMouseButtonPressed(const MouseButtonPressedEvent& even
         if (distanceToSegmentSq(event.worldPosition, p1, p2) < 64.f) { // 8.f radius squared
             line.points.insert(line.points.begin() + i + 1, {LinePointType::CONTROL_POINT, event.worldPosition, entt::null});
             regenerateCurve(line);
+            _eventBus.enqueue<LineModifiedEvent>({selectedLine});
             LOG_DEBUG("LineEditingSystem", "Added point to line and regenerated curve");
             return;
         }
@@ -164,6 +166,7 @@ void LineEditingSystem::onMouseButtonReleased(const MouseButtonReleasedEvent& ev
         }
 
         regenerateCurve(line);
+        _eventBus.enqueue<LineModifiedEvent>({selectedLine});
     }
 
     editingState.draggedPointIndex = std::nullopt;
@@ -330,6 +333,7 @@ void LineEditingSystem::onKeyPressed(const KeyPressedEvent& event) {
     if (line.points.size() > 2) {
         line.points.erase(line.points.begin() + editingState.selectedPointIndex.value());
         regenerateCurve(line);
+        _eventBus.enqueue<LineModifiedEvent>({selectedLine});
         editingState.selectedPointIndex = std::nullopt;
         editingState.draggedPointIndex = std::nullopt;
         LOG_DEBUG("LineEditingSystem", "Deleted point from line");

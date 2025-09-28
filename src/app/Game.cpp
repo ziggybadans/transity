@@ -8,7 +8,6 @@
 #include "systems/gameplay/CityPlacementSystem.h"
 #include "systems/gameplay/DeletionSystem.h"
 #include "systems/gameplay/LineCreationSystem.h"
-#include "systems/gameplay/LineDataSystem.h"
 #include "systems/gameplay/LineEditingSystem.h"
 #include "systems/gameplay/PassengerMovementSystem.h"
 #include "systems/gameplay/PassengerSpawnSystem.h"
@@ -20,6 +19,7 @@
 #include "systems/rendering/TerrainMeshSystem.h"
 #include "systems/world/ChunkManagerSystem.h"
 #include "systems/world/WorldSetupSystem.h"
+#include "systems/gameplay/SharedSegmentSystem.h"
 #include "ui/UI.h"
 
 Game::Game(Renderer &renderer, ThreadPool &threadPool, EventBus &eventBus,
@@ -40,6 +40,7 @@ Game::Game(Renderer &renderer, ThreadPool &threadPool, EventBus &eventBus,
     _systemManager->addSystem<SelectionSystem>(_registry, _eventBus, _gameState, _pathfinder);
     _systemManager->addSystem<DeletionSystem>(_registry, _eventBus, _gameState);
     _systemManager->addSystem<LineEditingSystem>(_registry, _eventBus, _gameState);
+    _systemManager->addSystem<SharedSegmentSystem>(_registry, _eventBus);
     _systemManager->addSystem<ChunkManagerSystem>(_registry, _eventBus, _worldGenerationSystem,
                                                   _camera, _threadPool);
     _systemManager->addSystem<TerrainMeshSystem>(_registry, _renderer, _worldGenerationSystem,
@@ -53,7 +54,6 @@ Game::Game(Renderer &renderer, ThreadPool &threadPool, EventBus &eventBus,
     _simulationSystemManager->addSystem<CityPlacementSystem>(_loadingState, _worldGenerationSystem,
                                                              _entityFactory, _renderer,
                                                              _performanceMonitor, _threadPool);
-    _simulationSystemManager->addSystem<LineDataSystem>(_registry, _entityFactory, _eventBus);
     _simulationSystemManager->addSystem<TrainMovementSystem>(_registry);
     _simulationSystemManager->addSystem<PassengerMovementSystem>(_registry);
     _simulationSystemManager->addSystem<PassengerSpawnSystem>(_registry, _entityFactory,
