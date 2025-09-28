@@ -231,7 +231,7 @@ void LineCreationSystem::finalizeLine() {
     for (const auto &point : newLineComp.points) {
         controlPoints.push_back(point.position);
     }
-    CurveData curveData = Curve::generateCatmullRom(controlPoints);
+    CurveData curveData = Curve::generateMetroCurve(controlPoints, Constants::METRO_CURVE_RADIUS);
     newLineComp.curvePoints = curveData.points;
     newLineComp.curveSegmentIndices = curveData.segmentIndices;
     newLineComp.totalDistance = Curve::calculateCurveLength(newLineComp.curvePoints);

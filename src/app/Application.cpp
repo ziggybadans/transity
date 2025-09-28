@@ -147,6 +147,7 @@ void Application::update(sf::Time dt) {
 
     _eventBus.update();
     _game->getInputHandler().update(dt);
+    _game->getGameState().totalElapsedTime += dt;
     _game->update(dt, *_ui);
 }
 

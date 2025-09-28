@@ -76,6 +76,10 @@ struct LineEditingComponent {
     std::optional<size_t> selectedPointIndex;
     std::optional<size_t> draggedPointIndex;
     std::optional<sf::Vector2f> originalPointPosition;
+    std::optional<sf::Vector2f> snapPosition;
+    std::optional<SnapInfo> snapInfo;
+    float snapSide = 0.f;
+    std::optional<sf::Vector2f> snapTangent;
 };
 
 // A component that makes an entity clickable.

@@ -70,6 +70,7 @@ namespace Constants {
     const float LINE_SNAP_RADIUS = 20.0f;
     const float LINE_CENTER_SNAP_RADIUS = 4.0f;
     const float LINE_PARALLEL_OFFSET = 12.0f;
+    constexpr float METRO_CURVE_RADIUS = 100.0f;
 
     // Train
     constexpr float TRAIN_DEFAULT_INITIAL_SPEED = 50.0f;

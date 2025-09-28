@@ -12,6 +12,80 @@ struct CurveData {
 
 class Curve {
 public:
+    static CurveData generateMetroCurve(const std::vector<sf::Vector2f>& points, float radius, int pointsPerArc = 10) {
+        CurveData curveData;
+        if (points.size() < 2) {
+            if (!points.empty()) {
+                curveData.points = {points[0]};
+                curveData.segmentIndices = {0};
+            }
+            return curveData;
+        }
+
+        if (points.size() < 3) {
+            curveData.points = points;
+            for (size_t i = 0; i < points.size() - 1; ++i) {
+                curveData.segmentIndices.push_back(i);
+            }
+            if (!points.empty()) {
+                curveData.segmentIndices.push_back(points.size() - 2);
+            }
+            return curveData;
+        }
+
+        struct Arc {
+            sf::Vector2f start;
+            sf::Vector2f corner;
+            sf::Vector2f end;
+        };
+        std::vector<Arc> arcs;
+
+        for (size_t i = 1; i < points.size() - 1; ++i) {
+            const sf::Vector2f& p_prev = points[i - 1];
+            const sf::Vector2f& p_curr = points[i];
+            const sf::Vector2f& p_next = points[i + 1];
+
+            sf::Vector2f v1 = p_prev - p_curr;
+            sf::Vector2f v2 = p_next - p_curr;
+
+            float len1 = std::sqrt(v1.x * v1.x + v1.y * v1.y);
+            float len2 = std::sqrt(v2.x * v2.x + v2.y * v2.y);
+
+            float currentRadius = radius;
+            if (len1 > 0 && currentRadius > len1 / 2.0f) currentRadius = len1 / 2.0f;
+            if (len2 > 0 && currentRadius > len2 / 2.0f) currentRadius = len2 / 2.0f;
+
+            sf::Vector2f arc_start = (len1 > 0) ? p_curr + (v1 / len1) * currentRadius : p_curr;
+            sf::Vector2f arc_end = (len2 > 0) ? p_curr + (v2 / len2) * currentRadius : p_curr;
+            
+            arcs.push_back({arc_start, p_curr, arc_end});
+        }
+
+        curveData.points.push_back(points[0]);
+        curveData.segmentIndices.push_back(0);
+
+        for (size_t i = 0; i < points.size() - 1; ++i) {
+            sf::Vector2f end_of_segment = (i == points.size() - 2) ? points.back() : arcs[i].start;
+
+            if (curveData.points.back() != end_of_segment) {
+                curveData.points.push_back(end_of_segment);
+                curveData.segmentIndices.push_back(i);
+            }
+
+            if (i < arcs.size()) {
+                const auto& arc = arcs[i];
+                for (int j = 1; j <= pointsPerArc; ++j) {
+                    float t = static_cast<float>(j) / pointsPerArc;
+                    sf::Vector2f point = (1.0f - t) * (1.0f - t) * arc.start + 2.0f * (1.0f - t) * t * arc.corner + t * t * arc.end;
+                    curveData.points.push_back(point);
+                    curveData.segmentIndices.push_back(i);
+                }
+            }
+        }
+
+        return curveData;
+    }
+
     static CurveData generateCatmullRom(const std::vector<sf::Vector2f> &points,
                                         int pointsPerSegment = 10) {
         CurveData curveData;

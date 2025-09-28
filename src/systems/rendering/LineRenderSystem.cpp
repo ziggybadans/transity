@@ -8,35 +8,68 @@
 #include <vector>
 #include "core/Curve.h"
 
-void drawBarberPoleSegment(sf::RenderWindow& window, const sf::Vector2f& p1, const sf::Vector2f& p2, float thickness, const std::vector<sf::Color>& colors) {
-    if (colors.empty()) return;
+void drawBarberPolePolyline(sf::RenderWindow& window, const std::vector<sf::Vector2f>& points, float thickness, const std::vector<sf::Color>& colors) {
+    if (points.size() < 2 || colors.empty()) return;
 
-    sf::Vector2f dir = p2 - p1;
-    float len = std::sqrt(dir.x * dir.x + dir.y * dir.y);
-    if (len == 0) return;
-    sf::Vector2f perp(-dir.y / len, dir.x / len);
-    sf::Vector2f thicknessOffset = (thickness / 2.f) * perp;
+    float totalLength = 0.f;
+    std::vector<float> segmentLengths;
+    for (size_t i = 0; i < points.size() - 1; ++i) {
+        sf::Vector2f dir = points[i+1] - points[i];
+        float len = std::sqrt(dir.x * dir.x + dir.y * dir.y);
+        segmentLengths.push_back(len);
+        totalLength += len;
+    }
 
-    const float stripeLength = 10.0f; // Length of each color stripe
-    int numStripes = std::max(1, static_cast<int>(len / stripeLength));
-    
-    for (int i = 0; i < numStripes; ++i) {
-        sf::Vector2f start = p1 + dir * (static_cast<float>(i) / numStripes);
-        sf::Vector2f end = p1 + dir * (static_cast<float>(i + 1) / numStripes);
-        
-        sf::VertexArray stripe(sf::PrimitiveType::TriangleStrip, 4);
-        stripe[0].position = start - thicknessOffset;
-        stripe[1].position = start + thicknessOffset;
-        stripe[2].position = end - thicknessOffset;
-        stripe[3].position = end + thicknessOffset;
+    if (totalLength == 0.f) return;
 
-        sf::Color color = colors[i % colors.size()];
-        stripe[0].color = color;
-        stripe[1].color = color;
-        stripe[2].color = color;
-        stripe[3].color = color;
+    const float stripeLength = 10.0f;
+    const float animationOffset = 0.0f; // Static pattern
 
-        window.draw(stripe);
+    float distanceAlongPath = 0.f;
+    for (size_t i = 0; i < points.size() - 1; ++i) {
+        const sf::Vector2f& p1 = points[i];
+        const sf::Vector2f& p2 = points[i+1];
+        float segmentLen = segmentLengths[i];
+        if (segmentLen == 0) continue;
+
+        sf::Vector2f dir = (p2 - p1) / segmentLen;
+        sf::Vector2f perp(-dir.y, dir.x);
+        sf::Vector2f thicknessOffset = (thickness / 2.f) * perp;
+
+        float startDist = distanceAlongPath;
+        float endDist = startDist + segmentLen;
+
+        float currentStripeStart = std::ceil((startDist - animationOffset) / stripeLength) * stripeLength + animationOffset;
+
+        while (currentStripeStart < endDist) {
+            float stripeEnd = currentStripeStart + stripeLength;
+
+            int colorIndex = static_cast<int>((currentStripeStart - animationOffset) / stripeLength);
+            sf::Color color = colors[std::abs(colorIndex) % colors.size()];
+
+            float clampedStripeStartDist = std::max(startDist, currentStripeStart);
+            float clampedStripeEndDist = std::min(endDist, stripeEnd);
+
+            if (clampedStripeStartDist < clampedStripeEndDist) {
+                sf::Vector2f stripe_p1 = p1 + dir * (clampedStripeStartDist - startDist);
+                sf::Vector2f stripe_p2 = p1 + dir * (clampedStripeEndDist - startDist);
+
+                sf::VertexArray stripe(sf::PrimitiveType::TriangleStrip, 4);
+                stripe[0].position = stripe_p1 - thicknessOffset;
+                stripe[1].position = stripe_p1 + thicknessOffset;
+                stripe[2].position = stripe_p2 - thicknessOffset;
+                stripe[3].position = stripe_p2 + thicknessOffset;
+
+                stripe[0].color = color;
+                stripe[1].color = color;
+                stripe[2].color = color;
+                stripe[3].color = color;
+
+                window.draw(stripe);
+            }
+            currentStripeStart += stripeLength;
+        }
+        distanceAlongPath += segmentLen;
     }
 }
 
@@ -49,14 +82,11 @@ void LineRenderSystem::render(const entt::registry &registry, sf::RenderWindow &
         if (lineComp.curvePoints.size() < 2) continue;
 
         bool isSelected = registry.all_of<SelectedComponent>(entity);
-        sf::Color lineColor = isSelected ? highlightColor : lineComp.color;
         float thickness = isSelected ? 16.0f : 8.0f;
 
         // Segment-by-segment rendering
-        for (size_t i = 0; i < lineComp.curvePoints.size() - 1; ++i) {
+        for (size_t i = 0; i < lineComp.curvePoints.size() - 1; ) {
             size_t segmentIndex = lineComp.curveSegmentIndices[i];
-            const auto& p1 = lineComp.curvePoints[i];
-            const auto& p2 = lineComp.curvePoints[i+1];
             
             auto it = lineComp.sharedSegments.find(segmentIndex);
             if (it != lineComp.sharedSegments.end() && it->second->lines.size() > 1) {
@@ -65,18 +95,34 @@ void LineRenderSystem::render(const entt::registry &registry, sf::RenderWindow &
                 for (entt::entity line_entity : it->second->lines) {
                     colors.push_back(registry.get<LineComponent>(line_entity).color);
                 }
-                drawBarberPoleSegment(window, p1, p2, thickness, colors);
+
+                // Collect all points for this continuous curve
+                std::vector<sf::Vector2f> polyline;
+                polyline.push_back(lineComp.curvePoints[i]);
+                size_t j = i;
+                while (j < lineComp.curvePoints.size() - 1 && lineComp.curveSegmentIndices[j] == segmentIndex) {
+                    polyline.push_back(lineComp.curvePoints[j + 1]);
+                    j++;
+                }
+
+                drawBarberPolePolyline(window, polyline, thickness, colors);
+                
+                i = j; // Advance i past this curve
             } else {
                 // Not a shared segment, draw normally
+                const auto& p1 = lineComp.curvePoints[i];
+                const auto& p2 = lineComp.curvePoints[i+1];
+
                 sf::VertexArray lineSegment(sf::PrimitiveType::TriangleStrip);
                 
                 sf::Vector2f dir = p2 - p1;
                 float len = std::sqrt(dir.x * dir.x + dir.y * dir.y);
-                if (len == 0) continue;
+                if (len == 0) { i++; continue; }
                 sf::Vector2f perp(-dir.y / len, dir.x / len);
                 
                 const sf::Vector2f offset = (segmentIndex < lineComp.pathOffsets.size()) ? lineComp.pathOffsets[segmentIndex] : sf::Vector2f(0, 0);
                 sf::Vector2f thicknessOffset = (thickness / 2.f) * perp;
+                sf::Color lineColor = isSelected ? highlightColor : lineComp.color;
 
                 lineSegment.append({p1 + offset - thicknessOffset, lineColor});
                 lineSegment.append({p1 + offset + thicknessOffset, lineColor});
@@ -84,6 +130,7 @@ void LineRenderSystem::render(const entt::registry &registry, sf::RenderWindow &
                 lineSegment.append({p2 + offset + thicknessOffset, lineColor});
                 
                 window.draw(lineSegment);
+                i++;
             }
         }
     }
@@ -107,7 +154,7 @@ void LineRenderSystem::render(const entt::registry &registry, sf::RenderWindow &
             }
             previewPoints.push_back(mousePos);
 
-            auto curveData = Curve::generateCatmullRom(previewPoints);
+            auto curveData = Curve::generateMetroCurve(previewPoints, Constants::METRO_CURVE_RADIUS);
 
             sf::VertexArray lineVertices(sf::PrimitiveType::LineStrip);
             for(const auto& p : curveData.points) {
