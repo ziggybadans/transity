@@ -8,6 +8,38 @@
 #include <vector>
 #include "core/Curve.h"
 
+void drawBarberPoleSegment(sf::RenderWindow& window, const sf::Vector2f& p1, const sf::Vector2f& p2, float thickness, const std::vector<sf::Color>& colors) {
+    if (colors.empty()) return;
+
+    sf::Vector2f dir = p2 - p1;
+    float len = std::sqrt(dir.x * dir.x + dir.y * dir.y);
+    if (len == 0) return;
+    sf::Vector2f perp(-dir.y / len, dir.x / len);
+    sf::Vector2f thicknessOffset = (thickness / 2.f) * perp;
+
+    const float stripeLength = 10.0f; // Length of each color stripe
+    int numStripes = std::max(1, static_cast<int>(len / stripeLength));
+    
+    for (int i = 0; i < numStripes; ++i) {
+        sf::Vector2f start = p1 + dir * (static_cast<float>(i) / numStripes);
+        sf::Vector2f end = p1 + dir * (static_cast<float>(i + 1) / numStripes);
+        
+        sf::VertexArray stripe(sf::PrimitiveType::TriangleStrip, 4);
+        stripe[0].position = start - thicknessOffset;
+        stripe[1].position = start + thicknessOffset;
+        stripe[2].position = end - thicknessOffset;
+        stripe[3].position = end + thicknessOffset;
+
+        sf::Color color = colors[i % colors.size()];
+        stripe[0].color = color;
+        stripe[1].color = color;
+        stripe[2].color = color;
+        stripe[3].color = color;
+
+        window.draw(stripe);
+    }
+}
+
 void LineRenderSystem::render(const entt::registry &registry, sf::RenderWindow &window, const GameState& gameState,
                               const sf::View &view, const sf::Color& highlightColor) {
     // Render finalized lines
@@ -20,30 +52,40 @@ void LineRenderSystem::render(const entt::registry &registry, sf::RenderWindow &
         sf::Color lineColor = isSelected ? highlightColor : lineComp.color;
         float thickness = isSelected ? 16.0f : 8.0f;
 
-        sf::VertexArray lineVertices(sf::PrimitiveType::TriangleStrip);
-
-        for (size_t i = 0; i < lineComp.curvePoints.size(); ++i) {
-            const auto& current_pos = lineComp.curvePoints[i];
-            sf::Vector2f dir;
-
-            if (i < lineComp.curvePoints.size() - 1) {
-                dir = lineComp.curvePoints[i+1] - current_pos;
-            } else {
-                dir = current_pos - lineComp.curvePoints[i-1];
-            }
-
-            float len = std::sqrt(dir.x * dir.x + dir.y * dir.y);
-            if (len == 0) continue;
-            sf::Vector2f perp(-dir.y / len, dir.x / len);
-            
+        // Segment-by-segment rendering
+        for (size_t i = 0; i < lineComp.curvePoints.size() - 1; ++i) {
             size_t segmentIndex = lineComp.curveSegmentIndices[i];
-            const sf::Vector2f offset = (segmentIndex < lineComp.pathOffsets.size()) ? lineComp.pathOffsets[segmentIndex] : sf::Vector2f(0, 0);
-            sf::Vector2f thicknessOffset = (thickness / 2.f) * perp;
+            const auto& p1 = lineComp.curvePoints[i];
+            const auto& p2 = lineComp.curvePoints[i+1];
+            
+            auto it = lineComp.sharedSegments.find(segmentIndex);
+            if (it != lineComp.sharedSegments.end() && it->second->lines.size() > 1) {
+                // This is a shared segment, draw with barber pole effect
+                std::vector<sf::Color> colors;
+                for (entt::entity line_entity : it->second->lines) {
+                    colors.push_back(registry.get<LineComponent>(line_entity).color);
+                }
+                drawBarberPoleSegment(window, p1, p2, thickness, colors);
+            } else {
+                // Not a shared segment, draw normally
+                sf::VertexArray lineSegment(sf::PrimitiveType::TriangleStrip);
+                
+                sf::Vector2f dir = p2 - p1;
+                float len = std::sqrt(dir.x * dir.x + dir.y * dir.y);
+                if (len == 0) continue;
+                sf::Vector2f perp(-dir.y / len, dir.x / len);
+                
+                const sf::Vector2f offset = (segmentIndex < lineComp.pathOffsets.size()) ? lineComp.pathOffsets[segmentIndex] : sf::Vector2f(0, 0);
+                sf::Vector2f thicknessOffset = (thickness / 2.f) * perp;
 
-            lineVertices.append({current_pos + offset - thicknessOffset, lineColor});
-            lineVertices.append({current_pos + offset + thicknessOffset, lineColor});
+                lineSegment.append({p1 + offset - thicknessOffset, lineColor});
+                lineSegment.append({p1 + offset + thicknessOffset, lineColor});
+                lineSegment.append({p2 + offset - thicknessOffset, lineColor});
+                lineSegment.append({p2 + offset + thicknessOffset, lineColor});
+                
+                window.draw(lineSegment);
+            }
         }
-        window.draw(lineVertices);
     }
 
     // Render active line being created

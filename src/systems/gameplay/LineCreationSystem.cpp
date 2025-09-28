@@ -22,6 +22,7 @@ LineCreationSystem::LineCreationSystem(entt::registry& registry, EntityFactory& 
     m_mouseMoveConnection = _eventBus.sink<MouseMovedEvent>()
                                   .connect<&LineCreationSystem::onMouseMoved>(this);
     _registry.ctx().emplace<LinePreview>();
+    _registry.ctx().emplace<SharedSegmentsContext>();
     LOG_DEBUG("LineCreationSystem", "LineCreationSystem created and connected to EventBus.");
 }
 
@@ -119,38 +120,42 @@ void LineCreationSystem::finalizeLine() {
     }
 
     auto& newLineComp = _registry.get<LineComponent>(lineEntity);
+    auto& sharedSegmentsCtx = _registry.ctx().get<SharedSegmentsContext>();
+    
     for (size_t i = 0; i < activeLine.points.size() - 1; ++i) {
         const auto& p1 = activeLine.points[i];
         const auto& p2 = activeLine.points[i+1];
 
-        if (p1.snapInfo && p2.snapInfo && p1.snapSide != 0.f && p1.snapSide == p2.snapSide) {
-            sf::Vector2f original_p1_pos, original_p2_pos;
-
-            if (p1.snapInfo->snappedToPointIndex != (size_t)-1) {
-                const auto& line = _registry.get<LineComponent>(p1.snapInfo->snappedToEntity);
-                original_p1_pos = line.points[p1.snapInfo->snappedToPointIndex].position;
-            } else {
-                original_p1_pos = _registry.get<PositionComponent>(p1.snapInfo->snappedToEntity).coordinates;
-            }
-
-            if (p2.snapInfo->snappedToPointIndex != (size_t)-1) {
-                const auto& line = _registry.get<LineComponent>(p2.snapInfo->snappedToEntity);
-                original_p2_pos = line.points[p2.snapInfo->snappedToPointIndex].position;
-            } else {
-                original_p2_pos = _registry.get<PositionComponent>(p2.snapInfo->snappedToEntity).coordinates;
-            }
-
-            sf::Vector2f tangent = original_p2_pos - original_p1_pos;
-            if (auto len = std::sqrt(tangent.x * tangent.x + tangent.y * tangent.y); len > 0) {
-                tangent /= len;
-            } else {
-                continue;
-            }
-
-            sf::Vector2f perpendicular = {-tangent.y, tangent.x};
+        // Check for a center-snapped shared segment
+        if (p1.snapInfo && p2.snapInfo && p1.snapSide == 0.f && p2.snapSide == 0.f &&
+            p1.snapInfo->snappedToEntity == p2.snapInfo->snappedToEntity &&
+            _registry.all_of<LineComponent>(p1.snapInfo->snappedToEntity)) {
             
-            if (i < newLineComp.pathOffsets.size()) {
-                newLineComp.pathOffsets[i] = perpendicular * p1.snapSide * Constants::LINE_PARALLEL_OFFSET;
+            entt::entity snappedToLineEntity = p1.snapInfo->snappedToEntity;
+            size_t snappedIndex1 = p1.snapInfo->snappedToPointIndex;
+            size_t snappedIndex2 = p2.snapInfo->snappedToPointIndex;
+
+            if (snappedIndex1 > snappedIndex2) std::swap(snappedIndex1, snappedIndex2);
+
+            // Use the snapped-to line's point indices as the canonical key
+            std::pair<size_t, size_t> segmentKey = {snappedIndex1, snappedIndex2};
+
+            // Find or create the shared segment entry
+            auto& segment = sharedSegmentsCtx.segments[segmentKey];
+            
+            // Add the new line and the original line to the shared segment
+            if (std::find(segment.lines.begin(), segment.lines.end(), lineEntity) == segment.lines.end()) {
+                segment.lines.push_back(lineEntity);
+            }
+            if (std::find(segment.lines.begin(), segment.lines.end(), snappedToLineEntity) == segment.lines.end()) {
+                segment.lines.push_back(snappedToLineEntity);
+            }
+
+            // Link this segment in both lines' components to the shared context
+            newLineComp.sharedSegments[i] = &segment;
+            auto& originalLineComp = _registry.get<LineComponent>(snappedToLineEntity);
+            for(size_t j = snappedIndex1; j < snappedIndex2; ++j) {
+                originalLineComp.sharedSegments[j] = &segment;
             }
         }
     }

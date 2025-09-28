@@ -43,6 +43,19 @@ struct LinePoint {
     float snapSide = 0.f; // Add this. 0 for center, -1 for left, 1 for right.
 };
 
+// Represents a segment between two control points that is shared by multiple lines.
+struct SharedSegment {
+    // The entities of the lines that share this segment.
+    std::vector<entt::entity> lines;
+};
+
+// A global context structure to hold all shared segments in the game world.
+struct SharedSegmentsContext {
+    // A map where the key is a pair of point indices (from a canonical line)
+    // and the value is the shared segment information.
+    std::map<std::pair<size_t, size_t>, SharedSegment> segments;
+};
+
 struct LineComponent {
     sf::Color color;
     std::vector<LinePoint> points;
@@ -52,6 +65,10 @@ struct LineComponent {
     std::vector<StopInfo> stops;  // Add this line
     float totalDistance = 0.0f;
     Thickness thickness = {Constants::DEFAULT_LINE_THICKNESS};
+
+    // A map where the key is the segment index and the value is a pointer
+    // to the corresponding SharedSegment in the global context.
+    std::map<size_t, SharedSegment*> sharedSegments;
 };
 
 // A component to manage the state of line editing.
