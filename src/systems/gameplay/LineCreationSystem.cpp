@@ -121,41 +121,98 @@ void LineCreationSystem::finalizeLine() {
 
     auto& newLineComp = _registry.get<LineComponent>(lineEntity);
     auto& sharedSegmentsCtx = _registry.ctx().get<SharedSegmentsContext>();
-    
+
     for (size_t i = 0; i < activeLine.points.size() - 1; ++i) {
         const auto& p1 = activeLine.points[i];
         const auto& p2 = activeLine.points[i+1];
 
-        // Check for a center-snapped shared segment
-        if (p1.snapInfo && p2.snapInfo && p1.snapSide == 0.f && p2.snapSide == 0.f &&
-            p1.snapInfo->snappedToEntity == p2.snapInfo->snappedToEntity &&
-            _registry.all_of<LineComponent>(p1.snapInfo->snappedToEntity)) {
+        // A segment is shared if it's center-snapped at both ends.
+        if (p1.snapSide == 0.f && p2.snapSide == 0.f && p1.snapInfo && p2.snapInfo) {
             
-            entt::entity snappedToLineEntity = p1.snapInfo->snappedToEntity;
-            size_t snappedIndex1 = p1.snapInfo->snappedToPointIndex;
-            size_t snappedIndex2 = p2.snapInfo->snappedToPointIndex;
+            entt::entity canonicalLine = entt::null;
+            size_t index1 = (size_t)-1, index2 = (size_t)-1;
 
-            if (snappedIndex1 > snappedIndex2) std::swap(snappedIndex1, snappedIndex2);
+            // Resolve p1 and p2 to a single canonical line and point indices
+            if (p1.snapInfo->snappedToEntity == p2.snapInfo->snappedToEntity && _registry.all_of<LineComponent>(p1.snapInfo->snappedToEntity)) {
+                // Case 1: Both snapped to the same line
+                canonicalLine = p1.snapInfo->snappedToEntity;
+                index1 = p1.snapInfo->snappedToPointIndex;
+                index2 = p2.snapInfo->snappedToPointIndex;
+            } else if (_registry.all_of<CityComponent>(p1.snapInfo->snappedToEntity) && _registry.all_of<LineComponent>(p2.snapInfo->snappedToEntity)) {
+                // Case 2: p1 is city, p2 is line point
+                const auto& lineComp2 = _registry.get<LineComponent>(p2.snapInfo->snappedToEntity);
+                size_t snappedCPIndex2 = p2.snapInfo->snappedToPointIndex;
+                if (snappedCPIndex2 > 0 && lineComp2.points[snappedCPIndex2 - 1].type == LinePointType::STOP && lineComp2.points[snappedCPIndex2 - 1].stationEntity == p1.snapInfo->snappedToEntity) {
+                    canonicalLine = p2.snapInfo->snappedToEntity;
+                    index1 = snappedCPIndex2 - 1;
+                    index2 = snappedCPIndex2;
+                }
+            } else if (_registry.all_of<LineComponent>(p1.snapInfo->snappedToEntity) && _registry.all_of<CityComponent>(p2.snapInfo->snappedToEntity)) {
+                // Case 3: p1 is line point, p2 is city
+                const auto& lineComp1 = _registry.get<LineComponent>(p1.snapInfo->snappedToEntity);
+                size_t snappedCPIndex1 = p1.snapInfo->snappedToPointIndex;
+                if (snappedCPIndex1 < lineComp1.points.size() - 1 && lineComp1.points[snappedCPIndex1 + 1].type == LinePointType::STOP && lineComp1.points[snappedCPIndex1 + 1].stationEntity == p2.snapInfo->snappedToEntity) {
+                    canonicalLine = p1.snapInfo->snappedToEntity;
+                    index1 = snappedCPIndex1;
+                    index2 = snappedCPIndex1 + 1;
+                }
+            }
 
-            // Use the snapped-to line's point indices as the canonical key
-            std::pair<size_t, size_t> segmentKey = {snappedIndex1, snappedIndex2};
+            // If we found a valid shared path on a canonical line...
+            if (canonicalLine != entt::null) {
+                if (index1 > index2) std::swap(index1, index2);
 
-            // Find or create the shared segment entry
-            auto& segment = sharedSegmentsCtx.segments[segmentKey];
+                // For each segment on the canonical line that is being shared...
+                for (size_t j = index1; j < index2; ++j) {
+                    // The key is the pair of point indices on the canonical line.
+                    std::pair<size_t, size_t> segmentKey = {j, j + 1};
+                    auto& segment = sharedSegmentsCtx.segments[segmentKey];
+
+                    if (std::find(segment.lines.begin(), segment.lines.end(), lineEntity) == segment.lines.end()) {
+                        segment.lines.push_back(lineEntity);
+                    }
+                    if (std::find(segment.lines.begin(), segment.lines.end(), canonicalLine) == segment.lines.end()) {
+                        segment.lines.push_back(canonicalLine);
+                    }
+
+                    // This assumes a 1-to-1 mapping of new segments to canonical segments.
+                    // This holds if users do not skip control points when center-snapping.
+                    if (index2 == index1 + 1) {
+                        newLineComp.sharedSegments[i] = &segment;
+                        auto& originalLineComp = _registry.get<LineComponent>(canonicalLine);
+                        originalLineComp.sharedSegments[j] = &segment;
+                    }
+                }
+            }
+        } else if (p1.snapInfo && p2.snapInfo && p1.snapSide != 0.f && p1.snapSide == p2.snapSide) {
+            // Handle side-snapped offset calculation
+            sf::Vector2f original_p1_pos, original_p2_pos;
+
+            if (p1.snapInfo->snappedToPointIndex != (size_t)-1) {
+                const auto& line = _registry.get<LineComponent>(p1.snapInfo->snappedToEntity);
+                original_p1_pos = line.points[p1.snapInfo->snappedToPointIndex].position;
+            } else {
+                original_p1_pos = _registry.get<PositionComponent>(p1.snapInfo->snappedToEntity).coordinates;
+            }
+
+            if (p2.snapInfo->snappedToPointIndex != (size_t)-1) {
+                const auto& line = _registry.get<LineComponent>(p2.snapInfo->snappedToEntity);
+                original_p2_pos = line.points[p2.snapInfo->snappedToPointIndex].position;
+            } else {
+                original_p2_pos = _registry.get<PositionComponent>(p2.snapInfo->snappedToEntity).coordinates;
+            }
+
+            sf::Vector2f tangent = original_p2_pos - original_p1_pos;
+            if (auto len = std::sqrt(tangent.x * tangent.x + tangent.y * tangent.y); len > 0) {
+                tangent /= len;
+            } else {
+                continue;
+            }
+
+            sf::Vector2f perpendicular = {-tangent.y, tangent.x};
             
-            // Add the new line and the original line to the shared segment
-            if (std::find(segment.lines.begin(), segment.lines.end(), lineEntity) == segment.lines.end()) {
-                segment.lines.push_back(lineEntity);
-            }
-            if (std::find(segment.lines.begin(), segment.lines.end(), snappedToLineEntity) == segment.lines.end()) {
-                segment.lines.push_back(snappedToLineEntity);
-            }
-
-            // Link this segment in both lines' components to the shared context
-            newLineComp.sharedSegments[i] = &segment;
-            auto& originalLineComp = _registry.get<LineComponent>(snappedToLineEntity);
-            for(size_t j = snappedIndex1; j < snappedIndex2; ++j) {
-                originalLineComp.sharedSegments[j] = &segment;
+            if (i < newLineComp.pathOffsets.size()) {
+                newLineComp.pathOffsets[i] = perpendicular * p1.snapSide * Constants::LINE_PARALLEL_OFFSET;
             }
         }
     }
