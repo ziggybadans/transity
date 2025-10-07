@@ -109,14 +109,19 @@ void TrainMovementSystem::update(sf::Time dt) {
              physics.currentSpeed -= physics.acceleration * timeStep;
              if (physics.currentSpeed < 0) physics.currentSpeed = 0;
 
-             if (std::abs(nextDistance - nextStopDistance) < std::abs(movement.distanceAlongCurve - nextStopDistance)) {
-                 movement.distanceAlongCurve = nextDistance;
-             } else {
+             float distanceToTravelThisFrame = physics.currentSpeed * timeStep;
+             float distanceToStop = std::abs(nextStopDistance - movement.distanceAlongCurve);
+
+             if (distanceToTravelThisFrame >= distanceToStop) {
                  movement.distanceAlongCurve = nextStopDistance;
                  movement.state = TrainState::STOPPED;
                  movement.stopTimer = Constants::TRAIN_STOP_DURATION;
                  physics.currentSpeed = 0;
+             } else {
+                 movement.distanceAlongCurve += (movement.direction == TrainDirection::FORWARD ? distanceToTravelThisFrame : -distanceToTravelThisFrame);
              }
+        } else if (movement.state == TrainState::MOVING || movement.state == TrainState::ACCELERATING) {
+            movement.distanceAlongCurve = nextDistance;
         }
 
         if (movement.state == TrainState::MOVING || movement.state == TrainState::ACCELERATING) {

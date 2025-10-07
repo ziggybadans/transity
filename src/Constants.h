@@ -3,6 +3,8 @@
 #include <SFML/Graphics/Color.hpp>
 
 namespace Constants {
+    constexpr float EPSILON = 0.001f;
+
     // Versioning
     constexpr const char *WINDOW_TITLE = "Transity Predev";
     constexpr int SUPPORTED_ARCHETYPE_VERSION = 1;
@@ -39,7 +41,7 @@ namespace Constants {
     constexpr float UI_INTERACTION_MODES_HEIGHT = 100.0f;
 
     // City Placement
-    constexpr int INITIAL_CITY_COUNT = 3;
+    constexpr int INITIAL_CITY_COUNT = 5;
     constexpr int MAX_CITIES = 50;
     constexpr float MIN_CITY_SPAWN_INTERVAL_S = 15.0f;
     constexpr float MAX_CITY_SPAWN_INTERVAL_S = 180.0f;
