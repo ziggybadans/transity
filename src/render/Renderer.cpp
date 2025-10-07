@@ -48,10 +48,16 @@ void Renderer::renderFrame(entt::registry &registry, GameState &gameState, const
 
     _terrainRenderSystem.render(registry, _windowInstance, view, worldGen.getParams());
     
-    // Render cities before lines so control points appear on top
-    _cityRenderSystem.render(registry, _windowInstance, gameState, highlightColor);
-    
-    _lineRenderSystem.render(registry, _windowInstance, gameState, view, highlightColor);
+    if (gameState.currentInteractionMode == InteractionMode::CREATE_LINE ||
+        gameState.currentInteractionMode == InteractionMode::EDIT_LINE) {
+        // In editing modes, render cities first so lines and control points appear on top
+        _cityRenderSystem.render(registry, _windowInstance, gameState, highlightColor);
+        _lineRenderSystem.render(registry, _windowInstance, gameState, view, highlightColor);
+    } else {
+        // In normal mode, render lines first so cities appear on top
+        _lineRenderSystem.render(registry, _windowInstance, gameState, view, highlightColor);
+        _cityRenderSystem.render(registry, _windowInstance, gameState, highlightColor);
+    }
 
     // The main render view now excludes entities handled by other systems
     auto viewRegistry = registry.view<const PositionComponent, const RenderableComponent>(

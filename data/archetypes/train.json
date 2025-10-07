@@ -3,7 +3,7 @@
   "id": "train",
   "components": {
     "renderable": {
-      "radius": 10.0,
+      "radius": 20.0,
       "color": [255, 0, 0, 255],
       "zOrder": 3
     },
