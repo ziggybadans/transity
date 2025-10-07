@@ -27,7 +27,6 @@ enum class CityType { CAPITAL, TOWN, SUBURB };
 struct CityComponent {
     CityType type;
     std::vector<entt::entity> connectedLines;
-    std::vector<entt::entity> waitingPassengers;
 };
 
 // A component for line entities.
@@ -134,6 +133,11 @@ struct TrainPhysicsComponent {
 struct TrainCapacityComponent {
     int capacity = Constants::TRAIN_CAPACITY;
     int currentLoad = 0;  // Add this line
+};
+
+// A component added to a train when it is stopped at a station.
+struct AtStationComponent {
+    entt::entity stationEntity;
 };
 
 // A temporary component added when a train begins its station approach

@@ -40,6 +40,11 @@ sf::Vector2f TrainMovementSystem::getPositionAtDistance(const LineComponent& lin
 
 void TrainMovementSystem::update(sf::Time dt) {
     const float timeStep = dt.asSeconds();
+
+    // Clear all AtStationComponent instances from the previous frame
+    auto atStationView = _registry.view<AtStationComponent>();
+    _registry.remove<AtStationComponent>(atStationView.begin(), atStationView.end());
+
     auto view = _registry.view<TrainTag, TrainMovementComponent, TrainPhysicsComponent, PositionComponent>();
 
     for (auto entity : view) {
@@ -51,6 +56,9 @@ void TrainMovementSystem::update(sf::Time dt) {
         const auto &line = _registry.get<LineComponent>(movement.assignedLine);
         if (line.curvePoints.size() < 2) continue;
 
+        bool justStopped = false;
+
+        // Sort stop distances for finding the next stop
         std::vector<float> stopDistances;
         stopDistances.reserve(line.stops.size());
         for (const auto& stopInfo : line.stops) {
@@ -106,29 +114,25 @@ void TrainMovementSystem::update(sf::Time dt) {
         }
         
         if (movement.state == TrainState::DECELERATING) {
-             physics.currentSpeed -= physics.acceleration * timeStep;
-             if (physics.currentSpeed < 0) physics.currentSpeed = 0;
+            physics.currentSpeed -= physics.acceleration * timeStep;
+            if (physics.currentSpeed < 0) physics.currentSpeed = 0;
 
-             float distanceToTravelThisFrame = physics.currentSpeed * timeStep;
-             float distanceToStop = std::abs(nextStopDistance - movement.distanceAlongCurve);
+            float distanceToTravelThisFrame = physics.currentSpeed * timeStep;
+            float distanceToStop = std::abs(nextStopDistance - movement.distanceAlongCurve);
 
-             if (distanceToTravelThisFrame >= distanceToStop) {
-                 movement.distanceAlongCurve = nextStopDistance;
-                 movement.state = TrainState::STOPPED;
-                 movement.stopTimer = Constants::TRAIN_STOP_DURATION;
-                 physics.currentSpeed = 0;
-             } else {
-                 movement.distanceAlongCurve += (movement.direction == TrainDirection::FORWARD ? distanceToTravelThisFrame : -distanceToTravelThisFrame);
-             }
+            // If we are going to pass the stop, or if we have stopped moving, then stop.
+            if (distanceToTravelThisFrame >= distanceToStop || physics.currentSpeed == 0) {
+                movement.distanceAlongCurve = nextStopDistance;
+                movement.state = TrainState::STOPPED;
+                movement.stopTimer = Constants::TRAIN_STOP_DURATION;
+                physics.currentSpeed = 0;
+                justStopped = true;
+            } else {
+                movement.distanceAlongCurve += (movement.direction == TrainDirection::FORWARD ? distanceToTravelThisFrame : -distanceToTravelThisFrame);
+            }
         } else if (movement.state == TrainState::MOVING || movement.state == TrainState::ACCELERATING) {
             movement.distanceAlongCurve = nextDistance;
         }
-
-        if (movement.state == TrainState::MOVING || movement.state == TrainState::ACCELERATING) {
-            movement.distanceAlongCurve = nextDistance;
-        }
-
-        position.coordinates = getPositionAtDistance(line, movement.distanceAlongCurve);
 
         // If at the end of the line, ensure the train stops properly
         if ((movement.distanceAlongCurve >= line.totalDistance || movement.distanceAlongCurve <= 0.0f) && movement.state != TrainState::STOPPED) {
@@ -136,7 +140,25 @@ void TrainMovementSystem::update(sf::Time dt) {
             movement.state = TrainState::STOPPED;
             movement.stopTimer = Constants::TRAIN_STOP_DURATION;
             physics.currentSpeed = 0;
+            justStopped = true;
         }
+
+        if (justStopped) {
+            entt::entity stationEntity = entt::null;
+            for (const auto& stopInfo : line.stops) {
+                if (std::abs(stopInfo.distanceAlongCurve - movement.distanceAlongCurve) < 0.001f) {
+                    stationEntity = stopInfo.stationEntity;
+                    break;
+                }
+            }
+
+            if (_registry.valid(stationEntity)) {
+                _registry.emplace<AtStationComponent>(entity, stationEntity);
+                LOG_TRACE("TrainMovementSystem", "Train arrived at station and AtStationComponent added.");
+            }
+        }
+
+        position.coordinates = getPositionAtDistance(line, movement.distanceAlongCurve);
         
         // Apply path offsets
         size_t segmentIndex = 0;

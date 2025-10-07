@@ -3,6 +3,7 @@
 #include "components/PassengerComponents.h"
 #include "Logger.h"
 #include <algorithm>
+#include <vector>
 
 PassengerMovementSystem::PassengerMovementSystem(entt::registry& registry)
     : _registry(registry) {
@@ -10,106 +11,97 @@ PassengerMovementSystem::PassengerMovementSystem(entt::registry& registry)
 }
 
 void PassengerMovementSystem::update(sf::Time dt) {
-    auto trainView = _registry.view<TrainTag, TrainMovementComponent, TrainCapacityComponent>();
-    for (auto trainEntity : trainView) {
-        auto& movement = trainView.get<TrainMovementComponent>(trainEntity);
+    // Iterate over trains that are currently at a station
+    auto view = _registry.view<AtStationComponent>();
+    for (auto trainEntity : view) {
+        const auto& atStation = view.get<AtStationComponent>(trainEntity);
+        entt::entity stationEntity = atStation.stationEntity;
 
-        if (movement.state != TrainState::STOPPED) {
-            continue;
-        }
+        // Process alighting first to free up capacity
+        alightPassengers(trainEntity, stationEntity);
         
-        auto& capacity = trainView.get<TrainCapacityComponent>(trainEntity);
-
-        alightPassengers(trainEntity, movement, capacity);
-        boardPassengers(trainEntity, movement, capacity);
+        // Then process boarding with the newly available capacity
+        boardPassengers(trainEntity, stationEntity);
     }
 }
 
-bool PassengerMovementSystem::isTrainGoingToNextNode(const TrainMovementComponent& movement, const LineComponent& line, entt::entity currentStopEntity, entt::entity nextNodeInPath) {
-    auto it = std::find_if(line.points.begin(), line.points.end(), [&](const LinePoint& p) {
-        return p.type == LinePointType::STOP && p.stationEntity == currentStopEntity;
-    });
-
-    if (it == line.points.end()) {
-        return false;
-    }
-
-    size_t currentStopIndexOnLine = std::distance(line.points.begin(), it);
-
-    if (movement.direction == TrainDirection::FORWARD) {
-        for (size_t i = currentStopIndexOnLine + 1; i < line.points.size(); ++i) {
-            if (line.points[i].type == LinePointType::STOP) {
-                return line.points[i].stationEntity == nextNodeInPath;
-            }
-        }
-    } else { // TrainDirection::BACKWARD
-        for (int i = currentStopIndexOnLine - 1; i >= 0; --i) {
-            if (line.points[i].type == LinePointType::STOP) {
-                return line.points[i].stationEntity == nextNodeInPath;
-            }
-        }
-    }
-    return false;
-}
-
-void PassengerMovementSystem::alightPassengers(entt::entity trainEntity, const TrainMovementComponent& movement, TrainCapacityComponent& capacity) {
+void PassengerMovementSystem::alightPassengers(entt::entity trainEntity, entt::entity stationEntity) {
+    auto& capacity = _registry.get<TrainCapacityComponent>(trainEntity);
+    const auto& movement = _registry.get<TrainMovementComponent>(trainEntity);
+    
     if (!_registry.valid(movement.assignedLine)) return;
     const auto& line = _registry.get<LineComponent>(movement.assignedLine);
-    
-    entt::entity currentStopEntity = getCurrentStop(movement, line);
-    if (!_registry.valid(currentStopEntity)) return;
 
-    auto passengerView = _registry.view<PassengerComponent, PathComponent>();
+    // Iterate over a copy, as we modify components which can invalidate views
+    std::vector<entt::entity> passengersOnTrain;
+    auto passengerView = _registry.view<PassengerComponent>();
     for (auto passengerEntity : passengerView) {
-        auto& passenger = passengerView.get<PassengerComponent>(passengerEntity);
-        if (passenger.currentContainer != trainEntity) {
-            continue;
+        if (passengerView.get<PassengerComponent>(passengerEntity).currentContainer == trainEntity) {
+            passengersOnTrain.push_back(passengerEntity);
+        }
+    }
+
+    for (auto passengerEntity : passengersOnTrain) {
+        if (!_registry.valid(passengerEntity)) continue; // Passenger might have been destroyed
+        
+        auto& passenger = _registry.get<PassengerComponent>(passengerEntity);
+        auto& path = _registry.get<PathComponent>(passengerEntity);
+
+        if (path.currentNodeIndex >= path.nodes.size()) {
+            continue; // Path is already complete.
         }
 
-        if (passenger.destinationStation == currentStopEntity) {
-            _registry.destroy(passengerEntity);
+        entt::entity nextStopOnPath = path.nodes[path.currentNodeIndex];
+
+        // Alight only if the current station is the passenger's next destination.
+        if (nextStopOnPath == stationEntity) {
+            passenger.state = PassengerState::WAITING_FOR_TRAIN;
+            passenger.currentContainer = stationEntity;
             capacity.currentLoad--;
-            LOG_TRACE("PassengerMovementSystem", "Passenger reached destination.");
-            continue;
-        }
+            path.currentNodeIndex++; // CRITICAL: Progress the path to the *next* node
+            LOG_TRACE("PassengerMovementSystem", "Passenger alighted at a path node.");
 
-        auto& path = passengerView.get<PathComponent>(passengerEntity);
-        if (path.currentNodeIndex + 1 < path.nodes.size()) {
-            entt::entity nextNodeInPath = path.nodes[path.currentNodeIndex + 1];
-            
-            if (!isTrainGoingToNextNode(movement, line, currentStopEntity, nextNodeInPath)) {
-                passenger.state = PassengerState::WAITING_FOR_TRAIN;
-                passenger.currentContainer = currentStopEntity;
-                path.currentNodeIndex++; 
-                capacity.currentLoad--;
-                LOG_TRACE("PassengerMovementSystem", "Passenger alighted to transfer.");
+            // If the path is now complete, the passenger has arrived at their final destination.
+            if (path.currentNodeIndex == path.nodes.size()) {
+                _registry.destroy(passengerEntity);
+                LOG_TRACE("PassengerMovementSystem", "Passenger reached final destination.");
             }
         }
     }
 }
 
-void PassengerMovementSystem::boardPassengers(entt::entity trainEntity, const TrainMovementComponent& movement, TrainCapacityComponent& capacity) {
+void PassengerMovementSystem::boardPassengers(entt::entity trainEntity, entt::entity stationEntity) {
+    auto& capacity = _registry.get<TrainCapacityComponent>(trainEntity);
+    if (capacity.currentLoad >= capacity.capacity) {
+        return; // Train is full
+    }
+
+    const auto& movement = _registry.get<TrainMovementComponent>(trainEntity);
+
     if (!_registry.valid(movement.assignedLine)) return;
     const auto& line = _registry.get<LineComponent>(movement.assignedLine);
-    
-    entt::entity currentStopEntity = getCurrentStop(movement, line);
-    if (!_registry.valid(currentStopEntity)) return;
 
+    // Find passengers waiting at this station
     auto passengerView = _registry.view<PassengerComponent, PathComponent>();
     for (auto passengerEntity : passengerView) {
-        if (capacity.currentLoad >= capacity.capacity) break;
+        if (capacity.currentLoad >= capacity.capacity) {
+            break; // Train became full during this loop
+        }
 
         auto& passenger = passengerView.get<PassengerComponent>(passengerEntity);
-        if (passenger.currentContainer != currentStopEntity) {
+        if (passenger.currentContainer != stationEntity || passenger.state != PassengerState::WAITING_FOR_TRAIN) {
             continue;
         }
 
         auto& path = passengerView.get<PathComponent>(passengerEntity);
-        if (path.currentNodeIndex >= path.nodes.size() - 1) continue;
+        if (path.currentNodeIndex >= path.nodes.size()) {
+            continue; // Path is complete, should not be waiting.
+        }
 
-        entt::entity nextNodeInPath = path.nodes[path.currentNodeIndex + 1];
-        
-        if (isTrainGoingToNextNode(movement, line, currentStopEntity, nextNodeInPath)) {
+        entt::entity nextNodeInPath = path.nodes[path.currentNodeIndex];
+
+        // Check if this train is going towards the passenger's next destination
+        if (isTrainGoingToNextNode(movement, line, stationEntity, nextNodeInPath)) {
             passenger.state = PassengerState::ON_TRAIN;
             passenger.currentContainer = trainEntity;
             capacity.currentLoad++;
@@ -118,35 +110,35 @@ void PassengerMovementSystem::boardPassengers(entt::entity trainEntity, const Tr
     }
 }
 
-entt::entity PassengerMovementSystem::getCurrentStop(const TrainMovementComponent& movement, const LineComponent& line) {
-    if (line.points.empty()) {
-        return entt::null;
+bool PassengerMovementSystem::isTrainGoingToNextNode(const TrainMovementComponent& movement, const LineComponent& line, entt::entity currentStopEntity, entt::entity nextNodeInPath) {
+    // Find the index of the current stop on the line's point list
+    auto it = std::find_if(line.points.begin(), line.points.end(), [&](const LinePoint& p) {
+        return p.type == LinePointType::STOP && p.stationEntity == currentStopEntity;
+    });
+
+    if (it == line.points.end()) {
+        return false;
     }
+    size_t currentStopIndexOnLine = std::distance(line.points.begin(), it);
 
-    float minDistance = -1.0f;
-    entt::entity closestStop = entt::null;
-
-    float currentCurveDistance = 0.0f;
-    size_t nextPointIndex = 0;
-    for(size_t i = 0; i < line.curvePoints.size(); ++i) {
-        if (nextPointIndex < line.points.size()) {
-            const auto& p = line.points[nextPointIndex];
-            if (line.curvePoints[i] == p.position) {
-                if (p.type == LinePointType::STOP) {
-                    float distanceToTrain = std::abs(currentCurveDistance - movement.distanceAlongCurve);
-                    if (closestStop == entt::null || distanceToTrain < minDistance) {
-                        minDistance = distanceToTrain;
-                        closestStop = p.stationEntity;
-                    }
+    // Search forward or backward from the current stop for the next node
+    if (movement.direction == TrainDirection::FORWARD) {
+        for (size_t i = currentStopIndexOnLine + 1; i < line.points.size(); ++i) {
+            if (line.points[i].type == LinePointType::STOP) {
+                if (line.points[i].stationEntity == nextNodeInPath) {
+                    return true; // Found the next node in the forward direction
                 }
-                nextPointIndex++;
             }
         }
-        if (i < line.curvePoints.size() - 1) {
-            const auto& p1 = line.curvePoints[i];
-            const auto& p2 = line.curvePoints[i + 1];
-            currentCurveDistance += std::sqrt(std::pow(p2.x - p1.x, 2) + std::pow(p2.y - p1.y, 2));
+    } else { // TrainDirection::BACKWARD
+        for (int i = currentStopIndexOnLine - 1; i >= 0; --i) {
+            if (line.points[i].type == LinePointType::STOP) {
+                if (line.points[i].stationEntity == nextNodeInPath) {
+                    return true; // Found the next node in the backward direction
+                }
+            }
         }
     }
-    return closestStop;
+    
+    return false; // The next node is not on this line in the current direction
 }

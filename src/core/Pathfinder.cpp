@@ -88,17 +88,23 @@ std::vector<entt::entity> Pathfinder::findPath(entt::entity startStation, entt::
 
     std::vector<entt::entity> path;
     entt::entity current = endStation;
-    while (current != entt::null && predecessors.count(current)) {
-        path.insert(path.begin(), current);
-        current = predecessors[current];
-    }
-    if (current == startStation) {
-        path.insert(path.begin(), startStation);
+
+    // If start and end are the same, path is empty
+    if (startStation == endStation) {
+        return path;
     }
 
-    if (path.empty() || path.front() != startStation) {
+    while (predecessors.count(current)) {
+        path.insert(path.begin(), current);
+        current = predecessors[current];
+        if (current == startStation) {
+            break; // We've reached the start, don't add it to the path
+        }
+    }
+
+    if (path.empty() || (current != startStation && !predecessors.count(current))) {
         LOG_WARN("Pathfinder", "No path found from station %u to %u.",
-                 static_cast<unsigned>(startStation), static_cast<unsigned>(endStation));
+                static_cast<unsigned>(startStation), static_cast<unsigned>(endStation));
         return {};
     }
 

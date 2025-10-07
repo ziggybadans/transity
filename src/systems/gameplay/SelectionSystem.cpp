@@ -66,14 +66,12 @@ void SelectionSystem::onMouseButtonPressed(const MouseButtonPressedEvent& event)
 
                     if (!path.empty()) {
                         auto passenger = _registry.create();
-                        _registry.emplace<PassengerComponent>(passenger, origin, destination);
-                        
+                        auto& passengerComponent = _registry.emplace<PassengerComponent>(passenger, origin, destination);
+                        passengerComponent.currentContainer = origin; // Set initial container
+
                         auto& pathComponent = _registry.emplace<PathComponent>(passenger);
                         pathComponent.nodes = path;
                         pathComponent.currentNodeIndex = 0;
-
-                        auto& originCity = _registry.get<CityComponent>(origin);
-                        originCity.waitingPassengers.push_back(passenger);
 
                         LOG_INFO("SelectionSystem", "Passenger created from %u to %u with path size %zu", entt::to_integral(origin), entt::to_integral(destination), path.size());
                     } else {

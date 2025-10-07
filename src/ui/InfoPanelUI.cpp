@@ -74,16 +74,27 @@ void InfoPanelUI::draw() {
             if (auto *city = _registry.try_get<CityComponent>(entity)) {
                 ImGui::Text("Type: City");
                 ImGui::Text("Connected Lines: %zu", city->connectedLines.size());
-                ImGui::Text("Waiting Passengers: %zu", city->waitingPassengers.size());
+
+                // Find waiting passengers by querying components
+                std::vector<entt::entity> waitingPassengers;
+                auto passengerView = _registry.view<PassengerComponent>();
+                for (auto passengerEntity : passengerView) {
+                    const auto& passenger = passengerView.get<PassengerComponent>(passengerEntity);
+                    if (passenger.currentContainer == entity && passenger.state == PassengerState::WAITING_FOR_TRAIN) {
+                        waitingPassengers.push_back(passengerEntity);
+                    }
+                }
+
+                ImGui::Text("Waiting Passengers: %zu", waitingPassengers.size());
                 if (ImGui::Button("Create Passenger")) {
                     _eventBus.enqueue<StartPassengerCreationEvent>({entity});
                 }
 
                 if (ImGui::CollapsingHeader("Waiting Passengers")) {
-                    if (city->waitingPassengers.empty()) {
+                    if (waitingPassengers.empty()) {
                         ImGui::Text("No passengers waiting.");
                     } else {
-                        for (entt::entity passengerEntity : city->waitingPassengers) {
+                        for (entt::entity passengerEntity : waitingPassengers) {
                             if (!_registry.valid(passengerEntity)) continue;
 
                             auto &passenger = _registry.get<PassengerComponent>(passengerEntity);
