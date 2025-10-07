@@ -126,7 +126,7 @@ struct TrainMovementComponent {
 // Manages the train's physics properties
 struct TrainPhysicsComponent {
     float maxSpeed = Constants::TRAIN_MAX_SPEED;
-    float currentSpeed = Constants::TRAIN_DEFAULT_INITIAL_SPEED;
+    float currentSpeed = 0.0f;
     float acceleration = Constants::TRAIN_ACCELERATION;
 };
 

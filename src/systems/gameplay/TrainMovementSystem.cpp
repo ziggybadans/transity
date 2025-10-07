@@ -38,44 +38,6 @@ sf::Vector2f TrainMovementSystem::getPositionAtDistance(const LineComponent& lin
     return line.curvePoints.back();
 }
 
-std::vector<float> TrainMovementSystem::getStopDistances(const LineComponent& line) {
-    std::vector<float> stopDistances;
-    if (line.points.empty()) {
-        return stopDistances;
-    }
-
-    std::vector<float> pointDistances(line.points.size(), 0.0f);
-    float accumulatedDistance = 0.0f;
-
-    // This is an approximation. For perfect accuracy, we'd need to map the original points to the curve.
-    // However, since the curve passes through the points, we can map them by finding the closest curve point.
-    // For simplicity, we'll assume the original points are on the curve.
-    // A more robust solution would be to pre-calculate the distances of the original points along the curve.
-    
-    float currentCurveDistance = 0.0f;
-    size_t nextPointIndex = 0;
-    for(size_t i = 0; i < line.curvePoints.size(); ++i) {
-        if (nextPointIndex < line.points.size()) {
-            const auto& p = line.points[nextPointIndex];
-            if (line.curvePoints[i] == p.position) {
-                pointDistances[nextPointIndex] = currentCurveDistance;
-                if (p.type == LinePointType::STOP) {
-                    stopDistances.push_back(currentCurveDistance);
-                }
-                nextPointIndex++;
-            }
-        }
-        if (i < line.curvePoints.size() - 1) {
-            const auto& p1 = line.curvePoints[i];
-            const auto& p2 = line.curvePoints[i + 1];
-            currentCurveDistance += std::sqrt(std::pow(p2.x - p1.x, 2) + std::pow(p2.y - p1.y, 2));
-        }
-    }
-
-    return stopDistances;
-}
-
-
 void TrainMovementSystem::update(sf::Time dt) {
     const float timeStep = dt.asSeconds();
     auto view = _registry.view<TrainTag, TrainMovementComponent, TrainPhysicsComponent, PositionComponent>();
@@ -89,7 +51,12 @@ void TrainMovementSystem::update(sf::Time dt) {
         const auto &line = _registry.get<LineComponent>(movement.assignedLine);
         if (line.curvePoints.size() < 2) continue;
 
-        auto stopDistances = getStopDistances(line);
+        std::vector<float> stopDistances;
+        stopDistances.reserve(line.stops.size());
+        for (const auto& stopInfo : line.stops) {
+            stopDistances.push_back(stopInfo.distanceAlongCurve);
+        }
+        std::sort(stopDistances.begin(), stopDistances.end());
 
         if (movement.state == TrainState::STOPPED) {
             movement.stopTimer -= timeStep;
@@ -156,13 +123,15 @@ void TrainMovementSystem::update(sf::Time dt) {
             movement.distanceAlongCurve = nextDistance;
         }
 
-        if (movement.distanceAlongCurve > line.totalDistance) {
-            movement.distanceAlongCurve = line.totalDistance;
-        } else if (movement.distanceAlongCurve < 0) {
-            movement.distanceAlongCurve = 0;
-        }
-
         position.coordinates = getPositionAtDistance(line, movement.distanceAlongCurve);
+
+        // If at the end of the line, ensure the train stops properly
+        if ((movement.distanceAlongCurve >= line.totalDistance || movement.distanceAlongCurve <= 0.0f) && movement.state != TrainState::STOPPED) {
+            movement.distanceAlongCurve = (movement.distanceAlongCurve >= line.totalDistance) ? line.totalDistance : 0.0f;
+            movement.state = TrainState::STOPPED;
+            movement.stopTimer = Constants::TRAIN_STOP_DURATION;
+            physics.currentSpeed = 0;
+        }
         
         // Apply path offsets
         size_t segmentIndex = 0;

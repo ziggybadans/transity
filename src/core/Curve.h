@@ -4,6 +4,8 @@
 #include <SFML/System/Vector2.hpp>
 #include <cmath>
 #include <vector>
+#include <algorithm>
+#include <limits>
 
 struct CurveData {
     std::vector<sf::Vector2f> points;
@@ -131,31 +133,49 @@ public:
     }
 
     static std::vector<StopInfo> calculateStopInfo(const std::vector<LinePoint> &linePoints,
-                                                   const std::vector<sf::Vector2f> &curvePoints) {
-        std::vector<StopInfo> stopInfo;
+                                               const std::vector<sf::Vector2f> &curvePoints) {
+    std::vector<StopInfo> stopInfo;
         if (linePoints.empty() || curvePoints.empty()) {
             return stopInfo;
         }
 
-        float currentCurveDistance = 0.0f;
-        size_t nextPointIndex = 0;
-        for (size_t i = 0; i < curvePoints.size(); ++i) {
-            if (nextPointIndex < linePoints.size()) {
-                const auto &p = linePoints[nextPointIndex];
-                if (curvePoints[i] == p.position) {
-                    if (p.type == LinePointType::STOP) {
-                        stopInfo.push_back({p.stationEntity, currentCurveDistance});
+        std::vector<float> cumulativeDistances;
+        cumulativeDistances.push_back(0.f);
+        float totalLength = 0.f;
+
+        for (size_t i = 0; i < curvePoints.size() - 1; ++i) {
+            const auto &p1 = curvePoints[i];
+            const auto &p2 = curvePoints[i + 1];
+            float segmentLength = std::sqrt(std::pow(p2.x - p1.x, 2) + std::pow(p2.y - p1.y, 2));
+            totalLength += segmentLength;
+            cumulativeDistances.push_back(totalLength);
+        }
+
+        for (const auto& linePoint : linePoints) {
+            if (linePoint.type == LinePointType::STOP) {
+                float min_dist_sq = std::numeric_limits<float>::max();
+                size_t closest_point_index = 0;
+
+                for (size_t i = 0; i < curvePoints.size(); ++i) {
+                    float dx = curvePoints[i].x - linePoint.position.x;
+                    float dy = curvePoints[i].y - linePoint.position.y;
+                    float dist_sq = dx * dx + dy * dy;
+                    if (dist_sq < min_dist_sq) {
+                        min_dist_sq = dist_sq;
+                        closest_point_index = i;
                     }
-                    nextPointIndex++;
+                }
+                
+                if (closest_point_index < cumulativeDistances.size()) {
+                    stopInfo.push_back({linePoint.stationEntity, cumulativeDistances[closest_point_index]});
                 }
             }
-            if (i < curvePoints.size() - 1) {
-                const auto &p1 = curvePoints[i];
-                const auto &p2 = curvePoints[i + 1];
-                currentCurveDistance +=
-                    std::sqrt(std::pow(p2.x - p1.x, 2) + std::pow(p2.y - p1.y, 2));
-            }
         }
+        
+        std::sort(stopInfo.begin(), stopInfo.end(), [](const StopInfo& a, const StopInfo& b) {
+            return a.distanceAlongCurve < b.distanceAlongCurve;
+        });
+
         return stopInfo;
     }
 };

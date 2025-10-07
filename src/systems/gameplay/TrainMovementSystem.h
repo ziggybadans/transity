@@ -19,7 +19,6 @@ public:
 
 private:
     sf::Vector2f getPositionAtDistance(const LineComponent& line, float distance);
-    std::vector<float> getStopDistances(const LineComponent& line);
 
     entt::registry &_registry;
 };
