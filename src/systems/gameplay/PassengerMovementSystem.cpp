@@ -111,7 +111,6 @@ void PassengerMovementSystem::boardPassengers(entt::entity trainEntity, entt::en
 }
 
 bool PassengerMovementSystem::isTrainGoingToNextNode(const TrainMovementComponent& movement, const LineComponent& line, entt::entity currentStopEntity, entt::entity nextNodeInPath) {
-    // Find the index of the current stop on the line's point list
     auto it = std::find_if(line.points.begin(), line.points.end(), [&](const LinePoint& p) {
         return p.type == LinePointType::STOP && p.stationEntity == currentStopEntity;
     });
@@ -121,24 +120,33 @@ bool PassengerMovementSystem::isTrainGoingToNextNode(const TrainMovementComponen
     }
     size_t currentStopIndexOnLine = std::distance(line.points.begin(), it);
 
-    // Search forward or backward from the current stop for the next node
-    if (movement.direction == TrainDirection::FORWARD) {
+    // Predict the train's direction when it leaves the station, accounting for float precision
+    const float epsilon = 0.001f;
+    TrainDirection futureDirection = movement.direction;
+    if (movement.direction == TrainDirection::FORWARD && movement.distanceAlongCurve >= line.totalDistance - epsilon) {
+        futureDirection = TrainDirection::BACKWARD;
+    } else if (movement.direction == TrainDirection::BACKWARD && movement.distanceAlongCurve <= epsilon) {
+        futureDirection = TrainDirection::FORWARD;
+    }
+
+    // Search based on the predicted future direction
+    if (futureDirection == TrainDirection::FORWARD) {
         for (size_t i = currentStopIndexOnLine + 1; i < line.points.size(); ++i) {
             if (line.points[i].type == LinePointType::STOP) {
                 if (line.points[i].stationEntity == nextNodeInPath) {
-                    return true; // Found the next node in the forward direction
+                    return true;
                 }
             }
         }
-    } else { // TrainDirection::BACKWARD
+    } else { // BACKWARD
         for (int i = currentStopIndexOnLine - 1; i >= 0; --i) {
             if (line.points[i].type == LinePointType::STOP) {
                 if (line.points[i].stationEntity == nextNodeInPath) {
-                    return true; // Found the next node in the backward direction
+                    return true;
                 }
             }
         }
     }
     
-    return false; // The next node is not on this line in the current direction
+    return false;
 }

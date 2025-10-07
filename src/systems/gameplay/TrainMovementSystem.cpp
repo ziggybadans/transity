@@ -69,9 +69,10 @@ void TrainMovementSystem::update(sf::Time dt) {
         if (movement.state == TrainState::STOPPED) {
             movement.stopTimer -= timeStep;
             if (movement.stopTimer <= 0.0f) {
-                if (movement.direction == TrainDirection::FORWARD && movement.distanceAlongCurve >= line.totalDistance) {
+                const float epsilon = 0.001f;
+                if (movement.direction == TrainDirection::FORWARD && movement.distanceAlongCurve >= line.totalDistance - epsilon) {
                     movement.direction = TrainDirection::BACKWARD;
-                } else if (movement.direction == TrainDirection::BACKWARD && movement.distanceAlongCurve <= 0.0f) {
+                } else if (movement.direction == TrainDirection::BACKWARD && movement.distanceAlongCurve <= epsilon) {
                     movement.direction = TrainDirection::FORWARD;
                 }
                 movement.state = TrainState::ACCELERATING;
