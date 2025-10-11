@@ -37,7 +37,7 @@ Game::Game(Renderer &renderer, ThreadPool &threadPool, EventBus &eventBus,
     // UI, input, and world loading systems that should always run
     _systemManager->addSystem<CameraSystem>(_camera, _renderer, _worldGenerationSystem, _eventBus);
     _systemManager->addSystem<LineCreationSystem>(_registry, _entityFactory, _colorManager,
-                                                  _gameState, _eventBus);
+                                                  _gameState, _eventBus, _worldGenerationSystem);
     _systemManager->addSystem<GameStateSystem>(_eventBus, _gameState);
     _systemManager->addSystem<SelectionSystem>(_registry, _eventBus, _gameState, _pathfinder);
     _systemManager->addSystem<DeletionSystem>(_registry, _eventBus, _gameState);

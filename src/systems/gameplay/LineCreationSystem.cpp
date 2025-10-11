@@ -1,6 +1,7 @@
 #include "LineCreationSystem.h"
 #include "Logger.h"
 #include "components/GameLogicComponents.h"
+#include "systems/world/WorldGenerationSystem.h"
 #include "ecs/EntityFactory.h"
 #include "render/ColorManager.h"
 #include "imgui.h"
@@ -10,9 +11,9 @@
 #include <algorithm>
 #include <utility>
 
-LineCreationSystem::LineCreationSystem(entt::registry& registry, EntityFactory& entityFactory, ColorManager& colorManager, GameState& gameState, EventBus& eventBus)
+LineCreationSystem::LineCreationSystem(entt::registry& registry, EntityFactory& entityFactory, ColorManager& colorManager, GameState& gameState, EventBus& eventBus, WorldGenerationSystem& worldGenerationSystem)
     : _registry(registry), _entityFactory(entityFactory),
-      _colorManager(colorManager), _gameState(gameState), _eventBus(eventBus) {
+      _colorManager(colorManager), _gameState(gameState), _eventBus(eventBus), _worldGenerationSystem(worldGenerationSystem) {
 
     m_finalizeLineConnection = _eventBus.sink<FinalizeLineEvent>()
                                    .connect<&LineCreationSystem::onFinalizeLine>(this);
@@ -45,6 +46,20 @@ void LineCreationSystem::onMouseButtonPressed(const MouseButtonPressedEvent &eve
 
     if (_gameState.currentInteractionMode == InteractionMode::CREATE_LINE && event.button == sf::Mouse::Button::Left) {
         auto& preview = _registry.ctx().get<LinePreview>();
+        
+        if (!preview.validSegments.empty()) {
+            bool allSegmentsValid = true;
+            for (bool isValid : preview.validSegments) {
+                if (!isValid) {
+                    allSegmentsValid = false;
+                    break;
+                }
+            }
+            if (!allSegmentsValid) {
+                LOG_WARN("LineCreationSystem", "Cannot place point: the path to it crosses water.");
+                return;
+            }
+        }
 
         if (preview.snapPosition && preview.snapInfo) {
             entt::entity stationEntity = entt::null;
@@ -73,6 +88,11 @@ void LineCreationSystem::onMouseButtonPressed(const MouseButtonPressedEvent &eve
 }
 
 void LineCreationSystem::addPointToLine(const sf::Vector2f& position, entt::entity stationEntity, std::optional<SnapInfo> snapInfo, float snapSide) {
+    if (_worldGenerationSystem.getTerrainTypeAt(position.x, position.y) == TerrainType::WATER) {
+        LOG_WARN("LineCreationSystem", "Cannot place a line point on water.");
+        return;
+    }
+
     auto& activeLine = _registry.ctx().get<ActiveLine>();
 
     if (activeLine.points.empty() && stationEntity == entt::null) {
@@ -108,6 +128,23 @@ void LineCreationSystem::finalizeLine() {
     if (activeLine.points.back().type != LinePointType::STOP) {
         LOG_WARN("LineCreationSystem", "Cannot finalize line: the last point must be a station.");
         return;
+    }
+
+    std::vector<sf::Vector2f> controlPointsForFinalize;
+    for (const auto &point : activeLine.points) {
+        controlPointsForFinalize.push_back(point.position);
+    }
+    CurveData finalCurveData = Curve::generateMetroCurve(controlPointsForFinalize, Constants::METRO_CURVE_RADIUS);
+
+    for (size_t i = 0; i < finalCurveData.points.size() - 1; ++i) {
+        const sf::Vector2f& p1 = finalCurveData.points[i];
+        const sf::Vector2f& p2 = finalCurveData.points[i+1];
+        sf::Vector2f midPoint = p1 + (p2 - p1) * 0.5f;
+        
+        if (_worldGenerationSystem.getTerrainTypeAt(midPoint.x, midPoint.y) == TerrainType::WATER) {
+            LOG_WARN("LineCreationSystem", "Cannot finalize line: path intersects with water.");
+            return;
+        }
     }
 
     sf::Color chosenColor = _colorManager.getNextLineColor();
@@ -167,6 +204,8 @@ void LineCreationSystem::update(sf::Time dt) {
     preview.snapInfo.reset();
     preview.snapSide = 0.f;
     preview.snapTangent.reset();
+    preview.curvePoints.clear();
+    preview.validSegments.clear();
 
     sf::Vector2f mousePos = _currentMouseWorldPos;
 
@@ -199,6 +238,8 @@ void LineCreationSystem::update(sf::Time dt) {
             preview.snapInfo = SnapInfo{entity, (size_t)-1};
         }
     }
+
+    sf::Vector2f finalPreviewPos = mousePos;
 
     if (preview.snapInfo) {
         sf::Vector2f targetPointPos;
@@ -242,16 +283,11 @@ void LineCreationSystem::update(sf::Time dt) {
                     for (size_t i = 0; i < lineComp.points.size(); ++i) {
                         if (lineComp.points[i].type == LinePointType::STOP && lineComp.points[i].stationEntity == cityEntity) {
                             sf::Vector2f p_prev, p_next;
-                            if (i > 0) {
-                                p_prev = lineComp.points[i - 1].position;
-                            } else {
-                                p_prev = lineComp.points[i].position - (lineComp.points[i + 1].position - lineComp.points[i].position);
-                            }
-                            if (i < lineComp.points.size() - 1) {
-                                p_next = lineComp.points[i + 1].position;
-                            } else {
-                                p_next = lineComp.points[i].position + (lineComp.points[i].position - lineComp.points[i - 1].position);
-                            }
+                            if (i > 0) p_prev = lineComp.points[i - 1].position;
+                            else p_prev = lineComp.points[i].position - (lineComp.points[i + 1].position - lineComp.points[i].position);
+                            
+                            if (i < lineComp.points.size() - 1) p_next = lineComp.points[i + 1].position;
+                            else p_next = lineComp.points[i].position + (lineComp.points[i].position - lineComp.points[i - 1].position);
 
                             sf::Vector2f currentTangent = p_next - p_prev;
                             if (auto len = std::sqrt(currentTangent.x * currentTangent.x + currentTangent.y * currentTangent.y); len > 0) {
@@ -274,29 +310,60 @@ void LineCreationSystem::update(sf::Time dt) {
                 const auto& activeLine = _registry.ctx().get<ActiveLine>();
                 if (!activeLine.points.empty()) {
                     tangent = targetPointPos - activeLine.points.back().position;
-                } else {
-                    preview.snapPosition = targetPointPos;
-                    return;
+                    tangentFound = true;
                 }
             }
         }
 
-        if (auto len = std::sqrt(tangent.x * tangent.x + tangent.y * tangent.y); len > 0) {
-            tangent /= len;
-        }
-        preview.snapTangent = tangent;
+        if (tangentFound) {
+            if (auto len = std::sqrt(tangent.x * tangent.x + tangent.y * tangent.y); len > 0) {
+                tangent /= len;
+            }
+            preview.snapTangent = tangent;
 
-        sf::Vector2f perpendicular = {-tangent.y, tangent.x};
-        sf::Vector2f mouseVec = mousePos - targetPointPos;
-        float perp_dist = mouseVec.x * perpendicular.x + mouseVec.y * perpendicular.y;
+            sf::Vector2f perpendicular = {-tangent.y, tangent.x};
+            sf::Vector2f mouseVec = mousePos - targetPointPos;
+            float perp_dist = mouseVec.x * perpendicular.x + mouseVec.y * perpendicular.y;
 
-        if (std::abs(perp_dist) < Constants::LINE_CENTER_SNAP_RADIUS) {
-            preview.snapSide = 0.f;
-            preview.snapPosition = targetPointPos;
+            if (std::abs(perp_dist) < Constants::LINE_CENTER_SNAP_RADIUS) {
+                preview.snapSide = 0.f;
+                preview.snapPosition = targetPointPos;
+            } else {
+                preview.snapSide = (perp_dist > 0) ? 1.f : -1.f;
+                sf::Vector2f sideOffset = perpendicular * preview.snapSide * Constants::LINE_PARALLEL_OFFSET;
+                preview.snapPosition = targetPointPos + sideOffset;
+            }
         } else {
-            preview.snapSide = (perp_dist > 0) ? 1.f : -1.f;
-            sf::Vector2f sideOffset = perpendicular * preview.snapSide * Constants::LINE_PARALLEL_OFFSET;
-            preview.snapPosition = targetPointPos + sideOffset;
+            preview.snapPosition = targetPointPos;
+        }
+        finalPreviewPos = *preview.snapPosition;
+    }
+
+    auto& activeLine = _registry.ctx().get<ActiveLine>();
+    if (activeLine.points.empty()) {
+        return;
+    }
+
+    std::vector<sf::Vector2f> previewControlPoints;
+    for (const auto& p : activeLine.points) {
+        previewControlPoints.push_back(p.position);
+    }
+    
+    previewControlPoints.push_back(finalPreviewPos);
+
+    if (previewControlPoints.size() >= 2) {
+        CurveData curveData = Curve::generateMetroCurve(previewControlPoints, Constants::METRO_CURVE_RADIUS);
+        preview.curvePoints = curveData.points;
+
+        if (preview.curvePoints.size() >= 2) {
+            for (size_t i = 0; i < preview.curvePoints.size() - 1; ++i) {
+                const sf::Vector2f& p1 = preview.curvePoints[i];
+                const sf::Vector2f& p2 = preview.curvePoints[i+1];
+                sf::Vector2f midPoint = p1 + (p2 - p1) * 0.5f;
+                
+                bool isValid = (_worldGenerationSystem.getTerrainTypeAt(midPoint.x, midPoint.y) != TerrainType::WATER);
+                preview.validSegments.push_back(isValid);
+            }
         }
     }
 }

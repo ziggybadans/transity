@@ -18,7 +18,7 @@
 Application::Application()
     : _window(sf::VideoMode({Constants::WINDOW_WIDTH, Constants::WINDOW_HEIGHT}),
               Constants::WINDOW_TITLE, sf::Style::Default, sf::State::Windowed,
-              sf::ContextSettings{0u, 0u, 8u}),
+              sf::ContextSettings{0u, 0u, 16u}),
       _colorManager(_eventBus) {
     LOG_INFO("Application", "Application creation started.");
     try {

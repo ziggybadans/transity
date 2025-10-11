@@ -13,6 +13,7 @@
 
 class EntityFactory;
 class ColorManager;
+class WorldGenerationSystem;
 
 struct ActiveLine {
     std::vector<LinePoint> points;
@@ -23,11 +24,13 @@ struct LinePreview {
     std::optional<SnapInfo> snapInfo;
     float snapSide = 0.f; // Will be -1.f or 1.f
     std::optional<sf::Vector2f> snapTangent;
+    std::vector<sf::Vector2f> curvePoints;
+    std::vector<bool> validSegments;
 };
 
 class LineCreationSystem : public ISystem, public IUpdatable {
 public:
-    explicit LineCreationSystem(entt::registry& registry, EntityFactory& entityFactory, ColorManager& colorManager, GameState& gameState, EventBus& eventBus);
+    explicit LineCreationSystem(entt::registry& registry, EntityFactory& entityFactory, ColorManager& colorManager, GameState& gameState, EventBus& eventBus, WorldGenerationSystem& worldGenerationSystem);
     ~LineCreationSystem();
 
     void update(sf::Time dt) override;
@@ -49,6 +52,7 @@ private:
     ColorManager &_colorManager;
     GameState &_gameState;
     EventBus& _eventBus;
+    WorldGenerationSystem& _worldGenerationSystem;
     sf::Vector2f _currentMouseWorldPos;
 
     entt::scoped_connection m_finalizeLineConnection;
