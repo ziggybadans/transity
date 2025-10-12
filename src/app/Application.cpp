@@ -152,6 +152,8 @@ void Application::update(sf::Time dt) {
 void Application::render(float interpolation) {
     PerfTimer timer("Application::render", _game->getPerformanceMonitor());
 
+    _renderer->clear(); // Clear the main window
+
     const auto &worldGen = _game->getWorldGenSystem();
     auto &passengerSpawnAnimationSystem = _game->getPassengerSpawnAnimationSystem();
 

@@ -58,7 +58,7 @@ void LineDrawer::createThickLine(sf::VertexArray &vertices, const std::vector<sf
     }
 }
 
-void LineDrawer::drawBarberPolePolyline(sf::RenderWindow &window,
+void LineDrawer::drawBarberPolePolyline(sf::RenderTarget &target,
                                         const std::vector<sf::Vector2f> &points, float thickness,
                                         const std::vector<sf::Color> &colors, float phaseOffset) {
     if (points.size() < 2 || colors.empty()) return;
@@ -163,7 +163,7 @@ void LineDrawer::drawBarberPolePolyline(sf::RenderWindow &window,
                 stripe[2].color = color;
                 stripe[3].color = color;
 
-                window.draw(stripe);
+                target.draw(stripe);
             }
             currentStripeStart += stripeLength;
         }

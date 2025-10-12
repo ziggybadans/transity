@@ -14,8 +14,8 @@ namespace Constants {
     //=========================================================================
     // Graphics & UI
     //=========================================================================
-    constexpr unsigned int WINDOW_WIDTH = 1920;
-    constexpr unsigned int WINDOW_HEIGHT = 1080;
+    constexpr unsigned int WINDOW_WIDTH = 3840;
+    constexpr unsigned int WINDOW_HEIGHT = 2160;
     constexpr unsigned int FRAMERATE_LIMIT = 144;
     constexpr float UI_WINDOW_PADDING = 10.0f;
     constexpr float UI_WORLD_GEN_SETTINGS_WIDTH = 300.0f;

@@ -11,7 +11,7 @@
 
 PathRenderSystem::PathRenderSystem() {}
 
-void PathRenderSystem::render(const entt::registry& registry, sf::RenderWindow& window) {
+void PathRenderSystem::render(const entt::registry& registry, sf::RenderTarget& target) {
     auto view = registry.view<const VisualizePathComponent, const PathComponent, const PassengerComponent>();
 
     for (auto entity : view) {
@@ -22,7 +22,6 @@ void PathRenderSystem::render(const entt::registry& registry, sf::RenderWindow& 
             continue;
         }
 
-        // Determine the passenger's current position
         std::optional<sf::Vector2f> currentPosition;
         if (registry.valid(passenger.currentContainer) && registry.all_of<PositionComponent>(passenger.currentContainer)) {
             currentPosition = registry.get<const PositionComponent>(passenger.currentContainer).coordinates;
@@ -34,10 +33,8 @@ void PathRenderSystem::render(const entt::registry& registry, sf::RenderWindow& 
 
         sf::VertexArray lines(sf::PrimitiveType::LineStrip);
 
-        // Start the line from the passenger's current position.
         lines.append({*currentPosition, sf::Color::Yellow});
 
-        // Draw the rest of the path from the current node onwards.
         for (size_t i = path.currentNodeIndex; i < path.nodes.size(); ++i) {
             entt::entity nodeEntity = path.nodes[i];
             if (!registry.valid(nodeEntity)) continue;
@@ -46,6 +43,6 @@ void PathRenderSystem::render(const entt::registry& registry, sf::RenderWindow& 
                 lines.append({{stationPosition->coordinates.x, stationPosition->coordinates.y}, sf::Color::Yellow});
             }
         }
-        window.draw(lines);
+        target.draw(lines);
     }
 }

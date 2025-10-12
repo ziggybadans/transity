@@ -8,9 +8,10 @@
 
 Renderer::Renderer(ColorManager &colorManager, sf::RenderWindow &window)
     : _colorManager(colorManager), _windowInstance(window),
-      _clearColor(_colorManager.getBackgroundColor()), _terrainRenderSystem(colorManager),
-      _lineRenderSystem(), _trainRenderSystem(), _pathRenderSystem(), _cityRenderSystem(),
-      _lineEditingRenderSystem(_windowInstance) {
+      _clearColor(_colorManager.getBackgroundColor()),
+      _renderTexture(),
+      _terrainRenderSystem(colorManager), _lineRenderSystem(), _trainRenderSystem(),
+      _pathRenderSystem(), _cityRenderSystem(), _lineEditingRenderSystem() {
     LOG_DEBUG("Renderer", "Renderer created and window initialized.");
     _windowInstance.setFramerateLimit(Constants::FRAMERATE_LIMIT);
 }
@@ -21,6 +22,20 @@ Renderer::~Renderer() {
 
 void Renderer::initialize() {
     LOG_INFO("Renderer", "Initializing Renderer.");
+    sf::Vector2u windowSize = _windowInstance.getSize();
+    sf::Vector2u textureSize = {static_cast<unsigned int>(windowSize.x * SSAA_FACTOR),
+                                static_cast<unsigned int>(windowSize.y * SSAA_FACTOR)};
+
+    if (!_renderTexture.resize({textureSize.x, textureSize.y})) {
+        LOG_FATAL("Renderer", "Failed to create render texture.");
+        throw std::runtime_error("Failed to create render texture.");
+    }
+    _renderTexture.setSmooth(true);
+
+    _renderSprite = std::make_unique<sf::Sprite>(_renderTexture.getTexture());
+    _renderSprite->setScale({1.0f / SSAA_FACTOR, 1.0f / SSAA_FACTOR});
+    LOG_DEBUG("Renderer", "Render texture created with size: %d x %d", textureSize.x,
+              textureSize.y);
 }
 
 void Renderer::clear() {
@@ -35,33 +50,40 @@ void Renderer::renderFrame(entt::registry &registry, GameState &gameState, const
                            const WorldGenerationSystem &worldGen,
                            PassengerSpawnAnimationSystem &passengerSpawnAnimationSystem,
                            float interpolation) {
-    _windowInstance.setView(view);
-    _windowInstance.clear(_clearColor);
+    sf::View ssaaView = view;
+    ssaaView.setViewport({{0.f, 0.f}, {1.f, 1.f}});
+    _renderTexture.setView(ssaaView);
+    _renderTexture.clear(_clearColor);
 
     const sf::Color &highlightColor = _colorManager.getHighlightColor();
 
-    _terrainRenderSystem.render(registry, _windowInstance, view, worldGen.getParams());
+    _terrainRenderSystem.render(registry, _renderTexture, ssaaView, worldGen.getParams());
 
-    // In editing modes, render cities first so lines and control points appear on top.
-    // In normal mode, render lines first so cities appear on top.
     if (gameState.currentInteractionMode == InteractionMode::CREATE_LINE
         || gameState.currentInteractionMode == InteractionMode::EDIT_LINE) {
-        _cityRenderSystem.render(registry, _windowInstance, gameState, highlightColor);
-        _lineRenderSystem.render(registry, _windowInstance, gameState, view, highlightColor);
+        _cityRenderSystem.render(registry, _renderTexture, gameState, highlightColor);
+        _lineRenderSystem.render(registry, _renderTexture, gameState, ssaaView, highlightColor);
     } else {
-        _lineRenderSystem.render(registry, _windowInstance, gameState, view, highlightColor);
-        _cityRenderSystem.render(registry, _windowInstance, gameState, highlightColor);
+        _lineRenderSystem.render(registry, _renderTexture, gameState, ssaaView, highlightColor);
+        _cityRenderSystem.render(registry, _renderTexture, gameState, highlightColor);
     }
 
-    renderGenericEntities(registry, highlightColor);
+    renderGenericEntities(_renderTexture, registry, highlightColor);
 
-    _trainRenderSystem.render(registry, _windowInstance, highlightColor);
-    _pathRenderSystem.render(registry, _windowInstance);
-    passengerSpawnAnimationSystem.render(_windowInstance);
-    _lineEditingRenderSystem.draw(registry, gameState);
+    _trainRenderSystem.render(registry, _renderTexture, highlightColor);
+    _pathRenderSystem.render(registry, _renderTexture);
+    passengerSpawnAnimationSystem.render(_renderTexture);
+    _lineEditingRenderSystem.draw(_renderTexture, registry, gameState);
+
+    _renderTexture.display();
+    _renderTexture.setActive(false);
+    if (_renderSprite) {
+        _windowInstance.draw(*_renderSprite);
+    }
 }
 
-void Renderer::renderGenericEntities(entt::registry &registry, const sf::Color &highlightColor) {
+void Renderer::renderGenericEntities(sf::RenderTarget &target, entt::registry &registry,
+                                     const sf::Color &highlightColor) {
     auto viewRegistry = registry.view<const PositionComponent, const RenderableComponent>(
         entt::exclude<TrainTag, CityComponent>);
 
@@ -84,7 +106,7 @@ void Renderer::renderGenericEntities(entt::registry &registry, const sf::Color &
         shape.setFillColor(renderable.color);
         shape.setOrigin({renderable.radius.value, renderable.radius.value});
         shape.setPosition(position.coordinates);
-        _windowInstance.draw(shape);
+        target.draw(shape);
 
         if (registry.all_of<SelectedComponent>(entity)) {
             sf::CircleShape highlight(renderable.radius.value + 3.0f);
@@ -93,7 +115,7 @@ void Renderer::renderGenericEntities(entt::registry &registry, const sf::Color &
             highlight.setOutlineThickness(2.0f);
             highlight.setOrigin({renderable.radius.value + 3.0f, renderable.radius.value + 3.0f});
             highlight.setPosition(position.coordinates);
-            _windowInstance.draw(highlight);
+            target.draw(highlight);
         }
     }
 }

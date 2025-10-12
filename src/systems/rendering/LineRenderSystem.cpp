@@ -6,17 +6,17 @@
 #include "app/InteractionMode.h"
 #include <vector>
 
-void LineRenderSystem::render(const entt::registry &registry, sf::RenderWindow &window, const GameState& gameState,
+void LineRenderSystem::render(const entt::registry &registry, sf::RenderTarget &target, const GameState& gameState,
                               const sf::View &view, const sf::Color& highlightColor) {
-    renderFinalizedLines(registry, window, highlightColor);
+    renderFinalizedLines(registry, target, highlightColor);
 
     if (gameState.currentInteractionMode == InteractionMode::CREATE_LINE) {
-        renderActiveLinePreview(registry, window);
-        renderSnappingIndicators(registry, window);
+        renderActiveLinePreview(registry, target);
+        renderSnappingIndicators(registry, target);
     }
 }
 
-void LineRenderSystem::renderFinalizedLines(const entt::registry &registry, sf::RenderWindow &window, const sf::Color& highlightColor) {
+void LineRenderSystem::renderFinalizedLines(const entt::registry &registry, sf::RenderTarget &target, const sf::Color& highlightColor) {
     auto lineView = registry.view<const LineComponent>();
     for (auto entity : lineView) {
         const auto &lineComp = lineView.get<const LineComponent>(entity);
@@ -53,7 +53,7 @@ void LineRenderSystem::renderFinalizedLines(const entt::registry &registry, sf::
                     j++;
                 }
 
-                LineDrawer::drawBarberPolePolyline(window, polyline, thickness, colors, phaseOffset);
+                LineDrawer::drawBarberPolePolyline(target, polyline, thickness, colors, phaseOffset);
                 i = j;
             } else {
                 size_t endPointIndex = i;
@@ -77,7 +77,7 @@ void LineRenderSystem::renderFinalizedLines(const entt::registry &registry, sf::
                     sf::Color lineColor = isSelected ? highlightColor : lineComp.color;
                     sf::VertexArray lineVertices;
                     LineDrawer::createThickLine(lineVertices, offsetPolyline, thickness, lineColor);
-                    window.draw(lineVertices);
+                    target.draw(lineVertices);
                 }
                 
                 i = endPointIndex;
@@ -87,7 +87,7 @@ void LineRenderSystem::renderFinalizedLines(const entt::registry &registry, sf::
     }
 }
 
-void LineRenderSystem::renderActiveLinePreview(const entt::registry &registry, sf::RenderWindow &window) {
+void LineRenderSystem::renderActiveLinePreview(const entt::registry &registry, sf::RenderTarget &target) {
     if (registry.ctx().contains<LinePreview>()) {
         const auto& preview = registry.ctx().get<LinePreview>();
         if (preview.curvePoints.size() >= 2) {
@@ -99,12 +99,12 @@ void LineRenderSystem::renderActiveLinePreview(const entt::registry &registry, s
                 lineVertices.append({preview.curvePoints[i], segmentColor});
                 lineVertices.append({preview.curvePoints[i+1], segmentColor});
             }
-            window.draw(lineVertices);
+            target.draw(lineVertices);
         }
     }
 }
 
-void LineRenderSystem::renderSnappingIndicators(const entt::registry &registry, sf::RenderWindow &window) {
+void LineRenderSystem::renderSnappingIndicators(const entt::registry &registry, sf::RenderTarget &target) {
     if (registry.ctx().contains<ActiveLine>()) {
         const auto& activeLine = registry.ctx().get<ActiveLine>();
         sf::CircleShape controlPointMarker(4.f, 30);
@@ -113,7 +113,7 @@ void LineRenderSystem::renderSnappingIndicators(const entt::registry &registry, 
         for(const auto& point : activeLine.points) {
             if (point.type == LinePointType::CONTROL_POINT) {
                 controlPointMarker.setPosition(point.position);
-                window.draw(controlPointMarker);
+                target.draw(controlPointMarker);
             }
         }
     }
@@ -130,7 +130,7 @@ void LineRenderSystem::renderSnappingIndicators(const entt::registry &registry, 
         for (const auto& point : lineComp.points) {
             if (point.type == LinePointType::CONTROL_POINT) {
                 existingControlPointMarker.setPosition(point.position);
-                window.draw(existingControlPointMarker);
+                target.draw(existingControlPointMarker);
             }
         }
     }
@@ -139,7 +139,7 @@ void LineRenderSystem::renderSnappingIndicators(const entt::registry &registry, 
     for (auto entity : cityView) {
         const auto& pos = cityView.get<const PositionComponent>(entity);
         existingControlPointMarker.setPosition(pos.coordinates);
-        window.draw(existingControlPointMarker);
+        target.draw(existingControlPointMarker);
     }
 
     if (registry.ctx().contains<LinePreview>()) {
@@ -166,13 +166,13 @@ void LineRenderSystem::renderSnappingIndicators(const entt::registry &registry, 
                     sf::Vector2f pointPos = targetPos + sf::Vector2f(std::cos(angle) * radius, std::sin(angle) * radius);
                     halfCircle.append({pointPos, sf::Color(255, 255, 255, 100)});
                 }
-                window.draw(halfCircle);
+                target.draw(halfCircle);
             } else {
                 sf::CircleShape centerSnapIndicator(6.f);
                 centerSnapIndicator.setFillColor(sf::Color(255, 255, 255, 100));
                 centerSnapIndicator.setOrigin({6.f, 6.f});
                 centerSnapIndicator.setPosition(targetPos);
-                window.draw(centerSnapIndicator);
+                target.draw(centerSnapIndicator);
             }
         }
     }

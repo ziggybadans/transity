@@ -21,8 +21,7 @@ CityRenderSystem::CityRenderSystem() : m_font(loadFont()), m_text(m_font) {
     m_text.setFillColor(sf::Color::Black);
 }
 
-void CityRenderSystem::render(entt::registry& registry, sf::RenderWindow& window, const GameState& gameState, const sf::Color& highlightColor) {
-    // First, calculate waiting passenger counts for all cities in one pass.
+void CityRenderSystem::render(entt::registry& registry, sf::RenderTarget& target, const GameState& gameState, const sf::Color& highlightColor) {
     std::unordered_map<entt::entity, int> waitingCounts;
     auto passengerView = registry.view<const PassengerComponent>();
     for (auto passengerEntity : passengerView) {
@@ -32,7 +31,6 @@ void CityRenderSystem::render(entt::registry& registry, sf::RenderWindow& window
         }
     }
 
-    // Now, render each city and its passenger count.
     auto cityView = registry.view<const CityComponent, const PositionComponent, const RenderableComponent>();
     for (auto entity : cityView) {
         const auto& city = cityView.get<const CityComponent>(entity);
@@ -41,17 +39,16 @@ void CityRenderSystem::render(entt::registry& registry, sf::RenderWindow& window
 
         switch (city.type) {
             case CityType::CAPITAL:
-                renderCapital(window, position, renderable, gameState, highlightColor);
+                renderCapital(target, position, renderable, gameState, highlightColor);
                 break;
             case CityType::TOWN:
-                renderTown(window, position, renderable, gameState, highlightColor);
+                renderTown(target, position, renderable, gameState, highlightColor);
                 break;
             case CityType::SUBURB:
-                renderSuburb(window, position, renderable, gameState, highlightColor);
+                renderSuburb(target, position, renderable, gameState, highlightColor);
                 break;
         }
 
-        // Draw the pre-calculated passenger count.
         if (waitingCounts.count(entity) > 0) {
             int count = waitingCounts.at(entity);
             m_text.setString(std::to_string(count));
@@ -59,12 +56,12 @@ void CityRenderSystem::render(entt::registry& registry, sf::RenderWindow& window
             m_text.setOrigin({textBounds.position.x + textBounds.size.x / 2.0f,
                               textBounds.position.y + textBounds.size.y / 2.0f});
             m_text.setPosition(position.coordinates);
-            window.draw(m_text);
+            target.draw(m_text);
         }
     }
 }
 
-void CityRenderSystem::renderCapital(sf::RenderWindow& window, const PositionComponent& position, const RenderableComponent& renderable, const GameState& gameState, const sf::Color& highlightColor) {
+void CityRenderSystem::renderCapital(sf::RenderTarget& target, const PositionComponent& position, const RenderableComponent& renderable, const GameState& gameState, const sf::Color& highlightColor) {
     float borderThickness = 4.0f;
     float size = renderable.radius.value * 2.0f;
 
@@ -73,7 +70,7 @@ void CityRenderSystem::renderCapital(sf::RenderWindow& window, const PositionCom
     border.setFillColor(highlightColor);
     border.setOrigin({renderable.radius.value, renderable.radius.value});
     border.setPosition(position.coordinates);
-    window.draw(border);
+    target.draw(border);
 
     sf::RectangleShape innerSquare;
     float innerSize = (renderable.radius.value - borderThickness) * 2.0f;
@@ -81,57 +78,57 @@ void CityRenderSystem::renderCapital(sf::RenderWindow& window, const PositionCom
 
     sf::Color innerColor = renderable.color;
     if (gameState.currentInteractionMode == InteractionMode::CREATE_LINE) {
-        innerColor.a = 128; // 50% opacity
+        innerColor.a = 128;
     }
     innerSquare.setFillColor(innerColor);
 
     innerSquare.setOrigin({innerSize / 2.0f, innerSize / 2.0f});
     innerSquare.setPosition(position.coordinates);
-    window.draw(innerSquare);
+    target.draw(innerSquare);
 }
 
-void CityRenderSystem::renderTown(sf::RenderWindow& window, const PositionComponent& position, const RenderableComponent& renderable, const GameState& gameState, const sf::Color& highlightColor) {
+void CityRenderSystem::renderTown(sf::RenderTarget& target, const PositionComponent& position, const RenderableComponent& renderable, const GameState& gameState, const sf::Color& highlightColor) {
     float borderThickness = 4.0f;
 
     sf::CircleShape border(renderable.radius.value);
     border.setFillColor(highlightColor);
     border.setOrigin({renderable.radius.value, renderable.radius.value});
     border.setPosition(position.coordinates);
-    window.draw(border);
+    target.draw(border);
 
     sf::CircleShape innerCircle(renderable.radius.value - borderThickness);
 
     sf::Color innerColor = renderable.color;
     if (gameState.currentInteractionMode == InteractionMode::CREATE_LINE) {
-        innerColor.a = 128; // 50% opacity
+        innerColor.a = 128;
     }
     innerCircle.setFillColor(innerColor);
 
     innerCircle.setOrigin({renderable.radius.value - borderThickness,
                            renderable.radius.value - borderThickness});
     innerCircle.setPosition(position.coordinates);
-    window.draw(innerCircle);
+    target.draw(innerCircle);
 }
 
-void CityRenderSystem::renderSuburb(sf::RenderWindow& window, const PositionComponent& position, const RenderableComponent& renderable, const GameState& gameState, const sf::Color& highlightColor) {
+void CityRenderSystem::renderSuburb(sf::RenderTarget& target, const PositionComponent& position, const RenderableComponent& renderable, const GameState& gameState, const sf::Color& highlightColor) {
     float borderThickness = 4.0f;
 
     sf::CircleShape border(renderable.radius.value, 3);
     border.setFillColor(highlightColor);
     border.setOrigin({renderable.radius.value, renderable.radius.value});
     border.setPosition(position.coordinates);
-    window.draw(border);
+    target.draw(border);
 
     sf::CircleShape innerTriangle(renderable.radius.value - borderThickness, 3);
     
     sf::Color innerColor = renderable.color;
     if (gameState.currentInteractionMode == InteractionMode::CREATE_LINE) {
-        innerColor.a = 128; // 50% opacity
+        innerColor.a = 128;
     }
     innerTriangle.setFillColor(innerColor);
 
     innerTriangle.setOrigin({renderable.radius.value - borderThickness,
                              renderable.radius.value - borderThickness});
     innerTriangle.setPosition(position.coordinates);
-    window.draw(innerTriangle);
+    target.draw(innerTriangle);
 }

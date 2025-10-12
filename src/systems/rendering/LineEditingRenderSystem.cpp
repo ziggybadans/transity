@@ -4,12 +4,11 @@
 #include "components/LineComponents.h"
 #include <SFML/Graphics/CircleShape.hpp>
 
-LineEditingRenderSystem::LineEditingRenderSystem(sf::RenderWindow& window)
-    : _window(window) {}
+LineEditingRenderSystem::LineEditingRenderSystem() = default;
 
 LineEditingRenderSystem::~LineEditingRenderSystem() = default;
 
-void LineEditingRenderSystem::draw(entt::registry& registry, GameState& gameState) {
+void LineEditingRenderSystem::draw(sf::RenderTarget& target, entt::registry& registry, GameState& gameState) {
     if (gameState.currentInteractionMode != InteractionMode::EDIT_LINE) {
         return;
     }
@@ -38,7 +37,7 @@ void LineEditingRenderSystem::draw(entt::registry& registry, GameState& gameStat
                 circle.setOrigin({8.f, 8.f});
                 circle.setFillColor(sf::Color::White);
             }
-            _window.draw(circle);
+            target.draw(circle);
         }
     }
 }

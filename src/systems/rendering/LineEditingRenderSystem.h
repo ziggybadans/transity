@@ -3,15 +3,14 @@
 #include "ecs/ISystem.h"
 #include "app/GameState.h"
 #include <entt/entt.hpp>
-#include <SFML/Graphics/RenderWindow.hpp>
+#include <SFML/Graphics/RenderTarget.hpp>
 
 class LineEditingRenderSystem : public ISystem {
 public:
-    LineEditingRenderSystem(sf::RenderWindow& window);
+    LineEditingRenderSystem();
     ~LineEditingRenderSystem();
 
-    void draw(entt::registry& registry, GameState& gameState);
+    void draw(sf::RenderTarget& target, entt::registry& registry, GameState& gameState);
 
 private:
-    sf::RenderWindow& _window;
 };

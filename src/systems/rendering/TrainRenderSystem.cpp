@@ -4,17 +4,16 @@
 #include "components/RenderComponents.h"
 #include "Logger.h"
 #include <SFML/Graphics/CircleShape.hpp>
-#include <stdexcept> // Required for std::runtime_error
+#include <stdexcept>
 
-// This function is now corrected to use the instance method `openFromFile`.
 sf::Font TrainRenderSystem::loadFont() {
-    sf::Font font; // Create a default-constructible Font object.
-    if (!font.openFromFile("data/fonts/font.TTF")) { // Call the member function on the instance.
+    sf::Font font;
+    if (!font.openFromFile("data/fonts/font.TTF")) {
         const std::string errorMsg = "Failed to load font: data/fonts/font.TTF";
         LOG_ERROR("TrainRenderSystem", errorMsg.c_str());
         throw std::runtime_error(errorMsg);
     }
-    return font; // Return the loaded font.
+    return font;
 }
 
 TrainRenderSystem::TrainRenderSystem()
@@ -25,7 +24,7 @@ TrainRenderSystem::TrainRenderSystem()
     m_text.setFillColor(sf::Color::White);
 }
 
-void TrainRenderSystem::render(const entt::registry &registry, sf::RenderWindow &window, const sf::Color& highlightColor) {
+void TrainRenderSystem::render(const entt::registry &registry, sf::RenderTarget &target, const sf::Color& highlightColor) {
     auto view = registry.view<const PositionComponent, const RenderableComponent, const TrainTag, const TrainCapacityComponent>();
     for (auto entity : view) {
         const auto &pos = view.get<const PositionComponent>(entity);
@@ -37,27 +36,25 @@ void TrainRenderSystem::render(const entt::registry &registry, sf::RenderWindow 
         shape.setOrigin({renderable.radius.value, renderable.radius.value});
         shape.setPosition(pos.coordinates);
         
-        window.draw(shape);
+        target.draw(shape);
 
-        // Draw passenger count
         if (capacity.currentLoad > 0) {
             m_text.setString(std::to_string(capacity.currentLoad));
             sf::FloatRect textBounds = m_text.getLocalBounds();
             m_text.setOrigin({textBounds.position.x + textBounds.size.x / 2.0f,
                               textBounds.position.y + textBounds.size.y / 2.0f});
             m_text.setPosition(pos.coordinates);
-            window.draw(m_text);
+            target.draw(m_text);
         }
 
-        // Draw highlight if selected
         if (registry.all_of<SelectedComponent>(entity)) {
-            sf::CircleShape highlight(renderable.radius.value + 3.0f); // A bit larger
+            sf::CircleShape highlight(renderable.radius.value + 3.0f);
             highlight.setFillColor(sf::Color::Transparent);
             highlight.setOutlineColor(highlightColor);
             highlight.setOutlineThickness(2.0f);
             highlight.setOrigin({renderable.radius.value + 3.0f, renderable.radius.value + 3.0f});
             highlight.setPosition(pos.coordinates);
-            window.draw(highlight);
+            target.draw(highlight);
         }
     }
 }
