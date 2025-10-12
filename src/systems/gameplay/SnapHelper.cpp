@@ -5,6 +5,7 @@
 
 std::optional<SnapResult> SnapHelper::findSnap(
     entt::registry &registry, const sf::Vector2f &mousePos,
+    std::optional<sf::Vector2f> previousPointPos,
     std::optional<std::pair<entt::entity, size_t>> ignorePoint) {
 
     const float SNAP_RADIUS_SQUARED = Constants::LINE_SNAP_RADIUS * Constants::LINE_SNAP_RADIUS;
@@ -12,12 +13,10 @@ std::optional<SnapResult> SnapHelper::findSnap(
     std::optional<SnapInfo> snapInfo;
 
     // 1. Find the closest snap candidate (control point or city)
-    // Check control points on existing lines
     auto lineView = registry.view<const LineComponent>();
     for (auto entity : lineView) {
         const auto &lineComp = lineView.get<const LineComponent>(entity);
         for (size_t i = 0; i < lineComp.points.size(); ++i) {
-            // Ignore the point being dragged, if specified
             if (ignorePoint && ignorePoint->first == entity && ignorePoint->second == i) {
                 continue;
             }
@@ -34,7 +33,6 @@ std::optional<SnapResult> SnapHelper::findSnap(
         }
     }
 
-    // Check cities
     auto cityView = registry.view<const CityComponent, const PositionComponent>();
     for (auto entity : cityView) {
         const auto &pos = cityView.get<const PositionComponent>(entity);
@@ -42,15 +40,15 @@ std::optional<SnapResult> SnapHelper::findSnap(
         float distSq = diff.x * diff.x + diff.y * diff.y;
         if (distSq < closestDistSq) {
             closestDistSq = distSq;
-            snapInfo = SnapInfo{entity, (size_t)-1}; // Use -1 to indicate a city
+            snapInfo = SnapInfo{entity, (size_t)-1};
         }
     }
 
-    // 2. If a candidate was found, calculate the detailed snap result
     if (!snapInfo) {
         return std::nullopt;
     }
 
+    // 2. If a candidate was found, calculate the detailed snap result
     SnapResult result;
     result.info = *snapInfo;
     result.side = 0.f;
@@ -59,7 +57,6 @@ std::optional<SnapResult> SnapHelper::findSnap(
     sf::Vector2f tangent;
     bool tangentFound = false;
 
-    // Determine tangent based on snap type
     if (result.info.snappedToPointIndex != (size_t)-1) { // Snapped to a control point
         const auto &targetLine = registry.get<LineComponent>(result.info.snappedToEntity);
         targetPointPos = targetLine.points[result.info.snappedToPointIndex].position;
@@ -84,11 +81,52 @@ std::optional<SnapResult> SnapHelper::findSnap(
 
     } else { // Snapped to a city
         targetPointPos = registry.get<PositionComponent>(result.info.snappedToEntity).coordinates;
-        // For a generic helper, we snap to the city center without assuming a tangent.
-        // The calling context would be needed to determine an incoming/outgoing tangent.
+        const auto& cityComp = registry.get<CityComponent>(result.info.snappedToEntity);
+
+        if (previousPointPos && !cityComp.connectedLines.empty()) {
+            sf::Vector2f incomingDir = targetPointPos - *previousPointPos;
+            if (auto len = std::sqrt(incomingDir.x * incomingDir.x + incomingDir.y * incomingDir.y); len > 0) {
+                incomingDir /= len;
+            }
+
+            float bestDot = -1.0f;
+            for (entt::entity lineEntity : cityComp.connectedLines) {
+                const auto& lineComp = registry.get<LineComponent>(lineEntity);
+                for (size_t i = 0; i < lineComp.points.size(); ++i) {
+                    if (lineComp.points[i].type == LinePointType::STOP && lineComp.points[i].stationEntity == result.info.snappedToEntity) {
+                        sf::Vector2f p_prev, p_next;
+                        if (i > 0) p_prev = lineComp.points[i - 1].position;
+                        else if (lineComp.points.size() > 1) p_prev = lineComp.points[i].position - (lineComp.points[i + 1].position - lineComp.points[i].position);
+                        
+                        if (i < lineComp.points.size() - 1) p_next = lineComp.points[i + 1].position;
+                        else if (lineComp.points.size() > 1) p_next = lineComp.points[i].position + (lineComp.points[i].position - lineComp.points[i - 1].position);
+
+                        if (p_prev != p_next) {
+                            sf::Vector2f currentTangent = p_next - p_prev;
+                            if (auto len = std::sqrt(currentTangent.x * currentTangent.x + currentTangent.y * currentTangent.y); len > 0) {
+                                currentTangent /= len;
+                            }
+
+                            float dot = std::abs(incomingDir.x * currentTangent.x + incomingDir.y * currentTangent.y);
+                            if (dot > bestDot) {
+                                bestDot = dot;
+                                tangent = currentTangent;
+                                tangentFound = true;
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+        
+        if (!tangentFound && previousPointPos) {
+            tangent = targetPointPos - *previousPointPos;
+            tangentFound = true;
+        }
     }
 
-    result.position = targetPointPos; // Default to center snap
+    result.position = targetPointPos;
 
     if (tangentFound) {
         float len = std::sqrt(tangent.x * tangent.x + tangent.y * tangent.y);

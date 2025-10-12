@@ -97,7 +97,6 @@ void TrainMovementSystem::updateTrainStateAndSpeed(TrainMovementComponent& movem
             }
             movement.state = TrainState::ACCELERATING;
         }
-        return;
     }
 
     if (movement.state == TrainState::ACCELERATING) {

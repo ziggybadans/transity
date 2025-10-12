@@ -34,8 +34,9 @@ namespace {
         
         CurveData curveData = Curve::generateMetroCurve(controlPoints, Constants::METRO_CURVE_RADIUS);
         line.curvePoints = curveData.points;
+        line.curveSegmentIndices = curveData.segmentIndices; // This line was missing
         line.totalDistance = Curve::calculateCurveLength(line.curvePoints);
-        line.stops = Curve::calculateStopInfo(line.points, line.curvePoints); // Add this
+        line.stops = Curve::calculateStopInfo(line.points, line.curvePoints);
     }
 }
 
@@ -199,8 +200,17 @@ void LineEditingSystem::onMouseMoved(const MouseMovedEvent& event) {
 
     sf::Vector2f finalPos = event.worldPosition;
     
-    std::optional<std::pair<entt::entity, size_t>> ignorePoint = {{selectedLineEntity, editingState.draggedPointIndex.value()}};
-    if (auto snapResult = SnapHelper::findSnap(_registry, event.worldPosition, ignorePoint)) {
+    auto& line = _registry.get<LineComponent>(selectedLineEntity);
+    size_t draggedIdx = editingState.draggedPointIndex.value();
+    std::optional<sf::Vector2f> adjacentPointPos;
+    if (draggedIdx > 0) {
+        adjacentPointPos = line.points[draggedIdx - 1].position;
+    } else if (line.points.size() > 1) {
+        adjacentPointPos = line.points[draggedIdx + 1].position;
+    }
+    
+    std::optional<std::pair<entt::entity, size_t>> ignorePoint = {{selectedLineEntity, draggedIdx}};
+    if (auto snapResult = SnapHelper::findSnap(_registry, event.worldPosition, adjacentPointPos, ignorePoint)) {
         editingState.snapPosition = snapResult->position;
         editingState.snapInfo = snapResult->info;
         editingState.snapSide = snapResult->side;
@@ -208,8 +218,7 @@ void LineEditingSystem::onMouseMoved(const MouseMovedEvent& event) {
         finalPos = snapResult->position;
     }
 
-    auto& line = _registry.get<LineComponent>(selectedLineEntity);
-    line.points[editingState.draggedPointIndex.value()].position = finalPos;
+    line.points[draggedIdx].position = finalPos;
 
     regenerateCurve(line);
 }

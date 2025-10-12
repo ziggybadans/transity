@@ -156,7 +156,6 @@ void LineCreationSystem::finalizeLine() {
     }
 
     auto& newLineComp = _registry.get<LineComponent>(lineEntity);
-    auto& sharedSegmentsCtx = _registry.ctx().get<SharedSegmentsContext>();
     
     std::vector<sf::Vector2f> controlPoints;
     for (const auto &point : newLineComp.points) {
@@ -203,7 +202,13 @@ void LineCreationSystem::update(sf::Time dt) {
 
     sf::Vector2f finalPreviewPos = _currentMouseWorldPos;
 
-    if (auto snapResult = SnapHelper::findSnap(_registry, _currentMouseWorldPos)) {
+    auto &activeLine = _registry.ctx().get<ActiveLine>();
+    std::optional<sf::Vector2f> prevPointPos;
+    if (!activeLine.points.empty()) {
+        prevPointPos = activeLine.points.back().position;
+    }
+
+    if (auto snapResult = SnapHelper::findSnap(_registry, _currentMouseWorldPos, prevPointPos)) {
         preview.snapPosition = snapResult->position;
         preview.snapInfo = snapResult->info;
         preview.snapSide = snapResult->side;
@@ -211,7 +216,6 @@ void LineCreationSystem::update(sf::Time dt) {
         finalPreviewPos = snapResult->position;
     }
 
-    auto &activeLine = _registry.ctx().get<ActiveLine>();
     if (activeLine.points.empty()) {
         return;
     }

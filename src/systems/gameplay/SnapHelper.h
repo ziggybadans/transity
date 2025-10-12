@@ -16,8 +16,10 @@ struct SnapResult {
 class SnapHelper {
 public:
     // Finds the best snap point near the mouse position.
+    // Optionally provide the previous point's position to help determine tangents.
     // Optionally ignores a specific point on a specific line (e.g., the one being dragged).
     static std::optional<SnapResult> findSnap(
         entt::registry &registry, const sf::Vector2f &mousePos,
+        std::optional<sf::Vector2f> previousPointPos = std::nullopt,
         std::optional<std::pair<entt::entity, size_t>> ignorePoint = std::nullopt);
 };
