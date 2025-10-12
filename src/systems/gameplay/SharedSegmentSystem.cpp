@@ -1,5 +1,5 @@
 #include "SharedSegmentSystem.h"
-#include "components/GameLogicComponents.h"
+#include "components/LineComponents.h"
 #include "Logger.h"
 #include <map>
 

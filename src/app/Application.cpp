@@ -3,7 +3,7 @@
 #include "Logger.h"
 #include "app/Game.h"
 #include "app/GameState.h"
-#include "components/GameLogicComponents.h"
+#include "components/LineComponents.h"
 #include "core/PerfTimer.h"
 #include "event/InputEvents.h"
 #include "input/InputHandler.h"
@@ -11,8 +11,6 @@
 #include "systems/gameplay/LineCreationSystem.h"
 #include "ui/UI.h"
 #include "ui/UIManager.h"
-
-#include <stdexcept>
 #include <thread>
 
 Application::Application()

@@ -2,15 +2,12 @@
 #include "ecs/EntityFactory.h"
 #include "systems/world/WorldGenerationSystem.h"
 #include "Logger.h"
-#include "components/WorldComponents.h"
 #include "core/PerfTimer.h"
 #include "systems/rendering/TerrainRenderSystem.h"
 #include "render/Renderer.h" 
 #include "Constants.h"
 #include "app/LoadingState.h"
-#include "core/PerformanceMonitor.h"
 #include "core/ThreadPool.h"
-
 #include <vector>
 #include <algorithm>
 #include <random>
@@ -94,74 +91,20 @@ void CityPlacementSystem::initialPlacement() {
     const auto &worldGrid = _worldGenerationSystem.getParams();
     const int mapWidth = worldGrid.worldDimensionsInChunks.x * worldGrid.chunkDimensionsInCells.x;
     const int mapHeight = worldGrid.worldDimensionsInChunks.y * worldGrid.chunkDimensionsInCells.y;
-    const float cellSize = worldGrid.cellSize;
 
     _loadingState.message = "Analyzing terrain...";
     _loadingState.progress = 0.3f;
     precomputeTerrainCache(mapWidth, mapHeight);
 
-    _suitabilityMaps.water.resize(mapWidth * mapHeight, 0.0f);
-    _suitabilityMaps.expandability.resize(mapWidth * mapHeight, 0.0f);
-    _suitabilityMaps.cityProximity.resize(mapWidth * mapHeight, 1.0f);
-    _suitabilityMaps.noise.resize(mapWidth * mapHeight, 0.0f);
-    _suitabilityMaps.final.resize(mapWidth * mapHeight, 0.0f);
-    _suitabilityMaps.townProximity.resize(mapWidth * mapHeight, 0.0f);
-    _suitabilityMaps.suburbProximity.resize(mapWidth * mapHeight, 0.0f);
-    _suitabilityMaps.townFinal.resize(mapWidth * mapHeight, 0.0f);
-    _suitabilityMaps.suburbFinal.resize(mapWidth * mapHeight, 0.0f);
-
-    _distanceToNearestCapital.assign(mapWidth * mapHeight, std::numeric_limits<int>::max());
-    _distanceToNearestTown.assign(mapWidth * mapHeight, std::numeric_limits<int>::max());
-
-    _loadingState.message = "Assessing water access...";
-    calculateWaterSuitability(mapWidth, mapHeight, _suitabilityMaps.water);
-    normalizeMap(_suitabilityMaps.water);
-    _loadingState.progress = 0.4f;
-
-    _loadingState.message = "Evaluating expansion potential...";
-    calculateExpandabilitySuitability(mapWidth, mapHeight, _suitabilityMaps.expandability);
-    normalizeMap(_suitabilityMaps.expandability);
-    _loadingState.progress = 0.5f;
-
-    _loadingState.message = "Adding environmental noise...";
-    calculateNoiseSuitability(mapWidth, mapHeight, _suitabilityMaps.noise);
-    normalizeMap(_suitabilityMaps.noise);
-    _loadingState.progress = 0.6f;
+    initializeSuitabilityMaps(mapWidth, mapHeight);
+    calculateBaseSuitabilityMaps(mapWidth, mapHeight);
 
     LOG_INFO("CityPlacementSystem", "Placing initial settlements...");
     _loadingState.message = "Placing initial settlements...";
-    for (int i = 0; i < Constants::INITIAL_CITY_COUNT; ++i) {
-        if (i > 0) {
-            calculateCapitalProximitySuitability(mapWidth, mapHeight, _suitabilityMaps.cityProximity);
-            normalizeMap(_suitabilityMaps.cityProximity);
-        }
-        
-        combineSuitabilityMaps(mapWidth, mapHeight, _weights);
-        sf::Vector2i bestLocation = findBestLocation(mapWidth, mapHeight, _suitabilityMaps.final);
-
-        if (bestLocation.x == -1) {
-            LOG_ERROR("CityPlacementSystem", "Failed to place initial city %d.", i + 1);
-            continue;
-        }
-
-        std::string cityName = "City " + std::to_string(_placedCities.size() + 1);
-        _entityFactory.createEntity("city", {bestLocation.x * cellSize + cellSize / 2.0f, bestLocation.y * cellSize + cellSize / 2.0f}, CityType::CAPITAL, cityName);
-        PlacedCityInfo newCity = {bestLocation, CityType::CAPITAL};
-        _placedCities.push_back(newCity);
-        LOG_INFO("CityPlacementSystem", "Placed initial city %d at (%d, %d)", _placedCities.size(), bestLocation.x, bestLocation.y);
-        
-        updateDistanceMaps(newCity, mapWidth, mapHeight);
-        _loadingState.progress = 0.7f + (i * 0.1f);
-    }
+    placeInitialCapitals(mapWidth, mapHeight);
 
     LOG_INFO("CityPlacementSystem", "Calculating initial town and suburb suitability maps...");
-    calculateSuburbProximitySuitability(mapWidth, mapHeight, _suitabilityMaps.suburbProximity);
-    normalizeMap(_suitabilityMaps.suburbProximity);
-    calculateTownProximitySuitability(mapWidth, mapHeight, _suitabilityMaps.townProximity);
-    normalizeMap(_suitabilityMaps.townProximity);
-
-    // Re-combine the final maps with the new proximity data
-    combineSuitabilityMaps(mapWidth, mapHeight, _weights);
+    calculateDependentSuitabilityMaps(mapWidth, mapHeight);
 
     LOG_INFO("CityPlacementSystem", "Finished initial city placement.");
     _renderer.getTerrainRenderSystem().setSuitabilityMapData(&_suitabilityMaps, &_terrainCache, worldGrid);
@@ -562,4 +505,71 @@ void CityPlacementSystem::updateDebugInfo() {
         _debugInfo.townSuitabilityPercentage = 0.0f;
         _debugInfo.suburbSuitabilityPercentage = 0.0f;
     }
+}
+
+void CityPlacementSystem::initializeSuitabilityMaps(int mapWidth, int mapHeight) {
+    _suitabilityMaps.water.resize(mapWidth * mapHeight, 0.0f);
+    _suitabilityMaps.expandability.resize(mapWidth * mapHeight, 0.0f);
+    _suitabilityMaps.cityProximity.resize(mapWidth * mapHeight, 1.0f);
+    _suitabilityMaps.noise.resize(mapWidth * mapHeight, 0.0f);
+    _suitabilityMaps.final.resize(mapWidth * mapHeight, 0.0f);
+    _suitabilityMaps.townProximity.resize(mapWidth * mapHeight, 0.0f);
+    _suitabilityMaps.suburbProximity.resize(mapWidth * mapHeight, 0.0f);
+    _suitabilityMaps.townFinal.resize(mapWidth * mapHeight, 0.0f);
+    _suitabilityMaps.suburbFinal.resize(mapWidth * mapHeight, 0.0f);
+
+    _distanceToNearestCapital.assign(mapWidth * mapHeight, std::numeric_limits<int>::max());
+    _distanceToNearestTown.assign(mapWidth * mapHeight, std::numeric_limits<int>::max());
+}
+
+void CityPlacementSystem::calculateBaseSuitabilityMaps(int mapWidth, int mapHeight) {
+    _loadingState.message = "Assessing water access...";
+    calculateWaterSuitability(mapWidth, mapHeight, _suitabilityMaps.water);
+    normalizeMap(_suitabilityMaps.water);
+    _loadingState.progress = 0.4f;
+
+    _loadingState.message = "Evaluating expansion potential...";
+    calculateExpandabilitySuitability(mapWidth, mapHeight, _suitabilityMaps.expandability);
+    normalizeMap(_suitabilityMaps.expandability);
+    _loadingState.progress = 0.5f;
+
+    _loadingState.message = "Adding environmental noise...";
+    calculateNoiseSuitability(mapWidth, mapHeight, _suitabilityMaps.noise);
+    normalizeMap(_suitabilityMaps.noise);
+    _loadingState.progress = 0.6f;
+}
+
+void CityPlacementSystem::placeInitialCapitals(int mapWidth, int mapHeight) {
+    const float cellSize = _worldGenerationSystem.getParams().cellSize;
+    for (int i = 0; i < Constants::INITIAL_CITY_COUNT; ++i) {
+        if (i > 0) {
+            calculateCapitalProximitySuitability(mapWidth, mapHeight, _suitabilityMaps.cityProximity);
+            normalizeMap(_suitabilityMaps.cityProximity);
+        }
+        
+        combineSuitabilityMaps(mapWidth, mapHeight, _weights);
+        sf::Vector2i bestLocation = findBestLocation(mapWidth, mapHeight, _suitabilityMaps.final);
+
+        if (bestLocation.x == -1) {
+            LOG_ERROR("CityPlacementSystem", "Failed to place initial city %d.", i + 1);
+            continue;
+        }
+
+        std::string cityName = "City " + std::to_string(_placedCities.size() + 1);
+        _entityFactory.createEntity("city", {bestLocation.x * cellSize + cellSize / 2.0f, bestLocation.y * cellSize + cellSize / 2.0f}, CityType::CAPITAL, cityName);
+        PlacedCityInfo newCity = {bestLocation, CityType::CAPITAL};
+        _placedCities.push_back(newCity);
+        LOG_INFO("CityPlacementSystem", "Placed initial city %d at (%d, %d)", _placedCities.size(), bestLocation.x, bestLocation.y);
+        
+        updateDistanceMaps(newCity, mapWidth, mapHeight);
+        _loadingState.progress = 0.7f + (i * 0.1f);
+    }
+}
+
+void CityPlacementSystem::calculateDependentSuitabilityMaps(int mapWidth, int mapHeight) {
+    calculateSuburbProximitySuitability(mapWidth, mapHeight, _suitabilityMaps.suburbProximity);
+    normalizeMap(_suitabilityMaps.suburbProximity);
+    calculateTownProximitySuitability(mapWidth, mapHeight, _suitabilityMaps.townProximity);
+    normalizeMap(_suitabilityMaps.townProximity);
+    combineSuitabilityMaps(mapWidth, mapHeight, _weights);
 }

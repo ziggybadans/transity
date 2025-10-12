@@ -3,7 +3,6 @@
 #include "app/LoadingState.h"
 #include "imgui-SFML.h"
 #include "imgui.h"
-#include <cstdlib>
 
 UI::UI(sf::RenderWindow &window, LoadingState &loadingState)
     : _window(window), _loadingState(loadingState) {

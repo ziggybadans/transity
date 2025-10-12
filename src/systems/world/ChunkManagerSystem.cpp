@@ -70,82 +70,10 @@ void ChunkManagerSystem::onSwapWorldState(const SwapWorldStateEvent &event) {
 }
 
 void ChunkManagerSystem::update(sf::Time dt) {
-    if (_generationFuture.valid()
-        && _generationFuture.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
-        _generationFuture.get();
-        _eventBus.trigger(SwapWorldStateEvent{});
-    }
-
-    _chunkLoadFutures.erase(
-        std::remove_if(_chunkLoadFutures.begin(), _chunkLoadFutures.end(),
-                       [this](std::future<GeneratedChunkData> &f) {
-                           if (f.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
-                               std::lock_guard<std::mutex> lock(_completedChunksMutex);
-                               _completedChunks.push(f.get());
-                               return true;
-                           }
-                           return false;
-                       }),
-        _chunkLoadFutures.end());
-
-    processCompletedChunks();
-
-    float zoom = _camera.getZoom();
-    LODLevel currentLOD = LODLevel::LOD0;
-    if (zoom < 0.15f) {
-        currentLOD = LODLevel::LOD3;
-    } else if (zoom < 0.4f) {
-        currentLOD = LODLevel::LOD2;
-    } else if (zoom < 0.8f) {
-        currentLOD = LODLevel::LOD1;
-    } else {
-        currentLOD = LODLevel::LOD0;
-    }
-
-    for (auto entity : _registry.view<ChunkStateComponent>()) {
-        auto &chunkState = _registry.get<ChunkStateComponent>(entity);
-        chunkState.lodLevel = currentLOD;
-    }
-
-    sf::Vector2f cameraCenter = _camera.getCenter();
-    sf::Vector2f viewSize = _camera.getView().getSize();
-    const auto& worldParams = _worldGenSystem.getParams();
-    float cellSize = worldParams.cellSize;
-    const auto &chunkDims = worldParams.chunkDimensionsInCells;
-
-    float chunkWidthInPixels = chunkDims.x * cellSize;
-    float chunkHeightInPixels = chunkDims.y * cellSize;
-
-    int viewDistanceX = static_cast<int>(std::ceil(viewSize.x / 2.0f / chunkWidthInPixels)) + 1;
-    int viewDistanceY = static_cast<int>(std::ceil(viewSize.y / 2.0f / chunkHeightInPixels)) + 1;
-
-    sf::Vector2i centerChunk = {static_cast<int>(cameraCenter.x / chunkWidthInPixels),
-                                static_cast<int>(cameraCenter.y / chunkHeightInPixels)};
-
-    std::set<sf::Vector2i, Vector2iCompare> requiredChunks;
-    for (int y = centerChunk.y - viewDistanceY; y <= centerChunk.y + viewDistanceY; ++y) {
-        for (int x = centerChunk.x - viewDistanceX; x <= centerChunk.x + viewDistanceX; ++x) {
-            requiredChunks.insert({x, y});
-        }
-    }
-
-    std::vector<sf::Vector2i> chunksToUnload;
-    for (const auto &pair : _activeChunks) {
-        if (requiredChunks.find(pair.first) == requiredChunks.end()) {
-            chunksToUnload.push_back(pair.first);
-        }
-    }
-
-    for (const auto &chunkPos : chunksToUnload) {
-        unloadChunk(chunkPos);
-    }
-
-    for (const auto &chunkPos : requiredChunks) {
-        if (_activeChunks.find(chunkPos) == _activeChunks.end()
-            && _chunksBeingLoaded.find(chunkPos) == _chunksBeingLoaded.end()) {
-            loadChunk(chunkPos);
-        }
-    }
+    handleWorldGeneration();
+    handleChunkLoading();
+    updateChunkLODs();
+    updateActiveChunks();
 }
 
 void ChunkManagerSystem::loadChunk(const sf::Vector2i &chunkPos) {
@@ -192,5 +120,88 @@ void ChunkManagerSystem::processCompletedChunks() {
         _chunksBeingLoaded.erase(chunkPos);
         LOG_TRACE("ChunkManagerSystem", "Finalized loaded chunk at (%d, %d)", chunkPos.x,
                  chunkPos.y);
+    }
+}
+
+void ChunkManagerSystem::handleWorldGeneration() {
+    if (_generationFuture.valid()
+        && _generationFuture.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
+        _generationFuture.get();
+        _eventBus.trigger(SwapWorldStateEvent{});
+    }
+}
+
+void ChunkManagerSystem::handleChunkLoading() {
+    _chunkLoadFutures.erase(
+        std::remove_if(_chunkLoadFutures.begin(), _chunkLoadFutures.end(),
+                       [this](std::future<GeneratedChunkData> &f) {
+                           if (f.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
+                               std::lock_guard<std::mutex> lock(_completedChunksMutex);
+                               _completedChunks.push(f.get());
+                               return true;
+                           }
+                           return false;
+                       }),
+        _chunkLoadFutures.end());
+
+    processCompletedChunks();
+}
+
+void ChunkManagerSystem::updateChunkLODs() {
+    float zoom = _camera.getZoom();
+    LODLevel currentLOD = LODLevel::LOD0;
+    if (zoom < 0.15f) {
+        currentLOD = LODLevel::LOD3;
+    } else if (zoom < 0.4f) {
+        currentLOD = LODLevel::LOD2;
+    } else if (zoom < 0.8f) {
+        currentLOD = LODLevel::LOD1;
+    }
+
+    for (auto entity : _registry.view<ChunkStateComponent>()) {
+        auto &chunkState = _registry.get<ChunkStateComponent>(entity);
+        if (chunkState.lodLevel != currentLOD) {
+            chunkState.lodLevel = currentLOD;
+        }
+    }
+}
+
+void ChunkManagerSystem::updateActiveChunks() {
+    const auto& worldParams = _worldGenSystem.getParams();
+    float chunkWidthInPixels = worldParams.chunkDimensionsInCells.x * worldParams.cellSize;
+    float chunkHeightInPixels = worldParams.chunkDimensionsInCells.y * worldParams.cellSize;
+
+    sf::Vector2f cameraCenter = _camera.getCenter();
+    sf::Vector2f viewSize = _camera.getView().getSize();
+
+    int viewDistanceX = static_cast<int>(std::ceil(viewSize.x / 2.0f / chunkWidthInPixels)) + 1;
+    int viewDistanceY = static_cast<int>(std::ceil(viewSize.y / 2.0f / chunkHeightInPixels)) + 1;
+
+    sf::Vector2i centerChunk = {static_cast<int>(cameraCenter.x / chunkWidthInPixels),
+                                static_cast<int>(cameraCenter.y / chunkHeightInPixels)};
+
+    std::set<sf::Vector2i, Vector2iCompare> requiredChunks;
+    for (int y = centerChunk.y - viewDistanceY; y <= centerChunk.y + viewDistanceY; ++y) {
+        for (int x = centerChunk.x - viewDistanceX; x <= centerChunk.x + viewDistanceX; ++x) {
+            requiredChunks.insert({x, y});
+        }
+    }
+
+    std::vector<sf::Vector2i> chunksToUnload;
+    for (const auto &pair : _activeChunks) {
+        if (requiredChunks.find(pair.first) == requiredChunks.end()) {
+            chunksToUnload.push_back(pair.first);
+        }
+    }
+
+    for (const auto &chunkPos : chunksToUnload) {
+        unloadChunk(chunkPos);
+    }
+
+    for (const auto &chunkPos : requiredChunks) {
+        if (_activeChunks.find(chunkPos) == _activeChunks.end()
+            && _chunksBeingLoaded.find(chunkPos) == _chunksBeingLoaded.end()) {
+            loadChunk(chunkPos);
+        }
     }
 }

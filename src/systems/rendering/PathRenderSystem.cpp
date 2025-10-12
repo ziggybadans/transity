@@ -1,7 +1,9 @@
 #include "PathRenderSystem.h"
 #include "components/PassengerComponents.h"
 #include "components/GameLogicComponents.h"
+#include "components/LineComponents.h"
 #include "components/RenderComponents.h"
+#include "components/GameLogicComponents.h"
 #include <SFML/Graphics/VertexArray.hpp>
 #include <SFML/Graphics/Color.hpp>
 #include <SFML/Graphics/PrimitiveType.hpp>

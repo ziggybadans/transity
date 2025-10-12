@@ -1,8 +1,6 @@
 #include "Logger.h"
 #include "app/Application.h"
-#include <cstdlib>
 #include <exception>
-#include <iostream>
 
 int main() {
     Logging::Logger logger;       // Create the logger instance

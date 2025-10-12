@@ -1,5 +1,9 @@
 #pragma once
 
+#include "components/GameLogicComponents.h"
+#include "components/LineComponents.h"
+#include "components/PassengerComponents.h"
+#include "components/RenderComponents.h"
 #include <SFML/Graphics/Color.hpp>
 #include <SFML/System.hpp>
 #include <entt/entt.hpp>
@@ -8,10 +12,6 @@
 #include <nlohmann/json.hpp>
 #include <optional>
 #include <string>
-
-#include "components/GameLogicComponents.h"
-#include "components/PassengerComponents.h"
-#include "components/RenderComponents.h"
 
 struct TrainMovementComponent;
 struct TrainPhysicsComponent;

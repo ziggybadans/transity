@@ -59,3 +59,9 @@ sf::Color ColorManager::getNextLineColor() noexcept {
     _currentLineColorIndex = (_currentLineColorIndex + 1) % lineColors.size();
     return color;
 }
+
+sf::Color ColorManager::getHighlightColor() const {
+    const sf::Color &landColor = getLandColor();
+    // Return an inverted color for high contrast
+    return sf::Color(255 - landColor.r, 255 - landColor.g, 255 - landColor.b);
+}

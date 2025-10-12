@@ -1,5 +1,6 @@
 #pragma once
 
+#include "components/WorldComponents.h"
 #include "event/EventBus.h"
 
 class WorldGenerationSystem;
@@ -14,6 +15,11 @@ public:
     void draw();
 
 private:
+    void drawNoiseLayerSettings(WorldGenParams &params, bool &paramsChanged);
+    void drawWorldGridSettings(WorldGenParams &params, bool &gridChanged);
+    void drawVisualizationSettings();
+    void drawActions(const WorldGenParams &params);
+
     EventBus &_eventBus;
     WorldGenerationSystem &_worldGenerationSystem;
     TerrainRenderSystem &_terrainRenderSystem;

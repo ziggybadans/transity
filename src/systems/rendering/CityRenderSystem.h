@@ -1,10 +1,8 @@
-// In src/systems/rendering/CityRenderSystem.h
 #pragma once
 
 #include <SFML/Graphics.hpp>
 #include <entt/entt.hpp>
-
-#include "app/GameState.h" // Add this include
+#include "app/GameState.h"
 
 struct PositionComponent;
 struct RenderableComponent;

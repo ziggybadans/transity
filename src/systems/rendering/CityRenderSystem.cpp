@@ -22,8 +22,18 @@ CityRenderSystem::CityRenderSystem() : m_font(loadFont()), m_text(m_font) {
 }
 
 void CityRenderSystem::render(entt::registry& registry, sf::RenderWindow& window, const GameState& gameState, const sf::Color& highlightColor) {
-    auto cityView = registry.view<const CityComponent, const PositionComponent, const RenderableComponent>();
+    // First, calculate waiting passenger counts for all cities in one pass.
+    std::unordered_map<entt::entity, int> waitingCounts;
+    auto passengerView = registry.view<const PassengerComponent>();
+    for (auto passengerEntity : passengerView) {
+        const auto& passenger = passengerView.get<const PassengerComponent>(passengerEntity);
+        if (passenger.state == PassengerState::WAITING_FOR_TRAIN) {
+            waitingCounts[passenger.currentContainer]++;
+        }
+    }
 
+    // Now, render each city and its passenger count.
+    auto cityView = registry.view<const CityComponent, const PositionComponent, const RenderableComponent>();
     for (auto entity : cityView) {
         const auto& city = cityView.get<const CityComponent>(entity);
         const auto& position = cityView.get<const PositionComponent>(entity);
@@ -31,31 +41,20 @@ void CityRenderSystem::render(entt::registry& registry, sf::RenderWindow& window
 
         switch (city.type) {
             case CityType::CAPITAL:
-                // Pass gameState
                 renderCapital(window, position, renderable, gameState, highlightColor);
                 break;
             case CityType::TOWN:
-                // Pass gameState
                 renderTown(window, position, renderable, gameState, highlightColor);
                 break;
             case CityType::SUBURB:
-                // Pass gameState
                 renderSuburb(window, position, renderable, gameState, highlightColor);
                 break;
         }
 
-        // Draw passenger count for cities
-        int waitingCount = 0;
-        auto passengerView = registry.view<const PassengerComponent>();
-        for (auto passengerEntity : passengerView) {
-            const auto& passenger = passengerView.get<const PassengerComponent>(passengerEntity);
-            if (passenger.currentContainer == entity) {
-                waitingCount++;
-            }
-        }
-
-        if (waitingCount > 0) {
-            m_text.setString(std::to_string(waitingCount));
+        // Draw the pre-calculated passenger count.
+        if (waitingCounts.count(entity) > 0) {
+            int count = waitingCounts.at(entity);
+            m_text.setString(std::to_string(count));
             sf::FloatRect textBounds = m_text.getLocalBounds();
             m_text.setOrigin({textBounds.position.x + textBounds.size.x / 2.0f,
                               textBounds.position.y + textBounds.size.y / 2.0f});

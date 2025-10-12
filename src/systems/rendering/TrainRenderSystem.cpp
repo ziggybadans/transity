@@ -1,5 +1,6 @@
 #include "TrainRenderSystem.h"
 #include "components/GameLogicComponents.h"
+#include "components/TrainComponents.h"
 #include "components/RenderComponents.h"
 #include "Logger.h"
 #include <SFML/Graphics/CircleShape.hpp>

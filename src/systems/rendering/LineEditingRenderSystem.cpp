@@ -1,6 +1,7 @@
 #include "LineEditingRenderSystem.h"
 #include "components/GameLogicComponents.h"
 #include "components/RenderComponents.h"
+#include "components/LineComponents.h"
 #include <SFML/Graphics/CircleShape.hpp>
 
 LineEditingRenderSystem::LineEditingRenderSystem(sf::RenderWindow& window)

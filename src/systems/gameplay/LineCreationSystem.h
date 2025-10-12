@@ -6,6 +6,7 @@
 #include "app/GameState.h"
 #include "event/EventBus.h"
 #include "components/GameLogicComponents.h"
+#include "components/LineComponents.h"
 #include <SFML/Graphics/Color.hpp>
 #include <entt/entt.hpp>
 #include <vector>

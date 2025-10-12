@@ -13,12 +13,15 @@ public:
     explicit SelectionSystem(entt::registry& registry, EventBus& eventBus, GameState& gameState, Pathfinder& pathfinder);
     ~SelectionSystem() override;
 
-    void onMouseButtonPressed(const MouseButtonPressedEvent& event);
-
 private:
     entt::registry& _registry;
     EventBus& _eventBus;
     GameState& _gameState;
     Pathfinder& _pathfinder;
     entt::scoped_connection _mouseButtonConnection;
+
+    void onMouseButtonPressed(const MouseButtonPressedEvent& event);
+    void handlePassengerCreationClick(const MouseButtonPressedEvent& event);
+    void handleSelectionClick(const MouseButtonPressedEvent& event);
+    entt::entity findClickedEntity(const sf::Vector2f& worldPosition);
 };

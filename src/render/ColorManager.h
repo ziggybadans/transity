@@ -24,6 +24,7 @@ public:
     const sf::Color &getWaterColor() const;
     const sf::Color &getRiverColor() const;
     sf::Color getNextLineColor() noexcept;
+    sf::Color getHighlightColor() const;
 
 private:
     EventBus &_eventBus;

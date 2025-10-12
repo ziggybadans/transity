@@ -1,6 +1,7 @@
 #include "core/Pathfinder.h"
 #include "Logger.h"
 #include "components/GameLogicComponents.h"
+#include "components/LineComponents.h"
 #include <cmath>
 #include <limits>
 #include <map>
@@ -98,13 +99,13 @@ std::vector<entt::entity> Pathfinder::findPath(entt::entity startStation, entt::
         path.insert(path.begin(), current);
         current = predecessors[current];
         if (current == startStation) {
-            break; // We've reached the start, don't add it to the path
+            break;  // We've reached the start, don't add it to the path
         }
     }
 
     if (path.empty() || (current != startStation && !predecessors.count(current))) {
         LOG_WARN("Pathfinder", "No path found from station %u to %u.",
-                static_cast<unsigned>(startStation), static_cast<unsigned>(endStation));
+                 static_cast<unsigned>(startStation), static_cast<unsigned>(endStation));
         return {};
     }
 

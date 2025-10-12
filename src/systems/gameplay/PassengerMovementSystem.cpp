@@ -1,6 +1,7 @@
 #include "PassengerMovementSystem.h"
-#include "components/GameLogicComponents.h"
 #include "components/PassengerComponents.h"
+#include "components/LineComponents.h"
+#include "components/TrainComponents.h"
 #include "Logger.h"
 #include <algorithm>
 #include <vector>

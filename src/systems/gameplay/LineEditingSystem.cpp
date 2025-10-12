@@ -1,12 +1,11 @@
 #include "LineEditingSystem.h"
-#include "components/GameLogicComponents.h"
-#include "components/WorldComponents.h"
+#include "components/LineComponents.h"
+#include "SnapHelper.h"
 #include "Logger.h"
 #include "Constants.h"
 #include "core/Curve.h"
 #include "event/LineEvents.h"
 #include <algorithm>
-#include <limits>
 
 namespace {
     float distanceToSegmentSq(sf::Vector2f p, sf::Vector2f v, sf::Vector2f w) {
@@ -179,11 +178,7 @@ void LineEditingSystem::onMouseButtonReleased(const MouseButtonReleasedEvent& ev
 }
 
 void LineEditingSystem::onMouseMoved(const MouseMovedEvent& event) {
-    if (_gameState.currentInteractionMode != InteractionMode::EDIT_LINE) {
-        return;
-    }
-
-    if (!_gameState.selectedEntity.has_value()) {
+    if (_gameState.currentInteractionMode != InteractionMode::EDIT_LINE || !_gameState.selectedEntity) {
         return;
     }
 
@@ -193,7 +188,7 @@ void LineEditingSystem::onMouseMoved(const MouseMovedEvent& event) {
     }
 
     auto& editingState = _registry.get<LineEditingComponent>(selectedLineEntity);
-    if (!editingState.draggedPointIndex.has_value()) {
+    if (!editingState.draggedPointIndex) {
         return;
     }
 
@@ -202,106 +197,15 @@ void LineEditingSystem::onMouseMoved(const MouseMovedEvent& event) {
     editingState.snapSide = 0.f;
     editingState.snapTangent.reset();
 
-    sf::Vector2f mousePos = event.worldPosition;
-
-    const float SNAP_RADIUS_SQUARED = Constants::LINE_SNAP_RADIUS * Constants::LINE_SNAP_RADIUS;
-    float closestDistSq = SNAP_RADIUS_SQUARED;
-
-    auto lineView = _registry.view<const LineComponent>();
-    for (auto entity : lineView) {
-        const auto& lineComp = lineView.get<const LineComponent>(entity);
-        for (size_t i = 0; i < lineComp.points.size(); ++i) {
-            if (entity == selectedLineEntity && i == editingState.draggedPointIndex.value()) {
-                continue;
-            }
-
-            const auto& point = lineComp.points[i];
-            if (point.type == LinePointType::CONTROL_POINT) {
-                sf::Vector2f diff = mousePos - point.position;
-                float distSq = diff.x * diff.x + diff.y * diff.y;
-                if (distSq < closestDistSq) {
-                    closestDistSq = distSq;
-                    editingState.snapInfo = SnapInfo{entity, i};
-                }
-            }
-        }
-    }
-
-    auto cityView = _registry.view<const CityComponent, const PositionComponent>();
-    for (auto entity : cityView) {
-        const auto& pos = cityView.get<const PositionComponent>(entity);
-        sf::Vector2f diff = mousePos - pos.coordinates;
-        float distSq = diff.x * diff.x + diff.y * diff.y;
-        if (distSq < closestDistSq) {
-            closestDistSq = distSq;
-            editingState.snapInfo = SnapInfo{entity, (size_t)-1};
-        }
-    }
-
-    sf::Vector2f finalPos = mousePos;
-
-    if (editingState.snapInfo) {
-        sf::Vector2f targetPointPos;
-        sf::Vector2f tangent;
-        bool tangentFound = false;
-
-        if (editingState.snapInfo->snappedToPointIndex != (size_t)-1) {
-            const auto& targetLine = _registry.get<LineComponent>(editingState.snapInfo->snappedToEntity);
-            targetPointPos = targetLine.points[editingState.snapInfo->snappedToPointIndex].position;
-
-            sf::Vector2f p_prev, p_next;
-            if (editingState.snapInfo->snappedToPointIndex > 0) {
-                p_prev = targetLine.points[editingState.snapInfo->snappedToPointIndex - 1].position;
-            } else if (targetLine.points.size() > 1) {
-                p_prev = targetPointPos - (targetLine.points[1].position - targetPointPos);
-            }
-
-            if (editingState.snapInfo->snappedToPointIndex < targetLine.points.size() - 1) {
-                p_next = targetLine.points[editingState.snapInfo->snappedToPointIndex + 1].position;
-            } else if (targetLine.points.size() > 1) {
-                p_next = targetPointPos + (targetPointPos - targetLine.points[targetLine.points.size() - 2].position);
-            }
-            tangent = p_next - p_prev;
-            tangentFound = true;
-        } else {
-            entt::entity cityEntity = editingState.snapInfo->snappedToEntity;
-            targetPointPos = _registry.get<PositionComponent>(cityEntity).coordinates;
-            
-            auto& editedLine = _registry.get<LineComponent>(selectedLineEntity);
-            size_t draggedIdx = editingState.draggedPointIndex.value();
-            if (!tangentFound) {
-                if (draggedIdx > 0) {
-                    tangent = targetPointPos - editedLine.points[draggedIdx - 1].position;
-                } else if (editedLine.points.size() > 1) {
-                    tangent = editedLine.points[draggedIdx + 1].position - targetPointPos;
-                }
-                tangentFound = true;
-            }
-        }
-
-        if (tangentFound) {
-            if (auto len = std::sqrt(tangent.x * tangent.x + tangent.y * tangent.y); len > 0) {
-                tangent /= len;
-            }
-            editingState.snapTangent = tangent;
-
-            sf::Vector2f perpendicular = {-tangent.y, tangent.x};
-            sf::Vector2f mouseVec = mousePos - targetPointPos;
-            float perp_dist = mouseVec.x * perpendicular.x + mouseVec.y * perpendicular.y;
-
-            if (std::abs(perp_dist) < Constants::LINE_CENTER_SNAP_RADIUS) {
-                editingState.snapSide = 0.f;
-                editingState.snapPosition = targetPointPos;
-            } else {
-                editingState.snapSide = (perp_dist > 0) ? 1.f : -1.f;
-                sf::Vector2f sideOffset = perpendicular * editingState.snapSide * Constants::LINE_PARALLEL_OFFSET;
-                editingState.snapPosition = targetPointPos + sideOffset;
-            }
-            finalPos = editingState.snapPosition.value();
-        } else {
-             editingState.snapPosition = targetPointPos;
-             finalPos = targetPointPos;
-        }
+    sf::Vector2f finalPos = event.worldPosition;
+    
+    std::optional<std::pair<entt::entity, size_t>> ignorePoint = {{selectedLineEntity, editingState.draggedPointIndex.value()}};
+    if (auto snapResult = SnapHelper::findSnap(_registry, event.worldPosition, ignorePoint)) {
+        editingState.snapPosition = snapResult->position;
+        editingState.snapInfo = snapResult->info;
+        editingState.snapSide = snapResult->side;
+        editingState.snapTangent = snapResult->tangent;
+        finalPos = snapResult->position;
     }
 
     auto& line = _registry.get<LineComponent>(selectedLineEntity);

@@ -1,13 +1,16 @@
 #pragma once
 
+#include "app/GameState.h"
 #include <SFML/Graphics.hpp>
 #include <entt/entt.hpp>
 #include <vector>
 
-#include "app/GameState.h" // Add this include
-
 class LineRenderSystem {
 public:
-    // Update signature
     void render(const entt::registry &registry, sf::RenderWindow &window, const GameState& gameState, const sf::View &view, const sf::Color& highlightColor);
+
+private:
+    void renderFinalizedLines(const entt::registry &registry, sf::RenderWindow &window, const sf::Color& highlightColor);
+    void renderActiveLinePreview(const entt::registry &registry, sf::RenderWindow &window);
+    void renderSnappingIndicators(const entt::registry &registry, sf::RenderWindow &window);
 };

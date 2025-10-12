@@ -2,7 +2,6 @@
 #include "Constants.h"
 #include "Logger.h"
 #include "event/DeletionEvents.h"
-#include "event/UIEvents.h"
 #include "imgui.h"
 #include "systems/rendering/TerrainRenderSystem.h"
 #include "systems/world/WorldGenerationSystem.h"
@@ -36,16 +35,33 @@ void WorldGenSettingsUI::draw() {
 
     WorldGenParams &params = _worldGenerationSystem.getParams();
     bool paramsChanged = false;
+    bool gridChanged = false;
 
+    drawNoiseLayerSettings(params, paramsChanged);
+    ImGui::Separator();
+    drawWorldGridSettings(params, gridChanged);
+    ImGui::Separator();
+    drawVisualizationSettings();
+    ImGui::Separator();
+    drawActions(params);
+
+    if ((paramsChanged || gridChanged) && _autoRegenerate) {
+        LOG_DEBUG("UI", "Settings changed, auto-regenerating world.");
+        auto paramsCopy = std::make_shared<WorldGenParams>(params);
+        _eventBus.enqueue<RegenerateWorldRequestEvent>({paramsCopy});
+    }
+
+    ImGui::End();
+}
+
+void WorldGenSettingsUI::drawNoiseLayerSettings(WorldGenParams &params, bool &paramsChanged) {
     if (ImGui::Button("New Seed")) {
         for (auto &layer : params.noiseLayers) {
             layer.seed = std::rand();
         }
         paramsChanged = true;
     }
-
     ImGui::Separator();
-
     for (int i = 0; i < params.noiseLayers.size(); ++i) {
         auto &layer = params.noiseLayers[i];
         std::string layerHeader = layer.name;
@@ -80,41 +96,26 @@ void WorldGenSettingsUI::draw() {
             ImGui::PopID();
         }
     }
+}
 
-    ImGui::Separator();
-
+void WorldGenSettingsUI::drawWorldGridSettings(WorldGenParams &params, bool &gridChanged) {
     if (ImGui::SliderFloat("Land Threshold", &params.landThreshold, -1.0f, 1.0f, "%.2f"))
-        paramsChanged = true;
-    if (ImGui::Checkbox("Distort Coastline", &params.distortCoastline)) paramsChanged = true;
+        gridChanged = true;
+    if (ImGui::Checkbox("Distort Coastline", &params.distortCoastline)) gridChanged = true;
     if (params.distortCoastline) {
         if (ImGui::SliderFloat("Distortion Strength", &params.coastlineDistortionStrength, 0.0f,
                                0.5f, "%.2f"))
-            paramsChanged = true;
+            gridChanged = true;
     }
-
     ImGui::Separator();
-
-    bool gridChanged = false;
     if (ImGui::InputInt("World Chunks X", &params.worldDimensionsInChunks.x)) gridChanged = true;
     if (ImGui::InputInt("World Chunks Y", &params.worldDimensionsInChunks.y)) gridChanged = true;
     if (ImGui::InputInt("Chunk Size X", &params.chunkDimensionsInCells.x)) gridChanged = true;
     if (ImGui::InputInt("Chunk Size Y", &params.chunkDimensionsInCells.y)) gridChanged = true;
     if (ImGui::InputFloat("Cell Size", &params.cellSize, 1.0f, 0.0f, "%.2f")) gridChanged = true;
+}
 
-    if ((paramsChanged || gridChanged) && _autoRegenerate) {
-        LOG_DEBUG("UI", "Settings changed, auto-regenerating world.");
-        auto paramsCopy = std::make_shared<WorldGenParams>(params);
-        _eventBus.enqueue<RegenerateWorldRequestEvent>({paramsCopy});
-    }
-
-    ImGui::Separator();
-
-    if (ImGui::Button("Regenerate World")) {
-        LOG_DEBUG("UI", "Regenerate World button clicked.");
-        auto paramsCopy = std::make_shared<WorldGenParams>(params);
-        _eventBus.enqueue<RegenerateWorldRequestEvent>({paramsCopy});
-    }
-
+void WorldGenSettingsUI::drawVisualizationSettings() {
     if (ImGui::Checkbox("Visualize Chunk Borders", &_visualizeChunkBorders)) {
         _terrainRenderSystem.setVisualizeChunkBorders(_visualizeChunkBorders);
     }
@@ -145,11 +146,17 @@ void WorldGenSettingsUI::draw() {
     if (ImGui::Checkbox("Enable LOD", &_isLodEnabled)) {
         _terrainRenderSystem.setLodEnabled(_isLodEnabled);
     }
+}
 
+void WorldGenSettingsUI::drawActions(const WorldGenParams &params) {
+    if (ImGui::Button("Regenerate World")) {
+        LOG_DEBUG("UI", "Regenerate World button clicked.");
+        auto paramsCopy = std::make_shared<WorldGenParams>(params);
+        _eventBus.enqueue<RegenerateWorldRequestEvent>({paramsCopy});
+    }
+    ImGui::SameLine();
     ImGui::Checkbox("Auto Regenerate", &_autoRegenerate);
-
     ImGui::Separator();
-
     ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4) ImColor::HSV(0.0f, 0.6f, 0.6f));
     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4) ImColor::HSV(0.0f, 0.7f, 0.7f));
     ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4) ImColor::HSV(0.0f, 0.8f, 0.8f));
@@ -179,6 +186,4 @@ void WorldGenSettingsUI::draw() {
         }
         ImGui::EndPopup();
     }
-
-    ImGui::End();
 }

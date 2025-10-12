@@ -1,9 +1,9 @@
 #pragma once
 
 #include "app/InteractionMode.h"
+#include <SFML/System/Time.hpp>
 #include <entt/entt.hpp>
 #include <optional>
-#include <SFML/System/Time.hpp>
 
 enum class AppState { LOADING, PLAYING, QUITTING };
 

@@ -1,6 +1,5 @@
 #include "Camera.h"
 #include "Logger.h"
-#include <SFML/Window/Event.hpp>
 
 Camera::Camera() {
     LOG_DEBUG("Camera", "Camera created. Initial view size: (%.1f, %.1f), center: (%.1f, %.1f)",
@@ -100,6 +99,7 @@ void Camera::onWindowResize(unsigned int width, unsigned int height) noexcept {
 }
 
 float Camera::getZoom() const noexcept {
-
+    // 600.0f is the reference height of the view for the default zoom level.
+    // This provides a consistent zoom value relative to the initial setup.
     return 600.0f / _view.getSize().y;
 }

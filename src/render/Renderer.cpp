@@ -1,15 +1,10 @@
 #include "Renderer.h"
 #include "Constants.h"
 #include "Logger.h"
-#include "components/GameLogicComponents.h"
-#include "components/PassengerComponents.h"
 #include "components/RenderComponents.h"
+#include "components/TrainComponents.h"
 #include "systems/world/WorldGenerationSystem.h"
-#include <SFML/Graphics.hpp>
-#include <cstdlib>
 #include <entt/entt.hpp>
-#include <iostream>
-#include <stdexcept>
 
 Renderer::Renderer(ColorManager &colorManager, sf::RenderWindow &window)
     : _colorManager(colorManager), _windowInstance(window),
@@ -43,23 +38,30 @@ void Renderer::renderFrame(entt::registry &registry, GameState &gameState, const
     _windowInstance.setView(view);
     _windowInstance.clear(_clearColor);
 
-    const sf::Color &landColor = _colorManager.getLandColor();
-    sf::Color highlightColor(255 - landColor.r, 255 - landColor.g, 255 - landColor.b);
+    const sf::Color &highlightColor = _colorManager.getHighlightColor();
 
     _terrainRenderSystem.render(registry, _windowInstance, view, worldGen.getParams());
-    
-    if (gameState.currentInteractionMode == InteractionMode::CREATE_LINE ||
-        gameState.currentInteractionMode == InteractionMode::EDIT_LINE) {
-        // In editing modes, render cities first so lines and control points appear on top
+
+    // In editing modes, render cities first so lines and control points appear on top.
+    // In normal mode, render lines first so cities appear on top.
+    if (gameState.currentInteractionMode == InteractionMode::CREATE_LINE
+        || gameState.currentInteractionMode == InteractionMode::EDIT_LINE) {
         _cityRenderSystem.render(registry, _windowInstance, gameState, highlightColor);
         _lineRenderSystem.render(registry, _windowInstance, gameState, view, highlightColor);
     } else {
-        // In normal mode, render lines first so cities appear on top
         _lineRenderSystem.render(registry, _windowInstance, gameState, view, highlightColor);
         _cityRenderSystem.render(registry, _windowInstance, gameState, highlightColor);
     }
 
-    // The main render view now excludes entities handled by other systems
+    renderGenericEntities(registry, highlightColor);
+
+    _trainRenderSystem.render(registry, _windowInstance, highlightColor);
+    _pathRenderSystem.render(registry, _windowInstance);
+    passengerSpawnAnimationSystem.render(_windowInstance);
+    _lineEditingRenderSystem.draw(registry, gameState);
+}
+
+void Renderer::renderGenericEntities(entt::registry &registry, const sf::Color &highlightColor) {
     auto viewRegistry = registry.view<const PositionComponent, const RenderableComponent>(
         entt::exclude<TrainTag, CityComponent>);
 
@@ -78,14 +80,12 @@ void Renderer::renderFrame(entt::registry &registry, GameState &gameState, const
         const auto &position = viewRegistry.get<const PositionComponent>(entity);
         const auto &renderable = viewRegistry.get<const RenderableComponent>(entity);
 
-        // Default rendering for all other entities
         sf::CircleShape shape(renderable.radius.value);
         shape.setFillColor(renderable.color);
         shape.setOrigin({renderable.radius.value, renderable.radius.value});
         shape.setPosition(position.coordinates);
         _windowInstance.draw(shape);
 
-        // Draw highlight if selected (applies to all entities)
         if (registry.all_of<SelectedComponent>(entity)) {
             sf::CircleShape highlight(renderable.radius.value + 3.0f);
             highlight.setFillColor(sf::Color::Transparent);
@@ -96,11 +96,6 @@ void Renderer::renderFrame(entt::registry &registry, GameState &gameState, const
             _windowInstance.draw(highlight);
         }
     }
-
-    _trainRenderSystem.render(registry, _windowInstance, highlightColor);
-    _pathRenderSystem.render(registry, _windowInstance);
-    passengerSpawnAnimationSystem.render(_windowInstance);
-    _lineEditingRenderSystem.draw(registry, gameState);
 }
 
 void Renderer::displayFrame() noexcept {

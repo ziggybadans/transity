@@ -14,6 +14,10 @@ public:
 private:
     void onDeleteEntity(const DeleteEntityEvent& event);
     void onDeleteAllEntities(const DeleteAllEntitiesEvent& event);
+    void handleLineDeletion(entt::entity lineEntity);
+    void deleteTrainsOnLine(entt::entity lineEntity);
+    void removeLineFromCities(entt::entity lineEntity);
+    void repathPassengersAfterLineDeletion(entt::entity lineEntity);
 
     entt::registry& _registry;
     EventBus& _eventBus;

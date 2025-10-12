@@ -1,7 +1,5 @@
 #include "PassengerSpawnSystem.h"
 #include "components/GameLogicComponents.h"
-#include "components/PassengerComponents.h"
-#include "ecs/EntityFactory.h"
 #include "core/Pathfinder.h"
 #include "Logger.h"
 #include <vector>

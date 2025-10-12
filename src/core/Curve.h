@@ -1,11 +1,12 @@
 #pragma once
 
 #include "components/GameLogicComponents.h"
+#include "components/LineComponents.h"
 #include <SFML/System/Vector2.hpp>
-#include <cmath>
-#include <vector>
 #include <algorithm>
+#include <cmath>
 #include <limits>
+#include <vector>
 
 struct CurveData {
     std::vector<sf::Vector2f> points;
@@ -14,7 +15,8 @@ struct CurveData {
 
 class Curve {
 public:
-    static CurveData generateMetroCurve(const std::vector<sf::Vector2f>& points, float radius, int pointsPerArc = 10) {
+    static CurveData generateMetroCurve(const std::vector<sf::Vector2f> &points, float radius,
+                                        int pointsPerArc = 10) {
         CurveData curveData;
         if (points.size() < 2) {
             if (!points.empty()) {
@@ -43,9 +45,9 @@ public:
         std::vector<Arc> arcs;
 
         for (size_t i = 1; i < points.size() - 1; ++i) {
-            const sf::Vector2f& p_prev = points[i - 1];
-            const sf::Vector2f& p_curr = points[i];
-            const sf::Vector2f& p_next = points[i + 1];
+            const sf::Vector2f &p_prev = points[i - 1];
+            const sf::Vector2f &p_curr = points[i];
+            const sf::Vector2f &p_next = points[i + 1];
 
             sf::Vector2f v1 = p_prev - p_curr;
             sf::Vector2f v2 = p_next - p_curr;
@@ -59,7 +61,7 @@ public:
 
             sf::Vector2f arc_start = (len1 > 0) ? p_curr + (v1 / len1) * currentRadius : p_curr;
             sf::Vector2f arc_end = (len2 > 0) ? p_curr + (v2 / len2) * currentRadius : p_curr;
-            
+
             arcs.push_back({arc_start, p_curr, arc_end});
         }
 
@@ -75,10 +77,11 @@ public:
             }
 
             if (i < arcs.size()) {
-                const auto& arc = arcs[i];
+                const auto &arc = arcs[i];
                 for (int j = 1; j <= pointsPerArc; ++j) {
                     float t = static_cast<float>(j) / pointsPerArc;
-                    sf::Vector2f point = (1.0f - t) * (1.0f - t) * arc.start + 2.0f * (1.0f - t) * t * arc.corner + t * t * arc.end;
+                    sf::Vector2f point = (1.0f - t) * (1.0f - t) * arc.start
+                                         + 2.0f * (1.0f - t) * t * arc.corner + t * t * arc.end;
                     curveData.points.push_back(point);
                     curveData.segmentIndices.push_back(i);
                 }
@@ -133,8 +136,8 @@ public:
     }
 
     static std::vector<StopInfo> calculateStopInfo(const std::vector<LinePoint> &linePoints,
-                                               const std::vector<sf::Vector2f> &curvePoints) {
-    std::vector<StopInfo> stopInfo;
+                                                   const std::vector<sf::Vector2f> &curvePoints) {
+        std::vector<StopInfo> stopInfo;
         if (linePoints.empty() || curvePoints.empty()) {
             return stopInfo;
         }
@@ -151,7 +154,7 @@ public:
             cumulativeDistances.push_back(totalLength);
         }
 
-        for (const auto& linePoint : linePoints) {
+        for (const auto &linePoint : linePoints) {
             if (linePoint.type == LinePointType::STOP) {
                 float min_dist_sq = std::numeric_limits<float>::max();
                 size_t closest_point_index = 0;
@@ -165,14 +168,15 @@ public:
                         closest_point_index = i;
                     }
                 }
-                
+
                 if (closest_point_index < cumulativeDistances.size()) {
-                    stopInfo.push_back({linePoint.stationEntity, cumulativeDistances[closest_point_index]});
+                    stopInfo.push_back(
+                        {linePoint.stationEntity, cumulativeDistances[closest_point_index]});
                 }
             }
         }
-        
-        std::sort(stopInfo.begin(), stopInfo.end(), [](const StopInfo& a, const StopInfo& b) {
+
+        std::sort(stopInfo.begin(), stopInfo.end(), [](const StopInfo &a, const StopInfo &b) {
             return a.distanceAlongCurve < b.distanceAlongCurve;
         });
 

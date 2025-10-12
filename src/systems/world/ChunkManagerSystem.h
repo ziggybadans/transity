@@ -30,15 +30,23 @@ public:
     void update(sf::Time dt) override;
 
 private:
+    // Event Handlers
     void onRegenerateWorld(const RegenerateWorldRequestEvent &event);
+    void onSwapWorldState(const SwapWorldStateEvent &event);
+    void onImmediateRedraw(const ImmediateRedrawEvent &event);
+
+    // Chunk Management
     void loadChunk(const sf::Vector2i &chunkPos);
     void unloadChunk(const sf::Vector2i &chunkPos);
-    void processLoadingQueue();
     void processCompletedChunks();
 
-    void onImmediateRedraw(const ImmediateRedrawEvent &event);
-    entt::scoped_connection _immediateRedrawListener;
+    // Update Helpers
+    void handleWorldGeneration();
+    void handleChunkLoading();
+    void updateChunkLODs();
+    void updateActiveChunks();
 
+    // Member Variables
     entt::registry& _registry;
     EventBus& _eventBus;
     WorldGenerationSystem& _worldGenSystem;
@@ -52,10 +60,9 @@ private:
     std::mutex _completedChunksMutex;
     std::queue<GeneratedChunkData> _completedChunks;
 
-    entt::scoped_connection _regenerateWorldListener;
-    int _viewDistance = 4;
-
-    void onSwapWorldState(const SwapWorldStateEvent &event);
-    entt::scoped_connection _swapWorldStateListener;
     std::future<void> _generationFuture;
+
+    entt::scoped_connection _regenerateWorldListener;
+    entt::scoped_connection _swapWorldStateListener;
+    entt::scoped_connection _immediateRedrawListener;
 };

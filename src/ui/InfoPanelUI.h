@@ -17,6 +17,12 @@ private:
     void onEntitySelected(const EntitySelectedEvent &event);
     void onEntityDeselected(const EntityDeselectedEvent &event);
 
+    // Add these new helper functions
+    void drawCityInfo(entt::entity entity);
+    void drawTrainInfo(entt::entity entity);
+    void drawLineInfo(entt::entity entity);
+    void drawPassengerInfo(entt::entity entity);
+
     entt::registry &_registry;
     EventBus &_eventBus;
     GameState &_gameState;

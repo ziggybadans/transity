@@ -69,6 +69,18 @@ private:
     
     void precomputeTerrainCache(int mapWidth, int mapHeight);
 
+    sf::Vector2i findBestLocation(int mapWidth, int mapHeight,
+                                  const std::vector<float> &suitabilityMap);
+    sf::Vector2i findRandomSuitableLocation(int mapWidth, int mapHeight,
+                                            const std::vector<float> &suitabilityMap);
+    void determineNextCityType();
+    void updateDebugInfo();
+
+    void initializeSuitabilityMaps(int mapWidth, int mapHeight);
+    void calculateBaseSuitabilityMaps(int mapWidth, int mapHeight);
+    void placeInitialCapitals(int mapWidth, int mapHeight);
+    void calculateDependentSuitabilityMaps(int mapWidth, int mapHeight);
+
     void calculateWaterSuitability(int mapWidth, int mapHeight, std::vector<float> &map);
     void calculateExpandabilitySuitability(int mapWidth, int mapHeight, std::vector<float> &map);
     void calculateNoiseSuitability(int mapWidth, int mapHeight, std::vector<float> &map);
@@ -81,14 +93,6 @@ private:
     void combineSuitabilityMaps(int mapWidth, int mapHeight, const PlacementWeights &weights);
     void normalizeMap(std::vector<float> &map);
 
-    sf::Vector2i findBestLocation(int mapWidth, int mapHeight,
-                                  const std::vector<float> &suitabilityMap);
-    sf::Vector2i findRandomSuitableLocation(int mapWidth, int mapHeight,
-                                            const std::vector<float> &suitabilityMap);
-    void determineNextCityType();
-    void updateDebugInfo();
-
-private:
     LoadingState& _loadingState;
     WorldGenerationSystem& _worldGenerationSystem;
     EntityFactory& _entityFactory;

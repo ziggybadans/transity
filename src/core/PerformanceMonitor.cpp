@@ -1,5 +1,4 @@
 #include "PerformanceMonitor.h"
-#include <algorithm>
 
 void PerformanceMonitor::record(const std::string &name, long long duration) {
     std::lock_guard<std::mutex> lock(_mutex);

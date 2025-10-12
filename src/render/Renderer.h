@@ -1,9 +1,5 @@
 #pragma once
 
-#include <SFML/Graphics.hpp>
-#include <SFML/System.hpp>
-#include <entt/entt.hpp>
-
 #include "app/GameState.h"
 #include "event/EventBus.h"
 #include "event/InputEvents.h"
@@ -15,6 +11,9 @@
 #include "systems/rendering/PathRenderSystem.h"
 #include "systems/rendering/TerrainRenderSystem.h"
 #include "systems/rendering/TrainRenderSystem.h"
+#include <SFML/Graphics.hpp>
+#include <SFML/System.hpp>
+#include <entt/entt.hpp>
 
 class WorldGenerationSystem;
 
@@ -29,6 +28,7 @@ public:
                      const WorldGenerationSystem &worldGen,
                      PassengerSpawnAnimationSystem &passengerSpawnAnimationSystem,
                      float interpolation);
+    void renderGenericEntities(entt::registry &registry, const sf::Color &highlightColor);
     void displayFrame() noexcept;
     void cleanupResources() noexcept;
     bool isWindowOpen() const noexcept;

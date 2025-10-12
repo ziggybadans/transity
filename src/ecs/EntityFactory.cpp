@@ -1,6 +1,10 @@
 #include "EntityFactory.h"
 #include "Constants.h"
 #include "Logger.h"
+#include "components/GameLogicComponents.h"
+#include "components/LineComponents.h"
+#include "components/RenderComponents.h"
+#include "components/TrainComponents.h"
 #include "core/Curve.h"
 #include <SFML/Graphics/Color.hpp>
 #include <filesystem>
@@ -180,7 +184,7 @@ entt::entity EntityFactory::createLine(const std::vector<LinePoint> &points,
 
     if (!curveData.segmentIndices.empty()) {
         size_t max_segment_index = 0;
-        for(size_t index : curveData.segmentIndices) {
+        for (size_t index : curveData.segmentIndices) {
             if (index > max_segment_index) {
                 max_segment_index = index;
             }

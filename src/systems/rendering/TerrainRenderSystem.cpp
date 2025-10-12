@@ -1,17 +1,10 @@
 #include "TerrainRenderSystem.h"
-
 #include "components/RenderComponents.h"
 #include "components/WorldComponents.h"
 #include "world/WorldData.h"
-#include "core/PerfTimer.h"
 #include "systems/gameplay/CityPlacementSystem.h"
 #include "Logger.h"
-#include "Constants.h"
-
-#include <algorithm>
-#include <cassert>
 #include <cstdint>
-#include <iostream>
 
 TerrainRenderSystem::TerrainRenderSystem(ColorManager &colorManager)
     : _colorManager(colorManager) {}
