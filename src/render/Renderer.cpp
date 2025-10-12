@@ -26,7 +26,12 @@ void Renderer::initialize() {
     sf::Vector2u textureSize = {static_cast<unsigned int>(windowSize.x * SSAA_FACTOR),
                                 static_cast<unsigned int>(windowSize.y * SSAA_FACTOR)};
 
-    if (!_renderTexture.resize({textureSize.x, textureSize.y})) {
+    sf::ContextSettings settings;
+    unsigned int maxAntiAliasingLevel = sf::RenderTexture::getMaximumAntiAliasingLevel();
+    settings.antiAliasingLevel = maxAntiAliasingLevel;
+    LOG_INFO("Renderer", "Max supported anti-aliasing level: %u. Using: %u", maxAntiAliasingLevel, settings.antiAliasingLevel);
+
+    if (!_renderTexture.resize({textureSize.x, textureSize.y}, settings)) {
         LOG_FATAL("Renderer", "Failed to create render texture.");
         throw std::runtime_error("Failed to create render texture.");
     }
