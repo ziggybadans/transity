@@ -72,6 +72,7 @@ void CityPlacementSystem::onRegenerateEntities(const RegenerateEntitiesEvent &) 
     _eventBus.trigger<DeleteAllEntitiesEvent>({});
     _loadingState.message = "Preparing entity regeneration...";
     _loadingState.progress = 0.05f;
+    _loadingState.showOverlay = true;
 
     _regenerationTask = _threadPool.enqueue([this]() {
         try {
@@ -79,10 +80,12 @@ void CityPlacementSystem::onRegenerateEntities(const RegenerateEntitiesEvent &) 
         } catch (const std::exception &ex) {
             LOG_ERROR("CityPlacementSystem", "Entity regeneration failed: %s", ex.what());
             _isRegenerating.store(false);
+            _loadingState.showOverlay = false;
             throw;
         } catch (...) {
             LOG_ERROR("CityPlacementSystem", "Entity regeneration failed with unknown error.");
             _isRegenerating.store(false);
+            _loadingState.showOverlay = false;
             throw;
         }
     });
@@ -143,13 +146,14 @@ void CityPlacementSystem::initialPlacement(bool isRegeneration) {
 
     LOG_INFO("CityPlacementSystem", "Placing initial settlements...");
     _loadingState.message = "Placing initial settlements...";
-    _loadingState.progress = 0.55f;
+    _loadingState.progress = 0.62f;
     placeInitialCapitals(mapWidth, mapHeight);
 
     LOG_INFO("CityPlacementSystem", "Calculating initial town and suburb suitability maps...");
     _loadingState.message = "Calculating dependent suitability maps...";
-    _loadingState.progress = 0.75f;
+    _loadingState.progress = 0.85f;
     calculateDependentSuitabilityMaps(mapWidth, mapHeight);
+    _loadingState.progress = 0.9f;
 
     LOG_INFO("CityPlacementSystem", "Finished initial city placement.");
     _renderer.getTerrainRenderSystem().setSuitabilityMapData(&_suitabilityMaps, &_terrainCache, worldGrid);
@@ -160,6 +164,7 @@ void CityPlacementSystem::initialPlacement(bool isRegeneration) {
     _loadingState.progress = 1.0f;
     _loadingState.message = "World ready.";
     _isRegenerating.store(false);
+    _loadingState.showOverlay = false;
 }
 
 void CityPlacementSystem::resetPlacementState() {
@@ -619,6 +624,12 @@ void CityPlacementSystem::calculateBaseSuitabilityMaps(int mapWidth, int mapHeig
 
 void CityPlacementSystem::placeInitialCapitals(int mapWidth, int mapHeight) {
     const float cellSize = _worldGenerationSystem.getParams().cellSize;
+    const int totalCapitals = std::max(1, Constants::INITIAL_CITY_COUNT);
+    const float startProgress = 0.62f;
+    const float endProgress = 0.82f;
+    const float progressStep =
+        (endProgress - startProgress) / static_cast<float>(totalCapitals);
+
     for (int i = 0; i < Constants::INITIAL_CITY_COUNT; ++i) {
         if (i > 0) {
             calculateCapitalProximitySuitability(mapWidth, mapHeight, _suitabilityMaps.cityProximity);
@@ -640,7 +651,9 @@ void CityPlacementSystem::placeInitialCapitals(int mapWidth, int mapHeight) {
         LOG_INFO("CityPlacementSystem", "Placed initial city %d at (%d, %d)", _placedCities.size(), bestLocation.x, bestLocation.y);
         
         updateDistanceMaps(newCity, mapWidth, mapHeight);
-        _loadingState.progress = 0.7f + (i * 0.1f);
+        const float progressTarget =
+            startProgress + progressStep * static_cast<float>(i + 1);
+        _loadingState.progress = std::clamp(progressTarget, startProgress, endProgress);
     }
 }
 

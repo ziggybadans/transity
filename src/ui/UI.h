@@ -18,7 +18,9 @@ public:
 
 private:
     void drawLoadingScreen();
+    void drawRegenerationModal();
 
     sf::RenderWindow &_window;
     LoadingState &_loadingState;
+    bool _regenerationModalOpen = false;
 };

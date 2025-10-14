@@ -3,6 +3,7 @@
 #include "app/LoadingState.h"
 #include "imgui-SFML.h"
 #include "imgui.h"
+#include <algorithm>
 
 UI::UI(sf::RenderWindow &window, LoadingState &loadingState)
     : _window(window), _loadingState(loadingState) {
@@ -34,6 +35,8 @@ void UI::update(sf::Time deltaTime, AppState appState) {
     if (appState == AppState::LOADING) {
         drawLoadingScreen();
     }
+
+    drawRegenerationModal();
 }
 
 void UI::renderFrame() {
@@ -75,4 +78,47 @@ void UI::drawLoadingScreen() {
     ImGui::Dummy(ImVec2(0.0f, 5.0f));
 
     ImGui::End();
+}
+
+void UI::drawRegenerationModal() {
+    const bool overlayActive = _loadingState.showOverlay.load();
+
+    if (overlayActive && !_regenerationModalOpen) {
+        ImGui::OpenPopup("Regenerating Entities");
+        _regenerationModalOpen = true;
+    }
+
+    ImGuiIO &io = ImGui::GetIO();
+    ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f),
+                            ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+    ImGui::SetNextWindowSize(ImVec2(360.0f, 0.0f), ImGuiCond_Appearing);
+
+    if (ImGui::BeginPopupModal("Regenerating Entities", nullptr,
+                               ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings
+                                   | ImGuiWindowFlags_NoMove)) {
+        const char *message = _loadingState.message.load();
+        float progress = _loadingState.progress.load();
+
+        ImGui::TextWrapped("%s", message);
+
+        ImGui::Dummy(ImVec2(0.0f, 6.0f));
+        ImGui::ProgressBar(progress, ImVec2(-1.0f, 0.0f));
+        ImGui::Dummy(ImVec2(0.0f, 6.0f));
+
+        const std::string progressText =
+            std::to_string(static_cast<int>(progress * 100.0f + 0.5f)) + "%";
+        ImGui::SetCursorPosX(
+            std::max(0.0f, (ImGui::GetWindowSize().x - ImGui::CalcTextSize(progressText.c_str()).x) * 0.5f));
+        ImGui::TextUnformatted(progressText.c_str());
+
+        if (!overlayActive || progress >= 1.0f) {
+            ImGui::CloseCurrentPopup();
+            _regenerationModalOpen = false;
+            _loadingState.showOverlay = false;
+        }
+
+        ImGui::EndPopup();
+    } else if (!overlayActive) {
+        _regenerationModalOpen = false;
+    }
 }

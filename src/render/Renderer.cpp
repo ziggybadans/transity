@@ -81,7 +81,9 @@ void Renderer::renderFrame(entt::registry &registry, GameState &gameState, const
     _lineEditingRenderSystem.draw(_renderTexture, registry, gameState);
 
     _renderTexture.display();
-    _renderTexture.setActive(false);
+    if (!_renderTexture.setActive(false)) {
+        LOG_WARN("Renderer", "Failed to deactivate render texture after display.");
+    }
     if (_renderSprite) {
         _windowInstance.draw(*_renderSprite);
     }
