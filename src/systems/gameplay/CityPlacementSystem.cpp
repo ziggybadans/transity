@@ -12,12 +12,14 @@
 #include <algorithm>
 #include <random>
 #include <queue>
+#include <chrono>
 
-CityPlacementSystem::CityPlacementSystem(LoadingState& loadingState, WorldGenerationSystem& worldGenerationSystem, EntityFactory& entityFactory, Renderer& renderer, PerformanceMonitor& performanceMonitor, ThreadPool& threadPool)
+CityPlacementSystem::CityPlacementSystem(LoadingState& loadingState, WorldGenerationSystem& worldGenerationSystem, EntityFactory& entityFactory, Renderer& renderer, EventBus& eventBus, PerformanceMonitor& performanceMonitor, ThreadPool& threadPool)
     : _loadingState(loadingState), 
       _worldGenerationSystem(worldGenerationSystem), 
       _entityFactory(entityFactory), 
-      _renderer(renderer), 
+      _renderer(renderer),
+      _eventBus(eventBus),
       _performanceMonitor(performanceMonitor),
       _threadPool(threadPool),
       _rng(std::random_device{}()) // Seed the random number generator
@@ -31,6 +33,9 @@ CityPlacementSystem::CityPlacementSystem(LoadingState& loadingState, WorldGenera
     std::uniform_real_distribution<float> dist(_minSpawnInterval, _maxSpawnInterval);
     _currentSpawnInterval = dist(_rng);
     determineNextCityType();
+
+    _regenerateEntitiesConnection = _eventBus.sink<RegenerateEntitiesEvent>()
+                                        .connect<&CityPlacementSystem::onRegenerateEntities>(this);
 }
 
 CityPlacementSystem::~CityPlacementSystem() {
@@ -51,7 +56,36 @@ CityPlacementDebugInfo CityPlacementSystem::getDebugInfo() const {
 }
 
 void CityPlacementSystem::init() {
-    initialPlacement();
+    initialPlacement(false);
+}
+
+void CityPlacementSystem::onRegenerateEntities(const RegenerateEntitiesEvent &) {
+    if (_regenerationTask.valid()
+        && _regenerationTask.wait_for(std::chrono::seconds(0)) != std::future_status::ready) {
+        LOG_WARN("CityPlacementSystem", "Regeneration already in progress, ignoring new request.");
+        return;
+    }
+
+    LOG_INFO("CityPlacementSystem", "RegenerateEntitiesEvent received. Flushing existing entities.");
+    _isRegenerating.store(true);
+    _initialPlacementDone = false;
+    _eventBus.trigger<DeleteAllEntitiesEvent>({});
+    _loadingState.message = "Preparing entity regeneration...";
+    _loadingState.progress = 0.05f;
+
+    _regenerationTask = _threadPool.enqueue([this]() {
+        try {
+            initialPlacement(true);
+        } catch (const std::exception &ex) {
+            LOG_ERROR("CityPlacementSystem", "Entity regeneration failed: %s", ex.what());
+            _isRegenerating.store(false);
+            throw;
+        } catch (...) {
+            LOG_ERROR("CityPlacementSystem", "Entity regeneration failed with unknown error.");
+            _isRegenerating.store(false);
+            throw;
+        }
+    });
 }
 
 void CityPlacementSystem::update(sf::Time dt) {
@@ -84,34 +118,65 @@ void CityPlacementSystem::update(sf::Time dt) {
     }
 }
 
-void CityPlacementSystem::initialPlacement() {
-    PerfTimer timer("CityPlacementSystem::initialPlacement", _performanceMonitor, PerfTimer::Purpose::Log);
-    LOG_INFO("CityPlacementSystem", "Starting initial city placement...");
+void CityPlacementSystem::initialPlacement(bool isRegeneration) {
+    const char *timerLabel = isRegeneration ? "CityPlacementSystem::regenerateEntities"
+                                            : "CityPlacementSystem::initialPlacement";
+    PerfTimer timer(timerLabel, _performanceMonitor, PerfTimer::Purpose::Log);
+
+    LOG_INFO("CityPlacementSystem", isRegeneration ? "Regenerating city placement pipeline..."
+                                                   : "Starting initial city placement...");
 
     const auto &worldGrid = _worldGenerationSystem.getParams();
     const int mapWidth = worldGrid.worldDimensionsInChunks.x * worldGrid.chunkDimensionsInCells.x;
     const int mapHeight = worldGrid.worldDimensionsInChunks.y * worldGrid.chunkDimensionsInCells.y;
 
-    _loadingState.message = "Analyzing terrain...";
-    _loadingState.progress = 0.3f;
+    resetPlacementState();
+
+    _loadingState.message = isRegeneration ? "Regenerating terrain cache..." : "Analyzing terrain...";
+    _loadingState.progress = 0.1f;
     precomputeTerrainCache(mapWidth, mapHeight);
 
+    _loadingState.message = "Building suitability baselines...";
+    _loadingState.progress = 0.3f;
     initializeSuitabilityMaps(mapWidth, mapHeight);
     calculateBaseSuitabilityMaps(mapWidth, mapHeight);
 
     LOG_INFO("CityPlacementSystem", "Placing initial settlements...");
     _loadingState.message = "Placing initial settlements...";
+    _loadingState.progress = 0.55f;
     placeInitialCapitals(mapWidth, mapHeight);
 
     LOG_INFO("CityPlacementSystem", "Calculating initial town and suburb suitability maps...");
+    _loadingState.message = "Calculating dependent suitability maps...";
+    _loadingState.progress = 0.75f;
     calculateDependentSuitabilityMaps(mapWidth, mapHeight);
 
     LOG_INFO("CityPlacementSystem", "Finished initial city placement.");
     _renderer.getTerrainRenderSystem().setSuitabilityMapData(&_suitabilityMaps, &_terrainCache, worldGrid);
     _initialPlacementDone = true;
-    _loadingState.progress = 1.0f;
-    _loadingState.message = "Finalizing world...";
+    _loadingState.progress = 0.95f;
+    _loadingState.message = "Finalizing world data...";
     updateDebugInfo();
+    _loadingState.progress = 1.0f;
+    _loadingState.message = "World ready.";
+    _isRegenerating.store(false);
+}
+
+void CityPlacementSystem::resetPlacementState() {
+    std::scoped_lock<std::mutex> lock(_mapUpdateMutex);
+    _placedCities.clear();
+    _terrainCache.clear();
+    _distanceToNearestCapital.clear();
+    _distanceToNearestTown.clear();
+    _suitabilityMaps = {};
+    _debugInfo = {};
+
+    _timeSinceLastCity = 0.0f;
+    std::uniform_real_distribution<float> dist(_minSpawnInterval, _maxSpawnInterval);
+    _currentSpawnInterval = dist(_rng);
+    _lastPlacementSuccess = false;
+    _initialPlacementDone = false;
+    determineNextCityType();
 }
 
 bool CityPlacementSystem::placeNewCity() {
@@ -149,9 +214,22 @@ bool CityPlacementSystem::placeNewCity() {
 }
 
 void CityPlacementSystem::asyncUpdateMaps(PlacedCityInfo newCity) {
+    if (_isRegenerating.load()) {
+        LOG_TRACE("CityPlacementSystem", "Skipping async map update during regeneration.");
+        return;
+    }
+
     _threadPool.enqueue([this, newCity] {
+        if (_isRegenerating.load()) {
+            return;
+        }
+
         PerfTimer timer("CityPlacementSystem::asyncUpdateMaps", _performanceMonitor, PerfTimer::Purpose::Log);
         std::lock_guard<std::mutex> lock(_mapUpdateMutex);
+
+        if (_isRegenerating.load()) {
+            return;
+        }
 
         const auto &worldGrid = _worldGenerationSystem.getParams();
         const int mapWidth = worldGrid.worldDimensionsInChunks.x * worldGrid.chunkDimensionsInCells.x;

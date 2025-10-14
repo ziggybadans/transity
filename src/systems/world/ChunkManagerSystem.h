@@ -43,7 +43,6 @@ private:
     // Update Helpers
     void handleWorldGeneration();
     void handleChunkLoading();
-    void updateChunkLODs();
     void updateActiveChunks();
 
     // Member Variables

@@ -36,13 +36,15 @@ void ChunkManagerSystem::onImmediateRedraw(const ImmediateRedrawEvent &event) {
 
 void ChunkManagerSystem::onRegenerateWorld(const RegenerateWorldRequestEvent &event) {
     if (_generationFuture.valid()) {
-        LOG_WARN("ChunkManager", "Already generating world, regenerate request ignored.");
+        LOG_WARN("ChunkManagerSystem", "Regeneration requested while a previous generation is still running.");
         return;
     }
 
     const WorldGenParams &params = *event.params;
 
-    LOG_DEBUG("ChunkManagerSystem", "Regenerating world.");
+    LOG_INFO("ChunkManagerSystem",
+             "Starting world regeneration for %d x %d chunks.",
+             params.worldDimensionsInChunks.x, params.worldDimensionsInChunks.y);
     auto &worldState =
         _registry.get<WorldStateComponent>(_registry.view<WorldStateComponent>().front());
 
@@ -72,7 +74,6 @@ void ChunkManagerSystem::onSwapWorldState(const SwapWorldStateEvent &event) {
 void ChunkManagerSystem::update(sf::Time dt) {
     handleWorldGeneration();
     handleChunkLoading();
-    updateChunkLODs();
     updateActiveChunks();
 }
 
@@ -145,25 +146,6 @@ void ChunkManagerSystem::handleChunkLoading() {
         _chunkLoadFutures.end());
 
     processCompletedChunks();
-}
-
-void ChunkManagerSystem::updateChunkLODs() {
-    float zoom = _camera.getZoom();
-    LODLevel currentLOD = LODLevel::LOD0;
-    if (zoom < 0.15f) {
-        currentLOD = LODLevel::LOD3;
-    } else if (zoom < 0.4f) {
-        currentLOD = LODLevel::LOD2;
-    } else if (zoom < 0.8f) {
-        currentLOD = LODLevel::LOD1;
-    }
-
-    for (auto entity : _registry.view<ChunkStateComponent>()) {
-        auto &chunkState = _registry.get<ChunkStateComponent>(entity);
-        if (chunkState.lodLevel != currentLOD) {
-            chunkState.lodLevel = currentLOD;
-        }
-    }
 }
 
 void ChunkManagerSystem::updateActiveChunks() {

@@ -130,8 +130,10 @@ void Application::processEvents() {
 
             if (currentEvent.is<sf::Event::FocusLost>()) {
                 _isWindowFocused = false;
+                _game->getInputHandler().setWindowFocus(false);
             } else if (currentEvent.is<sf::Event::FocusGained>()) {
                 _isWindowFocused = true;
+                _game->getInputHandler().setWindowFocus(true);
             }
 
             _ui->processEvent(currentEvent);

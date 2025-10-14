@@ -50,7 +50,7 @@ Game::Game(Renderer &renderer, ThreadPool &threadPool, EventBus &eventBus,
     _simulationSystemManager->addSystem<WorldSetupSystem>(
         _registry, _loadingState, _worldGenerationSystem, _renderer, _camera);
     _simulationSystemManager->addSystem<CityPlacementSystem>(_loadingState, _worldGenerationSystem,
-                                                             _entityFactory, _renderer,
+                                                             _entityFactory, _renderer, _eventBus,
                                                              _performanceMonitor, _threadPool);
     _simulationSystemManager->addSystem<TrainMovementSystem>(_registry);
     _simulationSystemManager->addSystem<PassengerMovementSystem>(_registry);
@@ -72,7 +72,7 @@ void Game::updateSimulation(sf::Time dt) {
 
 void Game::startLoading() {
     _loadingState.progress = 0.0f;
-    _loadingState.message = "Loading...";
+    _loadingState.message = "Initializing world systems...";
 
     auto worldSetupSystem = _simulationSystemManager->getSystem<WorldSetupSystem>();
     auto cityPlacementSystem = _simulationSystemManager->getSystem<CityPlacementSystem>();

@@ -28,8 +28,7 @@ void TerrainRenderSystem::updateMeshes(entt::registry &registry, const WorldGenP
 
 void TerrainRenderSystem::render(const entt::registry &registry, sf::RenderTarget &target,
                                  const sf::View &view, const WorldGenParams &worldParams) {
-    auto chunkView = registry.view<const ChunkPositionComponent, const ChunkStateComponent,
-                                   const ChunkMeshComponent>();
+    auto chunkView = registry.view<const ChunkPositionComponent, const ChunkMeshComponent>();
 
     sf::FloatRect viewBounds({view.getCenter() - view.getSize() / 2.f, view.getSize()});
     // Update to use worldParams
@@ -40,7 +39,6 @@ void TerrainRenderSystem::render(const entt::registry &registry, sf::RenderTarge
 
     for (auto entity : chunkView) {
         const auto &chunkPos = chunkView.get<const ChunkPositionComponent>(entity);
-        const auto &chunkState = chunkView.get<const ChunkStateComponent>(entity);
         const auto &chunkMesh = chunkView.get<const ChunkMeshComponent>(entity);
 
         float chunkWidthPixels = worldParams.chunkDimensionsInCells.x * worldParams.cellSize;
@@ -53,8 +51,7 @@ void TerrainRenderSystem::render(const entt::registry &registry, sf::RenderTarge
             continue;
         }
 
-        LODLevel levelToRender = _isLodEnabled ? chunkState.lodLevel : LODLevel::LOD0;
-        target.draw(chunkMesh.lodVertexArrays[static_cast<int>(levelToRender)]);
+        target.draw(chunkMesh.vertexArray);
 
         if (_visualizeChunkBorders) {
             float left = chunkBounds.position.x;
@@ -117,103 +114,91 @@ void TerrainRenderSystem::buildAllChunkMeshes(const ChunkPositionComponent &chun
                                               const ChunkTerrainComponent &chunkTerrain,
                                               ChunkMeshComponent &chunkMesh,
                                               const WorldGenParams &worldParams) {
-    int cellsPerDimension = worldParams.chunkDimensionsInCells.x;
+    const int cellsX = worldParams.chunkDimensionsInCells.x;
+    const int cellsY = worldParams.chunkDimensionsInCells.y;
 
-    for (int lod = 0; lod < static_cast<int>(LODLevel::Count); ++lod) {
-        int step = 1 << lod;
-        sf::VertexArray &vertexArray = chunkMesh.lodVertexArrays[lod];
-        vertexArray.clear();
+    sf::VertexArray &vertexArray = chunkMesh.vertexArray;
+    vertexArray.clear();
 
-        int numCellsX = cellsPerDimension / step;
-        int numCellsY = cellsPerDimension / step;
+    m_visited.assign(static_cast<size_t>(cellsX * cellsY), false);
 
-        m_visited.assign(numCellsX * numCellsY, false);
+    for (int y = 0; y < cellsY; ++y) {
+        for (int x = 0; x < cellsX; ++x) {
+            if (m_visited[static_cast<size_t>(y * cellsX + x)]) {
+                continue;
+            }
 
-        for (int y = 0; y < numCellsY; ++y) {
-            for (int x = 0; x < numCellsX; ++x) {
-                if (m_visited[y * numCellsX + x]) {
-                    continue;
+            const int originalCellIndex = y * cellsX + x;
+            const TerrainType currentType = chunkTerrain.cells[originalCellIndex];
+
+            int rectWidth = 1;
+            while (x + rectWidth < cellsX) {
+                const int nextIndex = y * cellsX + (x + rectWidth);
+                if (m_visited[static_cast<size_t>(nextIndex)]
+                    || chunkTerrain.cells[nextIndex] != currentType) {
+                    break;
                 }
+                ++rectWidth;
+            }
 
-                int originalCellIndex = (y * step) * cellsPerDimension + (x * step);
-                TerrainType currentType = chunkTerrain.cells[originalCellIndex];
-
-                int rectWidth = 1;
-                while (x + rectWidth < numCellsX) {
-                    int nextCellIndex = (y * step) * cellsPerDimension + ((x + rectWidth) * step);
-                    if (m_visited[y * numCellsX + (x + rectWidth)]
-                        || chunkTerrain.cells[nextCellIndex] != currentType) {
+            int rectHeight = 1;
+            while (y + rectHeight < cellsY) {
+                bool canExtend = true;
+                for (int i = 0; i < rectWidth; ++i) {
+                    const int nextIndex = (y + rectHeight) * cellsX + (x + i);
+                    if (m_visited[static_cast<size_t>(nextIndex)]
+                        || chunkTerrain.cells[nextIndex] != currentType) {
+                        canExtend = false;
                         break;
                     }
-                    rectWidth++;
                 }
-
-                int rectHeight = 1;
-                while (y + rectHeight < numCellsY) {
-                    bool canExtend = true;
-                    for (int i = 0; i < rectWidth; ++i) {
-                        int nextCellIndex =
-                            ((y + rectHeight) * step) * cellsPerDimension + ((x + i) * step);
-                        if (m_visited[(y + rectHeight) * numCellsX + (x + i)]
-                            || chunkTerrain.cells[nextCellIndex] != currentType) {
-                            canExtend = false;
-                            break;
-                        }
-                    }
-                    if (!canExtend) {
-                        break;
-                    }
-                    rectHeight++;
-                }
-
-                for (int ry = 0; ry < rectHeight; ++ry) {
-                    for (int rx = 0; rx < rectWidth; ++rx) {
-                        m_visited[(y + ry) * numCellsX + (x + rx)] = true;
-                    }
-                }
-
-                float screenX = (chunkPos.chunkGridPosition.x * cellsPerDimension + (x * step))
-                                * worldParams.cellSize;
-                float screenY = (chunkPos.chunkGridPosition.y * cellsPerDimension + (y * step))
-                                * worldParams.cellSize;
-                float quadWidth = rectWidth * worldParams.cellSize * step;
-                float quadHeight = rectHeight * worldParams.cellSize * step;
-
-                sf::Vertex quad[6];
-                quad[0].position = {screenX, screenY};
-                quad[1].position = {screenX + quadWidth, screenY};
-                quad[2].position = {screenX, screenY + quadHeight};
-                quad[3].position = {screenX + quadWidth, screenY};
-                quad[4].position = {screenX + quadWidth, screenY + quadHeight};
-                quad[5].position = {screenX, screenY + quadHeight};
-
-                sf::Color color;
-                switch (currentType) {
-                case TerrainType::WATER:
-                    color = _colorManager.getWaterColor();
-                    break;
-                case TerrainType::LAND:
-                    color = _colorManager.getLandColor();
-                    break;
-                case TerrainType::RIVER:
-                    color = _colorManager.getRiverColor();
-                    break;
-                default:
-                    color = sf::Color::Magenta;
+                if (!canExtend) {
                     break;
                 }
+                ++rectHeight;
+            }
 
-                for (int i = 0; i < 6; ++i) {
-                    quad[i].color = color;
-                    vertexArray.append(quad[i]);
+            for (int ry = 0; ry < rectHeight; ++ry) {
+                for (int rx = 0; rx < rectWidth; ++rx) {
+                    m_visited[static_cast<size_t>((y + ry) * cellsX + (x + rx))] = true;
                 }
+            }
+
+            const float screenX = (chunkPos.chunkGridPosition.x * cellsX + x) * worldParams.cellSize;
+            const float screenY = (chunkPos.chunkGridPosition.y * cellsY + y) * worldParams.cellSize;
+            const float quadWidth = static_cast<float>(rectWidth) * worldParams.cellSize;
+            const float quadHeight = static_cast<float>(rectHeight) * worldParams.cellSize;
+
+            sf::Vertex quad[6];
+            quad[0].position = {screenX, screenY};
+            quad[1].position = {screenX + quadWidth, screenY};
+            quad[2].position = {screenX, screenY + quadHeight};
+            quad[3].position = {screenX + quadWidth, screenY};
+            quad[4].position = {screenX + quadWidth, screenY + quadHeight};
+            quad[5].position = {screenX, screenY + quadHeight};
+
+            sf::Color color;
+            switch (currentType) {
+            case TerrainType::WATER:
+                color = _colorManager.getWaterColor();
+                break;
+            case TerrainType::LAND:
+                color = _colorManager.getLandColor();
+                break;
+            case TerrainType::RIVER:
+                color = _colorManager.getRiverColor();
+                break;
+            default:
+                color = sf::Color::Magenta;
+                break;
+            }
+
+            for (auto &vertex : quad) {
+                vertex.color = color;
+                vertexArray.append(vertex);
             }
         }
     }
-}
-
-void TerrainRenderSystem::setLodEnabled(bool enabled) noexcept {
-    _isLodEnabled = enabled;
 }
 
 void TerrainRenderSystem::setSuitabilityMapData(const SuitabilityMaps* maps, const std::vector<TerrainType>* terrainCache, const WorldGenParams& worldParams) {

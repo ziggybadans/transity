@@ -4,6 +4,8 @@
 #include "entt/entt.hpp"
 #include "components/WorldComponents.h"
 #include "components/GameLogicComponents.h"
+#include "event/EventBus.h"
+#include "event/DeletionEvents.h"
 #include "FastNoiseLite.h"
 #include "Constants.h"
 #include <SFML/System/Vector2.hpp>
@@ -11,6 +13,8 @@
 #include <vector>
 #include <random>
 #include <mutex>
+#include <future>
+#include <atomic>
 
 struct LoadingState;
 class WorldGenerationSystem;
@@ -53,7 +57,7 @@ struct CityPlacementDebugInfo {
 
 class CityPlacementSystem : public ISystem, public IUpdatable {
 public:
-    explicit CityPlacementSystem(LoadingState& loadingState, WorldGenerationSystem& worldGenerationSystem, EntityFactory& entityFactory, Renderer& renderer, PerformanceMonitor& performanceMonitor, ThreadPool& threadPool);
+    explicit CityPlacementSystem(LoadingState& loadingState, WorldGenerationSystem& worldGenerationSystem, EntityFactory& entityFactory, Renderer& renderer, EventBus& eventBus, PerformanceMonitor& performanceMonitor, ThreadPool& threadPool);
     ~CityPlacementSystem() override;
 
     void init();
@@ -63,9 +67,11 @@ public:
     CityPlacementDebugInfo getDebugInfo() const;
 
 private:
-    void initialPlacement();
+    void initialPlacement(bool isRegeneration);
     bool placeNewCity();
     void asyncUpdateMaps(PlacedCityInfo newCity);
+    void onRegenerateEntities(const RegenerateEntitiesEvent &event);
+    void resetPlacementState();
     
     void precomputeTerrainCache(int mapWidth, int mapHeight);
 
@@ -97,6 +103,7 @@ private:
     WorldGenerationSystem& _worldGenerationSystem;
     EntityFactory& _entityFactory;
     Renderer& _renderer;
+    EventBus& _eventBus;
     PerformanceMonitor& _performanceMonitor;
     ThreadPool& _threadPool;
 
@@ -124,4 +131,7 @@ private:
 
     std::mt19937 _rng;
     mutable std::mutex _mapUpdateMutex;
+    entt::scoped_connection _regenerateEntitiesConnection;
+    std::future<void> _regenerationTask;
+    std::atomic<bool> _isRegenerating{false};
 };

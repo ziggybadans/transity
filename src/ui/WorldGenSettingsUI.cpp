@@ -13,7 +13,6 @@ WorldGenSettingsUI::WorldGenSettingsUI(EventBus &eventBus,
     : _eventBus(eventBus), _worldGenerationSystem(worldGenerationSystem),
       _terrainRenderSystem(terrainRenderSystem) {
     LOG_DEBUG("WorldGenSettingsUI", "WorldGenSettingsUI instance created.");
-    _terrainRenderSystem.setLodEnabled(_isLodEnabled);
 }
 
 WorldGenSettingsUI::~WorldGenSettingsUI() {
@@ -59,7 +58,19 @@ void WorldGenSettingsUI::drawNoiseLayerSettings(WorldGenParams &params, bool &pa
         for (auto &layer : params.noiseLayers) {
             layer.seed = std::rand();
         }
+        if (!params.noiseLayers.empty()) {
+            LOG_INFO("WorldGenSettingsUI", "Generated new noise seeds. Primary seed set to %d.",
+                     params.noiseLayers.front().seed);
+        } else {
+            LOG_INFO("WorldGenSettingsUI", "Generated new noise seeds for empty noise layer set.");
+        }
         paramsChanged = true;
+    }
+    ImGui::SameLine();
+    if (params.noiseLayers.empty()) {
+        ImGui::TextUnformatted("Seed: N/A");
+    } else {
+        ImGui::Text("Seed: %d", params.noiseLayers.front().seed);
     }
     ImGui::Separator();
     for (int i = 0; i < params.noiseLayers.size(); ++i) {
@@ -135,6 +146,10 @@ void WorldGenSettingsUI::drawVisualizationSettings() {
     }
     ImGui::SameLine();
     ImGui::BeginDisabled(!_visualizeSuitabilityMap);
+    const ImGuiStyle &style = ImGui::GetStyle();
+    const float desiredWidth =
+        ImGui::CalcTextSize("City Proximity").x + style.FramePadding.x * 6.0f;
+    ImGui::SetNextItemWidth(desiredWidth);
     const char *items[] = {"Water", "Expandability", "City Proximity", "Noise",
                            "Final", "Town",          "Suburb"};
     if (ImGui::Combo("##SuitabilityMap", &_selectedSuitabilityMap, items, IM_ARRAYSIZE(items))) {
@@ -142,10 +157,6 @@ void WorldGenSettingsUI::drawVisualizationSettings() {
             static_cast<TerrainRenderSystem::SuitabilityMapType>(_selectedSuitabilityMap + 1));
     }
     ImGui::EndDisabled();
-
-    if (ImGui::Checkbox("Enable LOD", &_isLodEnabled)) {
-        _terrainRenderSystem.setLodEnabled(_isLodEnabled);
-    }
 }
 
 void WorldGenSettingsUI::drawActions(const WorldGenParams &params) {
@@ -164,6 +175,11 @@ void WorldGenSettingsUI::drawActions(const WorldGenParams &params) {
         ImGui::OpenPopup("Delete All Confirmation");
     }
     ImGui::PopStyleColor(3);
+    ImGui::SameLine();
+    if (ImGui::Button("Regenerate Entities")) {
+        LOG_INFO("UI", "Regenerate Entities button clicked.");
+        _eventBus.enqueue<RegenerateEntitiesEvent>({});
+    }
 
     if (ImGui::BeginPopupModal("Delete All Confirmation", NULL,
                                ImGuiWindowFlags_AlwaysAutoResize)) {

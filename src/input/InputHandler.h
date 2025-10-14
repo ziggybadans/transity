@@ -19,6 +19,7 @@ public:
                                   sf::RenderWindow &window);
     void handleMouseMove(const sf::Event::MouseMoved &moveData, sf::RenderWindow &window);
     void handleKeyPress(const sf::Event::KeyPressed &keyData);
+    void setWindowFocus(bool isFocused) noexcept;
     void update(sf::Time dt);
 
 private:
@@ -27,4 +28,5 @@ private:
 
     float _zoomFactor;
     float _unzoomFactor;
+    bool _isWindowFocused = true;
 };

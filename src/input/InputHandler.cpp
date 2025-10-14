@@ -1,6 +1,7 @@
 #include "InputHandler.h"
 #include "Constants.h"
 #include "Logger.h"
+#include "imgui.h"
 
 InputHandler::InputHandler(EventBus &eventBus, Camera &camera)
     : _eventBus(eventBus), _camera(camera), _zoomFactor(Constants::ZOOM_FACTOR),
@@ -12,15 +13,41 @@ void InputHandler::handleGameEvent(const sf::Event &event, sf::RenderWindow &win
     if (event.is<sf::Event::Closed>()) {
         LOG_INFO("Input", "Window close event received.");
         _eventBus.enqueue<WindowCloseEvent>();
-    } else if (auto *scrollData = event.getIf<sf::Event::MouseWheelScrolled>()) {
+        return;
+    }
+
+    if (!_isWindowFocused) {
+        return;
+    }
+
+    const ImGuiIO &io = ImGui::GetIO();
+    const bool uiCapturesMouse = io.WantCaptureMouse;
+    const bool uiCapturesKeyboard = io.WantCaptureKeyboard;
+
+    if (auto *scrollData = event.getIf<sf::Event::MouseWheelScrolled>()) {
+        if (uiCapturesMouse) {
+            return;
+        }
         handleMouseScroll(*scrollData, window);
     } else if (auto *pressData = event.getIf<sf::Event::MouseButtonPressed>()) {
+        if (uiCapturesMouse) {
+            return;
+        }
         handleMouseButtonPress(*pressData, window);
     } else if (auto *releaseData = event.getIf<sf::Event::MouseButtonReleased>()) {
+        if (uiCapturesMouse) {
+            return;
+        }
         handleMouseButtonRelease(*releaseData, window);
     } else if (auto *moveData = event.getIf<sf::Event::MouseMoved>()) {
+        if (uiCapturesMouse) {
+            return;
+        }
         handleMouseMove(*moveData, window);
     } else if (auto *keyData = event.getIf<sf::Event::KeyPressed>()) {
+        if (uiCapturesKeyboard) {
+            return;
+        }
         handleKeyPress(*keyData);
     }
 }
@@ -77,7 +104,20 @@ void InputHandler::handleKeyPress(const sf::Event::KeyPressed &keyData) {
     _eventBus.enqueue<KeyPressedEvent>({keyData.code});
 }
 
+void InputHandler::setWindowFocus(bool isFocused) noexcept {
+    _isWindowFocused = isFocused;
+}
+
 void InputHandler::update(sf::Time dt) {
+    if (!_isWindowFocused) {
+        return;
+    }
+
+    const ImGuiIO &io = ImGui::GetIO();
+    if (io.WantCaptureKeyboard) {
+        return;
+    }
+
     sf::Vector2f panDirection(0.f, 0.f);
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W)) {
         panDirection.y -= 1.0f;

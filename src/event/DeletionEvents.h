@@ -7,3 +7,5 @@ struct DeleteEntityEvent {
 };
 
 struct DeleteAllEntitiesEvent {};
+
+struct RegenerateEntitiesEvent {};

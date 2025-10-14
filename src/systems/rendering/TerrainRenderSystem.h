@@ -38,7 +38,6 @@ public:
     void setSuitabilityMapData(const SuitabilityMaps *maps, const std::vector<TerrainType> *terrainCache, const WorldGenParams &worldParams);
     void setSuitabilityMapType(SuitabilityMapType type) { _suitabilityMapType = type; }
     void setSuitabilityMapsDirty() { _suitabilityMapsDirty = true; }
-    void setLodEnabled(bool enabled) noexcept;
     void regenerateSuitabilityMaps(const WorldGenParams &worldParams);
 
 private:
@@ -47,7 +46,6 @@ private:
     bool _visualizeChunkBorders = false;
     bool _visualizeCellBorders = false;
     bool _visualizeSuitabilityMap = false;
-    bool _isLodEnabled = true;
     const SuitabilityMaps *_suitabilityMaps = nullptr;
     const std::vector<TerrainType> *_terrainCache = nullptr;
     SuitabilityMapType _suitabilityMapType = SuitabilityMapType::None;
