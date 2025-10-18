@@ -61,8 +61,7 @@ void UI::drawLoadingScreen() {
     ImGui::SetNextWindowSize(ImVec2(displaySize.x * 0.4f, 0));
 
     ImGui::Begin("Loading", nullptr,
-                 ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove
-                     | ImGuiWindowFlags_AlwaysAutoResize);
+                 ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove);
 
     ImGui::Text("%s", message);
 
@@ -93,8 +92,7 @@ void UI::drawRegenerationModal() {
                             ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
     ImGui::SetNextWindowSize(ImVec2(360.0f, 0.0f), ImGuiCond_Appearing);
 
-    if (ImGui::BeginPopupModal("Regenerating Entities", nullptr,
-                               ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings
+    if (ImGui::BeginPopupModal("Regenerating Entities", nullptr,ImGuiWindowFlags_NoSavedSettings
                                    | ImGuiWindowFlags_NoMove)) {
         const char *message = _loadingState.message.load();
         float progress = _loadingState.progress.load();

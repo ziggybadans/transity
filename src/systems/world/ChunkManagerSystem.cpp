@@ -4,6 +4,9 @@
 #include "components/WorldComponents.h"
 #include "render/Camera.h"
 #include "core/ThreadPool.h"
+#include <algorithm>
+#include <chrono>
+#include <cmath>
 
 ChunkManagerSystem::ChunkManagerSystem(entt::registry& registry, EventBus& eventBus, WorldGenerationSystem& worldGenSystem, Camera& camera, ThreadPool& threadPool)
     : _registry(registry), _eventBus(eventBus), _worldGenSystem(worldGenSystem), _camera(camera), _threadPool(threadPool), _activeChunks() {
@@ -16,7 +19,10 @@ ChunkManagerSystem::ChunkManagerSystem(entt::registry& registry, EventBus& event
             this);
 
     auto entity = _registry.create();
-    _registry.emplace<WorldStateComponent>(entity);
+    auto &worldState = _registry.emplace<WorldStateComponent>(entity);
+    worldState.activeParams = _worldGenSystem.getParams();
+    worldState.generatingParams = worldState.activeParams;
+    worldState.pendingParams = worldState.activeParams;
 }
 
 ChunkManagerSystem::~ChunkManagerSystem() {
@@ -40,7 +46,7 @@ void ChunkManagerSystem::onRegenerateWorld(const RegenerateWorldRequestEvent &ev
         return;
     }
 
-    const WorldGenParams &params = *event.params;
+    WorldGenParams params = *event.params;
 
     LOG_INFO("ChunkManagerSystem",
              "Starting world regeneration for %d x %d chunks.",
@@ -48,18 +54,44 @@ void ChunkManagerSystem::onRegenerateWorld(const RegenerateWorldRequestEvent &ev
     auto &worldState =
         _registry.get<WorldStateComponent>(_registry.view<WorldStateComponent>().front());
 
-    worldState.generatingParams = *event.params;
+    const bool hasActiveChunks = !_activeChunks.empty();
+    const bool needsFullReload = !hasActiveChunks
+                                 || requiresFullReload(worldState.activeParams, params);
 
-    _generationFuture = std::async(std::launch::async, [&, params = worldState.generatingParams]() {
-        _worldGenSystem.regenerate(params);
-    });
+    worldState.generatingParams = params;
+    worldState.pendingParams = params;
+
+    if (needsFullReload) {
+        _performingFullReload = true;
+        _smoothRegenPending = false;
+        _generationFuture = std::async(std::launch::async, [&, params]() { _worldGenSystem.regenerate(params); });
+        return;
+    }
+
+    LOG_DEBUG("ChunkManagerSystem", "Applying smooth regeneration (params update without structural changes).");
+
+    if (!_pendingChunkUpdates.empty()) {
+        _smoothRegenPending = true;
+        LOG_DEBUG("ChunkManagerSystem", "Smooth regeneration already running. Queuing new parameters.");
+        return;
+    }
+
+    worldState.activeParams = params;
+    _worldGenSystem.regenerate(params);
+    startSmoothRegeneration(params);
+    _smoothRegenPending = false;
 }
 
 void ChunkManagerSystem::onSwapWorldState(const SwapWorldStateEvent &event) {
+    if (!_performingFullReload) {
+        return;
+    }
+
     auto &worldState =
         _registry.get<WorldStateComponent>(_registry.view<WorldStateComponent>().front());
 
     std::swap(worldState.activeParams, worldState.generatingParams);
+    worldState.pendingParams = worldState.activeParams;
 
     std::vector<sf::Vector2i> chunksToUnload;
     for (const auto &pair : _activeChunks) {
@@ -69,11 +101,27 @@ void ChunkManagerSystem::onSwapWorldState(const SwapWorldStateEvent &event) {
     for (const auto &chunkPos : chunksToUnload) {
         unloadChunk(chunkPos);
     }
+
+    _pendingChunkUpdates.clear();
+    ++_currentGenerationId;
+    _performingFullReload = false;
+    _smoothRegenPending = false;
 }
 
 void ChunkManagerSystem::update(sf::Time dt) {
     handleWorldGeneration();
     handleChunkLoading();
+    processChunkRegeneration();
+    if (_smoothRegenPending && _pendingChunkUpdates.empty() && !_performingFullReload) {
+        auto &worldState =
+            _registry.get<WorldStateComponent>(_registry.view<WorldStateComponent>().front());
+        LOG_DEBUG("ChunkManagerSystem", "Processing queued smooth regeneration request.");
+        WorldGenParams params = worldState.pendingParams;
+        worldState.activeParams = params;
+        _worldGenSystem.regenerate(params);
+        startSmoothRegeneration(params);
+        _smoothRegenPending = false;
+    }
     updateActiveChunks();
 }
 
@@ -122,6 +170,50 @@ void ChunkManagerSystem::processCompletedChunks() {
         LOG_TRACE("ChunkManagerSystem", "Finalized loaded chunk at (%d, %d)", chunkPos.x,
                  chunkPos.y);
     }
+}
+
+void ChunkManagerSystem::processChunkRegeneration() {
+    if (_pendingChunkUpdates.empty()) {
+        return;
+    }
+
+    const std::size_t currentGenerationId = _currentGenerationId;
+
+    _pendingChunkUpdates.erase(
+        std::remove_if(_pendingChunkUpdates.begin(), _pendingChunkUpdates.end(),
+                       [this, currentGenerationId](PendingChunkUpdate &pending) {
+                           if (pending.future.wait_for(std::chrono::seconds(0))
+                               != std::future_status::ready) {
+                               return false;
+                           }
+
+                           GeneratedChunkData chunkData = pending.future.get();
+                           if (pending.generationId != currentGenerationId) {
+                               return true;
+                           }
+
+                           if (!_registry.valid(pending.entity)
+                               || !_registry.all_of<ChunkTerrainComponent, ChunkStateComponent>(
+                                   pending.entity)) {
+                               return true;
+                           }
+
+                           auto &chunkTerrain =
+                               _registry.get<ChunkTerrainComponent>(pending.entity);
+                           chunkTerrain.cells = std::move(chunkData.cells);
+
+                           if (_registry.all_of<ChunkNoiseComponent>(pending.entity)) {
+                               auto &noise =
+                                   _registry.get<ChunkNoiseComponent>(pending.entity);
+                               noise.noiseValues = std::move(chunkData.noiseValues);
+                               noise.rawNoiseValues = std::move(chunkData.rawNoiseValues);
+                           }
+
+                           auto &chunkState = _registry.get<ChunkStateComponent>(pending.entity);
+                           chunkState.isMeshDirty = true;
+                           return true;
+                       }),
+        _pendingChunkUpdates.end());
 }
 
 void ChunkManagerSystem::handleWorldGeneration() {
@@ -185,5 +277,67 @@ void ChunkManagerSystem::updateActiveChunks() {
             && _chunksBeingLoaded.find(chunkPos) == _chunksBeingLoaded.end()) {
             loadChunk(chunkPos);
         }
+    }
+}
+
+bool ChunkManagerSystem::requiresFullReload(const WorldGenParams &currentParams,
+                                            const WorldGenParams &newParams) const {
+    return currentParams.worldDimensionsInChunks != newParams.worldDimensionsInChunks
+           || currentParams.chunkDimensionsInCells != newParams.chunkDimensionsInCells
+           || currentParams.cellSize != newParams.cellSize;
+}
+
+void ChunkManagerSystem::startSmoothRegeneration(const WorldGenParams &params) {
+    if (_activeChunks.empty()) {
+        return;
+    }
+
+    ++_currentGenerationId;
+    const std::size_t generationId = _currentGenerationId;
+
+    struct ChunkRegenTarget {
+        sf::Vector2i position;
+        entt::entity entity;
+    };
+
+    std::vector<ChunkRegenTarget> targets;
+    targets.reserve(_activeChunks.size());
+
+    for (const auto &pair : _activeChunks) {
+        if (_registry.valid(pair.second)) {
+            targets.push_back({pair.first, pair.second});
+        }
+    }
+
+    if (targets.empty()) {
+        return;
+    }
+
+    const float chunkWidth = params.chunkDimensionsInCells.x * params.cellSize;
+    const float chunkHeight = params.chunkDimensionsInCells.y * params.cellSize;
+    const sf::Vector2f cameraCenter = _camera.getCenter();
+
+    auto distanceSquared = [&](const sf::Vector2i &chunkPos) {
+        const float chunkCenterX =
+            (static_cast<float>(chunkPos.x) + 0.5f) * chunkWidth;
+        const float chunkCenterY =
+            (static_cast<float>(chunkPos.y) + 0.5f) * chunkHeight;
+        const float dx = chunkCenterX - cameraCenter.x;
+        const float dy = chunkCenterY - cameraCenter.y;
+        return dx * dx + dy * dy;
+    };
+
+    std::sort(targets.begin(), targets.end(),
+              [&](const ChunkRegenTarget &lhs, const ChunkRegenTarget &rhs) {
+                  return distanceSquared(lhs.position) < distanceSquared(rhs.position);
+              });
+
+    for (auto &target : targets) {
+        auto future = _threadPool.enqueue([this, chunkPos = target.position]() {
+            return _worldGenSystem.generateChunkData(chunkPos);
+        });
+
+        _pendingChunkUpdates.push_back(
+            PendingChunkUpdate{target.position, target.entity, std::move(future), generationId});
     }
 }

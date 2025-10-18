@@ -39,11 +39,22 @@ private:
     void loadChunk(const sf::Vector2i &chunkPos);
     void unloadChunk(const sf::Vector2i &chunkPos);
     void processCompletedChunks();
+    void processChunkRegeneration();
 
     // Update Helpers
     void handleWorldGeneration();
     void handleChunkLoading();
     void updateActiveChunks();
+    bool requiresFullReload(const WorldGenParams &currentParams,
+                            const WorldGenParams &newParams) const;
+    void startSmoothRegeneration(const WorldGenParams &params);
+
+    struct PendingChunkUpdate {
+        sf::Vector2i chunkGridPosition;
+        entt::entity entity;
+        std::future<GeneratedChunkData> future;
+        std::size_t generationId;
+    };
 
     // Member Variables
     entt::registry& _registry;
@@ -60,6 +71,10 @@ private:
     std::queue<GeneratedChunkData> _completedChunks;
 
     std::future<void> _generationFuture;
+    std::vector<PendingChunkUpdate> _pendingChunkUpdates;
+    std::size_t _currentGenerationId = 0;
+    bool _performingFullReload = false;
+    bool _smoothRegenPending = false;
 
     entt::scoped_connection _regenerateWorldListener;
     entt::scoped_connection _swapWorldStateListener;
