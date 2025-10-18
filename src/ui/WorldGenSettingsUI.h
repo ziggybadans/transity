@@ -19,10 +19,16 @@ private:
     void drawWorldGridSettings(WorldGenParams &params, bool &gridChanged);
     void drawVisualizationSettings();
     void drawActions(const WorldGenParams &params);
+    bool drawResetButton(const char *label);
+    bool sliderFloatWithReset(const char *label, float *value, float defaultValue, float min,
+                              float max, const char *format = "%.3f");
+    bool sliderIntWithReset(const char *label, int *value, int defaultValue, int min, int max,
+                            const char *format = "%d");
 
     EventBus &_eventBus;
     WorldGenerationSystem &_worldGenerationSystem;
     TerrainRenderSystem &_terrainRenderSystem;
+    WorldGenParams _defaultParams;
 
     bool _autoRegenerate = false;
     bool _visualizeChunkBorders = false;

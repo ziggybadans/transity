@@ -24,8 +24,7 @@ struct NoiseLayer {
 struct WorldGenParams {
     std::vector<NoiseLayer> noiseLayers;
     float landThreshold = 0.35f;
-    bool distortCoastline = false;
-    float coastlineDistortionStrength = 0.1f;
+    float coastlineDistortionStrength = 0.0f;
     std::vector<Point> continentShape;
 
     sf::Vector2i worldDimensionsInChunks = {100, 100};

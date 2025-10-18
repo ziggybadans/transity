@@ -151,7 +151,7 @@ TerrainType WorldGenerationSystem::getTerrainTypeAt(float worldX, float worldY) 
     float finalValue = combinedNoise * falloff;
 
     float distortedLandThreshold = _params.landThreshold;
-    if (_params.distortCoastline) {
+    if (_params.coastlineDistortionStrength > 0.0f) {
         float distortion =
             _coastlineDistortion.GetNoise(noiseX, noiseY) * _params.coastlineDistortionStrength;
         distortedLandThreshold += distortion;

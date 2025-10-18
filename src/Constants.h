@@ -18,7 +18,7 @@ namespace Constants {
     constexpr unsigned int WINDOW_HEIGHT = 2160;
     constexpr unsigned int FRAMERATE_LIMIT = 144;
     constexpr float UI_WINDOW_PADDING = 10.0f;
-    constexpr float UI_WORLD_GEN_SETTINGS_WIDTH = 300.0f;
+    constexpr float UI_WORLD_GEN_SETTINGS_WIDTH = 400.0f;
     constexpr float UI_LINE_CREATION_WINDOW_WIDTH = 210.0f;
     constexpr float UI_INTERACTION_MODES_WIDTH = 200.0f;
 

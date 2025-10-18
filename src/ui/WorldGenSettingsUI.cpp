@@ -7,16 +7,67 @@
 #include "systems/world/WorldGenerationSystem.h"
 #include <cstdlib>
 
+#include <algorithm>
+#include <string>
+
 WorldGenSettingsUI::WorldGenSettingsUI(EventBus &eventBus,
                                        WorldGenerationSystem &worldGenerationSystem,
                                        TerrainRenderSystem &terrainRenderSystem)
     : _eventBus(eventBus), _worldGenerationSystem(worldGenerationSystem),
-      _terrainRenderSystem(terrainRenderSystem) {
+      _terrainRenderSystem(terrainRenderSystem),
+      _defaultParams(worldGenerationSystem.getParams()) {
     LOG_DEBUG("WorldGenSettingsUI", "WorldGenSettingsUI instance created.");
 }
 
 WorldGenSettingsUI::~WorldGenSettingsUI() {
     LOG_DEBUG("WorldGenSettingsUI", "WorldGenSettingsUI instance destroyed.");
+}
+
+bool WorldGenSettingsUI::drawResetButton(const char *label) {
+    ImGui::PushID(label);
+    bool clicked = ImGui::Button("R");
+    ImGui::PopID();
+    return clicked;
+}
+
+bool WorldGenSettingsUI::sliderFloatWithReset(const char *label, float *value, float defaultValue,
+                                              float min, float max, const char *format) {
+    const char *effectiveFormat = format ? format : "%.3f";
+    bool resetClicked = drawResetButton(label);
+    ImGui::SameLine();
+    ImGuiStyle &style = ImGui::GetStyle();
+    float availableWidth = ImGui::GetContentRegionAvail().x;
+    float labelWidth = ImGui::CalcTextSize(label).x;
+    float sliderWidth = std::max(0.0f, availableWidth - labelWidth - style.ItemInnerSpacing.x * 2.0f);
+    ImGui::SetNextItemWidth(sliderWidth);
+    bool changed = ImGui::SliderFloat(label, value, min, max, effectiveFormat);
+
+    if (resetClicked && (*value != defaultValue)) {
+        *value = defaultValue;
+        changed = true;
+    }
+
+    return changed;
+}
+
+bool WorldGenSettingsUI::sliderIntWithReset(const char *label, int *value, int defaultValue,
+                                            int min, int max, const char *format) {
+    const char *effectiveFormat = format ? format : "%d";
+    bool resetClicked = drawResetButton(label);
+    ImGui::SameLine();
+    ImGuiStyle &style = ImGui::GetStyle();
+    float availableWidth = ImGui::GetContentRegionAvail().x;
+    float labelWidth = ImGui::CalcTextSize(label).x;
+    float sliderWidth = std::max(0.0f, availableWidth - labelWidth - style.ItemInnerSpacing.x * 2.0f);
+    ImGui::SetNextItemWidth(sliderWidth);
+    bool changed = ImGui::SliderInt(label, value, min, max, effectiveFormat);
+
+    if (resetClicked && (*value != defaultValue)) {
+        *value = defaultValue;
+        changed = true;
+    }
+
+    return changed;
 }
 
 void WorldGenSettingsUI::draw() {
@@ -67,10 +118,16 @@ void WorldGenSettingsUI::drawNoiseLayerSettings(WorldGenParams &params, bool &pa
         paramsChanged = true;
     }
     ImGui::SameLine();
+    ImGui::SetNextItemWidth(140.0f);
     if (params.noiseLayers.empty()) {
-        ImGui::TextUnformatted("Seed: N/A");
+        int dummySeed = 0;
+        ImGui::BeginDisabled();
+        ImGui::InputInt("Seed", &dummySeed);
+        ImGui::EndDisabled();
     } else {
-        ImGui::Text("Seed: %d", params.noiseLayers.front().seed);
+        if (ImGui::InputInt("Seed", &params.noiseLayers.front().seed)) {
+            paramsChanged = true;
+        }
     }
     ImGui::Separator();
     for (int i = 0; i < params.noiseLayers.size(); ++i) {
@@ -79,30 +136,32 @@ void WorldGenSettingsUI::drawNoiseLayerSettings(WorldGenParams &params, bool &pa
         if (ImGui::CollapsingHeader(layerHeader.c_str())) {
             ImGui::PushID(i);
 
-            if (ImGui::SliderFloat("Frequency", &layer.frequency, 0.001f, 0.1f, "%.4f"))
+            const NoiseLayer *defaultLayer =
+                (i < _defaultParams.noiseLayers.size()) ? &_defaultParams.noiseLayers[i] : nullptr;
+
+            bool isErosionLayer = (layer.name == "Erosion");
+
+            if (sliderFloatWithReset("Frequency", &layer.frequency,
+                                     defaultLayer ? defaultLayer->frequency : layer.frequency,
+                                     0.001f, 0.1f, "%.4f"))
                 paramsChanged = true;
 
-            const char *noiseTypes[] = {"OpenSimplex2", "OpenSimplex2S", "Cellular",
-                                        "Perlin",       "ValueCubic",    "Value"};
-            if (ImGui::Combo("Noise Type", reinterpret_cast<int *>(&layer.noiseType), noiseTypes,
-                             IM_ARRAYSIZE(noiseTypes)))
+            if (!isErosionLayer) {
+                if (sliderIntWithReset("Octaves", &layer.octaves,
+                                       defaultLayer ? defaultLayer->octaves : layer.octaves, 1, 10))
+                    paramsChanged = true;
+                if (sliderFloatWithReset("Lacunarity", &layer.lacunarity,
+                                         defaultLayer ? defaultLayer->lacunarity : layer.lacunarity,
+                                         0.1f, 4.0f))
+                    paramsChanged = true;
+                if (sliderFloatWithReset("Gain", &layer.gain,
+                                         defaultLayer ? defaultLayer->gain : layer.gain, 0.1f, 1.0f))
+                    paramsChanged = true;
+            }
+            if (sliderFloatWithReset("Weight", &layer.weight,
+                                     defaultLayer ? defaultLayer->weight : layer.weight, 0.0f,
+                                     2.0f))
                 paramsChanged = true;
-
-            const char *fractalTypes[] = {"None",
-                                          "FBm",
-                                          "Ridged",
-                                          "PingPong",
-                                          "DomainWarpProgressive",
-                                          "DomainWarpIndependent"};
-            if (ImGui::Combo("Fractal Type", reinterpret_cast<int *>(&layer.fractalType),
-                             fractalTypes, IM_ARRAYSIZE(fractalTypes)))
-                paramsChanged = true;
-
-            if (ImGui::SliderInt("Octaves", &layer.octaves, 1, 10)) paramsChanged = true;
-            if (ImGui::SliderFloat("Lacunarity", &layer.lacunarity, 0.1f, 4.0f))
-                paramsChanged = true;
-            if (ImGui::SliderFloat("Gain", &layer.gain, 0.1f, 1.0f)) paramsChanged = true;
-            if (ImGui::SliderFloat("Weight", &layer.weight, 0.0f, 2.0f)) paramsChanged = true;
 
             ImGui::PopID();
         }
@@ -110,14 +169,13 @@ void WorldGenSettingsUI::drawNoiseLayerSettings(WorldGenParams &params, bool &pa
 }
 
 void WorldGenSettingsUI::drawWorldGridSettings(WorldGenParams &params, bool &gridChanged) {
-    if (ImGui::SliderFloat("Land Threshold", &params.landThreshold, -1.0f, 1.0f, "%.2f"))
+    if (sliderFloatWithReset("Land Threshold", &params.landThreshold,
+                             _defaultParams.landThreshold, -1.0f, 1.0f, "%.2f"))
         gridChanged = true;
-    if (ImGui::Checkbox("Distort Coastline", &params.distortCoastline)) gridChanged = true;
-    if (params.distortCoastline) {
-        if (ImGui::SliderFloat("Distortion Strength", &params.coastlineDistortionStrength, 0.0f,
-                               0.5f, "%.2f"))
-            gridChanged = true;
-    }
+    if (sliderFloatWithReset(
+            "Coastline Distortion", &params.coastlineDistortionStrength,
+            _defaultParams.coastlineDistortionStrength, 0.0f, 0.5f, "%.2f"))
+        gridChanged = true;
     ImGui::Separator();
     if (ImGui::InputInt("World Chunks X", &params.worldDimensionsInChunks.x)) gridChanged = true;
     if (ImGui::InputInt("World Chunks Y", &params.worldDimensionsInChunks.y)) gridChanged = true;
