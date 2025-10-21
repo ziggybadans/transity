@@ -11,6 +11,7 @@
 #include "systems/gameplay/LineCreationSystem.h"
 #include "ui/UI.h"
 #include "ui/UIManager.h"
+#include <optional>
 #include <thread>
 
 Application::Application()
@@ -79,12 +80,22 @@ void Application::run() {
         case AppState::PLAYING: {
             size_t numStationsInActiveLine = 0;
             size_t numPointsInActiveLine = 0;
+            std::optional<float> currentSegmentGrade;
+            bool currentSegmentExceedsGrade = false;
             if (_game->getRegistry().ctx().contains<ActiveLine>()) {
                 const auto &activeLine = _game->getRegistry().ctx().get<ActiveLine>();
                 numPointsInActiveLine = activeLine.points.size();
                 numStationsInActiveLine =
                     std::count_if(activeLine.points.begin(), activeLine.points.end(),
                                   [](const LinePoint &p) { return p.type == LinePointType::STOP; });
+            }
+
+            if (_game->getRegistry().ctx().contains<LinePreview>()) {
+                const auto &preview = _game->getRegistry().ctx().get<LinePreview>();
+                if (preview.currentSegmentGrade.has_value()) {
+                    currentSegmentGrade = preview.currentSegmentGrade;
+                    currentSegmentExceedsGrade = preview.currentSegmentExceedsGrade;
+                }
             }
 
             bool isLineSelected = false;
@@ -96,7 +107,8 @@ void Application::run() {
             }
 
             _ui->update(frameTime, appState);
-            _uiManager->draw(frameTime, numStationsInActiveLine, numPointsInActiveLine);
+            _uiManager->draw(frameTime, numStationsInActiveLine, numPointsInActiveLine,
+                             currentSegmentGrade, currentSegmentExceedsGrade);
             update(TimePerFrame);
 
             while (_timeAccumulator >= TimePerFrame) {

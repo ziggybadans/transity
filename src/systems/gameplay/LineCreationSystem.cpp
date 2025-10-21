@@ -52,7 +52,32 @@ void LineCreationSystem::onMouseButtonPressed(const MouseButtonPressedEvent &eve
         return;
     }
 
-    if (_gameState.currentInteractionMode == InteractionMode::CREATE_LINE && event.button == sf::Mouse::Button::Left) {
+    if (_gameState.currentInteractionMode != InteractionMode::CREATE_LINE) {
+        return;
+    }
+
+    if (event.button == sf::Mouse::Button::Right) {
+        if (!_registry.ctx().contains<ActiveLine>()) {
+            _registry.ctx().emplace<ActiveLine>();
+        }
+
+        auto &activeLine = _registry.ctx().get<ActiveLine>();
+        if (activeLine.points.empty()) {
+            return;
+        }
+
+        const LinePoint removedPoint = activeLine.points.back();
+        activeLine.points.pop_back();
+
+        if (removedPoint.type == LinePointType::STOP) {
+            LOG_DEBUG("LineCreationSystem", "Removed stop point from active line.");
+        } else {
+            LOG_DEBUG("LineCreationSystem", "Removed control point from active line.");
+        }
+        return;
+    }
+
+    if (event.button == sf::Mouse::Button::Left) {
         auto& preview = _registry.ctx().get<LinePreview>();
         
         if (!preview.validSegments.empty() && preview.curvePoints.size() >= 2) {
@@ -162,6 +187,9 @@ LineCreationSystem::validateSegment(const sf::Vector2f &from, const sf::Vector2f
         float elevationStart = _worldGenerationSystem.getElevationAt(start.x, start.y);
         float elevationEnd = _worldGenerationSystem.getElevationAt(end.x, end.y);
         float grade = std::abs(elevationEnd - elevationStart) / distance;
+        if (grade > result.maxGrade) {
+            result.maxGrade = grade;
+        }
         if (grade > MAX_ALLOWED_GRADE) {
             result.exceedsGrade = true;
             break;
@@ -296,6 +324,10 @@ void LineCreationSystem::update(sf::Time dt) {
                 const sf::Vector2f &p2 = preview.curvePoints[i + 1];
                 SegmentValidationResult validation = validateSegment(p1, p2);
                 preview.validSegments.push_back(validation.isValid);
+                if (i == preview.curvePoints.size() - 2) {
+                    preview.currentSegmentGrade = validation.maxGrade;
+                    preview.currentSegmentExceedsGrade = validation.exceedsGrade;
+                }
             }
         }
     }

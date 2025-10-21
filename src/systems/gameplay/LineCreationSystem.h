@@ -27,6 +27,8 @@ struct LinePreview {
     std::optional<sf::Vector2f> snapTangent;
     std::vector<sf::Vector2f> curvePoints;
     std::vector<bool> validSegments;
+    std::optional<float> currentSegmentGrade;
+    bool currentSegmentExceedsGrade = false;
 };
 
 class LineCreationSystem : public ISystem, public IUpdatable {
@@ -51,6 +53,7 @@ private:
         bool isValid = true;
         bool crossesWater = false;
         bool exceedsGrade = false;
+        float maxGrade = 0.0f;
     };
     SegmentValidationResult validateSegment(const sf::Vector2f &from, const sf::Vector2f &to) const;
 

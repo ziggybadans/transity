@@ -20,10 +20,12 @@ UIManager::UIManager(entt::registry &registry, EventBus &eventBus,
 UIManager::~UIManager() = default;
 
 void UIManager::draw(sf::Time deltaTime, size_t numStationsInActiveLine,
-                     size_t numPointsInActiveLine) {
+                     size_t numPointsInActiveLine, std::optional<float> currentSegmentGrade,
+                     bool currentSegmentExceedsGrade) {
     _infoPanelUI->draw();
     _worldGenSettingsUI->draw();
     CityPlacementDebugInfo cityPlacementDebugInfo = _cityPlacementSystem.getDebugInfo();
     _debugUI->draw(deltaTime, cityPlacementDebugInfo);
-    _interactionUI->draw(numStationsInActiveLine, numPointsInActiveLine);
+    _interactionUI->draw(numStationsInActiveLine, numPointsInActiveLine, currentSegmentGrade,
+                         currentSegmentExceedsGrade);
 }

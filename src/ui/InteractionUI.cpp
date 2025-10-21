@@ -15,9 +15,12 @@ InteractionUI::~InteractionUI() {
     LOG_DEBUG("InteractionUI", "InteractionUI instance destroyed.");
 }
 
-void InteractionUI::draw(size_t numberOfStationsInActiveLine, size_t numberOfPointsInActiveLine) {
+void InteractionUI::draw(size_t numberOfStationsInActiveLine, size_t numberOfPointsInActiveLine,
+                         std::optional<float> currentSegmentGrade,
+                         bool currentSegmentExceedsGrade) {
     drawInteractionModeWindow();
-    drawLineCreationWindow(numberOfStationsInActiveLine, numberOfPointsInActiveLine);
+    drawLineCreationWindow(numberOfStationsInActiveLine, numberOfPointsInActiveLine,
+                           currentSegmentGrade, currentSegmentExceedsGrade);
     drawPassengerCreationWindow();
 }
 
@@ -50,7 +53,9 @@ void InteractionUI::drawInteractionModeWindow() {
 }
 
 void InteractionUI::drawLineCreationWindow(size_t numberOfStationsInActiveLine,
-                                           size_t numberOfPointsInActiveLine) {
+                                           size_t numberOfPointsInActiveLine,
+                                           std::optional<float> currentSegmentGrade,
+                                           bool currentSegmentExceedsGrade) {
     if (_gameState.currentInteractionMode != InteractionMode::CREATE_LINE) {
         return;
     }
@@ -89,6 +94,16 @@ void InteractionUI::drawLineCreationWindow(size_t numberOfStationsInActiveLine,
     }
     if (numberOfPointsInActiveLine == 0) {
         ImGui::EndDisabled();
+    }
+
+    if (currentSegmentGrade.has_value() && numberOfPointsInActiveLine > 0) {
+        ImGui::Separator();
+        float gradePercent = currentSegmentGrade.value() * 100.0f;
+        ImGui::Text("Current grade: %.2f%%", gradePercent);
+        if (currentSegmentExceedsGrade) {
+            ImGui::SameLine();
+            ImGui::TextColored(ImVec4(0.95f, 0.3f, 0.3f, 1.0f), "(Too steep)");
+        }
     }
     ImGui::End();
 }

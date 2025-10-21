@@ -8,6 +8,7 @@
 #include <SFML/System/Time.hpp>
 #include <entt/entt.hpp>
 #include <memory>
+#include <optional>
 
 class WorldGenerationSystem;
 class TerrainRenderSystem;
@@ -29,7 +30,9 @@ public:
               sf::RenderWindow &window, CityPlacementSystem &cityPlacementSystem);
     ~UIManager();
 
-    void draw(sf::Time deltaTime, size_t numStationsInActiveLine, size_t numPointsInActiveLine);
+    void draw(sf::Time deltaTime, size_t numStationsInActiveLine, size_t numPointsInActiveLine,
+              std::optional<float> currentSegmentGrade,
+              bool currentSegmentExceedsGrade);
 
 private:
     std::unique_ptr<InfoPanelUI> _infoPanelUI;
