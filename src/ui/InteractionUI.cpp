@@ -69,7 +69,7 @@ void InteractionUI::drawLineCreationWindow(size_t numberOfStationsInActiveLine,
     float lineCreationWindowWidth = Constants::UI_LINE_CREATION_WINDOW_WIDTH;
     ImVec2 lineCreationWindowPos =
         ImVec2(displaySize.x - lineCreationWindowWidth - windowPadding,
-               _window.getSize().y - ImGui::GetFrameHeightWithSpacing() * 2.5 - windowPadding);
+               _window.getSize().y - ImGui::GetFrameHeightWithSpacing() * 3 - windowPadding);
     ImGui::SetNextWindowPos(lineCreationWindowPos, ImGuiCond_Always);
     ImGui::Begin("Line Creation", nullptr, size_flags);
 
@@ -99,10 +99,10 @@ void InteractionUI::drawLineCreationWindow(size_t numberOfStationsInActiveLine,
     if (currentSegmentGrade.has_value() && numberOfPointsInActiveLine > 0) {
         ImGui::Separator();
         float gradePercent = currentSegmentGrade.value() * 100.0f;
-        ImGui::Text("Current grade: %.2f%%", gradePercent);
         if (currentSegmentExceedsGrade) {
-            ImGui::SameLine();
-            ImGui::TextColored(ImVec4(0.95f, 0.3f, 0.3f, 1.0f), "(Too steep)");
+            ImGui::TextColored(ImVec4(0.95f, 0.3f, 0.3f, 1.0f), "Current grade: %.2f%%", gradePercent);
+        } else {
+            ImGui::Text("Current grade: %.2f%%", gradePercent);
         }
     }
     ImGui::End();

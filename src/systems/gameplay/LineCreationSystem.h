@@ -18,6 +18,7 @@ class WorldGenerationSystem;
 
 struct ActiveLine {
     std::vector<LinePoint> points;
+    std::vector<sf::Vector2f> committedCurvePoints;
 };
 
 struct LinePreview {
@@ -29,6 +30,7 @@ struct LinePreview {
     std::vector<bool> validSegments;
     std::optional<float> currentSegmentGrade;
     bool currentSegmentExceedsGrade = false;
+    bool currentSegmentCrossesWater = false;
 };
 
 class LineCreationSystem : public ISystem, public IUpdatable {
@@ -47,7 +49,6 @@ private:
     void onMouseMoved(const MouseMovedEvent &event);
 
     void addPointToLine(const sf::Vector2f& position, entt::entity stationEntity = entt::null, std::optional<SnapInfo> snapInfo = std::nullopt, float snapSide = 0.f);
-    void addPointToLine(entt::entity stationEntity);
     void finalizeLine();
     struct SegmentValidationResult {
         bool isValid = true;
@@ -55,7 +56,8 @@ private:
         bool exceedsGrade = false;
         float maxGrade = 0.0f;
     };
-    SegmentValidationResult validateSegment(const sf::Vector2f &from, const sf::Vector2f &to) const;
+    SegmentValidationResult validateStraightSegment(const sf::Vector2f &from, const sf::Vector2f &to) const;
+    bool commitActiveLineCurve(ActiveLine &activeLine);
 
     entt::registry &_registry;
     EntityFactory &_entityFactory;

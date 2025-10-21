@@ -68,6 +68,7 @@ void LineCreationSystem::onMouseButtonPressed(const MouseButtonPressedEvent &eve
 
         const LinePoint removedPoint = activeLine.points.back();
         activeLine.points.pop_back();
+        commitActiveLineCurve(activeLine);
 
         if (removedPoint.type == LinePointType::STOP) {
             LOG_DEBUG("LineCreationSystem", "Removed stop point from active line.");
@@ -81,20 +82,16 @@ void LineCreationSystem::onMouseButtonPressed(const MouseButtonPressedEvent &eve
         auto& preview = _registry.ctx().get<LinePreview>();
         
         if (!preview.validSegments.empty() && preview.curvePoints.size() >= 2) {
-            for (size_t i = 0; i < preview.validSegments.size(); ++i) {
-                if (preview.validSegments[i]) {
-                    continue;
-                }
-
-                SegmentValidationResult validation =
-                    validateSegment(preview.curvePoints[i], preview.curvePoints[i + 1]);
-                if (validation.crossesWater) {
+            const bool hasInvalidSegment = std::any_of(preview.validSegments.begin(), preview.validSegments.end(),
+                                                       [](bool value) { return !value; });
+            if (hasInvalidSegment) {
+                if (preview.currentSegmentCrossesWater) {
                     LOG_WARN("LineCreationSystem", "Cannot place point: the path crosses water.");
-                } else if (validation.exceedsGrade) {
+                } else if (preview.currentSegmentExceedsGrade) {
                     LOG_WARN("LineCreationSystem", "Cannot place point: the grade exceeds %.1f%%.",
                              MAX_ALLOWED_GRADE * 100.0f);
                 } else {
-                    LOG_WARN("LineCreationSystem", "Cannot place point: segment validation failed.");
+                    LOG_WARN("LineCreationSystem", "Cannot place point: the segment is invalid.");
                 }
                 return;
             }
@@ -132,31 +129,49 @@ void LineCreationSystem::addPointToLine(const sf::Vector2f& position, entt::enti
         return;
     }
 
-    auto& activeLine = _registry.ctx().get<ActiveLine>();
+    auto &activeLine = _registry.ctx().get<ActiveLine>();
 
     if (activeLine.points.empty() && stationEntity == entt::null) {
         LOG_WARN("LineCreationSystem", "The first point of a line must be a station.");
         return;
     }
 
-    if (stationEntity != entt::null) {
-        if (!activeLine.points.empty()) {
-            const auto& lastPoint = activeLine.points.back();
-            if (lastPoint.type == LinePointType::STOP && lastPoint.stationEntity == stationEntity) {
-                LOG_WARN("LineCreationSystem", "Station %u is already the last point in the active line.", static_cast<unsigned int>(stationEntity));
-                return;
-            }
+    const bool addingStop = (stationEntity != entt::null);
+    if (addingStop && !activeLine.points.empty()) {
+        const auto &lastPoint = activeLine.points.back();
+        if (lastPoint.type == LinePointType::STOP && lastPoint.stationEntity == stationEntity) {
+            LOG_WARN("LineCreationSystem",
+                     "Station %u is already the last point in the active line.",
+                     static_cast<unsigned int>(stationEntity));
+            return;
         }
-        activeLine.points.push_back({LinePointType::STOP, position, stationEntity, snapInfo, snapSide});
-        LOG_DEBUG("LineCreationSystem", "Station %u added to active line.", static_cast<unsigned int>(stationEntity));
+    }
+
+    LinePoint newPoint;
+    if (addingStop) {
+        newPoint = {LinePointType::STOP, position, stationEntity, snapInfo, snapSide};
     } else {
-        activeLine.points.push_back({LinePointType::CONTROL_POINT, position, entt::null, snapInfo, snapSide});
-        LOG_DEBUG("LineCreationSystem", "Control point added to active line at (%.1f, %.1f).", position.x, position.y);
+        newPoint = {LinePointType::CONTROL_POINT, position, entt::null, snapInfo, snapSide};
+    }
+
+    activeLine.points.push_back(newPoint);
+
+    if (!commitActiveLineCurve(activeLine)) {
+        activeLine.points.pop_back();
+        return;
+    }
+
+    if (addingStop) {
+        LOG_DEBUG("LineCreationSystem", "Station %u added to active line.",
+                  static_cast<unsigned int>(stationEntity));
+    } else {
+        LOG_DEBUG("LineCreationSystem", "Control point added to active line at (%.1f, %.1f).",
+                  position.x, position.y);
     }
 }
 
 LineCreationSystem::SegmentValidationResult
-LineCreationSystem::validateSegment(const sf::Vector2f &from, const sf::Vector2f &to) const {
+LineCreationSystem::validateStraightSegment(const sf::Vector2f &from, const sf::Vector2f &to) const {
     SegmentValidationResult result;
 
     std::array<sf::Vector2f, SEGMENT_INTERIOR_SAMPLES + 2> samples{};
@@ -200,6 +215,41 @@ LineCreationSystem::validateSegment(const sf::Vector2f &from, const sf::Vector2f
     return result;
 }
 
+bool LineCreationSystem::commitActiveLineCurve(ActiveLine &activeLine) {
+    if (activeLine.points.empty()) {
+        activeLine.committedCurvePoints.clear();
+        return true;
+    }
+
+    if (activeLine.points.size() >= 2) {
+        const sf::Vector2f &from = activeLine.points[activeLine.points.size() - 2].position;
+        const sf::Vector2f &to = activeLine.points.back().position;
+        SegmentValidationResult validation = validateStraightSegment(from, to);
+        if (!validation.isValid) {
+            if (validation.crossesWater) {
+                LOG_WARN("LineCreationSystem", "Cannot place point: resulting path would cross water.");
+            } else if (validation.exceedsGrade) {
+                LOG_WARN("LineCreationSystem",
+                         "Cannot place point: resulting path would exceed maximum grade of %.1f%%.",
+                         MAX_ALLOWED_GRADE * 100.0f);
+            } else {
+                LOG_WARN("LineCreationSystem", "Cannot place point: resulting path is invalid.");
+            }
+            return false;
+        }
+    }
+
+    std::vector<sf::Vector2f> controlPoints;
+    controlPoints.reserve(activeLine.points.size());
+    for (const auto &point : activeLine.points) {
+        controlPoints.push_back(point.position);
+    }
+
+    CurveData curveData = Curve::generateMetroCurve(controlPoints, Constants::METRO_CURVE_RADIUS);
+    activeLine.committedCurvePoints = std::move(curveData.points);
+    return true;
+}
+
 void LineCreationSystem::finalizeLine() {
     auto& activeLine = _registry.ctx().get<ActiveLine>();
 
@@ -214,25 +264,30 @@ void LineCreationSystem::finalizeLine() {
         return;
     }
 
-    std::vector<sf::Vector2f> controlPointsForFinalize;
-    for (const auto &point : activeLine.points) {
-        controlPointsForFinalize.push_back(point.position);
-    }
-    CurveData finalCurveData = Curve::generateMetroCurve(controlPointsForFinalize, Constants::METRO_CURVE_RADIUS);
-
-    for (size_t i = 0; i + 1 < finalCurveData.points.size(); ++i) {
-        const sf::Vector2f &p1 = finalCurveData.points[i];
-        const sf::Vector2f &p2 = finalCurveData.points[i + 1];
-        SegmentValidationResult validation = validateSegment(p1, p2);
+    for (size_t i = 0; i + 1 < activeLine.points.size(); ++i) {
+        const sf::Vector2f &from = activeLine.points[i].position;
+        const sf::Vector2f &to = activeLine.points[i + 1].position;
+        SegmentValidationResult validation = validateStraightSegment(from, to);
         if (!validation.isValid) {
             if (validation.crossesWater) {
                 LOG_WARN("LineCreationSystem", "Cannot finalize line: path intersects with water.");
             } else if (validation.exceedsGrade) {
-                LOG_WARN("LineCreationSystem", "Cannot finalize line: path exceeds maximum grade of %.1f%%.", MAX_ALLOWED_GRADE * 100.0f);
+                LOG_WARN("LineCreationSystem",
+                         "Cannot finalize line: path exceeds maximum grade of %.1f%%.",
+                         MAX_ALLOWED_GRADE * 100.0f);
+            } else {
+                LOG_WARN("LineCreationSystem", "Cannot finalize line: path is invalid.");
             }
             return;
         }
     }
+
+    std::vector<sf::Vector2f> controlPointsForFinalize;
+    controlPointsForFinalize.reserve(activeLine.points.size());
+    for (const auto &point : activeLine.points) {
+        controlPointsForFinalize.push_back(point.position);
+    }
+    CurveData finalCurveData = Curve::generateMetroCurve(controlPointsForFinalize, Constants::METRO_CURVE_RADIUS);
 
     sf::Color chosenColor = _colorManager.getNextLineColor();
     entt::entity lineEntity = _entityFactory.createLine(activeLine.points, chosenColor);
@@ -319,15 +374,33 @@ void LineCreationSystem::update(sf::Time dt) {
         preview.curvePoints = curveData.points;
 
         if (preview.curvePoints.size() >= 2) {
-            for (size_t i = 0; i < preview.curvePoints.size() - 1; ++i) {
-                const sf::Vector2f &p1 = preview.curvePoints[i];
-                const sf::Vector2f &p2 = preview.curvePoints[i + 1];
-                SegmentValidationResult validation = validateSegment(p1, p2);
-                preview.validSegments.push_back(validation.isValid);
-                if (i == preview.curvePoints.size() - 2) {
-                    preview.currentSegmentGrade = validation.maxGrade;
-                    preview.currentSegmentExceedsGrade = validation.exceedsGrade;
+            std::size_t lockedSegments = 0;
+            if (activeLine.committedCurvePoints.size() >= 2) {
+                lockedSegments = activeLine.committedCurvePoints.size() - 1;
+            }
+
+            const std::size_t totalSegments = preview.curvePoints.size() - 1;
+            if (lockedSegments > totalSegments) {
+                lockedSegments = totalSegments;
+            }
+
+            preview.validSegments.assign(totalSegments, true);
+            preview.currentSegmentGrade.reset();
+            preview.currentSegmentExceedsGrade = false;
+            preview.currentSegmentCrossesWater = false;
+
+            if (totalSegments > lockedSegments) {
+                const sf::Vector2f &from = activeLine.points.back().position;
+                const sf::Vector2f &to = finalPreviewPos;
+                SegmentValidationResult validation = validateStraightSegment(from, to);
+
+                for (std::size_t i = lockedSegments; i < totalSegments; ++i) {
+                    preview.validSegments[i] = validation.isValid;
                 }
+
+                preview.currentSegmentGrade = validation.maxGrade;
+                preview.currentSegmentExceedsGrade = validation.exceedsGrade;
+                preview.currentSegmentCrossesWater = validation.crossesWater;
             }
         }
     }
