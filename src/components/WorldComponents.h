@@ -23,10 +23,9 @@ struct ChunkTerrainComponent {
     std::vector<TerrainType> cells;
 };
 
-// The noise values used to generate the terrain for a chunk.
-struct ChunkNoiseComponent {
-    std::vector<float> noiseValues;
-    std::vector<float> rawNoiseValues;
+// The elevation values for a chunk, stored per cell in world units.
+struct ChunkElevationComponent {
+    std::vector<float> elevations;
 };
 
 // The current state of a chunk, such as whether its mesh needs rebuilding.

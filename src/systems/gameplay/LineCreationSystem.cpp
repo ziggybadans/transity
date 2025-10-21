@@ -10,6 +10,15 @@
 #include "core/Curve.h"
 #include "event/LineEvents.h"
 
+#include <algorithm>
+#include <array>
+#include <chrono>
+#include <cmath>
+#include <limits>
+#include <queue>
+#include <random>
+#include <vector>
+
 LineCreationSystem::LineCreationSystem(entt::registry& registry, EntityFactory& entityFactory, ColorManager& colorManager, GameState& gameState, EventBus& eventBus, WorldGenerationSystem& worldGenerationSystem)
     : _registry(registry), _entityFactory(entityFactory),
       _colorManager(colorManager), _gameState(gameState), _eventBus(eventBus), _worldGenerationSystem(worldGenerationSystem) {
@@ -46,16 +55,22 @@ void LineCreationSystem::onMouseButtonPressed(const MouseButtonPressedEvent &eve
     if (_gameState.currentInteractionMode == InteractionMode::CREATE_LINE && event.button == sf::Mouse::Button::Left) {
         auto& preview = _registry.ctx().get<LinePreview>();
         
-        if (!preview.validSegments.empty()) {
-            bool allSegmentsValid = true;
-            for (bool isValid : preview.validSegments) {
-                if (!isValid) {
-                    allSegmentsValid = false;
-                    break;
+        if (!preview.validSegments.empty() && preview.curvePoints.size() >= 2) {
+            for (size_t i = 0; i < preview.validSegments.size(); ++i) {
+                if (preview.validSegments[i]) {
+                    continue;
                 }
-            }
-            if (!allSegmentsValid) {
-                LOG_WARN("LineCreationSystem", "Cannot place point: the path to it crosses water.");
+
+                SegmentValidationResult validation =
+                    validateSegment(preview.curvePoints[i], preview.curvePoints[i + 1]);
+                if (validation.crossesWater) {
+                    LOG_WARN("LineCreationSystem", "Cannot place point: the path crosses water.");
+                } else if (validation.exceedsGrade) {
+                    LOG_WARN("LineCreationSystem", "Cannot place point: the grade exceeds %.1f%%.",
+                             MAX_ALLOWED_GRADE * 100.0f);
+                } else {
+                    LOG_WARN("LineCreationSystem", "Cannot place point: segment validation failed.");
+                }
                 return;
             }
         }
@@ -115,6 +130,48 @@ void LineCreationSystem::addPointToLine(const sf::Vector2f& position, entt::enti
     }
 }
 
+LineCreationSystem::SegmentValidationResult
+LineCreationSystem::validateSegment(const sf::Vector2f &from, const sf::Vector2f &to) const {
+    SegmentValidationResult result;
+
+    std::array<sf::Vector2f, SEGMENT_INTERIOR_SAMPLES + 2> samples{};
+    samples[0] = from;
+    samples[SEGMENT_INTERIOR_SAMPLES + 1] = to;
+    for (int i = 1; i <= SEGMENT_INTERIOR_SAMPLES; ++i) {
+        float t = static_cast<float>(i) / static_cast<float>(SEGMENT_INTERIOR_SAMPLES + 1);
+        samples[i] = from + (to - from) * t;
+    }
+
+    for (int i = 1; i <= SEGMENT_INTERIOR_SAMPLES; ++i) {
+        const auto &point = samples[i];
+        if (_worldGenerationSystem.getTerrainTypeAt(point.x, point.y) == TerrainType::WATER) {
+            result.crossesWater = true;
+            break;
+        }
+    }
+
+    const float epsilon = std::numeric_limits<float>::epsilon();
+    for (int i = 0; i <= SEGMENT_INTERIOR_SAMPLES; ++i) {
+        const auto &start = samples[i];
+        const auto &end = samples[i + 1];
+        const sf::Vector2f delta = end - start;
+        float distance = std::hypot(delta.x, delta.y);
+        if (distance <= epsilon) {
+            continue;
+        }
+        float elevationStart = _worldGenerationSystem.getElevationAt(start.x, start.y);
+        float elevationEnd = _worldGenerationSystem.getElevationAt(end.x, end.y);
+        float grade = std::abs(elevationEnd - elevationStart) / distance;
+        if (grade > MAX_ALLOWED_GRADE) {
+            result.exceedsGrade = true;
+            break;
+        }
+    }
+
+    result.isValid = !result.crossesWater && !result.exceedsGrade;
+    return result;
+}
+
 void LineCreationSystem::finalizeLine() {
     auto& activeLine = _registry.ctx().get<ActiveLine>();
 
@@ -135,13 +192,16 @@ void LineCreationSystem::finalizeLine() {
     }
     CurveData finalCurveData = Curve::generateMetroCurve(controlPointsForFinalize, Constants::METRO_CURVE_RADIUS);
 
-    for (size_t i = 0; i < finalCurveData.points.size() - 1; ++i) {
-        const sf::Vector2f& p1 = finalCurveData.points[i];
-        const sf::Vector2f& p2 = finalCurveData.points[i+1];
-        sf::Vector2f midPoint = p1 + (p2 - p1) * 0.5f;
-        
-        if (_worldGenerationSystem.getTerrainTypeAt(midPoint.x, midPoint.y) == TerrainType::WATER) {
-            LOG_WARN("LineCreationSystem", "Cannot finalize line: path intersects with water.");
+    for (size_t i = 0; i + 1 < finalCurveData.points.size(); ++i) {
+        const sf::Vector2f &p1 = finalCurveData.points[i];
+        const sf::Vector2f &p2 = finalCurveData.points[i + 1];
+        SegmentValidationResult validation = validateSegment(p1, p2);
+        if (!validation.isValid) {
+            if (validation.crossesWater) {
+                LOG_WARN("LineCreationSystem", "Cannot finalize line: path intersects with water.");
+            } else if (validation.exceedsGrade) {
+                LOG_WARN("LineCreationSystem", "Cannot finalize line: path exceeds maximum grade of %.1f%%.", MAX_ALLOWED_GRADE * 100.0f);
+            }
             return;
         }
     }
@@ -234,8 +294,8 @@ void LineCreationSystem::update(sf::Time dt) {
             for (size_t i = 0; i < preview.curvePoints.size() - 1; ++i) {
                 const sf::Vector2f &p1 = preview.curvePoints[i];
                 const sf::Vector2f &p2 = preview.curvePoints[i + 1];
-                sf::Vector2f midPoint = p1 + (p2 - p1) * 0.5f;
-                preview.validSegments.push_back(_worldGenerationSystem.getTerrainTypeAt(midPoint.x, midPoint.y) != TerrainType::WATER);
+                SegmentValidationResult validation = validateSegment(p1, p2);
+                preview.validSegments.push_back(validation.isValid);
             }
         }
     }

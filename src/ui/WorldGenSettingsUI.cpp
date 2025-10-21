@@ -2,12 +2,14 @@
 #include "Constants.h"
 #include "Logger.h"
 #include "event/DeletionEvents.h"
+#include "event/InputEvents.h"
 #include "imgui.h"
 #include "systems/rendering/TerrainRenderSystem.h"
 #include "systems/world/WorldGenerationSystem.h"
 #include <cstdlib>
 
 #include <algorithm>
+#include <cmath>
 #include <string>
 
 WorldGenSettingsUI::WorldGenSettingsUI(EventBus &eventBus,
@@ -16,10 +18,14 @@ WorldGenSettingsUI::WorldGenSettingsUI(EventBus &eventBus,
     : _eventBus(eventBus), _worldGenerationSystem(worldGenerationSystem),
       _terrainRenderSystem(terrainRenderSystem),
       _defaultParams(worldGenerationSystem.getParams()) {
+    _shadedReliefEnabled = _terrainRenderSystem.isShadedReliefEnabled();
+    _mouseMovedConnection =
+        _eventBus.sink<MouseMovedEvent>().connect<&WorldGenSettingsUI::onMouseMoved>(this);
     LOG_DEBUG("WorldGenSettingsUI", "WorldGenSettingsUI instance created.");
 }
 
 WorldGenSettingsUI::~WorldGenSettingsUI() {
+    _mouseMovedConnection.release();
     LOG_DEBUG("WorldGenSettingsUI", "WorldGenSettingsUI instance destroyed.");
 }
 
@@ -90,6 +96,8 @@ void WorldGenSettingsUI::draw() {
     drawNoiseLayerSettings(params, paramsChanged);
     ImGui::Separator();
     drawWorldGridSettings(params, gridChanged);
+    ImGui::Separator();
+    drawElevationSettings(params, paramsChanged);
     ImGui::Separator();
     drawVisualizationSettings();
     ImGui::Separator();
@@ -184,6 +192,53 @@ void WorldGenSettingsUI::drawWorldGridSettings(WorldGenParams &params, bool &gri
     if (ImGui::InputFloat("Cell Size", &params.cellSize, 1.0f, 0.0f, "%.2f")) gridChanged = true;
 }
 
+void WorldGenSettingsUI::drawElevationSettings(WorldGenParams &params, bool &paramsChanged) {
+    ImGui::TextUnformatted("Elevation");
+    ImGui::Spacing();
+
+    if (sliderFloatWithReset("Max Elevation", &params.elevation.maxElevation,
+                             _defaultParams.elevation.maxElevation, 0.0f, 2000.0f, "%.0f")) {
+        paramsChanged = true;
+    }
+    if (sliderFloatWithReset("Elevation Exponent", &params.elevation.elevationExponent,
+                             _defaultParams.elevation.elevationExponent, 0.1f, 5.0f, "%.2f")) {
+        paramsChanged = true;
+    }
+
+    if (ImGui::Checkbox("Shaded Relief Map", &_shadedReliefEnabled)) {
+        _terrainRenderSystem.setShadedReliefEnabled(_shadedReliefEnabled);
+        _eventBus.enqueue<ImmediateRedrawEvent>({});
+    }
+
+    const float cellSize = params.cellSize;
+    const int cellsX = params.worldDimensionsInChunks.x * params.chunkDimensionsInCells.x;
+    const int cellsY = params.worldDimensionsInChunks.y * params.chunkDimensionsInCells.y;
+
+    if (!_hasMouseWorldPos || cellSize <= 0.0f) {
+        ImGui::TextUnformatted("Cell Elevation: (move cursor over world)");
+        return;
+    }
+
+    int cellX = static_cast<int>(std::floor(_lastMouseWorldPos.x / cellSize));
+    int cellY = static_cast<int>(std::floor(_lastMouseWorldPos.y / cellSize));
+
+    if (cellX < 0 || cellY < 0 || cellX >= cellsX || cellY >= cellsY) {
+        ImGui::TextUnformatted("Cell Elevation: (outside world)");
+        return;
+    }
+
+    const float sampleX = (static_cast<float>(cellX) + 0.5f) * cellSize;
+    const float sampleY = (static_cast<float>(cellY) + 0.5f) * cellSize;
+    const float elevation = _worldGenerationSystem.getElevationAt(sampleX, sampleY);
+    ImGui::Text("Cell [%d, %d] Elevation: %.1f", cellX, cellY, elevation);
+
+    if (params.elevation.maxElevation > 0.0f) {
+        float normalized = std::clamp(elevation / params.elevation.maxElevation, 0.0f, 1.0f);
+        ImGui::SameLine();
+        ImGui::Text("(%.0f%% of max)", normalized * 100.0f);
+    }
+}
+
 void WorldGenSettingsUI::drawVisualizationSettings() {
     if (ImGui::Checkbox("Visualize Chunk Borders", &_visualizeChunkBorders)) {
         _terrainRenderSystem.setVisualizeChunkBorders(_visualizeChunkBorders);
@@ -215,6 +270,11 @@ void WorldGenSettingsUI::drawVisualizationSettings() {
             static_cast<TerrainRenderSystem::SuitabilityMapType>(_selectedSuitabilityMap + 1));
     }
     ImGui::EndDisabled();
+}
+
+void WorldGenSettingsUI::onMouseMoved(const MouseMovedEvent &event) {
+    _lastMouseWorldPos = event.worldPosition;
+    _hasMouseWorldPos = true;
 }
 
 void WorldGenSettingsUI::drawActions(const WorldGenParams &params) {

@@ -9,6 +9,7 @@
 
 struct ChunkPositionComponent;
 struct ChunkTerrainComponent;
+struct ChunkElevationComponent;
 struct ChunkMeshComponent;
 struct WorldGenParams;
 struct SuitabilityMaps;
@@ -39,6 +40,8 @@ public:
     void setSuitabilityMapType(SuitabilityMapType type) { _suitabilityMapType = type; }
     void setSuitabilityMapsDirty() { _suitabilityMapsDirty = true; }
     void regenerateSuitabilityMaps(const WorldGenParams &worldParams);
+    void setShadedReliefEnabled(bool enabled) noexcept { _shadedReliefEnabled = enabled; }
+    bool isShadedReliefEnabled() const noexcept { return _shadedReliefEnabled; }
 
 private:
     ColorManager &_colorManager;
@@ -46,6 +49,7 @@ private:
     bool _visualizeChunkBorders = false;
     bool _visualizeCellBorders = false;
     bool _visualizeSuitabilityMap = false;
+    bool _shadedReliefEnabled = false;
     const SuitabilityMaps *_suitabilityMaps = nullptr;
     const std::vector<TerrainType> *_terrainCache = nullptr;
     SuitabilityMapType _suitabilityMapType = SuitabilityMapType::None;
@@ -54,6 +58,16 @@ private:
     bool _suitabilityMapsDirty = true;
 
     void buildAllChunkMeshes(const ChunkPositionComponent &chunkPos,
-                             const ChunkTerrainComponent &chunkTerrain,
-                             ChunkMeshComponent &chunkMesh, const WorldGenParams &worldParams);
+                              const ChunkTerrainComponent &chunkTerrain,
+                              const ChunkElevationComponent &chunkElevation,
+                              ChunkMeshComponent &chunkMesh, const WorldGenParams &worldParams);
+    void buildChunkMeshMerged(const ChunkPositionComponent &chunkPos,
+                              const ChunkTerrainComponent &chunkTerrain,
+                              ChunkMeshComponent &chunkMesh, const WorldGenParams &worldParams);
+    void buildChunkMeshShaded(const ChunkPositionComponent &chunkPos,
+                              const ChunkTerrainComponent &chunkTerrain,
+                              const ChunkElevationComponent &chunkElevation,
+                              ChunkMeshComponent &chunkMesh, const WorldGenParams &worldParams);
+    sf::Color shadeColorForTerrain(TerrainType type, float normalizedElevation,
+                                   float lightingFactor) const;
 };

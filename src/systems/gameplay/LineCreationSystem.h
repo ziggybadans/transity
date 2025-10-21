@@ -47,6 +47,12 @@ private:
     void addPointToLine(const sf::Vector2f& position, entt::entity stationEntity = entt::null, std::optional<SnapInfo> snapInfo = std::nullopt, float snapSide = 0.f);
     void addPointToLine(entt::entity stationEntity);
     void finalizeLine();
+    struct SegmentValidationResult {
+        bool isValid = true;
+        bool crossesWater = false;
+        bool exceedsGrade = false;
+    };
+    SegmentValidationResult validateSegment(const sf::Vector2f &from, const sf::Vector2f &to) const;
 
     entt::registry &_registry;
     EntityFactory &_entityFactory;
@@ -60,4 +66,7 @@ private:
     entt::scoped_connection m_mousePressConnection;
     entt::scoped_connection m_cancelLineCreationConnection;
     entt::scoped_connection m_mouseMoveConnection;
+
+    static constexpr float MAX_ALLOWED_GRADE = 0.05f;
+    static constexpr int SEGMENT_INTERIOR_SAMPLES = 4;
 };

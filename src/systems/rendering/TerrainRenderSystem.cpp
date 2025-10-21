@@ -4,23 +4,26 @@
 #include "world/WorldData.h"
 #include "systems/gameplay/CityPlacementSystem.h"
 #include "Logger.h"
+#include <algorithm>
+#include <cmath>
 #include <cstdint>
 
 TerrainRenderSystem::TerrainRenderSystem(ColorManager &colorManager)
     : _colorManager(colorManager) {}
 
 void TerrainRenderSystem::updateMeshes(entt::registry &registry, const WorldGenParams &worldParams) {
-    auto view = registry.view<ChunkPositionComponent, ChunkTerrainComponent, ChunkStateComponent,
-                              ChunkMeshComponent>();
+    auto view = registry.view<ChunkPositionComponent, ChunkTerrainComponent, ChunkElevationComponent,
+                              ChunkStateComponent, ChunkMeshComponent>();
 
     for (auto entity : view) {
         auto &chunkState = view.get<ChunkStateComponent>(entity);
         if (chunkState.isMeshDirty) {
             auto &chunkPos = view.get<ChunkPositionComponent>(entity);
             auto &chunkTerrain = view.get<ChunkTerrainComponent>(entity);
+            auto &chunkElevation = view.get<ChunkElevationComponent>(entity);
             auto &chunkMesh = view.get<ChunkMeshComponent>(entity);
             // Pass worldParams instead of worldGrid
-            buildAllChunkMeshes(chunkPos, chunkTerrain, chunkMesh, worldParams);
+            buildAllChunkMeshes(chunkPos, chunkTerrain, chunkElevation, chunkMesh, worldParams);
             chunkState.isMeshDirty = false;
         }
     }
@@ -112,8 +115,20 @@ void TerrainRenderSystem::render(const entt::registry &registry, sf::RenderTarge
 
 void TerrainRenderSystem::buildAllChunkMeshes(const ChunkPositionComponent &chunkPos,
                                               const ChunkTerrainComponent &chunkTerrain,
+                                              const ChunkElevationComponent &chunkElevation,
                                               ChunkMeshComponent &chunkMesh,
                                               const WorldGenParams &worldParams) {
+    if (_shadedReliefEnabled) {
+        buildChunkMeshShaded(chunkPos, chunkTerrain, chunkElevation, chunkMesh, worldParams);
+    } else {
+        buildChunkMeshMerged(chunkPos, chunkTerrain, chunkMesh, worldParams);
+    }
+}
+
+void TerrainRenderSystem::buildChunkMeshMerged(const ChunkPositionComponent &chunkPos,
+                                               const ChunkTerrainComponent &chunkTerrain,
+                                               ChunkMeshComponent &chunkMesh,
+                                               const WorldGenParams &worldParams) {
     const int cellsX = worldParams.chunkDimensionsInCells.x;
     const int cellsY = worldParams.chunkDimensionsInCells.y;
 
@@ -199,6 +214,136 @@ void TerrainRenderSystem::buildAllChunkMeshes(const ChunkPositionComponent &chun
             }
         }
     }
+}
+
+void TerrainRenderSystem::buildChunkMeshShaded(const ChunkPositionComponent &chunkPos,
+                                               const ChunkTerrainComponent &chunkTerrain,
+                                               const ChunkElevationComponent &chunkElevation,
+                                               ChunkMeshComponent &chunkMesh,
+                                               const WorldGenParams &worldParams) {
+    const int cellsX = worldParams.chunkDimensionsInCells.x;
+    const int cellsY = worldParams.chunkDimensionsInCells.y;
+
+    sf::VertexArray &vertexArray = chunkMesh.vertexArray;
+    vertexArray.clear();
+    vertexArray.setPrimitiveType(sf::PrimitiveType::Triangles);
+
+    const std::vector<float> &elevations = chunkElevation.elevations;
+    auto elevationAt = [&](int cellX, int cellY, float fallback) -> float {
+        if (cellX < 0 || cellY < 0 || cellX >= cellsX || cellY >= cellsY) {
+            return fallback;
+        }
+        const size_t index = static_cast<size_t>(cellY * cellsX + cellX);
+        if (index < elevations.size()) {
+            return elevations[index];
+        }
+        return fallback;
+    };
+
+    const float maxElevation = std::max(0.0001f, worldParams.elevation.maxElevation);
+    const float cellSize = worldParams.cellSize;
+
+    sf::Vector3f lightDir(-0.5f, -0.7f, 1.0f);
+    const float lightLength = std::sqrt(lightDir.x * lightDir.x + lightDir.y * lightDir.y
+                                        + lightDir.z * lightDir.z);
+    if (lightLength > 0.0f) {
+        lightDir.x /= lightLength;
+        lightDir.y /= lightLength;
+        lightDir.z /= lightLength;
+    }
+
+    for (int y = 0; y < cellsY; ++y) {
+        for (int x = 0; x < cellsX; ++x) {
+            const size_t cellIndex = static_cast<size_t>(y * cellsX + x);
+            const TerrainType terrainType =
+                (cellIndex < chunkTerrain.cells.size()) ? chunkTerrain.cells[cellIndex]
+                                                        : TerrainType::WATER;
+            const float centerElevation =
+                (cellIndex < elevations.size()) ? elevations[cellIndex] : 0.0f;
+            float normalizedElevation = centerElevation / maxElevation;
+            normalizedElevation = std::clamp(normalizedElevation, 0.0f, 1.0f);
+
+            const float leftElevation = elevationAt(x - 1, y, centerElevation);
+            const float rightElevation = elevationAt(x + 1, y, centerElevation);
+            const float upElevation = elevationAt(x, y - 1, centerElevation);
+            const float downElevation = elevationAt(x, y + 1, centerElevation);
+
+            const float dx = (rightElevation - leftElevation) / (2.0f * cellSize);
+            const float dy = (downElevation - upElevation) / (2.0f * cellSize);
+
+            sf::Vector3f normal(-dx, -dy, 1.0f);
+            const float normalLength = std::sqrt(normal.x * normal.x + normal.y * normal.y
+                                                 + normal.z * normal.z);
+            if (normalLength > 0.0f) {
+                normal.x /= normalLength;
+                normal.y /= normalLength;
+                normal.z /= normalLength;
+            }
+
+            const float diffuse =
+                std::max(0.0f, normal.x * lightDir.x + normal.y * lightDir.y + normal.z * lightDir.z);
+            float lightingFactor = 0.35f + 0.55f * diffuse + 0.25f * normalizedElevation;
+            lightingFactor = std::clamp(lightingFactor, 0.25f, 1.3f);
+
+            const sf::Color color =
+                shadeColorForTerrain(terrainType, normalizedElevation, lightingFactor);
+
+            const float screenX =
+                (chunkPos.chunkGridPosition.x * cellsX + x) * worldParams.cellSize;
+            const float screenY =
+                (chunkPos.chunkGridPosition.y * cellsY + y) * worldParams.cellSize;
+
+            sf::Vertex quad[6];
+            quad[0].position = {screenX, screenY};
+            quad[1].position = {screenX + cellSize, screenY};
+            quad[2].position = {screenX, screenY + cellSize};
+            quad[3].position = {screenX + cellSize, screenY};
+            quad[4].position = {screenX + cellSize, screenY + cellSize};
+            quad[5].position = {screenX, screenY + cellSize};
+
+            for (auto &vertex : quad) {
+                vertex.color = color;
+                vertexArray.append(vertex);
+            }
+        }
+    }
+}
+
+sf::Color TerrainRenderSystem::shadeColorForTerrain(TerrainType type, float normalizedElevation,
+                                                    float lightingFactor) const {
+    sf::Color baseColor;
+    switch (type) {
+    case TerrainType::WATER:
+        baseColor = _colorManager.getWaterColor();
+        break;
+    case TerrainType::LAND:
+        baseColor = _colorManager.getLandColor();
+        break;
+    case TerrainType::RIVER:
+        baseColor = _colorManager.getRiverColor();
+        break;
+    default:
+        baseColor = sf::Color::Magenta;
+        break;
+    }
+
+    float factor = lightingFactor;
+    if (type == TerrainType::LAND) {
+        factor = std::clamp(factor + normalizedElevation * 0.15f, 0.25f, 1.35f);
+    } else if (type == TerrainType::WATER) {
+        // Keep water shading subtle and closer to base color.
+        factor = std::clamp(0.8f + (factor - 0.8f) * 0.4f, 0.6f, 1.05f);
+    } else if (type == TerrainType::RIVER) {
+        factor = std::clamp(factor * 0.9f, 0.4f, 1.1f);
+    }
+
+    auto applyFactor = [factor](std::uint8_t component) {
+        return static_cast<std::uint8_t>(
+            std::clamp(static_cast<float>(component) * factor, 0.0f, 255.0f));
+    };
+
+    return {applyFactor(baseColor.r), applyFactor(baseColor.g), applyFactor(baseColor.b),
+            baseColor.a};
 }
 
 void TerrainRenderSystem::setSuitabilityMapData(const SuitabilityMaps* maps, const std::vector<TerrainType>* terrainCache, const WorldGenParams& worldParams) {

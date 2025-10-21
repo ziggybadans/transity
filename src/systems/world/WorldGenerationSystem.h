@@ -20,6 +20,7 @@ public:
     GeneratedChunkData generateChunkData(const sf::Vector2i &chunkGridPosition) const;
 
     TerrainType getTerrainTypeAt(float worldX, float worldY) const;
+    float getElevationAt(float worldX, float worldY) const;
 
     sf::Vector2f getWorldSize();
 
@@ -40,6 +41,13 @@ private:
     WorldGenParams _params;
 
     void generateContinentShape();
+    struct TerrainSample {
+        TerrainType terrainType;
+        float normalizedElevation;
+        float elevation;
+    };
+
+    TerrainSample sampleTerrain(float worldX, float worldY) const;
 
     entt::connection _regenerateWorldListener;
 };

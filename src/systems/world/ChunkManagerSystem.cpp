@@ -160,8 +160,7 @@ void ChunkManagerSystem::processCompletedChunks() {
         auto entity = _registry.create();
         _registry.emplace<ChunkPositionComponent>(entity, chunkPos);
         _registry.emplace<ChunkTerrainComponent>(entity, std::move(chunkData.cells));
-        _registry.emplace<ChunkNoiseComponent>(entity, std::move(chunkData.noiseValues),
-                                               std::move(chunkData.rawNoiseValues));
+        _registry.emplace<ChunkElevationComponent>(entity, std::move(chunkData.elevations));
         _registry.emplace<ChunkStateComponent>(entity);
         _registry.emplace<ChunkMeshComponent>(entity);
 
@@ -202,11 +201,10 @@ void ChunkManagerSystem::processChunkRegeneration() {
                                _registry.get<ChunkTerrainComponent>(pending.entity);
                            chunkTerrain.cells = std::move(chunkData.cells);
 
-                           if (_registry.all_of<ChunkNoiseComponent>(pending.entity)) {
-                               auto &noise =
-                                   _registry.get<ChunkNoiseComponent>(pending.entity);
-                               noise.noiseValues = std::move(chunkData.noiseValues);
-                               noise.rawNoiseValues = std::move(chunkData.rawNoiseValues);
+                           if (_registry.all_of<ChunkElevationComponent>(pending.entity)) {
+                               auto &elevation =
+                                   _registry.get<ChunkElevationComponent>(pending.entity);
+                               elevation.elevations = std::move(chunkData.elevations);
                            }
 
                            auto &chunkState = _registry.get<ChunkStateComponent>(pending.entity);

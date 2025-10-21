@@ -21,11 +21,17 @@ struct NoiseLayer {
     float weight = 1.0f;
 };
 
+struct ElevationParams {
+    float maxElevation = 200.0f;
+    float elevationExponent = 1.0f;
+};
+
 struct WorldGenParams {
     std::vector<NoiseLayer> noiseLayers;
     float landThreshold = 0.35f;
     float coastlineDistortionStrength = 0.0f;
     std::vector<Point> continentShape;
+    ElevationParams elevation;
 
     sf::Vector2i worldDimensionsInChunks = {100, 100};
     sf::Vector2i chunkDimensionsInCells = {32, 32};
@@ -37,6 +43,5 @@ struct SwapWorldStateEvent {};
 struct GeneratedChunkData {
     sf::Vector2i chunkGridPosition;
     std::vector<TerrainType> cells;
-    std::vector<float> noiseValues;
-    std::vector<float> rawNoiseValues;
+    std::vector<float> elevations;
 };
