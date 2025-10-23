@@ -108,6 +108,9 @@ void WorldGenSettingsUI::draw() {
         auto paramsCopy = std::make_shared<WorldGenParams>(params);
         _eventBus.enqueue<RegenerateWorldRequestEvent>({paramsCopy});
     }
+    ImVec2 windowPos = ImGui::GetWindowPos();
+    ImVec2 windowSize = ImGui::GetWindowSize();
+    _lastWindowBottomY = windowPos.y + windowSize.y;
 
     ImGui::End();
 }

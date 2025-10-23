@@ -11,7 +11,7 @@ public:
     InfoPanelUI(entt::registry &registry, EventBus &eventBus, GameState &gameState);
     ~InfoPanelUI();
 
-    void draw();
+    void draw(float worldGenBottomY);
 
 private:
     void onEntitySelected(const EntitySelectedEvent &event);

@@ -17,6 +17,7 @@ public:
     ~WorldGenSettingsUI();
 
     void draw();
+    float getBottomY() const { return _lastWindowBottomY; }
 
 private:
     void drawNoiseLayerSettings(WorldGenParams &params, bool &paramsChanged);
@@ -45,4 +46,5 @@ private:
     bool _hasMouseWorldPos = false;
     sf::Vector2f _lastMouseWorldPos{0.f, 0.f};
     entt::scoped_connection _mouseMovedConnection;
+    float _lastWindowBottomY = 0.0f;
 };

@@ -22,8 +22,8 @@ UIManager::~UIManager() = default;
 void UIManager::draw(sf::Time deltaTime, size_t numStationsInActiveLine,
                      size_t numPointsInActiveLine, std::optional<float> currentSegmentGrade,
                      bool currentSegmentExceedsGrade) {
-    _infoPanelUI->draw();
     _worldGenSettingsUI->draw();
+    _infoPanelUI->draw(_worldGenSettingsUI->getBottomY());
     CityPlacementDebugInfo cityPlacementDebugInfo = _cityPlacementSystem.getDebugInfo();
     _debugUI->draw(deltaTime, cityPlacementDebugInfo);
     _interactionUI->draw(numStationsInActiveLine, numPointsInActiveLine, currentSegmentGrade,

@@ -10,6 +10,7 @@
 #include "event/InputEvents.h"
 #include "event/LineEvents.h"
 #include "imgui.h"
+#include <algorithm>
 #include <numeric>
 
 const char *trainStateToString(TrainState state) {
@@ -49,7 +50,7 @@ void InfoPanelUI::onEntityDeselected(const EntityDeselectedEvent &event) {
     _selectedEntity = std::nullopt;
 }
 
-void InfoPanelUI::draw() {
+void InfoPanelUI::draw(float worldGenBottomY) {
     const float windowPadding = Constants::UI_WINDOW_PADDING;
     ImGuiIO &io = ImGui::GetIO();
     ImVec2 displaySize = io.DisplaySize;
@@ -58,8 +59,9 @@ void InfoPanelUI::draw() {
     float worldGenSettingsWidth = Constants::UI_WORLD_GEN_SETTINGS_WIDTH;
     ImVec2 worldGenSettingsPos =
         ImVec2(displaySize.x - worldGenSettingsWidth - windowPadding, windowPadding);
-    ImGui::SetNextWindowPos(ImVec2(worldGenSettingsPos.x, ImGui::GetFrameHeightWithSpacing() * 21),
-                            ImGuiCond_Always);
+    float infoPanelTop =
+        std::max(worldGenBottomY, worldGenSettingsPos.y) + windowPadding;
+    ImGui::SetNextWindowPos(ImVec2(worldGenSettingsPos.x, infoPanelTop), ImGuiCond_Always);
     ImGui::SetNextWindowSize(ImVec2(worldGenSettingsWidth, 0.0f), ImGuiCond_Always);
     ImGui::Begin("Info Panel", nullptr, window_flags);
 
