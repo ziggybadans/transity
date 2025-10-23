@@ -131,7 +131,7 @@ void DebugUI::drawSettingsWindow() {
 
     ImVec2 settingsWindowPos =
         ImVec2(windowPadding,
-               _window.getSize().y - ImGui::GetFrameHeightWithSpacing() * 2.5 - windowPadding);
+               _window.getSize().y - ImGui::GetFrameHeightWithSpacing() * 4 - windowPadding);
     ImGui::SetNextWindowPos(settingsWindowPos, ImGuiCond_Always);
     if (ImGui::Begin("Settings", nullptr, flags)) {
         ImGui::Text("Theme");
@@ -144,6 +144,14 @@ void DebugUI::drawSettingsWindow() {
         ImGui::SameLine();
         if (ImGui::RadioButton("Dark", &currentTheme, static_cast<int>(Theme::Dark))) {
             _colorManager.setTheme(Theme::Dark);
+        }
+
+        ImGui::Separator();
+        ImGui::Checkbox("Enable Elevation Checks", &_gameState.elevationChecksEnabled);
+        if (!_gameState.elevationChecksEnabled) {
+            ImGui::TextDisabled("Lines won't be blocked by steep grades.");
+        } else {
+            ImGui::TextDisabled("Maximum elevation of 5 percent enforced.");
         }
         ImGui::End();
     }

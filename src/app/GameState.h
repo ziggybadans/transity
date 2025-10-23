@@ -15,4 +15,5 @@ struct GameState {
     float timeMultiplier = 1.0f;
     float preEditTimeMultiplier = 1.0f;
     sf::Time totalElapsedTime;
+    bool elevationChecksEnabled = true;
 };

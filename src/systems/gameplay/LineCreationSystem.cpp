@@ -173,6 +173,7 @@ void LineCreationSystem::addPointToLine(const sf::Vector2f& position, entt::enti
 LineCreationSystem::SegmentValidationResult
 LineCreationSystem::validateStraightSegment(const sf::Vector2f &from, const sf::Vector2f &to) const {
     SegmentValidationResult result;
+    const bool enforceGradeLimit = _gameState.elevationChecksEnabled;
 
     std::array<sf::Vector2f, SEGMENT_INTERIOR_SAMPLES + 2> samples{};
     samples[0] = from;
@@ -207,11 +208,14 @@ LineCreationSystem::validateStraightSegment(const sf::Vector2f &from, const sf::
         }
         if (grade > MAX_ALLOWED_GRADE) {
             result.exceedsGrade = true;
-            break;
+            if (enforceGradeLimit) {
+                break;
+            }
         }
     }
 
-    result.isValid = !result.crossesWater && !result.exceedsGrade;
+    const bool gradeViolation = enforceGradeLimit && result.exceedsGrade;
+    result.isValid = !result.crossesWater && !gradeViolation;
     return result;
 }
 

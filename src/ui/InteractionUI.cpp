@@ -99,7 +99,8 @@ void InteractionUI::drawLineCreationWindow(size_t numberOfStationsInActiveLine,
     if (currentSegmentGrade.has_value() && numberOfPointsInActiveLine > 0) {
         ImGui::Separator();
         float gradePercent = currentSegmentGrade.value() * 100.0f;
-        if (currentSegmentExceedsGrade) {
+        const bool gradeTooSteep = currentSegmentExceedsGrade;
+        if (_gameState.elevationChecksEnabled && gradeTooSteep) {
             ImGui::TextColored(ImVec4(0.95f, 0.3f, 0.3f, 1.0f), "Current grade: %.2f%%", gradePercent);
         } else {
             ImGui::Text("Current grade: %.2f%%", gradePercent);
