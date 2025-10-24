@@ -327,7 +327,7 @@ void ChunkManagerSystem::startSmoothRegeneration(const WorldGenParams &params) {
 
     std::sort(targets.begin(), targets.end(),
               [&](const ChunkRegenTarget &lhs, const ChunkRegenTarget &rhs) {
-                  return distanceSquared(lhs.position) < distanceSquared(rhs.position);
+            return distanceSquared(lhs.position) < distanceSquared(rhs.position);
               });
 
     for (auto &target : targets) {
@@ -338,4 +338,41 @@ void ChunkManagerSystem::startSmoothRegeneration(const WorldGenParams &params) {
         _pendingChunkUpdates.push_back(
             PendingChunkUpdate{target.position, target.entity, std::move(future), generationId});
     }
+}
+
+void ChunkManagerSystem::loadChunksFromData(const std::vector<GeneratedChunkData> &chunks) {
+    if (_generationFuture.valid()) {
+        _generationFuture.wait();
+    }
+
+    _chunkLoadFutures.clear();
+    _pendingChunkUpdates.clear();
+    _chunksBeingLoaded.clear();
+    {
+        std::lock_guard<std::mutex> lock(_completedChunksMutex);
+        std::queue<GeneratedChunkData> empty;
+        std::swap(_completedChunks, empty);
+    }
+
+    for (const auto &pair : _activeChunks) {
+        if (_registry.valid(pair.second)) {
+            _registry.destroy(pair.second);
+        }
+    }
+    _activeChunks.clear();
+
+    for (const auto &chunkData : chunks) {
+        auto entity = _registry.create();
+        _registry.emplace<ChunkPositionComponent>(entity, chunkData.chunkGridPosition);
+        _registry.emplace<ChunkTerrainComponent>(entity, chunkData.cells);
+        _registry.emplace<ChunkElevationComponent>(entity, chunkData.elevations);
+        auto &state = _registry.emplace<ChunkStateComponent>(entity);
+        state.isMeshDirty = true;
+        _registry.emplace<ChunkMeshComponent>(entity);
+        _activeChunks[chunkData.chunkGridPosition] = entity;
+    }
+
+    _currentGenerationId = 0;
+    _performingFullReload = false;
+    _smoothRegenPending = false;
 }

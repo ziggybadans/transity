@@ -61,3 +61,19 @@ void PassengerSpawnSystem::update(sf::Time dt) {
         LOG_WARN("PassengerSpawnSystem", "Failed to find a valid path for a passenger after %d attempts.", maxAttempts);
     }
 }
+
+sf::Time PassengerSpawnSystem::getSpawnTimer() const {
+    return _spawnTimer;
+}
+
+sf::Time PassengerSpawnSystem::getSpawnInterval() const {
+    return _spawnInterval;
+}
+
+void PassengerSpawnSystem::setSpawnTimer(sf::Time timer) {
+    _spawnTimer = timer;
+}
+
+void PassengerSpawnSystem::setSpawnInterval(sf::Time interval) {
+    _spawnInterval = interval;
+}

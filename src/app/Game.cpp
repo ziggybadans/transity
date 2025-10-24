@@ -17,6 +17,7 @@
 #include "systems/rendering/CameraSystem.h"
 #include "systems/rendering/PassengerSpawnAnimationSystem.h"
 #include "systems/rendering/TerrainMeshSystem.h"
+#include "systems/app/SaveLoadSystem.h"
 #include "systems/world/ChunkManagerSystem.h"
 #include "systems/world/WorldSetupSystem.h"
 
@@ -39,8 +40,9 @@ Game::Game(Renderer &renderer, ThreadPool &threadPool, EventBus &eventBus,
     _systemManager->addSystem<DeletionSystem>(_registry, _eventBus, _gameState);
     _systemManager->addSystem<LineEditingSystem>(_registry, _eventBus, _gameState);
     _systemManager->addSystem<SharedSegmentSystem>(_registry, _eventBus);
-    _systemManager->addSystem<ChunkManagerSystem>(_registry, _eventBus, _worldGenerationSystem,
-                                                  _camera, _threadPool);
+    auto *chunkManagerSystem =
+        _systemManager->addSystem<ChunkManagerSystem>(_registry, _eventBus, _worldGenerationSystem,
+                                                      _camera, _threadPool);
     _systemManager->addSystem<TerrainMeshSystem>(_registry, _renderer, _worldGenerationSystem,
                                                  _eventBus);
     _systemManager->addSystem<PassengerSpawnAnimationSystem>(_registry, _entityFactory,
@@ -58,6 +60,22 @@ Game::Game(Renderer &renderer, ThreadPool &threadPool, EventBus &eventBus,
                                                               _pathfinder);
     _simulationSystemManager->addSystem<ScoreSystem>(_registry);
     _simulationSystemManager->addSystem<LineDataSystem>(_registry, _entityFactory, _eventBus);
+
+    auto *cityPlacementSystem = _simulationSystemManager->getSystem<CityPlacementSystem>();
+    auto *passengerSpawnSystem = _simulationSystemManager->getSystem<PassengerSpawnSystem>();
+
+    if (chunkManagerSystem && cityPlacementSystem && passengerSpawnSystem) {
+        _systemManager->addSystem<SaveLoadSystem>(_registry, _eventBus, _worldGenerationSystem,
+                                                  *chunkManagerSystem, *cityPlacementSystem,
+                                                  *passengerSpawnSystem, _gameState, _camera);
+    } else {
+        LOG_ERROR("Game",
+                  "Failed to initialize SaveLoadSystem due to missing dependencies (ChunkManager: "
+                  "%p, CityPlacement: %p, PassengerSpawn: %p)",
+                  static_cast<void *>(chunkManagerSystem),
+                  static_cast<void *>(cityPlacementSystem),
+                  static_cast<void *>(passengerSpawnSystem));
+    }
 
     LOG_INFO("Game", "Game instance created and systems registered.");
 }

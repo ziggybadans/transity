@@ -13,6 +13,7 @@
 #include <random>
 #include <queue>
 #include <chrono>
+#include <sstream>
 
 CityPlacementSystem::CityPlacementSystem(LoadingState& loadingState, WorldGenerationSystem& worldGenerationSystem, EntityFactory& entityFactory, Renderer& renderer, EventBus& eventBus, PerformanceMonitor& performanceMonitor, ThreadPool& threadPool)
     : _loadingState(loadingState), 
@@ -49,10 +50,74 @@ const SuitabilityMaps &CityPlacementSystem::getSuitabilityMaps() const {
 
 CityPlacementDebugInfo CityPlacementSystem::getDebugInfo() const {
     CityPlacementDebugInfo info = _debugInfo;
-    info.timeToNextPlacement = _currentSpawnInterval - _timeSinceLastCity;
-    info.nextCityType = _nextCityType;
-    info.lastPlacementSuccess = _lastPlacementSuccess;
-    return info;
+   info.timeToNextPlacement = _currentSpawnInterval - _timeSinceLastCity;
+   info.nextCityType = _nextCityType;
+   info.lastPlacementSuccess = _lastPlacementSuccess;
+   return info;
+}
+
+CityPlacementSerializedState CityPlacementSystem::getSerializedState() const {
+    CityPlacementSerializedState state;
+    {
+        std::scoped_lock<std::mutex> lock(_mapUpdateMutex);
+        state.placedCities = _placedCities;
+        state.suitabilityMaps = _suitabilityMaps;
+        state.terrainCache = _terrainCache;
+        state.distanceToNearestCapital = _distanceToNearestCapital;
+        state.distanceToNearestTown = _distanceToNearestTown;
+    }
+    state.weights = _weights;
+    state.timeSinceLastCity = _timeSinceLastCity;
+    state.currentSpawnInterval = _currentSpawnInterval;
+    state.minSpawnInterval = _minSpawnInterval;
+    state.maxSpawnInterval = _maxSpawnInterval;
+    state.maxCities = _maxCities;
+    state.initialPlacementDone = _initialPlacementDone;
+    state.lastPlacementSuccess = _lastPlacementSuccess;
+    state.nextCityType = _nextCityType;
+    state.debugInfo = _debugInfo;
+
+    std::ostringstream oss;
+    oss << _rng;
+    state.rngState = oss.str();
+
+    return state;
+}
+
+void CityPlacementSystem::applySerializedState(const CityPlacementSerializedState &state) {
+    {
+        std::scoped_lock<std::mutex> lock(_mapUpdateMutex);
+        _placedCities = state.placedCities;
+        _suitabilityMaps = state.suitabilityMaps;
+        _terrainCache = state.terrainCache;
+        _distanceToNearestCapital = state.distanceToNearestCapital;
+        _distanceToNearestTown = state.distanceToNearestTown;
+    }
+
+    _weights = state.weights;
+    _timeSinceLastCity = state.timeSinceLastCity;
+    _currentSpawnInterval = state.currentSpawnInterval;
+    _minSpawnInterval = state.minSpawnInterval;
+    _maxSpawnInterval = state.maxSpawnInterval;
+    _maxCities = state.maxCities;
+    _initialPlacementDone = state.initialPlacementDone;
+    _lastPlacementSuccess = state.lastPlacementSuccess;
+    _nextCityType = state.nextCityType;
+    _debugInfo = state.debugInfo;
+    _debugInfoUpdateTimer = 0.0f;
+
+    if (!state.rngState.empty()) {
+        std::istringstream iss(state.rngState);
+        iss >> _rng;
+    }
+
+    _isRegenerating.store(false);
+    _loadingState.showOverlay = false;
+    _regenerationTask = {};
+
+    const auto &worldGrid = _worldGenerationSystem.getParams();
+    _renderer.getTerrainRenderSystem().setSuitabilityMapData(&_suitabilityMaps, &_terrainCache,
+                                                             worldGrid);
 }
 
 void CityPlacementSystem::init() {

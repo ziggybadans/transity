@@ -28,6 +28,7 @@ public:
     explicit ChunkManagerSystem(entt::registry& registry, EventBus& eventBus, WorldGenerationSystem& worldGenSystem, Camera& camera, ThreadPool& threadPool);
     ~ChunkManagerSystem();
     void update(sf::Time dt) override;
+    void loadChunksFromData(const std::vector<GeneratedChunkData> &chunks);
 
 private:
     // Event Handlers

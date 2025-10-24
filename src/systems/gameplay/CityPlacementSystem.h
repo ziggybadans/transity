@@ -15,6 +15,7 @@
 #include <mutex>
 #include <future>
 #include <atomic>
+#include <string>
 
 struct LoadingState;
 class WorldGenerationSystem;
@@ -55,6 +56,25 @@ struct CityPlacementDebugInfo {
     float suburbSuitabilityPercentage = 0.0f;
 };
 
+struct CityPlacementSerializedState {
+    PlacementWeights weights;
+    SuitabilityMaps suitabilityMaps;
+    std::vector<PlacedCityInfo> placedCities;
+    std::vector<TerrainType> terrainCache;
+    std::vector<int> distanceToNearestCapital;
+    std::vector<int> distanceToNearestTown;
+    float timeSinceLastCity = 0.0f;
+    float currentSpawnInterval = 0.0f;
+    float minSpawnInterval = 0.0f;
+    float maxSpawnInterval = 0.0f;
+    int maxCities = 0;
+    bool initialPlacementDone = false;
+    bool lastPlacementSuccess = false;
+    CityType nextCityType = CityType::TOWN;
+    CityPlacementDebugInfo debugInfo;
+    std::string rngState;
+};
+
 class CityPlacementSystem : public ISystem, public IUpdatable {
 public:
     explicit CityPlacementSystem(LoadingState& loadingState, WorldGenerationSystem& worldGenerationSystem, EntityFactory& entityFactory, Renderer& renderer, EventBus& eventBus, PerformanceMonitor& performanceMonitor, ThreadPool& threadPool);
@@ -65,6 +85,8 @@ public:
 
     const SuitabilityMaps &getSuitabilityMaps() const;
     CityPlacementDebugInfo getDebugInfo() const;
+    CityPlacementSerializedState getSerializedState() const;
+    void applySerializedState(const CityPlacementSerializedState &state);
 
 private:
     void initialPlacement(bool isRegeneration);
