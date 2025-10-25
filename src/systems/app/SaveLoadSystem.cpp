@@ -24,6 +24,7 @@
 #include <optional>
 #include <queue>
 #include <sstream>
+#include <string>
 #include <utility>
 
 namespace {
@@ -138,8 +139,34 @@ AppState appStateFromInt(int value) {
         return AppState::PLAYING;
     case 2:
         return AppState::QUITTING;
+    case 3:
+        return AppState::MAIN_MENU;
+    case 4:
+        return AppState::PAUSED;
     default:
         return AppState::PLAYING;
+    }
+}
+
+WorldType worldTypeFromInt(int value) {
+    switch (value) {
+    case 0:
+        return WorldType::PROCEDURAL;
+    case 1:
+        return WorldType::REAL;
+    default:
+        return WorldType::PROCEDURAL;
+    }
+}
+
+GameMode gameModeFromInt(int value) {
+    switch (value) {
+    case 0:
+        return GameMode::CAREER;
+    case 1:
+        return GameMode::SANDBOX;
+    default:
+        return GameMode::CAREER;
     }
 }
 } // namespace
@@ -970,7 +997,12 @@ SaveLoadSystem::deserializeEntities(const nlohmann::json &data,
 nlohmann::json SaveLoadSystem::serializeGameState() const {
     nlohmann::json data;
     data["interaction_mode"] = static_cast<int>(_gameState.currentInteractionMode);
-    data["app_state"] = static_cast<int>(_gameState.currentAppState);
+    AppState stateForSave =
+        _gameState.currentAppState == AppState::PAUSED ? AppState::PLAYING : _gameState.currentAppState;
+    data["app_state"] = static_cast<int>(stateForSave);
+    data["world_name"] = _gameState.worldName;
+    data["world_type"] = static_cast<int>(_gameState.worldType);
+    data["game_mode"] = static_cast<int>(_gameState.gameMode);
     if (_gameState.selectedEntity && _registry.valid(*_gameState.selectedEntity)) {
         data["selected_entity"] = toId(*_gameState.selectedEntity);
     } else {
@@ -993,7 +1025,11 @@ void SaveLoadSystem::applyGameState(const nlohmann::json &data,
                                     const std::unordered_map<EntityId, entt::entity> &map) {
     _gameState.currentInteractionMode =
         interactionModeFromInt(data.value("interaction_mode", 0));
-    _gameState.currentAppState = appStateFromInt(data.value("app_state", 1));
+    AppState loadedState = appStateFromInt(data.value("app_state", 1));
+    _gameState.currentAppState = (loadedState == AppState::PAUSED) ? AppState::PLAYING : loadedState;
+    _gameState.worldName = data.value("world_name", std::string("Loaded World"));
+    _gameState.worldType = worldTypeFromInt(data.value("world_type", 0));
+    _gameState.gameMode = gameModeFromInt(data.value("game_mode", 0));
 
     if (data.contains("selected_entity") && !data["selected_entity"].is_null()) {
         auto entity = toEntity(data["selected_entity"].get<EntityId>(), map);

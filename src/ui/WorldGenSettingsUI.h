@@ -4,7 +4,6 @@
 #include "event/EventBus.h"
 #include <SFML/System/Vector2.hpp>
 #include <entt/entt.hpp>
-#include <array>
 #include <filesystem>
 #include <string>
 
@@ -12,8 +11,6 @@ struct MouseMovedEvent;
 
 class WorldGenerationSystem;
 class TerrainRenderSystem;
-
-enum class FileDialogMode { None, Save, Load };
 
 class WorldGenSettingsUI {
 public:
@@ -36,10 +33,8 @@ private:
     bool sliderIntWithReset(const char *label, int *value, int defaultValue, int min, int max,
                             const char *format = "%d");
     void onMouseMoved(const MouseMovedEvent &event);
-    void openFileDialog(FileDialogMode mode);
-    void drawFileDialog();
+    void drawSavedGamesList();
     std::filesystem::path getDefaultSaveDirectory() const;
-    std::string sanitizeFilename(const std::string &name) const;
 
     EventBus &_eventBus;
     WorldGenerationSystem &_worldGenerationSystem;
@@ -56,10 +51,4 @@ private:
     sf::Vector2f _lastMouseWorldPos{0.f, 0.f};
     entt::scoped_connection _mouseMovedConnection;
     float _lastWindowBottomY = 0.0f;
-    FileDialogMode _fileDialogMode = FileDialogMode::None;
-    std::filesystem::path _fileDialogDirectory;
-    std::array<char, 260> _fileDialogNameBuffer{};
-    std::string _fileDialogSelected;
-    std::string _fileDialogError;
-    bool _fileDialogScrollToTop = false;
 };
