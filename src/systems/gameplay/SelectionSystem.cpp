@@ -1,14 +1,13 @@
 #include "SelectionSystem.h"
 #include "components/GameLogicComponents.h"
 #include "components/PassengerComponents.h"
-#include "components/RenderComponents.h"
+#include "components/LineComponents.h"
 #include "Logger.h"
 #include "imgui.h"
 #include "core/Pathfinder.h"
 #include "event/UIEvents.h"
 #include <SFML/System/Vector2.hpp>
 #include <SFML/Window/Mouse.hpp>
-#include <cmath>
 #include <algorithm>
 #include <limits>
 
@@ -39,101 +38,56 @@ SelectionSystem::~SelectionSystem() {
 }
 
 void SelectionSystem::onMouseButtonPressed(const MouseButtonPressedEvent& event) {
-    if (event.button != sf::Mouse::Button::Left) {
-        return;
-    }
-
-    if (ImGui::GetIO().WantCaptureMouse) {
+    if (event.button != sf::Mouse::Button::Left || ImGui::GetIO().WantCaptureMouse) {
         return;
     }
 
     if (_gameState.currentInteractionMode == InteractionMode::CREATE_PASSENGER) {
-        auto clickableView = _registry.view<const PositionComponent, const ClickableComponent, const CityComponent>();
-        for (auto entity : clickableView) {
-            const auto& position = clickableView.get<const PositionComponent>(entity);
-            const auto& clickable = clickableView.get<const ClickableComponent>(entity);
-
-            sf::Vector2f diff = position.coordinates - event.worldPosition;
-            float distanceSq = diff.x * diff.x + diff.y * diff.y;
-            float radiusSq = clickable.boundingRadius.value * clickable.boundingRadius.value;
-
-            if (distanceSq <= radiusSq) {
-                if (_gameState.passengerOriginStation.has_value() && _gameState.passengerOriginStation.value() != entity) {
-                    entt::entity origin = _gameState.passengerOriginStation.value();
-                    entt::entity destination = entity;
-
-                    std::vector<entt::entity> path = _pathfinder.findPath(origin, destination);
-
-                    if (!path.empty()) {
-                        auto passenger = _registry.create();
-                        _registry.emplace<PassengerComponent>(passenger, origin, destination);
-                        
-                        auto& pathComponent = _registry.emplace<PathComponent>(passenger);
-                        pathComponent.nodes = path;
-                        pathComponent.currentNodeIndex = 0;
-
-                        auto& originCity = _registry.get<CityComponent>(origin);
-                        originCity.waitingPassengers.push_back(passenger);
-
-                        LOG_INFO("SelectionSystem", "Passenger created from %u to %u with path size %zu", entt::to_integral(origin), entt::to_integral(destination), path.size());
-                    } else {
-                        LOG_WARN("SelectionSystem", "Could not find a path for passenger from %u to %u", entt::to_integral(origin), entt::to_integral(destination));
-                    }
-
-                    _gameState.passengerOriginStation = std::nullopt;
-                    _eventBus.enqueue<InteractionModeChangeEvent>({InteractionMode::SELECT});
-                }
-                return;
-            }
-        }
-    } else if (_gameState.currentInteractionMode != InteractionMode::SELECT) {
-        return;
+        handlePassengerCreationClick(event);
+    } else if (_gameState.currentInteractionMode == InteractionMode::SELECT) {
+        handleSelectionClick(event);
     }
+}
 
-    auto selectionView = _registry.view<SelectedComponent>();
-    for (auto entity : selectionView) {
-        _registry.remove<SelectedComponent>(entity);
-    }
-
-    entt::entity clickedEntity = entt::null;
-
-    auto clickableView = _registry.view<const PositionComponent, const ClickableComponent>();
+void SelectionSystem::handlePassengerCreationClick(const MouseButtonPressedEvent& event) {
+    auto clickableView = _registry.view<const PositionComponent, const ClickableComponent, const CityComponent>();
     for (auto entity : clickableView) {
         const auto& position = clickableView.get<const PositionComponent>(entity);
         const auto& clickable = clickableView.get<const ClickableComponent>(entity);
 
         sf::Vector2f diff = position.coordinates - event.worldPosition;
-        float distanceSq = diff.x * diff.x + diff.y * diff.y;
-        float radiusSq = clickable.boundingRadius.value * clickable.boundingRadius.value;
+        if ((diff.x * diff.x + diff.y * diff.y) <= (clickable.boundingRadius.value * clickable.boundingRadius.value)) {
+            if (_gameState.passengerOriginStation.has_value() && _gameState.passengerOriginStation.value() != entity) {
+                entt::entity origin = _gameState.passengerOriginStation.value();
+                entt::entity destination = entity;
 
-        if (distanceSq <= radiusSq) {
-            clickedEntity = entity;
-            break; 
-        }
-    }
+                std::vector<entt::entity> path = _pathfinder.findPath(origin, destination);
 
-    if (clickedEntity == entt::null) {
-        auto lineView = _registry.view<const LineComponent>();
-        float minDistanceSq = std::numeric_limits<float>::max();
-        const float selectionThresholdSq = 10.0f * 10.0f;
-
-        for (auto entity : lineView) {
-            const auto& line = lineView.get<const LineComponent>(entity);
-            if (line.points.size() < 2) continue;
-
-            for (size_t i = 0; i < line.points.size() - 1; ++i) {
-                const auto& pos1 = line.points[i].position;
-                const auto& pos2 = line.points[i + 1].position;
-
-                float distSq = distanceToSegmentSq(event.worldPosition, pos1, pos2);
-
-                if (distSq < minDistanceSq && distSq < selectionThresholdSq) {
-                    minDistanceSq = distSq;
-                    clickedEntity = entity;
+                if (!path.empty()) {
+                    auto passenger = _registry.create();
+                    auto& passengerComponent = _registry.emplace<PassengerComponent>(passenger, origin, destination);
+                    passengerComponent.currentContainer = origin;
+                    auto& pathComponent = _registry.emplace<PathComponent>(passenger);
+                    pathComponent.nodes = path;
+                    LOG_INFO("SelectionSystem", "Passenger created from %u to %u with path size %zu", entt::to_integral(origin), entt::to_integral(destination), path.size());
+                } else {
+                    LOG_WARN("SelectionSystem", "Could not find a path for passenger from %u to %u", entt::to_integral(origin), entt::to_integral(destination));
                 }
+
+                _gameState.passengerOriginStation = std::nullopt;
+                _eventBus.enqueue<InteractionModeChangeEvent>({InteractionMode::SELECT});
             }
+            return; // Exit after handling the click
         }
     }
+}
+
+void SelectionSystem::handleSelectionClick(const MouseButtonPressedEvent& event) {
+    // Clear previous selection
+    auto selectionView = _registry.view<SelectedComponent>();
+    _registry.remove<SelectedComponent>(selectionView.begin(), selectionView.end());
+
+    entt::entity clickedEntity = findClickedEntity(event.worldPosition);
 
     if (clickedEntity != entt::null) {
         _gameState.selectedEntity = clickedEntity;
@@ -147,4 +101,45 @@ void SelectionSystem::onMouseButtonPressed(const MouseButtonPressedEvent& event)
         _gameState.selectedEntity = std::nullopt;
         _eventBus.enqueue<EntityDeselectedEvent>({});
     }
+}
+
+entt::entity SelectionSystem::findClickedEntity(const sf::Vector2f& worldPosition) {
+    // First, check for entities with a ClickableComponent (like cities and trains)
+    auto clickableView = _registry.view<const PositionComponent, const ClickableComponent>();
+    for (auto entity : clickableView) {
+        const auto& position = clickableView.get<const PositionComponent>(entity);
+        const auto& clickable = clickableView.get<const ClickableComponent>(entity);
+
+        sf::Vector2f diff = position.coordinates - worldPosition;
+        float radiusSq = clickable.boundingRadius.value * clickable.boundingRadius.value;
+        if ((diff.x * diff.x + diff.y * diff.y) <= radiusSq) {
+            return entity;
+        }
+    }
+
+    // If no clickable component was found, check for lines
+    auto lineView = _registry.view<const LineComponent>();
+    float minDistanceSq = std::numeric_limits<float>::max();
+    entt::entity bestLineCandidate = entt::null;
+    const float selectionThresholdSq = 10.0f * 10.0f;
+
+    for (auto entity : lineView) {
+        const auto& line = lineView.get<const LineComponent>(entity);
+        if (line.curvePoints.size() < 2) continue;
+
+        for (size_t i = 0; i < line.curvePoints.size() - 1; ++i) {
+            size_t segmentIndex = line.curveSegmentIndices[i];
+            const sf::Vector2f offset = (segmentIndex < line.pathOffsets.size()) ? line.pathOffsets[segmentIndex] : sf::Vector2f(0, 0);
+            const auto& pos1 = line.curvePoints[i] + offset;
+            const auto& pos2 = line.curvePoints[i + 1] + offset;
+
+            float distSq = distanceToSegmentSq(worldPosition, pos1, pos2);
+            if (distSq < minDistanceSq && distSq < selectionThresholdSq) {
+                minDistanceSq = distSq;
+                bestLineCandidate = entity;
+            }
+        }
+    }
+
+    return bestLineCandidate;
 }

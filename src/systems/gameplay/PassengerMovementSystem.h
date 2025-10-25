@@ -6,7 +6,6 @@
 
 struct LineComponent;
 struct TrainMovementComponent;
-struct TrainCapacityComponent;
 
 class PassengerMovementSystem : public ISystem, public IUpdatable {
 public:
@@ -15,8 +14,8 @@ public:
     void update(sf::Time dt) override;
 
 private:
-    void alightPassengers(entt::entity trainEntity, const TrainMovementComponent& movement, TrainCapacityComponent& capacity);
-    void boardPassengers(entt::entity trainEntity, const TrainMovementComponent& movement, TrainCapacityComponent& capacity);
+    void alightPassengers(entt::entity trainEntity, entt::entity stationEntity);
+    void boardPassengers(entt::entity trainEntity, entt::entity stationEntity);
 
     bool isTrainGoingToNextNode(const TrainMovementComponent& movement, const LineComponent& line, entt::entity currentStopEntity, entt::entity nextNodeInPath);
 

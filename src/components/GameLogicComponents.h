@@ -12,82 +12,18 @@ struct PositionComponent {
     sf::Vector2f coordinates;
 };
 
+// Enum for the type of city.
+enum class CityType { CAPITAL, TOWN, SUBURB };
+
 // A component for city entities.
 struct CityComponent {
+    CityType type;
     std::vector<entt::entity> connectedLines;
-    std::vector<entt::entity> waitingPassengers;
-};
-
-// A component for line entities.
-enum class LinePointType { STOP, CONTROL_POINT };
-
-struct LinePoint {
-    LinePointType type;
-    sf::Vector2f position;
-    entt::entity stationEntity = entt::null;
-};
-
-struct LineComponent {
-    sf::Color color;
-    std::vector<LinePoint> points;
-    std::vector<sf::Vector2f> pathOffsets;
-    Thickness thickness = {Constants::DEFAULT_LINE_THICKNESS};
-};
-
-// A component to manage the state of line editing.
-struct LineEditingComponent {
-    std::optional<size_t> selectedPointIndex;
-    std::optional<size_t> draggedPointIndex;
-    std::optional<sf::Vector2f> originalPointPosition;
 };
 
 // A component that makes an entity clickable.
 struct ClickableComponent {
     Radius boundingRadius;
-};
-
-// A tag for stations that are part of a line currently being created.
-struct ActiveLineStationTag {
-    StationOrder order = {0};
-};
-
-// Enum for the state of a train
-enum class TrainState { STOPPED, ACCELERATING, MOVING, DECELERATING };
-
-enum class TrainDirection { FORWARD, BACKWARD };
-
-// A tag to identify train entities
-struct TrainTag {};
-
-// Manages the train's state machine and progress on a line
-struct TrainMovementComponent {
-    TrainState state = TrainState::STOPPED;
-    TrainDirection direction = TrainDirection::FORWARD;
-    entt::entity assignedLine;
-    int currentSegmentIndex = 0;
-    float progressOnSegment = 0.0f;
-    float stopTimer = Constants::TRAIN_STOP_DURATION;
-};
-
-// Manages the train's physics properties
-struct TrainPhysicsComponent {
-    float maxSpeed = Constants::TRAIN_MAX_SPEED;
-    float currentSpeed = Constants::TRAIN_DEFAULT_INITIAL_SPEED;
-    float acceleration = Constants::TRAIN_ACCELERATION;
-};
-
-// Manages passenger capacity and load
-struct TrainCapacityComponent {
-    int capacity = Constants::TRAIN_CAPACITY;
-    int currentLoad = 0;  // Add this line
-};
-
-// A temporary component added when a train begins its station approach
-struct StationApproachComponent {
-    sf::Vector2f approachCurveStart;
-    sf::Vector2f approachCurveControl;
-    float decelerationProgress = 0.0f;
-    float decelerationDistance = 0.0f;
 };
 
 // A tag to mark an entity as selected.
@@ -104,4 +40,9 @@ struct PassengerSpawnAnimationComponent {
     float duration = Constants::PASSENGER_SPAWN_ANIMATION_DURATION;
     entt::entity originCity;
     entt::entity destinationCity;
+};
+
+// A component for storing the game score.
+struct GameScoreComponent {
+    int score = 0;
 };

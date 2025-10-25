@@ -8,6 +8,7 @@
 #include <SFML/System/Time.hpp>
 #include <entt/entt.hpp>
 #include <memory>
+#include <optional>
 
 class WorldGenerationSystem;
 class TerrainRenderSystem;
@@ -15,6 +16,7 @@ class PerformanceMonitor;
 class Camera;
 class GameState;
 class ColorManager;
+class CityPlacementSystem;
 namespace sf {
 class RenderWindow;
 }
@@ -25,14 +27,17 @@ public:
               WorldGenerationSystem &worldGenerationSystem,
               TerrainRenderSystem &terrainRenderSystem, PerformanceMonitor &performanceMonitor,
               Camera &camera, GameState &gameState, ColorManager &colorManager,
-              sf::RenderWindow &window);
+              sf::RenderWindow &window, CityPlacementSystem &cityPlacementSystem);
     ~UIManager();
 
-    void draw(sf::Time deltaTime, size_t numStationsInActiveLine, size_t numPointsInActiveLine);
+    void draw(sf::Time deltaTime, size_t numStationsInActiveLine, size_t numPointsInActiveLine,
+              std::optional<float> currentSegmentGrade,
+              bool currentSegmentExceedsGrade);
 
 private:
     std::unique_ptr<InfoPanelUI> _infoPanelUI;
     std::unique_ptr<WorldGenSettingsUI> _worldGenSettingsUI;
     std::unique_ptr<DebugUI> _debugUI;
     std::unique_ptr<InteractionUI> _interactionUI;
+    CityPlacementSystem &_cityPlacementSystem;
 };

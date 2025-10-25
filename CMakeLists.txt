@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.28)
-project(CMakeSFMLProject LANGUAGES CXX)
+project(Transity VERSION 0.1.0 LANGUAGES CXX)
+set(CMAKE_CXX_INCLUDE_WHAT_YOU_USE "")
 
 # Where the final binaries will be placed
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
@@ -69,14 +70,28 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(ImGuiSFML)
 
+set(TRANSITY_STAGE "Predev")
+
 # ---- your executable --------------------------------------------------------
 file(GLOB_RECURSE SOURCES "src/*.cpp")
-add_executable(main ${SOURCES})
-target_compile_definitions(main PRIVATE LOGGING_ENABLED)
-target_compile_features(main PRIVATE cxx_std_17)
+
+if(APPLE)
+    add_executable(transity MACOSX_BUNDLE ${SOURCES})
+elseif(WIN32)
+    add_executable(transity WIN32 ${SOURCES})
+else()
+    add_executable(transity ${SOURCES})
+endif()
+
+target_compile_definitions(transity PRIVATE
+    LOGGING_ENABLED
+    TRANSITY_VERSION="${PROJECT_VERSION}"
+    TRANSITY_STAGE="${TRANSITY_STAGE}"
+)
+target_compile_features(transity PRIVATE cxx_std_17)
 
 # Add include directory
-target_include_directories(main PRIVATE
+target_include_directories(transity PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/lib
     ${CMAKE_CURRENT_SOURCE_DIR}/src
@@ -87,16 +102,18 @@ target_include_directories(main PRIVATE
     ${nlohmann_json_SOURCE_DIR}/include
 )
 
-target_link_libraries(main PRIVATE
+target_link_libraries(transity PRIVATE
     SFML::Graphics
     SFML::Window
     SFML::System
     ImGui-SFML
 )
 
-add_custom_command(TARGET main POST_BUILD
+set_target_properties(transity PROPERTIES OUTPUT_NAME "Transity")
+
+add_custom_command(TARGET transity POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     "${CMAKE_CURRENT_SOURCE_DIR}/data"
-    "$<TARGET_FILE_DIR:main>/data"
+    "$<TARGET_FILE_DIR:transity>/data"
     COMMENT "Copying data directory to build output"
 )

@@ -1,9 +1,11 @@
 #include "LineEditingSystem.h"
-#include "components/GameLogicComponents.h"
-#include "components/WorldComponents.h"
+#include "components/LineComponents.h"
+#include "SnapHelper.h"
 #include "Logger.h"
+#include "Constants.h"
+#include "core/Curve.h"
+#include "event/LineEvents.h"
 #include <algorithm>
-#include <limits>
 
 namespace {
     float distanceToSegmentSq(sf::Vector2f p, sf::Vector2f v, sf::Vector2f w) {
@@ -15,6 +17,26 @@ namespace {
         sf::Vector2f projection = v + t * (w - v);
         sf::Vector2f d = p - projection;
         return d.x * d.x + d.y * d.y;
+    }
+
+    void regenerateCurve(LineComponent& line) {
+        if (line.points.size() < 2) {
+            line.curvePoints.clear();
+            line.curveSegmentIndices.clear();
+            return;
+        }
+
+        std::vector<sf::Vector2f> controlPoints;
+        controlPoints.reserve(line.points.size());
+        for (const auto& p : line.points) {
+            controlPoints.push_back(p.position);
+        }
+        
+        CurveData curveData = Curve::generateMetroCurve(controlPoints, Constants::METRO_CURVE_RADIUS);
+        line.curvePoints = curveData.points;
+        line.curveSegmentIndices = curveData.segmentIndices; // This line was missing
+        line.totalDistance = Curve::calculateCurveLength(line.curvePoints);
+        line.stops = Curve::calculateStopInfo(line.points, line.curvePoints);
     }
 }
 
@@ -91,7 +113,9 @@ void LineEditingSystem::onMouseButtonPressed(const MouseButtonPressedEvent& even
         const auto& p2 = line.points[i+1].position;
         if (distanceToSegmentSq(event.worldPosition, p1, p2) < 64.f) { // 8.f radius squared
             line.points.insert(line.points.begin() + i + 1, {LinePointType::CONTROL_POINT, event.worldPosition, entt::null});
-            LOG_DEBUG("LineEditingSystem", "Added point to line");
+            regenerateCurve(line);
+            _eventBus.enqueue<LineModifiedEvent>({selectedLine});
+            LOG_DEBUG("LineEditingSystem", "Added point to line and regenerated curve");
             return;
         }
     }
@@ -115,59 +139,88 @@ void LineEditingSystem::onMouseButtonReleased(const MouseButtonReleasedEvent& ev
 
     if (editingState.draggedPointIndex.has_value()) {
         auto& line = _registry.get<LineComponent>(selectedLine);
-        auto& point = line.points[editingState.draggedPointIndex.value()];
+        size_t draggedIndex = editingState.draggedPointIndex.value();
+        auto& point = line.points[draggedIndex];
 
-        auto cityView = _registry.view<const PositionComponent, const CityComponent>();
-        bool snapped = false;
-        for (auto entity : cityView) {
-            const auto& cityPosition = cityView.get<const PositionComponent>(entity);
-            sf::Vector2f diff = point.position - cityPosition.coordinates;
-            float distanceSq = diff.x * diff.x + diff.y * diff.y;
-            if (distanceSq <= 800.f) { // 20.f radius squared
-                point.position = cityPosition.coordinates;
+        if (editingState.snapInfo && editingState.snapPosition) {
+            point.position = editingState.snapPosition.value();
+            point.snapInfo = editingState.snapInfo;
+            point.snapSide = editingState.snapSide;
+
+            if (editingState.snapInfo->snappedToPointIndex == (size_t)-1) { // Snapped to a city
                 point.type = LinePointType::STOP;
-                point.stationEntity = entity;
-                snapped = true;
-                break;
+                point.stationEntity = editingState.snapInfo->snappedToEntity;
+            } else { // Snapped to a control point
+                point.type = LinePointType::CONTROL_POINT;
+                point.stationEntity = entt::null;
             }
-        }
-
-        if (!snapped) {
+        } else {
             if (editingState.originalPointPosition.has_value()) {
                 point.position = editingState.originalPointPosition.value();
             } else {
                 point.type = LinePointType::CONTROL_POINT;
                 point.stationEntity = entt::null;
+                point.snapInfo.reset();
+                point.snapSide = 0.f;
             }
         }
+
+        regenerateCurve(line);
+        _eventBus.enqueue<LineModifiedEvent>({selectedLine});
     }
 
     editingState.draggedPointIndex = std::nullopt;
     editingState.originalPointPosition = std::nullopt;
+    editingState.snapPosition.reset();
+    editingState.snapInfo.reset();
+    editingState.snapSide = 0.f;
+    editingState.snapTangent.reset();
     LOG_DEBUG("LineEditingSystem", "Stopped dragging point");
 }
 
 void LineEditingSystem::onMouseMoved(const MouseMovedEvent& event) {
-    if (_gameState.currentInteractionMode != InteractionMode::EDIT_LINE) {
+    if (_gameState.currentInteractionMode != InteractionMode::EDIT_LINE || !_gameState.selectedEntity) {
         return;
     }
 
-    if (!_gameState.selectedEntity.has_value()) {
+    entt::entity selectedLineEntity = _gameState.selectedEntity.value();
+    if (!_registry.all_of<LineComponent, LineEditingComponent>(selectedLineEntity)) {
         return;
     }
 
-    entt::entity selectedLine = _gameState.selectedEntity.value();
-    if (!_registry.all_of<LineComponent, LineEditingComponent>(selectedLine)) {
+    auto& editingState = _registry.get<LineEditingComponent>(selectedLineEntity);
+    if (!editingState.draggedPointIndex) {
         return;
     }
 
-    auto& editingState = _registry.get<LineEditingComponent>(selectedLine);
-    if (!editingState.draggedPointIndex.has_value()) {
-        return;
+    editingState.snapPosition.reset();
+    editingState.snapInfo.reset();
+    editingState.snapSide = 0.f;
+    editingState.snapTangent.reset();
+
+    sf::Vector2f finalPos = event.worldPosition;
+    
+    auto& line = _registry.get<LineComponent>(selectedLineEntity);
+    size_t draggedIdx = editingState.draggedPointIndex.value();
+    std::optional<sf::Vector2f> adjacentPointPos;
+    if (draggedIdx > 0) {
+        adjacentPointPos = line.points[draggedIdx - 1].position;
+    } else if (line.points.size() > 1) {
+        adjacentPointPos = line.points[draggedIdx + 1].position;
+    }
+    
+    std::optional<std::pair<entt::entity, size_t>> ignorePoint = {{selectedLineEntity, draggedIdx}};
+    if (auto snapResult = SnapHelper::findSnap(_registry, event.worldPosition, adjacentPointPos, ignorePoint)) {
+        editingState.snapPosition = snapResult->position;
+        editingState.snapInfo = snapResult->info;
+        editingState.snapSide = snapResult->side;
+        editingState.snapTangent = snapResult->tangent;
+        finalPos = snapResult->position;
     }
 
-    auto& line = _registry.get<LineComponent>(selectedLine);
-    line.points[editingState.draggedPointIndex.value()].position = event.worldPosition;
+    line.points[draggedIdx].position = finalPos;
+
+    regenerateCurve(line);
 }
 
 void LineEditingSystem::onKeyPressed(const KeyPressedEvent& event) {
@@ -192,6 +245,8 @@ void LineEditingSystem::onKeyPressed(const KeyPressedEvent& event) {
     auto& line = _registry.get<LineComponent>(selectedLine);
     if (line.points.size() > 2) {
         line.points.erase(line.points.begin() + editingState.selectedPointIndex.value());
+        regenerateCurve(line);
+        _eventBus.enqueue<LineModifiedEvent>({selectedLine});
         editingState.selectedPointIndex = std::nullopt;
         editingState.draggedPointIndex = std::nullopt;
         LOG_DEBUG("LineEditingSystem", "Deleted point from line");

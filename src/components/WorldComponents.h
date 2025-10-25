@@ -5,9 +5,6 @@
 #include <SFML/System.hpp>
 #include <vector>
 
-// Defines the levels of detail for chunk rendering.
-enum class LODLevel { LOD0, LOD1, LOD2, LOD3, Count };
-
 // Represents a single cell in the world grid.
 struct GridCellComponent {
     TerrainType type = TerrainType::WATER;
@@ -26,16 +23,14 @@ struct ChunkTerrainComponent {
     std::vector<TerrainType> cells;
 };
 
-// The noise values used to generate the terrain for a chunk.
-struct ChunkNoiseComponent {
-    std::vector<float> noiseValues;
-    std::vector<float> rawNoiseValues;
+// The elevation values for a chunk, stored per cell in world units.
+struct ChunkElevationComponent {
+    std::vector<float> elevations;
 };
 
 // The current state of a chunk, such as whether its mesh needs rebuilding.
 struct ChunkStateComponent {
     bool isMeshDirty = true;
-    LODLevel lodLevel = LODLevel::LOD0;
 };
 
 // Defines the overall structure of the world grid.

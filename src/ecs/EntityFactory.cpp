@@ -1,6 +1,11 @@
 #include "EntityFactory.h"
 #include "Constants.h"
 #include "Logger.h"
+#include "components/GameLogicComponents.h"
+#include "components/LineComponents.h"
+#include "components/RenderComponents.h"
+#include "components/TrainComponents.h"
+#include "core/Curve.h"
 #include <SFML/Graphics/Color.hpp>
 #include <filesystem>
 #include <fstream>
@@ -137,6 +142,21 @@ entt::entity EntityFactory::createEntity(const std::string &archetypeId,
     return entity;
 }
 
+entt::entity EntityFactory::createEntity(const std::string &archetypeId,
+                                         const sf::Vector2f &position, CityType cityType,
+                                         const std::string &name) {
+    auto entity = createEntity(archetypeId, position, name);
+    if (entity != entt::null) {
+        if (_registry.all_of<CityComponent>(entity)) {
+            auto &cityComponent = _registry.get<CityComponent>(entity);
+            cityComponent.type = cityType;
+        } else {
+            _registry.emplace<CityComponent>(entity, cityType);
+        }
+    }
+    return entity;
+}
+
 entt::entity EntityFactory::createLine(const std::vector<LinePoint> &points,
                                        const sf::Color &color) {
     LOG_DEBUG("EntityFactory", "Request to create line entity with %zu points.", points.size());
@@ -150,8 +170,31 @@ entt::entity EntityFactory::createLine(const std::vector<LinePoint> &points,
     lineComponent.points = points;
     lineComponent.color = color;
 
-    LOG_DEBUG("EntityFactory", "Line entity (ID: %u) created successfully with %zu points.",
-              static_cast<unsigned int>(entity), points.size());
+    std::vector<sf::Vector2f> controlPoints;
+    for (const auto &point : points) {
+        controlPoints.push_back(point.position);
+    }
+
+    CurveData curveData = Curve::generateCatmullRom(controlPoints);
+    lineComponent.curvePoints = curveData.points;
+    lineComponent.curveSegmentIndices = curveData.segmentIndices;
+    lineComponent.totalDistance = Curve::calculateCurveLength(lineComponent.curvePoints);
+    lineComponent.stops =
+        Curve::calculateStopInfo(lineComponent.points, lineComponent.curvePoints);  // Add this
+
+    if (!curveData.segmentIndices.empty()) {
+        size_t max_segment_index = 0;
+        for (size_t index : curveData.segmentIndices) {
+            if (index > max_segment_index) {
+                max_segment_index = index;
+            }
+        }
+        lineComponent.pathOffsets.resize(max_segment_index + 1, sf::Vector2f(0, 0));
+    }
+
+    LOG_DEBUG("EntityFactory",
+              "Line entity (ID: %u) created successfully with %zu points and %zu curve points.",
+              static_cast<unsigned int>(entity), points.size(), lineComponent.curvePoints.size());
 
     return entity;
 }

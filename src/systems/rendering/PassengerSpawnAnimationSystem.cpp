@@ -29,8 +29,8 @@ void PassengerSpawnAnimationSystem::update(sf::Time dt) {
                     pathComponent.nodes = path;
                     pathComponent.currentNodeIndex = 0;
 
-                    auto& originCityComponent = _registry.get<CityComponent>(animation.originCity);
-                    originCityComponent.waitingPassengers.push_back(passengerEntity);
+                    auto& passengerComponent = _registry.get<PassengerComponent>(passengerEntity);
+                    passengerComponent.currentContainer = animation.originCity;
 
                     LOG_DEBUG("PassengerSpawnAnimationSystem", "Passenger %u created at city %u after animation.", entt::to_integral(passengerEntity), entt::to_integral(animation.originCity));
                 }

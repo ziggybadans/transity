@@ -2,15 +2,17 @@
 #include "Constants.h"
 #include "Logger.h"
 #include "app/GameState.h"
+#include "components/GameLogicComponents.h"
 #include "core/PerformanceMonitor.h"
 #include "imgui.h"
 #include "render/Camera.h"
 #include "render/ColorManager.h"
 
-DebugUI::DebugUI(PerformanceMonitor &performanceMonitor, Camera &camera, GameState &gameState,
-                 ColorManager &colorManager, EventBus &eventBus, sf::RenderWindow &window)
-    : _performanceMonitor(performanceMonitor), _camera(camera), _gameState(gameState),
-      _colorManager(colorManager), _window(window) {
+DebugUI::DebugUI(entt::registry &registry, PerformanceMonitor &performanceMonitor, Camera &camera,
+                 GameState &gameState, ColorManager &colorManager, EventBus &eventBus,
+                 sf::RenderWindow &window)
+    : _registry(registry), _performanceMonitor(performanceMonitor), _camera(camera),
+      _gameState(gameState), _colorManager(colorManager), _window(window) {
     _themeChangedConnection =
         eventBus.sink<ThemeChangedEvent>().connect<&DebugUI::onThemeChanged>(this);
     LOG_DEBUG("DebugUI", "DebugUI instance created.");
@@ -20,9 +22,9 @@ DebugUI::~DebugUI() {
     LOG_DEBUG("DebugUI", "DebugUI instance destroyed.");
 }
 
-void DebugUI::draw(sf::Time deltaTime) {
+void DebugUI::draw(sf::Time deltaTime, const CityPlacementDebugInfo &cityPlacementDebugInfo) {
     drawTimeControlWindow();
-    drawProfilingWindow(deltaTime);
+    drawProfilingWindow(deltaTime, cityPlacementDebugInfo);
     drawSettingsWindow();
 }
 
@@ -34,25 +36,30 @@ void DebugUI::onThemeChanged(const ThemeChangedEvent &event) {
     }
 }
 
-void DebugUI::drawProfilingWindow(sf::Time deltaTime) {
+void DebugUI::drawProfilingWindow(sf::Time deltaTime,
+                                  const CityPlacementDebugInfo &cityPlacementDebugInfo) {
     const float windowPadding = Constants::UI_WINDOW_PADDING;
-    ImGuiWindowFlags size_flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize
-                                  | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse;
+    ImGuiWindowFlags size_flags =
+        ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize;
 
-    ImGui::SetNextWindowPos(ImVec2(windowPadding, windowPadding));
-    ImGui::Begin("Time Controls", nullptr,
-                 ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove
-                     | ImGuiWindowFlags_AlwaysAutoResize);
-    ImVec2 timeControlWindowSize = ImGui::GetWindowSize();
-    ImGui::End();
+    ImGui::SetNextWindowPos(
+        ImVec2(windowPadding, windowPadding + ImGui::GetFrameHeightWithSpacing() * 2.5f));
+    if (ImGui::Begin("Profiling", nullptr, size_flags)) {
+        ImGui::Text("FPS: %.1f", 1.f / deltaTime.asSeconds());
+        ImGui::Text("Zoom: %.2f", _camera.getZoom());
+        auto scoreView = _registry.view<GameScoreComponent>();
+        if (!scoreView.empty()) {
+            auto &scoreComponent = scoreView.get<GameScoreComponent>(scoreView.front());
+            ImGui::Text("Score: %d", scoreComponent.score);
+        }
 
-    ImVec2 debugWindowPos =
-        ImVec2(windowPadding, windowPadding + timeControlWindowSize.y + windowPadding);
-    ImGui::SetNextWindowPos(debugWindowPos, ImGuiCond_Always);
-    ImGui::Begin("Profiling", nullptr, size_flags);
-    ImGui::Text("FPS: %.1f", 1.f / deltaTime.asSeconds());
-    ImGui::Text("Zoom: %.2f", _camera.getZoom());
+        drawPerformanceGraphs();
+        drawCityPlacementInfo(cityPlacementDebugInfo);
+        ImGui::End();
+    }
+}
 
+void DebugUI::drawPerformanceGraphs() {
     if (ImGui::CollapsingHeader("Performance Graphs")) {
         const auto &renderHistory = _performanceMonitor.getHistory("Application::render");
         if (!renderHistory.empty()) {
@@ -65,7 +72,20 @@ void DebugUI::drawProfilingWindow(sf::Time deltaTime) {
                              nullptr, 0.0f, 16000.0f, ImVec2(0, 80));
         }
     }
-    ImGui::End();
+}
+
+void DebugUI::drawCityPlacementInfo(const CityPlacementDebugInfo &cityPlacementDebugInfo) {
+    if (ImGui::CollapsingHeader("City Placement")) {
+        ImGui::Text("Next City In: %.2fs", cityPlacementDebugInfo.timeToNextPlacement);
+        const char *cityType =
+            cityPlacementDebugInfo.nextCityType == CityType::TOWN ? "Town" : "Suburb";
+        ImGui::Text("Next City Type: %s", cityType);
+        ImGui::Text("Last Placement: %s",
+                    cityPlacementDebugInfo.lastPlacementSuccess ? "Success" : "Failure");
+        ImGui::Text("Town Suitability: %.2f%%", cityPlacementDebugInfo.townSuitabilityPercentage);
+        ImGui::Text("Suburb Suitability: %.2f%%",
+                    cityPlacementDebugInfo.suburbSuitabilityPercentage);
+    }
 }
 
 void DebugUI::drawTimeControlWindow() {
@@ -74,57 +94,65 @@ void DebugUI::drawTimeControlWindow() {
         ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize;
 
     ImGui::SetNextWindowPos(ImVec2(windowPadding, windowPadding));
-    ImGui::Begin("Time Controls", nullptr, flags);
+    if (ImGui::Begin("Time Controls", nullptr, flags)) {
+        float currentMultiplier = _gameState.timeMultiplier;
+        ImVec4 activeColor = ImGui::GetStyle().Colors[ImGuiCol_ButtonActive];
 
-    float currentMultiplier = _gameState.timeMultiplier;
-    ImVec4 activeColor = ImGui::GetStyle().Colors[ImGuiCol_ButtonActive];
+        if (currentMultiplier == 0.0f) ImGui::PushStyleColor(ImGuiCol_Button, activeColor);
+        if (ImGui::Button("||")) _gameState.timeMultiplier = 0.0f;
+        if (currentMultiplier == 0.0f) ImGui::PopStyleColor();
 
-    if (currentMultiplier == 0.0f) ImGui::PushStyleColor(ImGuiCol_Button, activeColor);
-    if (ImGui::Button("||")) _gameState.timeMultiplier = 0.0f;
-    if (currentMultiplier == 0.0f) ImGui::PopStyleColor();
+        ImGui::SameLine();
 
-    ImGui::SameLine();
+        if (currentMultiplier == 1.0f) ImGui::PushStyleColor(ImGuiCol_Button, activeColor);
+        if (ImGui::Button("1x")) _gameState.timeMultiplier = 1.0f;
+        if (currentMultiplier == 1.0f) ImGui::PopStyleColor();
 
-    if (currentMultiplier == 1.0f) ImGui::PushStyleColor(ImGuiCol_Button, activeColor);
-    if (ImGui::Button("1x")) _gameState.timeMultiplier = 1.0f;
-    if (currentMultiplier == 1.0f) ImGui::PopStyleColor();
+        ImGui::SameLine();
 
-    ImGui::SameLine();
+        if (currentMultiplier == 2.0f) ImGui::PushStyleColor(ImGuiCol_Button, activeColor);
+        if (ImGui::Button("2x")) _gameState.timeMultiplier = 2.0f;
+        if (currentMultiplier == 2.0f) ImGui::PopStyleColor();
 
-    if (currentMultiplier == 2.0f) ImGui::PushStyleColor(ImGuiCol_Button, activeColor);
-    if (ImGui::Button("2x")) _gameState.timeMultiplier = 2.0f;
-    if (currentMultiplier == 2.0f) ImGui::PopStyleColor();
+        ImGui::SameLine();
 
-    ImGui::SameLine();
+        if (currentMultiplier == 3.0f) ImGui::PushStyleColor(ImGuiCol_Button, activeColor);
+        if (ImGui::Button("3x")) _gameState.timeMultiplier = 3.0f;
+        if (currentMultiplier == 3.0f) ImGui::PopStyleColor();
 
-    if (currentMultiplier == 3.0f) ImGui::PushStyleColor(ImGuiCol_Button, activeColor);
-    if (ImGui::Button("3x")) _gameState.timeMultiplier = 3.0f;
-    if (currentMultiplier == 3.0f) ImGui::PopStyleColor();
-
-    ImGui::End();
+        ImGui::End();
+    }
 }
 
 void DebugUI::drawSettingsWindow() {
     const float windowPadding = Constants::UI_WINDOW_PADDING;
-    ImGuiWindowFlags flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize
-                             | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse;
+    ImGuiWindowFlags flags =
+        ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize;
 
     ImVec2 settingsWindowPos =
         ImVec2(windowPadding,
-               _window.getSize().y - ImGui::GetFrameHeightWithSpacing() * 2.5 - windowPadding);
+               _window.getSize().y - ImGui::GetFrameHeightWithSpacing() * 4 - windowPadding);
     ImGui::SetNextWindowPos(settingsWindowPos, ImGuiCond_Always);
-    ImGui::Begin("Settings", nullptr, flags);
+    if (ImGui::Begin("Settings", nullptr, flags)) {
+        ImGui::Text("Theme");
+        ImGui::SameLine();
 
-    ImGui::Text("Theme");
-    ImGui::SameLine();
+        int currentTheme = static_cast<int>(_colorManager.getTheme());
+        if (ImGui::RadioButton("Light", &currentTheme, static_cast<int>(Theme::Light))) {
+            _colorManager.setTheme(Theme::Light);
+        }
+        ImGui::SameLine();
+        if (ImGui::RadioButton("Dark", &currentTheme, static_cast<int>(Theme::Dark))) {
+            _colorManager.setTheme(Theme::Dark);
+        }
 
-    int currentTheme = static_cast<int>(_colorManager.getTheme());
-    if (ImGui::RadioButton("Light", &currentTheme, static_cast<int>(Theme::Light))) {
-        _colorManager.setTheme(Theme::Light);
+        ImGui::Separator();
+        ImGui::Checkbox("Enable Elevation Checks", &_gameState.elevationChecksEnabled);
+        if (!_gameState.elevationChecksEnabled) {
+            ImGui::TextDisabled("Lines won't be blocked by steep grades.");
+        } else {
+            ImGui::TextDisabled("Maximum elevation of 5 percent enforced.");
+        }
+        ImGui::End();
     }
-    ImGui::SameLine();
-    if (ImGui::RadioButton("Dark", &currentTheme, static_cast<int>(Theme::Dark))) {
-        _colorManager.setTheme(Theme::Dark);
-    }
-    ImGui::End();
 }

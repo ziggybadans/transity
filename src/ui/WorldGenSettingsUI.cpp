@@ -1,23 +1,82 @@
 #include "WorldGenSettingsUI.h"
 #include "Constants.h"
 #include "Logger.h"
+#include "event/DeletionEvents.h"
+#include "event/InputEvents.h"
 #include "event/UIEvents.h"
 #include "imgui.h"
 #include "systems/rendering/TerrainRenderSystem.h"
 #include "systems/world/WorldGenerationSystem.h"
 #include <cstdlib>
 
+#include <algorithm>
+#include <cmath>
+#include <filesystem>
+#include <string>
+#include <vector>
+
 WorldGenSettingsUI::WorldGenSettingsUI(EventBus &eventBus,
                                        WorldGenerationSystem &worldGenerationSystem,
                                        TerrainRenderSystem &terrainRenderSystem)
     : _eventBus(eventBus), _worldGenerationSystem(worldGenerationSystem),
-      _terrainRenderSystem(terrainRenderSystem) {
+      _terrainRenderSystem(terrainRenderSystem),
+      _defaultParams(worldGenerationSystem.getParams()) {
+    _shadedReliefEnabled = _terrainRenderSystem.isShadedReliefEnabled();
+    _mouseMovedConnection =
+        _eventBus.sink<MouseMovedEvent>().connect<&WorldGenSettingsUI::onMouseMoved>(this);
     LOG_DEBUG("WorldGenSettingsUI", "WorldGenSettingsUI instance created.");
-    _terrainRenderSystem.setLodEnabled(_isLodEnabled);
 }
 
 WorldGenSettingsUI::~WorldGenSettingsUI() {
+    _mouseMovedConnection.release();
     LOG_DEBUG("WorldGenSettingsUI", "WorldGenSettingsUI instance destroyed.");
+}
+
+bool WorldGenSettingsUI::drawResetButton(const char *label) {
+    ImGui::PushID(label);
+    bool clicked = ImGui::Button("R");
+    ImGui::PopID();
+    return clicked;
+}
+
+bool WorldGenSettingsUI::sliderFloatWithReset(const char *label, float *value, float defaultValue,
+                                              float min, float max, const char *format) {
+    const char *effectiveFormat = format ? format : "%.3f";
+    bool resetClicked = drawResetButton(label);
+    ImGui::SameLine();
+    ImGuiStyle &style = ImGui::GetStyle();
+    float availableWidth = ImGui::GetContentRegionAvail().x;
+    float labelWidth = ImGui::CalcTextSize(label).x;
+    float sliderWidth = std::max(0.0f, availableWidth - labelWidth - style.ItemInnerSpacing.x * 2.0f);
+    ImGui::SetNextItemWidth(sliderWidth);
+    bool changed = ImGui::SliderFloat(label, value, min, max, effectiveFormat);
+
+    if (resetClicked && (*value != defaultValue)) {
+        *value = defaultValue;
+        changed = true;
+    }
+
+    return changed;
+}
+
+bool WorldGenSettingsUI::sliderIntWithReset(const char *label, int *value, int defaultValue,
+                                            int min, int max, const char *format) {
+    const char *effectiveFormat = format ? format : "%d";
+    bool resetClicked = drawResetButton(label);
+    ImGui::SameLine();
+    ImGuiStyle &style = ImGui::GetStyle();
+    float availableWidth = ImGui::GetContentRegionAvail().x;
+    float labelWidth = ImGui::CalcTextSize(label).x;
+    float sliderWidth = std::max(0.0f, availableWidth - labelWidth - style.ItemInnerSpacing.x * 2.0f);
+    ImGui::SetNextItemWidth(sliderWidth);
+    bool changed = ImGui::SliderInt(label, value, min, max, effectiveFormat);
+
+    if (resetClicked && (*value != defaultValue)) {
+        *value = defaultValue;
+        changed = true;
+    }
+
+    return changed;
 }
 
 void WorldGenSettingsUI::draw() {
@@ -35,85 +94,158 @@ void WorldGenSettingsUI::draw() {
 
     WorldGenParams &params = _worldGenerationSystem.getParams();
     bool paramsChanged = false;
-
-    if (ImGui::Button("New Seed")) {
-        for (auto &layer : params.noiseLayers) {
-            layer.seed = std::rand();
-        }
-        paramsChanged = true;
-    }
-
-    ImGui::Separator();
-
-    for (int i = 0; i < params.noiseLayers.size(); ++i) {
-        auto &layer = params.noiseLayers[i];
-        std::string layerHeader = layer.name;
-        if (ImGui::CollapsingHeader(layerHeader.c_str())) {
-            ImGui::PushID(i);
-
-            if (ImGui::SliderFloat("Frequency", &layer.frequency, 0.001f, 0.1f, "%.4f"))
-                paramsChanged = true;
-
-            const char *noiseTypes[] = {"OpenSimplex2", "OpenSimplex2S", "Cellular",
-                                        "Perlin",       "ValueCubic",    "Value"};
-            if (ImGui::Combo("Noise Type", reinterpret_cast<int *>(&layer.noiseType), noiseTypes,
-                             IM_ARRAYSIZE(noiseTypes)))
-                paramsChanged = true;
-
-            const char *fractalTypes[] = {"None",
-                                          "FBm",
-                                          "Ridged",
-                                          "PingPong",
-                                          "DomainWarpProgressive",
-                                          "DomainWarpIndependent"};
-            if (ImGui::Combo("Fractal Type", reinterpret_cast<int *>(&layer.fractalType),
-                             fractalTypes, IM_ARRAYSIZE(fractalTypes)))
-                paramsChanged = true;
-
-            if (ImGui::SliderInt("Octaves", &layer.octaves, 1, 10)) paramsChanged = true;
-            if (ImGui::SliderFloat("Lacunarity", &layer.lacunarity, 0.1f, 4.0f))
-                paramsChanged = true;
-            if (ImGui::SliderFloat("Gain", &layer.gain, 0.1f, 1.0f)) paramsChanged = true;
-            if (ImGui::SliderFloat("Weight", &layer.weight, 0.0f, 2.0f)) paramsChanged = true;
-
-            ImGui::PopID();
-        }
-    }
-
-    ImGui::Separator();
-
-    if (ImGui::SliderFloat("Land Threshold", &params.landThreshold, -1.0f, 1.0f, "%.2f"))
-        paramsChanged = true;
-    if (ImGui::Checkbox("Distort Coastline", &params.distortCoastline)) paramsChanged = true;
-    if (params.distortCoastline) {
-        if (ImGui::SliderFloat("Distortion Strength", &params.coastlineDistortionStrength, 0.0f,
-                               0.5f, "%.2f"))
-            paramsChanged = true;
-    }
-
-    ImGui::Separator();
-
     bool gridChanged = false;
-    if (ImGui::InputInt("World Chunks X", &params.worldDimensionsInChunks.x)) gridChanged = true;
-    if (ImGui::InputInt("World Chunks Y", &params.worldDimensionsInChunks.y)) gridChanged = true;
-    if (ImGui::InputInt("Chunk Size X", &params.chunkDimensionsInCells.x)) gridChanged = true;
-    if (ImGui::InputInt("Chunk Size Y", &params.chunkDimensionsInCells.y)) gridChanged = true;
-    if (ImGui::InputFloat("Cell Size", &params.cellSize, 1.0f, 0.0f, "%.2f")) gridChanged = true;
+
+    drawNoiseLayerSettings(params, paramsChanged);
+    ImGui::Separator();
+    drawWorldGridSettings(params, gridChanged);
+    ImGui::Separator();
+    drawElevationSettings(params, paramsChanged);
+    ImGui::Separator();
+    drawVisualizationSettings();
+    ImGui::Separator();
+    drawActions(params);
 
     if ((paramsChanged || gridChanged) && _autoRegenerate) {
         LOG_DEBUG("UI", "Settings changed, auto-regenerating world.");
         auto paramsCopy = std::make_shared<WorldGenParams>(params);
         _eventBus.enqueue<RegenerateWorldRequestEvent>({paramsCopy});
     }
+    ImVec2 windowPos = ImGui::GetWindowPos();
+    ImVec2 windowSize = ImGui::GetWindowSize();
+    _lastWindowBottomY = windowPos.y + windowSize.y;
 
+    ImGui::End();
+}
+
+void WorldGenSettingsUI::drawNoiseLayerSettings(WorldGenParams &params, bool &paramsChanged) {
+    if (ImGui::Button("New Seed")) {
+        for (auto &layer : params.noiseLayers) {
+            layer.seed = std::rand();
+        }
+        if (!params.noiseLayers.empty()) {
+            LOG_INFO("WorldGenSettingsUI", "Generated new noise seeds. Primary seed set to %d.",
+                     params.noiseLayers.front().seed);
+        } else {
+            LOG_INFO("WorldGenSettingsUI", "Generated new noise seeds for empty noise layer set.");
+        }
+        paramsChanged = true;
+    }
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(140.0f);
+    if (params.noiseLayers.empty()) {
+        int dummySeed = 0;
+        ImGui::BeginDisabled();
+        ImGui::InputInt("Seed", &dummySeed);
+        ImGui::EndDisabled();
+    } else {
+        if (ImGui::InputInt("Seed", &params.noiseLayers.front().seed)) {
+            paramsChanged = true;
+        }
+    }
     ImGui::Separator();
+    for (int i = 0; i < params.noiseLayers.size(); ++i) {
+        auto &layer = params.noiseLayers[i];
+        std::string layerHeader = layer.name;
+        if (ImGui::CollapsingHeader(layerHeader.c_str())) {
+            ImGui::PushID(i);
 
-    if (ImGui::Button("Regenerate World")) {
-        LOG_DEBUG("UI", "Regenerate World button clicked.");
-        auto paramsCopy = std::make_shared<WorldGenParams>(params);
-        _eventBus.enqueue<RegenerateWorldRequestEvent>({paramsCopy});
+            const NoiseLayer *defaultLayer =
+                (i < _defaultParams.noiseLayers.size()) ? &_defaultParams.noiseLayers[i] : nullptr;
+
+            bool isErosionLayer = (layer.name == "Erosion");
+
+            if (sliderFloatWithReset("Frequency", &layer.frequency,
+                                     defaultLayer ? defaultLayer->frequency : layer.frequency,
+                                     0.001f, 0.1f, "%.4f"))
+                paramsChanged = true;
+
+            if (!isErosionLayer) {
+                if (sliderIntWithReset("Octaves", &layer.octaves,
+                                       defaultLayer ? defaultLayer->octaves : layer.octaves, 1, 10))
+                    paramsChanged = true;
+                if (sliderFloatWithReset("Lacunarity", &layer.lacunarity,
+                                         defaultLayer ? defaultLayer->lacunarity : layer.lacunarity,
+                                         0.1f, 4.0f))
+                    paramsChanged = true;
+                if (sliderFloatWithReset("Gain", &layer.gain,
+                                         defaultLayer ? defaultLayer->gain : layer.gain, 0.1f, 1.0f))
+                    paramsChanged = true;
+            }
+            if (sliderFloatWithReset("Weight", &layer.weight,
+                                     defaultLayer ? defaultLayer->weight : layer.weight, 0.0f,
+                                     2.0f))
+                paramsChanged = true;
+
+            ImGui::PopID();
+        }
+    }
+}
+
+void WorldGenSettingsUI::drawWorldGridSettings(WorldGenParams &params, bool &gridChanged) {
+    if (sliderFloatWithReset("Land Threshold", &params.landThreshold,
+                             _defaultParams.landThreshold, -1.0f, 1.0f, "%.2f"))
+        gridChanged = true;
+    if (sliderFloatWithReset(
+            "Coastline Distortion", &params.coastlineDistortionStrength,
+            _defaultParams.coastlineDistortionStrength, 0.0f, 0.5f, "%.2f"))
+        gridChanged = true;
+    ImGui::Separator();
+    if (ImGui::InputInt("World Chunks X", &params.worldDimensionsInChunks.x)) gridChanged = true;
+    if (ImGui::InputInt("World Chunks Y", &params.worldDimensionsInChunks.y)) gridChanged = true;
+    if (ImGui::InputInt("Chunk Size X", &params.chunkDimensionsInCells.x)) gridChanged = true;
+    if (ImGui::InputInt("Chunk Size Y", &params.chunkDimensionsInCells.y)) gridChanged = true;
+    if (ImGui::InputFloat("Cell Size", &params.cellSize, 1.0f, 0.0f, "%.2f")) gridChanged = true;
+}
+
+void WorldGenSettingsUI::drawElevationSettings(WorldGenParams &params, bool &paramsChanged) {
+    ImGui::TextUnformatted("Elevation");
+    ImGui::Spacing();
+
+    if (sliderFloatWithReset("Max Elevation", &params.elevation.maxElevation,
+                             _defaultParams.elevation.maxElevation, 0.0f, 2000.0f, "%.0f")) {
+        paramsChanged = true;
+    }
+    if (sliderFloatWithReset("Elevation Exponent", &params.elevation.elevationExponent,
+                             _defaultParams.elevation.elevationExponent, 0.1f, 5.0f, "%.2f")) {
+        paramsChanged = true;
     }
 
+    if (ImGui::Checkbox("Shaded Relief Map", &_shadedReliefEnabled)) {
+        _terrainRenderSystem.setShadedReliefEnabled(_shadedReliefEnabled);
+        _eventBus.enqueue<ImmediateRedrawEvent>({});
+    }
+
+    const float cellSize = params.cellSize;
+    const int cellsX = params.worldDimensionsInChunks.x * params.chunkDimensionsInCells.x;
+    const int cellsY = params.worldDimensionsInChunks.y * params.chunkDimensionsInCells.y;
+
+    if (!_hasMouseWorldPos || cellSize <= 0.0f) {
+        ImGui::TextUnformatted("Cell Elevation: (move cursor over world)");
+        return;
+    }
+
+    int cellX = static_cast<int>(std::floor(_lastMouseWorldPos.x / cellSize));
+    int cellY = static_cast<int>(std::floor(_lastMouseWorldPos.y / cellSize));
+
+    if (cellX < 0 || cellY < 0 || cellX >= cellsX || cellY >= cellsY) {
+        ImGui::TextUnformatted("Cell Elevation: (outside world)");
+        return;
+    }
+
+    const float sampleX = (static_cast<float>(cellX) + 0.5f) * cellSize;
+    const float sampleY = (static_cast<float>(cellY) + 0.5f) * cellSize;
+    const float elevation = _worldGenerationSystem.getElevationAt(sampleX, sampleY);
+    ImGui::Text("Cell [%d, %d] Elevation: %.1f", cellX, cellY, elevation);
+
+    if (params.elevation.maxElevation > 0.0f) {
+        float normalized = std::clamp(elevation / params.elevation.maxElevation, 0.0f, 1.0f);
+        ImGui::SameLine();
+        ImGui::Text("(%.0f%% of max)", normalized * 100.0f);
+    }
+}
+
+void WorldGenSettingsUI::drawVisualizationSettings() {
     if (ImGui::Checkbox("Visualize Chunk Borders", &_visualizeChunkBorders)) {
         _terrainRenderSystem.setVisualizeChunkBorders(_visualizeChunkBorders);
     }
@@ -133,18 +265,65 @@ void WorldGenSettingsUI::draw() {
     }
     ImGui::SameLine();
     ImGui::BeginDisabled(!_visualizeSuitabilityMap);
-    const char *items[] = {"Water", "Expandability", "City Proximity", "Noise", "Final"};
+    const ImGuiStyle &style = ImGui::GetStyle();
+    const float desiredWidth =
+        ImGui::CalcTextSize("City Proximity").x + style.FramePadding.x * 6.0f;
+    ImGui::SetNextItemWidth(desiredWidth);
+    const char *items[] = {"Water", "Expandability", "City Proximity", "Noise",
+                           "Final", "Town",          "Suburb"};
     if (ImGui::Combo("##SuitabilityMap", &_selectedSuitabilityMap, items, IM_ARRAYSIZE(items))) {
         _terrainRenderSystem.setSuitabilityMapType(
             static_cast<TerrainRenderSystem::SuitabilityMapType>(_selectedSuitabilityMap + 1));
     }
     ImGui::EndDisabled();
+}
 
-    if (ImGui::Checkbox("Enable LOD", &_isLodEnabled)) {
-        _terrainRenderSystem.setLodEnabled(_isLodEnabled);
+void WorldGenSettingsUI::onMouseMoved(const MouseMovedEvent &event) {
+    _lastMouseWorldPos = event.worldPosition;
+    _hasMouseWorldPos = true;
+}
+
+void WorldGenSettingsUI::drawActions(const WorldGenParams &params) {
+    if (ImGui::Button("Regenerate World")) {
+        LOG_DEBUG("UI", "Regenerate World button clicked.");
+        auto paramsCopy = std::make_shared<WorldGenParams>(params);
+        _eventBus.enqueue<RegenerateWorldRequestEvent>({paramsCopy});
+    }
+    ImGui::SameLine();
+    ImGui::Checkbox("Auto Regenerate", &_autoRegenerate);
+    ImGui::Separator();
+    ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4) ImColor::HSV(0.0f, 0.6f, 0.6f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4) ImColor::HSV(0.0f, 0.7f, 0.7f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4) ImColor::HSV(0.0f, 0.8f, 0.8f));
+    if (ImGui::Button("Delete All Entities")) {
+        ImGui::OpenPopup("Delete All Confirmation");
+    }
+    ImGui::PopStyleColor(3);
+    ImGui::SameLine();
+    if (ImGui::Button("Regenerate Entities")) {
+        LOG_INFO("UI", "Regenerate Entities button clicked.");
+        _eventBus.enqueue<RegenerateEntitiesEvent>({});
     }
 
-    ImGui::Checkbox("Auto Regenerate", &_autoRegenerate);
+    if (ImGui::BeginPopupModal("Delete All Confirmation", NULL,
+                               ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::Text(
+            "Are you sure you want to delete all entities?\nThis action cannot be undone.\n\n");
+        ImGui::Separator();
 
-    ImGui::End();
+        ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4) ImColor::HSV(0.0f, 0.6f, 0.6f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, (ImVec4) ImColor::HSV(0.0f, 0.7f, 0.7f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, (ImVec4) ImColor::HSV(0.0f, 0.8f, 0.8f));
+        if (ImGui::Button("OK", ImVec2(120, 0))) {
+            _eventBus.enqueue<DeleteAllEntitiesEvent>({});
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::PopStyleColor(3);
+        ImGui::SetItemDefaultFocus();
+        ImGui::SameLine();
+        if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
 }

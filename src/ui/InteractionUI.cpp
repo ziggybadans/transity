@@ -15,9 +15,12 @@ InteractionUI::~InteractionUI() {
     LOG_DEBUG("InteractionUI", "InteractionUI instance destroyed.");
 }
 
-void InteractionUI::draw(size_t numberOfStationsInActiveLine, size_t numberOfPointsInActiveLine) {
+void InteractionUI::draw(size_t numberOfStationsInActiveLine, size_t numberOfPointsInActiveLine,
+                         std::optional<float> currentSegmentGrade,
+                         bool currentSegmentExceedsGrade) {
     drawInteractionModeWindow();
-    drawLineCreationWindow(numberOfStationsInActiveLine, numberOfPointsInActiveLine);
+    drawLineCreationWindow(numberOfStationsInActiveLine, numberOfPointsInActiveLine,
+                           currentSegmentGrade, currentSegmentExceedsGrade);
     drawPassengerCreationWindow();
 }
 
@@ -50,7 +53,9 @@ void InteractionUI::drawInteractionModeWindow() {
 }
 
 void InteractionUI::drawLineCreationWindow(size_t numberOfStationsInActiveLine,
-                                           size_t numberOfPointsInActiveLine) {
+                                           size_t numberOfPointsInActiveLine,
+                                           std::optional<float> currentSegmentGrade,
+                                           bool currentSegmentExceedsGrade) {
     if (_gameState.currentInteractionMode != InteractionMode::CREATE_LINE) {
         return;
     }
@@ -64,7 +69,7 @@ void InteractionUI::drawLineCreationWindow(size_t numberOfStationsInActiveLine,
     float lineCreationWindowWidth = Constants::UI_LINE_CREATION_WINDOW_WIDTH;
     ImVec2 lineCreationWindowPos =
         ImVec2(displaySize.x - lineCreationWindowWidth - windowPadding,
-               _window.getSize().y - ImGui::GetFrameHeightWithSpacing() * 2.5 - windowPadding);
+               _window.getSize().y - ImGui::GetFrameHeightWithSpacing() * 3 - windowPadding);
     ImGui::SetNextWindowPos(lineCreationWindowPos, ImGuiCond_Always);
     ImGui::Begin("Line Creation", nullptr, size_flags);
 
@@ -89,6 +94,17 @@ void InteractionUI::drawLineCreationWindow(size_t numberOfStationsInActiveLine,
     }
     if (numberOfPointsInActiveLine == 0) {
         ImGui::EndDisabled();
+    }
+
+    if (currentSegmentGrade.has_value() && numberOfPointsInActiveLine > 0) {
+        ImGui::Separator();
+        float gradePercent = currentSegmentGrade.value() * 100.0f;
+        const bool gradeTooSteep = currentSegmentExceedsGrade;
+        if (_gameState.elevationChecksEnabled && gradeTooSteep) {
+            ImGui::TextColored(ImVec4(0.95f, 0.3f, 0.3f, 1.0f), "Current grade: %.2f%%", gradePercent);
+        } else {
+            ImGui::Text("Current grade: %.2f%%", gradePercent);
+        }
     }
     ImGui::End();
 }

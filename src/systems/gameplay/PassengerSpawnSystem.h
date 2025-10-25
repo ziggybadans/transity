@@ -12,6 +12,10 @@ public:
     explicit PassengerSpawnSystem(entt::registry& registry, EntityFactory& entityFactory, Pathfinder& pathfinder);
 
     void update(sf::Time dt) override;
+    sf::Time getSpawnTimer() const;
+    sf::Time getSpawnInterval() const;
+    void setSpawnTimer(sf::Time timer);
+    void setSpawnInterval(sf::Time interval);
 
 private:
     entt::registry& _registry;

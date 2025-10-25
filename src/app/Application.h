@@ -3,14 +3,15 @@
 #include "core/ThreadPool.h"
 #include "event/EventBus.h"
 #include "render/ColorManager.h"
+#include "ui/UI.h"
 #include "ui/UIManager.h"
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/System/Clock.hpp>
 #include <SFML/System/Time.hpp>
+#include <filesystem>
 #include <memory>
 
 class Game;
-class UI;
 class Renderer;
 
 class Application {
@@ -24,6 +25,12 @@ private:
     void update(sf::Time dt);
     void render(float interpolation);
     void renderLoad();
+    void handleStartNewGame(const UI::NewGameOptions &options);
+    void handleLoadGame(const std::filesystem::path &path);
+    void handleSaveGame();
+    void handleResumeGame();
+    void handleBackToMenu();
+    std::filesystem::path generateSaveFilePath();
 
     sf::RenderWindow _window;
     EventBus _eventBus;

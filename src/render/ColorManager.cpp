@@ -1,7 +1,8 @@
 #include "ColorManager.h"
+#include "app/SystemTheme.h"
 
 ColorManager::ColorManager(EventBus &eventBus)
-    : _eventBus(eventBus), _activeTheme(Theme::Dark), _currentLineColorIndex(0) {
+    : _eventBus(eventBus), _activeTheme(SystemTheme::getSystemTheme()), _currentLineColorIndex(0) {
     // Define themes
     _themes[Theme::Light] = {sf::Color(173, 216, 230),  // backgroundColor
                              sf::Color(255, 255, 255),  // landColor
@@ -57,4 +58,10 @@ sf::Color ColorManager::getNextLineColor() noexcept {
     sf::Color color = lineColors[_currentLineColorIndex];
     _currentLineColorIndex = (_currentLineColorIndex + 1) % lineColors.size();
     return color;
+}
+
+sf::Color ColorManager::getHighlightColor() const {
+    const sf::Color &landColor = getLandColor();
+    // Return an inverted color for high contrast
+    return sf::Color(255 - landColor.r, 255 - landColor.g, 255 - landColor.b);
 }

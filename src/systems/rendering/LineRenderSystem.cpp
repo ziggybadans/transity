@@ -1,110 +1,179 @@
-#include "LineRenderSystem.h"
-#include "Constants.h"
-#include "Logger.h"
+#include "systems/rendering/LineRenderSystem.h"
+#include "render/LineDrawer.h"
 #include "components/GameLogicComponents.h"
-#include "systems/gameplay/LineCreationSystem.h" // For ActiveLine
-#include <algorithm>
+#include "components/LineComponents.h"
+#include "systems/gameplay/LineCreationSystem.h"
+#include "app/InteractionMode.h"
 #include <vector>
 
-void LineRenderSystem::render(const entt::registry &registry, sf::RenderWindow &window,
+void LineRenderSystem::render(const entt::registry &registry, sf::RenderTarget &target, const GameState& gameState,
                               const sf::View &view, const sf::Color& highlightColor) {
-    // Render finalized lines
+    renderFinalizedLines(registry, target, highlightColor);
+
+    if (gameState.currentInteractionMode == InteractionMode::CREATE_LINE) {
+        renderActiveLinePreview(registry, target);
+        renderSnappingIndicators(registry, target);
+    }
+}
+
+void LineRenderSystem::renderFinalizedLines(const entt::registry &registry, sf::RenderTarget &target, const sf::Color& highlightColor) {
     auto lineView = registry.view<const LineComponent>();
     for (auto entity : lineView) {
         const auto &lineComp = lineView.get<const LineComponent>(entity);
-        if (lineComp.points.size() < 2) continue;
+        if (lineComp.curvePoints.size() < 2) continue;
 
         bool isSelected = registry.all_of<SelectedComponent>(entity);
-        sf::Color lineColor = isSelected ? highlightColor : lineComp.color;
         float thickness = isSelected ? 16.0f : 8.0f;
 
-        sf::VertexArray lineVertices(sf::PrimitiveType::TriangleStrip);
+        for (size_t i = 0; i < lineComp.curvePoints.size() - 1; ) {
+            size_t segmentIndex = lineComp.curveSegmentIndices[i];
+            auto it = lineComp.sharedSegments.find(segmentIndex);
 
-        for (size_t i = 0; i < lineComp.points.size(); ++i) {
-            const auto& current_pos = lineComp.points[i].position;
+            if (it != lineComp.sharedSegments.end() && it->second->lines.size() > 1) {
+                std::vector<sf::Color> colors;
+                for (entt::entity line_entity : it->second->lines) {
+                    colors.push_back(registry.get<LineComponent>(line_entity).color);
+                }
 
-            if (i == 0) { // First point
-                const auto& next_pos = lineComp.points[i + 1].position;
-                sf::Vector2f dir = next_pos - current_pos;
-                float len = std::sqrt(dir.x * dir.x + dir.y * dir.y);
-                if (len == 0) continue;
-                sf::Vector2f perp(-dir.y / len, dir.x / len);
+                int lineIndex = -1;
+                for (int k = 0; k < it->second->lines.size(); ++k) {
+                    if (it->second->lines[k] == entity) {
+                        lineIndex = k;
+                        break;
+                    }
+                }
+
+                float phaseOffset = (lineIndex != -1) ? (10.0f / it->second->lines.size()) * lineIndex : 0.0f;
+
+                std::vector<sf::Vector2f> polyline;
+                polyline.push_back(lineComp.curvePoints[i]);
+                size_t j = i;
+                while (j < lineComp.curvePoints.size() - 1 && lineComp.curveSegmentIndices[j] == segmentIndex) {
+                    polyline.push_back(lineComp.curvePoints[j + 1]);
+                    j++;
+                }
+
+                LineDrawer::drawBarberPolePolyline(target, polyline, thickness, colors, phaseOffset);
+                i = j;
+            } else {
+                size_t endPointIndex = i;
+                while (endPointIndex < lineComp.curvePoints.size() - 1) {
+                    size_t currentSegmentIndex = lineComp.curveSegmentIndices[endPointIndex];
+                    auto currentIt = lineComp.sharedSegments.find(currentSegmentIndex);
+                    if (currentIt != lineComp.sharedSegments.end() && currentIt->second->lines.size() > 1) {
+                        break;
+                    }
+                    endPointIndex++;
+                }
+
+                std::vector<sf::Vector2f> offsetPolyline;
+                for (size_t k = i; k <= endPointIndex; ++k) {
+                    size_t segIdx = (k < lineComp.curvePoints.size() - 1) ? lineComp.curveSegmentIndices[k] : lineComp.curveSegmentIndices[k - 1];
+                    const sf::Vector2f offset = (segIdx < lineComp.pathOffsets.size()) ? lineComp.pathOffsets[segIdx] : sf::Vector2f(0, 0);
+                    offsetPolyline.push_back(lineComp.curvePoints[k] + offset);
+                }
+
+                if (offsetPolyline.size() >= 2) {
+                    sf::Color lineColor = isSelected ? highlightColor : lineComp.color;
+                    sf::VertexArray lineVertices;
+                    LineDrawer::createThickLine(lineVertices, offsetPolyline, thickness, lineColor);
+                    target.draw(lineVertices);
+                }
                 
-                const sf::Vector2f offset = (i < lineComp.pathOffsets.size()) ? lineComp.pathOffsets[i] : sf::Vector2f(0, 0);
-                sf::Vector2f thicknessOffset = (thickness / 2.f) * perp;
-
-                lineVertices.append({current_pos + offset - thicknessOffset, lineColor});
-                lineVertices.append({current_pos + offset + thicknessOffset, lineColor});
-            } else if (i == lineComp.points.size() - 1) { // Last point
-                const auto& prev_pos = lineComp.points[i - 1].position;
-                sf::Vector2f dir = current_pos - prev_pos;
-                float len = std::sqrt(dir.x * dir.x + dir.y * dir.y);
-                if (len == 0) continue;
-                sf::Vector2f perp(-dir.y / len, dir.x / len);
-
-                const sf::Vector2f offset = ((i - 1) < lineComp.pathOffsets.size()) ? lineComp.pathOffsets[i - 1] : sf::Vector2f(0, 0);
-                sf::Vector2f thicknessOffset = (thickness / 2.f) * perp;
-
-                lineVertices.append({current_pos + offset - thicknessOffset, lineColor});
-                lineVertices.append({current_pos + offset + thicknessOffset, lineColor});
-            } else { // Intermediate point (join)
-                const auto& prev_pos = lineComp.points[i - 1].position;
-                const auto& next_pos = lineComp.points[i + 1].position;
-
-                // End of incoming segment
-                sf::Vector2f dir_in = current_pos - prev_pos;
-                float len_in = std::sqrt(dir_in.x * dir_in.x + dir_in.y * dir_in.y);
-                if (len_in == 0) continue;
-                sf::Vector2f perp_in(-dir_in.y / len_in, dir_in.x / len_in);
-                const sf::Vector2f offset_in = ((i - 1) < lineComp.pathOffsets.size()) ? lineComp.pathOffsets[i - 1] : sf::Vector2f(0, 0);
-                sf::Vector2f thicknessOffset_in = (thickness / 2.f) * perp_in;
-                
-                lineVertices.append({current_pos + offset_in - thicknessOffset_in, lineColor});
-                lineVertices.append({current_pos + offset_in + thicknessOffset_in, lineColor});
-
-                // Start of outgoing segment
-                sf::Vector2f dir_out = next_pos - current_pos;
-                float len_out = std::sqrt(dir_out.x * dir_out.x + dir_out.y * dir_out.y);
-                if (len_out == 0) continue;
-                sf::Vector2f perp_out(-dir_out.y / len_out, dir_out.x / len_out);
-                const sf::Vector2f offset_out = (i < lineComp.pathOffsets.size()) ? lineComp.pathOffsets[i] : sf::Vector2f(0, 0);
-                sf::Vector2f thicknessOffset_out = (thickness / 2.f) * perp_out;
-
-                lineVertices.append({current_pos + offset_out - thicknessOffset_out, lineColor});
-                lineVertices.append({current_pos + offset_out + thicknessOffset_out, lineColor});
+                i = endPointIndex;
+                if (i == 0) i++;
             }
         }
-        window.draw(lineVertices);
     }
+}
 
-    // Render active line being created
+void LineRenderSystem::renderActiveLinePreview(const entt::registry &registry, sf::RenderTarget &target) {
+    if (registry.ctx().contains<LinePreview>()) {
+        const auto& preview = registry.ctx().get<LinePreview>();
+        if (preview.curvePoints.size() >= 2) {
+            sf::VertexArray lineVertices(sf::PrimitiveType::LineStrip);
+            for (size_t i = 0; i < preview.curvePoints.size() - 1; ++i) {
+                sf::Color segmentColor = (i < preview.validSegments.size() && preview.validSegments[i])
+                                             ? sf::Color::Yellow
+                                             : sf::Color::Red;
+                lineVertices.append({preview.curvePoints[i], segmentColor});
+                lineVertices.append({preview.curvePoints[i+1], segmentColor});
+            }
+            target.draw(lineVertices);
+        }
+    }
+}
+
+void LineRenderSystem::renderSnappingIndicators(const entt::registry &registry, sf::RenderTarget &target) {
     if (registry.ctx().contains<ActiveLine>()) {
         const auto& activeLine = registry.ctx().get<ActiveLine>();
-        if (!activeLine.points.empty()) {
-            // Draw segments between points
-            for (size_t i = 0; i < activeLine.points.size() - 1; ++i) {
-                const auto &pos1 = activeLine.points[i].position;
-                const auto &pos2 = activeLine.points[i + 1].position;
-                sf::Vertex line[] = {{pos1, sf::Color::Yellow}, {pos2, sf::Color::Yellow}};
-                window.draw(line, 2, sf::PrimitiveType::Lines);
+        sf::CircleShape controlPointMarker(4.f, 30);
+        controlPointMarker.setFillColor(sf::Color::Yellow);
+        controlPointMarker.setOrigin({4.f, 4.f});
+        for(const auto& point : activeLine.points) {
+            if (point.type == LinePointType::CONTROL_POINT) {
+                controlPointMarker.setPosition(point.position);
+                target.draw(controlPointMarker);
+            }
+        }
+    }
+
+    sf::CircleShape existingControlPointMarker(6.f, 30);
+    existingControlPointMarker.setFillColor(sf::Color::Transparent);
+    existingControlPointMarker.setOutlineColor(sf::Color::White);
+    existingControlPointMarker.setOutlineThickness(1.f);
+    existingControlPointMarker.setOrigin({6.f, 6.f});
+
+    auto allLinesView = registry.view<const LineComponent>();
+    for (auto entity : allLinesView) {
+        const auto& lineComp = allLinesView.get<const LineComponent>(entity);
+        for (const auto& point : lineComp.points) {
+            if (point.type == LinePointType::CONTROL_POINT) {
+                existingControlPointMarker.setPosition(point.position);
+                target.draw(existingControlPointMarker);
+            }
+        }
+    }
+
+    auto cityView = registry.view<const CityComponent, const PositionComponent>();
+    for (auto entity : cityView) {
+        const auto& pos = cityView.get<const PositionComponent>(entity);
+        existingControlPointMarker.setPosition(pos.coordinates);
+        target.draw(existingControlPointMarker);
+    }
+
+    if (registry.ctx().contains<LinePreview>()) {
+        const auto& preview = registry.ctx().get<LinePreview>();
+        if (preview.snapInfo && preview.snapTangent) {
+            sf::Vector2f targetPos;
+            if (preview.snapInfo->snappedToPointIndex != (size_t)-1) {
+                const auto& line = registry.get<LineComponent>(preview.snapInfo->snappedToEntity);
+                targetPos = line.points[preview.snapInfo->snappedToPointIndex].position;
+            } else {
+                targetPos = registry.get<PositionComponent>(preview.snapInfo->snappedToEntity).coordinates;
             }
 
-            // Draw control point markers
-            sf::CircleShape controlPointMarker(4.f);
-            controlPointMarker.setFillColor(sf::Color::Yellow);
-            controlPointMarker.setOrigin(sf::Vector2f(4.f, 4.f));
-            for(const auto& point : activeLine.points) {
-                if (point.type == LinePointType::CONTROL_POINT) {
-                    controlPointMarker.setPosition(point.position);
-                    window.draw(controlPointMarker);
+            if (preview.snapSide != 0.f) {
+                sf::VertexArray halfCircle(sf::PrimitiveType::TriangleFan);
+                halfCircle.append({targetPos, sf::Color(255, 255, 255, 100)});
+                sf::Vector2f perpendicular = {-(*preview.snapTangent).y, (*preview.snapTangent).x};
+                perpendicular *= preview.snapSide;
+                const int segments = 10;
+                const float radius = 6.f;
+                float startAngle = std::atan2(perpendicular.y, perpendicular.x) - (3.14159265f / 2.f);
+                for (int i = 0; i <= segments; ++i) {
+                    float angle = startAngle + (3.14159265f * i / segments);
+                    sf::Vector2f pointPos = targetPos + sf::Vector2f(std::cos(angle) * radius, std::sin(angle) * radius);
+                    halfCircle.append({pointPos, sf::Color(255, 255, 255, 100)});
                 }
+                target.draw(halfCircle);
+            } else {
+                sf::CircleShape centerSnapIndicator(6.f);
+                centerSnapIndicator.setFillColor(sf::Color(255, 255, 255, 100));
+                centerSnapIndicator.setOrigin({6.f, 6.f});
+                centerSnapIndicator.setPosition(targetPos);
+                target.draw(centerSnapIndicator);
             }
-
-            // Draw line from last point to mouse
-            const auto &lastPos = activeLine.points.back().position;
-            sf::Vector2f mousePos = window.mapPixelToCoords(sf::Mouse::getPosition(window), view);
-            sf::Vertex lineToMouse[] = {{lastPos, sf::Color::Yellow}, {mousePos, sf::Color::Yellow}};
-            window.draw(lineToMouse, 2, sf::PrimitiveType::Lines);
         }
     }
 }

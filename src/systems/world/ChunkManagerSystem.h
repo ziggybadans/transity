@@ -28,17 +28,36 @@ public:
     explicit ChunkManagerSystem(entt::registry& registry, EventBus& eventBus, WorldGenerationSystem& worldGenSystem, Camera& camera, ThreadPool& threadPool);
     ~ChunkManagerSystem();
     void update(sf::Time dt) override;
+    void loadChunksFromData(const std::vector<GeneratedChunkData> &chunks);
 
 private:
+    // Event Handlers
     void onRegenerateWorld(const RegenerateWorldRequestEvent &event);
+    void onSwapWorldState(const SwapWorldStateEvent &event);
+    void onImmediateRedraw(const ImmediateRedrawEvent &event);
+
+    // Chunk Management
     void loadChunk(const sf::Vector2i &chunkPos);
     void unloadChunk(const sf::Vector2i &chunkPos);
-    void processLoadingQueue();
     void processCompletedChunks();
+    void processChunkRegeneration();
 
-    void onImmediateRedraw(const ImmediateRedrawEvent &event);
-    entt::scoped_connection _immediateRedrawListener;
+    // Update Helpers
+    void handleWorldGeneration();
+    void handleChunkLoading();
+    void updateActiveChunks();
+    bool requiresFullReload(const WorldGenParams &currentParams,
+                            const WorldGenParams &newParams) const;
+    void startSmoothRegeneration(const WorldGenParams &params);
 
+    struct PendingChunkUpdate {
+        sf::Vector2i chunkGridPosition;
+        entt::entity entity;
+        std::future<GeneratedChunkData> future;
+        std::size_t generationId;
+    };
+
+    // Member Variables
     entt::registry& _registry;
     EventBus& _eventBus;
     WorldGenerationSystem& _worldGenSystem;
@@ -52,10 +71,13 @@ private:
     std::mutex _completedChunksMutex;
     std::queue<GeneratedChunkData> _completedChunks;
 
-    entt::scoped_connection _regenerateWorldListener;
-    int _viewDistance = 4;
-
-    void onSwapWorldState(const SwapWorldStateEvent &event);
-    entt::scoped_connection _swapWorldStateListener;
     std::future<void> _generationFuture;
+    std::vector<PendingChunkUpdate> _pendingChunkUpdates;
+    std::size_t _currentGenerationId = 0;
+    bool _performingFullReload = false;
+    bool _smoothRegenPending = false;
+
+    entt::scoped_connection _regenerateWorldListener;
+    entt::scoped_connection _swapWorldStateListener;
+    entt::scoped_connection _immediateRedrawListener;
 };

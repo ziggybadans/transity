@@ -1,5 +1,6 @@
 #include "LineDataSystem.h"
 #include "components/GameLogicComponents.h"
+#include "components/LineComponents.h"
 #include "ecs/EntityFactory.h"
 #include "Logger.h"
 #include <SFML/System/Vector2.hpp>

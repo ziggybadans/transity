@@ -1,4 +1,6 @@
 #include "TrainMovementSystem.h"
+#include "components/TrainComponents.h"
+#include "components/LineComponents.h"
 #include "components/GameLogicComponents.h"
 #include "Logger.h"
 #include "Constants.h"
@@ -9,150 +11,91 @@ TrainMovementSystem::TrainMovementSystem(entt::registry& registry)
     LOG_DEBUG("TrainMovementSystem", "TrainMovementSystem created.");
 }
 
+sf::Vector2f TrainMovementSystem::getPositionAtDistance(const LineComponent& line, float distance) {
+    if (line.curvePoints.empty()) {
+        return sf::Vector2f();
+    }
+    if (distance <= 0.0f) {
+        return line.curvePoints.front();
+    }
+    if (distance >= line.totalDistance) {
+        return line.curvePoints.back();
+    }
+
+    float currentDistance = 0.0f;
+    for (size_t i = 0; i < line.curvePoints.size() - 1; ++i) {
+        const auto& p1 = line.curvePoints[i];
+        const auto& p2 = line.curvePoints[i + 1];
+        float segmentLength = std::sqrt(std::pow(p2.x - p1.x, 2) + std::pow(p2.y - p1.y, 2));
+        
+        if (currentDistance + segmentLength >= distance) {
+            float remainingDistance = distance - currentDistance;
+            float t = remainingDistance / segmentLength;
+            return p1 + (p2 - p1) * t;
+        }
+        currentDistance += segmentLength;
+    }
+
+    return line.curvePoints.back();
+}
+
 void TrainMovementSystem::update(sf::Time dt) {
-    const float timeStep = dt.asSeconds();
+    // Clear all AtStationComponent instances from the previous frame
+    auto atStationView = _registry.view<AtStationComponent>();
+    _registry.remove<AtStationComponent>(atStationView.begin(), atStationView.end());
 
-    auto approachView = _registry.view<TrainMovementComponent, TrainPhysicsComponent, PositionComponent, StationApproachComponent>();
-    for (auto entity : approachView) {
-        auto &movement = approachView.get<TrainMovementComponent>(entity);
-        auto &physics = approachView.get<TrainPhysicsComponent>(entity);
-        auto &position = approachView.get<PositionComponent>(entity);
-        auto &approach = approachView.get<StationApproachComponent>(entity);
-        handleStationApproach(entity, movement, physics, position, approach, timeStep);
-    }
-
-    auto mainView = _registry.view<TrainTag, TrainMovementComponent, TrainPhysicsComponent, PositionComponent>(entt::exclude<StationApproachComponent>);
-    for (auto entity : mainView) {
-        auto &movement = mainView.get<TrainMovementComponent>(entity);
-        if (movement.state == TrainState::STOPPED) {
-            handleStoppedState(movement, timeStep);
-        } else {
-            auto &physics = mainView.get<TrainPhysicsComponent>(entity);
-            auto &position = mainView.get<PositionComponent>(entity);
-            handleMovement(entity, movement, physics, position, timeStep);
-        }
-    }
-}
-
-void TrainMovementSystem::handleStoppedState(TrainMovementComponent &movement, float timeStep) {
-    movement.stopTimer -= timeStep;
-    if (movement.stopTimer <= 0.0f) {
-        const auto &line = _registry.get<LineComponent>(movement.assignedLine);
+    auto view = _registry.view<TrainTag, TrainMovementComponent, TrainPhysicsComponent, PositionComponent>();
+    for (auto entity : view) {
+        if (!_registry.valid(view.get<TrainMovementComponent>(entity).assignedLine)) continue;
         
-        if (movement.direction == TrainDirection::FORWARD) {
-            bool foundNextStop = false;
-            for (size_t i = movement.currentSegmentIndex + 1; i < line.points.size(); ++i) {
-                if (line.points[i].type == LinePointType::STOP) {
-                    foundNextStop = true;
-                    break;
-                }
-            }
-            if (!foundNextStop) {
-                movement.direction = TrainDirection::BACKWARD;
-                LOG_TRACE("TrainMovementSystem", "Train at end of line, reversing to BACKWARD.");
-            }
-        } else { // BACKWARD
-            bool foundNextStop = false;
-            for (int i = movement.currentSegmentIndex - 1; i >= 0; --i) {
-                if (line.points[i].type == LinePointType::STOP) {
-                    foundNextStop = true;
-                    break;
-                }
-            }
-            if (!foundNextStop) {
-                movement.direction = TrainDirection::FORWARD;
-                LOG_TRACE("TrainMovementSystem", "Train at start of line, reversing to FORWARD.");
-            }
-        }
+        const auto &line = _registry.get<LineComponent>(view.get<TrainMovementComponent>(entity).assignedLine);
+        if (line.curvePoints.size() < 2) continue;
 
-        movement.state = TrainState::ACCELERATING;
-        LOG_TRACE("TrainMovementSystem", "Train state changed to ACCELERATING.");
+        auto &movement = view.get<TrainMovementComponent>(entity);
+        auto &physics = view.get<TrainPhysicsComponent>(entity);
+
+        updateTrainStateAndSpeed(movement, physics, line, dt);
+        updateTrainPositionAndStop(entity, dt);
     }
 }
 
-void TrainMovementSystem::handleStationApproach(entt::entity entity, TrainMovementComponent &movement, TrainPhysicsComponent &physics, PositionComponent &position, StationApproachComponent &approach, float timeStep) {
-    const auto &line = _registry.get<LineComponent>(movement.assignedLine);
-    
-    physics.currentSpeed -= physics.acceleration * timeStep;
-    approach.decelerationProgress += physics.currentSpeed * timeStep;
-    
-    float t = (approach.decelerationDistance > 0) ? (approach.decelerationProgress / approach.decelerationDistance) : 1.0f;
-    if (t > 1.0f) t = 1.0f;
-
-    sf::Vector2f p0 = approach.approachCurveStart;
-    sf::Vector2f p1 = approach.approachCurveControl;
-    sf::Vector2f p2 = line.points[movement.currentSegmentIndex].position;
-
-    float one_minus_t = 1.0f - t;
-    position.coordinates = one_minus_t * one_minus_t * p0 + 2.0f * one_minus_t * t * p1 + t * t * p2;
-
-    if (physics.currentSpeed <= 0.0f || t >= 1.0f) {
-        physics.currentSpeed = 0.0f;
-        movement.state = TrainState::STOPPED;
-        LOG_TRACE("TrainMovementSystem", "Train state changed to STOPPED.");
-        movement.stopTimer = Constants::TRAIN_STOP_DURATION;
-        position.coordinates = p2;
-        movement.progressOnSegment = 0.0f;
-        
-        _registry.remove<StationApproachComponent>(entity);
+std::optional<float> TrainMovementSystem::findNextStopDistance(const TrainMovementComponent& movement, const LineComponent& line) {
+    std::vector<float> stopDistances;
+    stopDistances.reserve(line.stops.size());
+    for (const auto& stopInfo : line.stops) {
+        stopDistances.push_back(stopInfo.distanceAlongCurve);
     }
-}
+    std::sort(stopDistances.begin(), stopDistances.end());
 
-void TrainMovementSystem::handleMovement(entt::entity entity, TrainMovementComponent &movement, TrainPhysicsComponent &physics, PositionComponent &position, float timeStep) {
-    if (!_registry.valid(movement.assignedLine)) return;
-    const auto &line = _registry.get<LineComponent>(movement.assignedLine);
-    if (line.points.size() < 2) return;
-
-    int currentPointIndex = movement.currentSegmentIndex;
-    int nextPointIndex = (movement.direction == TrainDirection::FORWARD) ? currentPointIndex + 1 : currentPointIndex - 1;
-
-    if (nextPointIndex < 0 || nextPointIndex >= line.points.size()) {
-        movement.state = TrainState::STOPPED;
-        movement.stopTimer = Constants::TRAIN_STOP_DURATION;
-        LOG_WARN("TrainMovementSystem", "Train moved past end of line unexpectedly. Stopping.");
-        return;
-    }
-
-    sf::Vector2f startPos = line.points[currentPointIndex].position;
-    sf::Vector2f endPos = line.points[nextPointIndex].position;
-
-    int segmentIndexForOffset = (movement.direction == TrainDirection::FORWARD) ? currentPointIndex : nextPointIndex;
-    if (segmentIndexForOffset >= 0 && segmentIndexForOffset < line.pathOffsets.size()) {
-        sf::Vector2f segmentOffset = line.pathOffsets[segmentIndexForOffset];
-        startPos += segmentOffset;
-        endPos += segmentOffset;
-    }
-
-    sf::Vector2f segmentVector = endPos - startPos;
-    float segmentLength = std::sqrt(segmentVector.x * segmentVector.x + segmentVector.y * segmentVector.y);
-    
-    float distanceToNextStop = 0.0f;
-    int nextStopIndex = -1;
     if (movement.direction == TrainDirection::FORWARD) {
-        distanceToNextStop = (1.0f - movement.progressOnSegment) * segmentLength;
-        for (size_t i = nextPointIndex; i < line.points.size(); ++i) {
-            if (line.points[i].type == LinePointType::STOP) {
-                nextStopIndex = i;
-                break;
-            }
-            if (i + 1 < line.points.size()) {
-                sf::Vector2f p1 = line.points[i].position;
-                sf::Vector2f p2 = line.points[i+1].position;
-                distanceToNextStop += std::sqrt(std::pow(p2.x - p1.x, 2) + std::pow(p2.y - p1.y, 2));
+        for (float stopDist : stopDistances) {
+            if (stopDist > movement.distanceAlongCurve) {
+                return stopDist;
             }
         }
     } else { // BACKWARD
-        distanceToNextStop = (1.0f - movement.progressOnSegment) * segmentLength;
-        for (int i = nextPointIndex; i >= 0; --i) {
-            if (line.points[i].type == LinePointType::STOP) {
-                nextStopIndex = i;
-                break;
+        for (size_t i = stopDistances.size(); i > 0; --i) {
+            if (stopDistances[i-1] < movement.distanceAlongCurve) {
+                return stopDistances[i-1];
             }
-            if (i - 1 >= 0) {
-                 sf::Vector2f p1 = line.points[i].position;
-                 sf::Vector2f p2 = line.points[i-1].position;
-                 distanceToNextStop += std::sqrt(std::pow(p2.x - p1.x, 2) + std::pow(p2.y - p1.y, 2));
+        }
+    }
+    return std::nullopt;
+}
+
+void TrainMovementSystem::updateTrainStateAndSpeed(TrainMovementComponent& movement, TrainPhysicsComponent& physics, const LineComponent& line, sf::Time dt) {
+    const float timeStep = dt.asSeconds();
+
+    if (movement.state == TrainState::STOPPED) {
+        movement.stopTimer -= timeStep;
+        if (movement.stopTimer <= 0.0f) {
+            const float epsilon = 0.001f;
+            if (movement.direction == TrainDirection::FORWARD && movement.distanceAlongCurve >= line.totalDistance - epsilon) {
+                movement.direction = TrainDirection::BACKWARD;
+            } else if (movement.direction == TrainDirection::BACKWARD && movement.distanceAlongCurve <= epsilon) {
+                movement.direction = TrainDirection::FORWARD;
             }
+            movement.state = TrainState::ACCELERATING;
         }
     }
 
@@ -161,38 +104,87 @@ void TrainMovementSystem::handleMovement(entt::entity entity, TrainMovementCompo
         if (physics.currentSpeed >= physics.maxSpeed) {
             physics.currentSpeed = physics.maxSpeed;
             movement.state = TrainState::MOVING;
-            LOG_TRACE("TrainMovementSystem", "Train state changed to MOVING.");
+        }
+    } else if (movement.state == TrainState::DECELERATING) {
+        physics.currentSpeed -= physics.acceleration * timeStep;
+        if (physics.currentSpeed < 0) physics.currentSpeed = 0;
+    }
+
+    if (movement.state == TrainState::MOVING || movement.state == TrainState::ACCELERATING) {
+        if (auto nextStopDist = findNextStopDistance(movement, line)) {
+            float decelerationDistance = (physics.currentSpeed * physics.currentSpeed) / (2.0f * physics.acceleration);
+            if (std::abs(nextStopDist.value() - movement.distanceAlongCurve) <= decelerationDistance) {
+                movement.state = TrainState::DECELERATING;
+            }
+        }
+    }
+}
+
+void TrainMovementSystem::updateTrainPositionAndStop(entt::entity trainEntity, sf::Time dt) {
+    auto &movement = _registry.get<TrainMovementComponent>(trainEntity);
+    auto &physics = _registry.get<TrainPhysicsComponent>(trainEntity);
+    auto &position = _registry.get<PositionComponent>(trainEntity);
+    const auto &line = _registry.get<LineComponent>(movement.assignedLine);
+    
+    const float timeStep = dt.asSeconds();
+    bool justStopped = false;
+
+    float distanceToTravel = physics.currentSpeed * timeStep;
+
+    if (movement.state == TrainState::DECELERATING) {
+        if (auto nextStopDist = findNextStopDistance(movement, line)) {
+            float distanceToStop = std::abs(nextStopDist.value() - movement.distanceAlongCurve);
+            if (distanceToTravel >= distanceToStop || physics.currentSpeed == 0) {
+                movement.distanceAlongCurve = nextStopDist.value();
+                justStopped = true;
+            }
+        }
+    }
+    
+    if (!justStopped && movement.state != TrainState::STOPPED) {
+        movement.distanceAlongCurve += (movement.direction == TrainDirection::FORWARD ? distanceToTravel : -distanceToTravel);
+    }
+
+    if ((movement.distanceAlongCurve >= line.totalDistance || movement.distanceAlongCurve <= 0.0f) && movement.state != TrainState::STOPPED) {
+        movement.distanceAlongCurve = (movement.distanceAlongCurve >= line.totalDistance) ? line.totalDistance : 0.0f;
+        justStopped = true;
+    }
+
+    if (justStopped) {
+        movement.state = TrainState::STOPPED;
+        movement.stopTimer = Constants::TRAIN_STOP_DURATION;
+        physics.currentSpeed = 0;
+
+        entt::entity stationEntity = entt::null;
+        for (const auto& stopInfo : line.stops) {
+            if (std::abs(stopInfo.distanceAlongCurve - movement.distanceAlongCurve) < 0.001f) {
+                stationEntity = stopInfo.stationEntity;
+                break;
+            }
+        }
+        if (_registry.valid(stationEntity)) {
+            _registry.emplace<AtStationComponent>(trainEntity, stationEntity);
+            LOG_TRACE("TrainMovementSystem", "Train arrived at station and AtStationComponent added.");
         }
     }
 
-    float decelerationDistance = (physics.currentSpeed * physics.currentSpeed) / (2.0f * physics.acceleration);
-    if (nextStopIndex != -1 && distanceToNextStop <= decelerationDistance && segmentLength > 0) {
-        movement.state = TrainState::DECELERATING;
-        LOG_TRACE("TrainMovementSystem", "Train state changed to DECELERATING, approaching stop %d.", nextStopIndex);
-        
-        auto& approach = _registry.emplace<StationApproachComponent>(entity);
-        approach.decelerationDistance = distanceToNextStop;
-        approach.decelerationProgress = 0.0f;
-        approach.approachCurveStart = position.coordinates;
-        approach.approachCurveControl = line.points[nextStopIndex].position;
-        
-        movement.currentSegmentIndex = nextStopIndex;
-        return;
+    position.coordinates = getPositionAtDistance(line, movement.distanceAlongCurve);
+    
+    // Apply path offsets
+    size_t segmentIndex = 0;
+    float tempDist = 0.f;
+    for(size_t i = 0; i < line.curvePoints.size() - 1; ++i) {
+        const auto& p1 = line.curvePoints[i];
+        const auto& p2 = line.curvePoints[i+1];
+        float segLen = std::sqrt(std::pow(p2.x - p1.x, 2) + std::pow(p2.y - p1.y, 2));
+        if (tempDist + segLen >= movement.distanceAlongCurve) {
+            segmentIndex = line.curveSegmentIndices[i];
+            break;
+        }
+        tempDist += segLen;
     }
 
-    if (segmentLength > 0.0f) {
-        float distanceToTravel = physics.currentSpeed * timeStep;
-        movement.progressOnSegment += distanceToTravel / segmentLength;
-
-        if (movement.progressOnSegment >= 1.0f) {
-            movement.progressOnSegment = 0.0f;
-            movement.currentSegmentIndex = nextPointIndex;
-            position.coordinates = endPos;
-        } else {
-            position.coordinates = startPos + segmentVector * movement.progressOnSegment;
-        }
-    } else {
-        movement.progressOnSegment = 0.0f;
-        movement.currentSegmentIndex = nextPointIndex;
+    if (segmentIndex < line.pathOffsets.size()) {
+        position.coordinates += line.pathOffsets[segmentIndex];
     }
 }

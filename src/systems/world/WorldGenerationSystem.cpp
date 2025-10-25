@@ -1,11 +1,8 @@
 #include "WorldGenerationSystem.h"
-#include "Constants.h"
 #include "Logger.h"
-#include "core/PerfTimer.h"
-
 #include <algorithm>
 #include <cassert>
-#include <random>
+#include <cmath>
 #include <vector>
 
 WorldGenerationSystem::WorldGenerationSystem(entt::registry &registry, EventBus &eventBus)
@@ -31,6 +28,8 @@ void WorldGenerationSystem::setParams(const WorldGenParams &params) {
         assert(layer.octaves > 0 && "Noise octaves must be positive.");
         assert(layer.weight >= 0.0f && "Noise weight must be non-negative.");
     }
+    assert(_params.elevation.maxElevation >= 0.0f && "Max elevation must be non-negative.");
+    assert(_params.elevation.elevationExponent > 0.0f && "Elevation exponent must be positive.");
     configureNoise();
 }
 
@@ -101,9 +100,7 @@ WorldGenerationSystem::generateChunkData(const sf::Vector2i &chunkGridPosition) 
     GeneratedChunkData chunkData;
     chunkData.chunkGridPosition = chunkGridPosition;
     chunkData.cells.resize(totalCells);
-    // We no longer need to store noise values in the chunk data for this purpose.
-    // chunkData.noiseValues.resize(totalCells);
-    // chunkData.rawNoiseValues.resize(totalCells);
+    chunkData.elevations.resize(totalCells);
 
     for (int y = 0; y < chunkCellSizeY; ++y) {
         for (int x = 0; x < chunkCellSizeX; ++x) {
@@ -113,14 +110,17 @@ WorldGenerationSystem::generateChunkData(const sf::Vector2i &chunkGridPosition) 
             float worldY =
                 static_cast<float>((chunkGridPosition.y * chunkCellSizeY) + y) * _params.cellSize;
 
-            chunkData.cells[cellIndex] = getTerrainTypeAt(worldX, worldY);
+            TerrainSample sample = sampleTerrain(worldX, worldY);
+            chunkData.cells[cellIndex] = sample.terrainType;
+            chunkData.elevations[cellIndex] = sample.elevation;
         }
     }
 
     return chunkData;
 }
 
-TerrainType WorldGenerationSystem::getTerrainTypeAt(float worldX, float worldY) const {
+WorldGenerationSystem::TerrainSample
+WorldGenerationSystem::sampleTerrain(float worldX, float worldY) const {
     sf::Vector2f worldSize = {
         static_cast<float>(_params.worldDimensionsInChunks.x * _params.chunkDimensionsInCells.x)
             * _params.cellSize,
@@ -155,13 +155,35 @@ TerrainType WorldGenerationSystem::getTerrainTypeAt(float worldX, float worldY) 
     float finalValue = combinedNoise * falloff;
 
     float distortedLandThreshold = _params.landThreshold;
-    if (_params.distortCoastline) {
+    if (_params.coastlineDistortionStrength > 0.0f) {
         float distortion =
             _coastlineDistortion.GetNoise(noiseX, noiseY) * _params.coastlineDistortionStrength;
         distortedLandThreshold += distortion;
     }
 
-    return (finalValue > distortedLandThreshold) ? TerrainType::LAND : TerrainType::WATER;
+    bool isLand = finalValue > distortedLandThreshold;
+
+    float normalizedElevation = 0.0f;
+    float elevation = 0.0f;
+    if (isLand) {
+        float denominator = std::max(0.0001f, 1.0f - distortedLandThreshold);
+        float ratio = (finalValue - distortedLandThreshold) / denominator;
+        ratio = std::clamp(ratio, 0.0f, 1.0f);
+        float exponent = std::max(0.01f, _params.elevation.elevationExponent);
+        normalizedElevation = std::pow(ratio, exponent);
+        float maxElevation = std::max(0.0f, _params.elevation.maxElevation);
+        elevation = normalizedElevation * maxElevation;
+    }
+
+    return {isLand ? TerrainType::LAND : TerrainType::WATER, normalizedElevation, elevation};
+}
+
+TerrainType WorldGenerationSystem::getTerrainTypeAt(float worldX, float worldY) const {
+    return sampleTerrain(worldX, worldY).terrainType;
+}
+
+float WorldGenerationSystem::getElevationAt(float worldX, float worldY) const {
+    return sampleTerrain(worldX, worldY).elevation;
 }
 
 void WorldGenerationSystem::regenerate(const WorldGenParams &params) {

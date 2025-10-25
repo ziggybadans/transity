@@ -14,14 +14,18 @@ WorldSetupSystem::WorldSetupSystem(entt::registry& registry, LoadingState& loadi
 void WorldSetupSystem::init() {
     LOG_INFO("WorldSetupSystem", "Initializing world setup.");
 
-    _loadingState.message = "Creating world grid...";
-    _loadingState.progress = 0.1f;
+    _loadingState.message = "Preparing world grid...";
+    _loadingState.progress = 0.02f;
 
     auto worldGridEntity = _registry.create();
     _registry.emplace<WorldGridComponent>(worldGridEntity);
-    LOG_INFO("WorldSetupSystem", "WorldGridComponent created with default values.");
+    LOG_DEBUG("WorldSetupSystem", "WorldGridComponent created with default values.");
+
+    _loadingState.message = "World grid ready.";
+    _loadingState.progress = 0.05f;
 
     _loadingState.message = "Configuring camera...";
+    _loadingState.progress = 0.08f;
     sf::Vector2f worldSize = _worldGenerationSystem.getWorldSize();
     sf::Vector2f worldCenter = {worldSize.x / 2.0f, worldSize.y / 2.0f};
 
@@ -34,7 +38,8 @@ void WorldSetupSystem::init() {
     sf::Vector2u windowSize = window.getSize();
     _camera.onWindowResize(windowSize.x, windowSize.y);
 
-    _loadingState.progress = 0.2f;
+    _loadingState.message = "Camera aligned.";
+    _loadingState.progress = 0.1f;
 
     LOG_INFO("WorldSetupSystem", "World setup initialization completed.");
 }

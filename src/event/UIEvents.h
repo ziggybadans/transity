@@ -1,6 +1,7 @@
 #pragma once
 
 #include <entt/entt.hpp>
+#include <string>
 
 enum class Theme { Light, Dark };
 
@@ -13,3 +14,11 @@ struct EntitySelectedEvent {
 };
 
 struct EntityDeselectedEvent {};
+
+struct SaveGameRequestEvent {
+    std::string path;
+};
+
+struct LoadGameRequestEvent {
+    std::string path;
+};

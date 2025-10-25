@@ -17,15 +17,12 @@ struct RenderableComponent {
     ZOrder zOrder;
 };
 
-// Holds the vertex arrays for a chunk's different levels of detail.
+// Holds the vertex array for a chunk.
 struct ChunkMeshComponent {
-    std::vector<sf::VertexArray> lodVertexArrays;
+    sf::VertexArray vertexArray;
 
     ChunkMeshComponent() {
-        lodVertexArrays.resize(static_cast<size_t>(LODLevel::Count));
-        for (auto &va : lodVertexArrays) {
-            va.setPrimitiveType(sf::PrimitiveType::Triangles);
-        }
+        vertexArray.setPrimitiveType(sf::PrimitiveType::Triangles);
     }
 };
 

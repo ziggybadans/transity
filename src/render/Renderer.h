@@ -1,9 +1,5 @@
 #pragma once
 
-#include <SFML/Graphics.hpp>
-#include <SFML/System.hpp>
-#include <entt/entt.hpp>
-
 #include "app/GameState.h"
 #include "event/EventBus.h"
 #include "event/InputEvents.h"
@@ -15,6 +11,10 @@
 #include "systems/rendering/PathRenderSystem.h"
 #include "systems/rendering/TerrainRenderSystem.h"
 #include "systems/rendering/TrainRenderSystem.h"
+#include <SFML/Graphics.hpp>
+#include <SFML/System.hpp>
+#include <entt/entt.hpp>
+#include <memory>
 
 class WorldGenerationSystem;
 
@@ -29,6 +29,8 @@ public:
                      const WorldGenerationSystem &worldGen,
                      PassengerSpawnAnimationSystem &passengerSpawnAnimationSystem,
                      float interpolation);
+    void renderGenericEntities(sf::RenderTarget &target, entt::registry &registry,
+                               const sf::Color &highlightColor);
     void displayFrame() noexcept;
     void cleanupResources() noexcept;
     bool isWindowOpen() const noexcept;
@@ -44,6 +46,12 @@ private:
     ColorManager &_colorManager;
     sf::RenderWindow &_windowInstance;
     sf::Color _clearColor;
+
+    // For SSAA
+    sf::RenderTexture _renderTexture;
+    std::unique_ptr<sf::Sprite> _renderSprite;
+    static constexpr float SSAA_FACTOR = 2.0f;
+
     TerrainRenderSystem _terrainRenderSystem;
     LineRenderSystem _lineRenderSystem;
     TrainRenderSystem _trainRenderSystem;

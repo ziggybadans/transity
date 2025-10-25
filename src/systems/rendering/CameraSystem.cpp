@@ -4,7 +4,6 @@
 #include "render/Camera.h"
 #include "render/Renderer.h"
 #include "systems/world/WorldGenerationSystem.h"
-
 #include <algorithm>
 #include <cassert>
 
