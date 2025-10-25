@@ -1,6 +1,16 @@
 #pragma once
 
 #include <SFML/Graphics/Color.hpp>
+#include <string>
+#include <string_view>
+
+#ifndef TRANSITY_VERSION
+#define TRANSITY_VERSION "0.1.0"
+#endif
+
+#ifndef TRANSITY_STAGE
+#define TRANSITY_STAGE "Predev"
+#endif
 
 namespace Constants {
     constexpr float EPSILON = 0.001f;
@@ -8,8 +18,45 @@ namespace Constants {
     //=========================================================================
     // App
     //=========================================================================
-    constexpr const char *WINDOW_TITLE = "Transity Predev";
+    inline constexpr std::string_view APP_NAME = "Transity";
+    inline constexpr std::string_view APP_STAGE = TRANSITY_STAGE;
+    inline constexpr std::string_view APP_VERSION = TRANSITY_VERSION;
+    inline constexpr std::string_view APP_COPYRIGHT = "Copyright 2025 Ziggy Badans. MIT License.";
     constexpr int SUPPORTED_ARCHETYPE_VERSION = 1;
+
+    inline const std::string &windowTitle() {
+        static const std::string title = [] {
+            std::string value(APP_NAME);
+            if (!APP_STAGE.empty()) {
+                value.append(" - ");
+                value.append(APP_STAGE.data(), APP_STAGE.size());
+            }
+            return value;
+        }();
+        return title;
+    }
+
+    inline const std::string &versionBanner() {
+        static const std::string banner = [] {
+            std::string value(APP_NAME);
+            if (!APP_STAGE.empty()) {
+                value.push_back(' ');
+                value.append(APP_STAGE.data(), APP_STAGE.size());
+            }
+            if (!APP_VERSION.empty()) {
+                value.push_back(' ');
+                value.push_back('v');
+                value.append(APP_VERSION.data(), APP_VERSION.size());
+            }
+            return value;
+        }();
+        return banner;
+    }
+
+    inline const std::string &copyrightNotice() {
+        static const std::string notice(APP_COPYRIGHT);
+        return notice;
+    }
 
     //=========================================================================
     // Graphics & UI

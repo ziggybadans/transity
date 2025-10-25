@@ -1,4 +1,5 @@
 #include "UI.h"
+#include "Constants.h"
 #include "Logger.h"
 #include "app/LoadingState.h"
 #include "imgui-SFML.h"
@@ -167,6 +168,7 @@ void UI::drawRegenerationModal() {
     }
 }
 void UI::drawMainMenu() {
+    drawMainMenuOverlays();
     switch (_currentMenuScreen) {
     case MenuScreen::Main:
         drawMainMenuHome();
@@ -178,6 +180,31 @@ void UI::drawMainMenu() {
         drawLoadGameScreen();
         break;
     }
+}
+
+void UI::drawMainMenuOverlays() {
+    ImGuiIO &io = ImGui::GetIO();
+    const ImGuiWindowFlags overlayFlags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs
+                                          | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings
+                                          | ImGuiWindowFlags_AlwaysAutoResize
+                                          | ImGuiWindowFlags_NoFocusOnAppearing;
+
+    ImGui::SetNextWindowPos(ImVec2(Constants::UI_WINDOW_PADDING, Constants::UI_WINDOW_PADDING),
+                            ImGuiCond_Always);
+    ImGui::SetNextWindowBgAlpha(0.0f);
+    if (ImGui::Begin("##MainMenuVersionOverlay", nullptr, overlayFlags)) {
+        ImGui::TextUnformatted(Constants::versionBanner().c_str());
+    }
+    ImGui::End();
+
+    ImGui::SetNextWindowPos(ImVec2(Constants::UI_WINDOW_PADDING,
+                                   io.DisplaySize.y - Constants::UI_WINDOW_PADDING),
+                            ImGuiCond_Always, ImVec2(0.0f, 1.0f));
+    ImGui::SetNextWindowBgAlpha(0.0f);
+    if (ImGui::Begin("##MainMenuCopyrightOverlay", nullptr, overlayFlags)) {
+        ImGui::TextUnformatted(Constants::copyrightNotice().c_str());
+    }
+    ImGui::End();
 }
 
 void UI::drawMainMenuHome() {

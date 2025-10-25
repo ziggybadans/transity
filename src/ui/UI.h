@@ -46,6 +46,7 @@ private:
     void drawLoadingScreen();
     void drawMainMenu();
     void drawMainMenuHome();
+    void drawMainMenuOverlays();
     void drawNewGameScreen();
     void drawLoadGameScreen();
     void drawPauseMenu();

@@ -12,20 +12,110 @@
 #include "systems/gameplay/LineCreationSystem.h"
 #include "ui/UI.h"
 #include "ui/UIManager.h"
-#include <optional>
-#include <thread>
+#include <SFML/Graphics/Image.hpp>
+#include <array>
 #include <chrono>
 #include <cctype>
 #include <ctime>
+#include <filesystem>
 #include <iomanip>
+#include <optional>
 #include <sstream>
+#include <stdexcept>
+#include <thread>
+
+#ifdef _WIN32
+#include <windows.h>
+#elif defined(__APPLE__)
+#include <mach-o/dyld.h>
+#include <limits.h>
+#include <unistd.h>
+#else
+#include <limits.h>
+#include <unistd.h>
+#endif
+
+namespace {
+std::filesystem::path getExecutableDirectory() {
+#ifdef _WIN32
+    std::wstring buffer(MAX_PATH, L'\0');
+    DWORD length = GetModuleFileNameW(nullptr, buffer.data(), static_cast<DWORD>(buffer.size()));
+    if (length == 0 || length >= buffer.size()) {
+        throw std::runtime_error("Failed to resolve executable path.");
+    }
+    buffer.resize(length);
+    return std::filesystem::path(buffer).parent_path();
+#elif defined(__APPLE__)
+    uint32_t size = 0;
+    if (_NSGetExecutablePath(nullptr, &size) != -1) {
+        throw std::runtime_error("Failed to determine executable path size.");
+    }
+    std::string buffer(size, '\0');
+    if (_NSGetExecutablePath(buffer.data(), &size) != 0) {
+        throw std::runtime_error("Failed to resolve executable path.");
+    }
+    return std::filesystem::canonical(buffer.c_str()).parent_path();
+#else
+    std::array<char, PATH_MAX> buffer{};
+    ssize_t length = readlink("/proc/self/exe", buffer.data(), buffer.size() - 1);
+    if (length == -1) {
+        throw std::runtime_error("Failed to resolve executable path.");
+    }
+    buffer[static_cast<std::size_t>(length)] = '\0';
+    return std::filesystem::path(buffer.data()).parent_path();
+#endif
+}
+
+sf::Image createAppIcon() {
+    constexpr unsigned int iconSize = 128;
+    constexpr unsigned int margin = iconSize / 8;
+    constexpr unsigned int barThickness = iconSize / 10;
+
+    sf::Image icon({iconSize, iconSize}, sf::Color(10, 14, 22));
+
+    const sf::Color accent(255, 184, 0);
+    const unsigned int stemXStart = (iconSize / 2) - (barThickness / 2);
+    const unsigned int stemXEnd = stemXStart + barThickness;
+
+    for (unsigned int y = margin; y < margin + barThickness; ++y) {
+        for (unsigned int x = margin; x < iconSize - margin; ++x) {
+            icon.setPixel({x, y}, accent);
+        }
+    }
+
+    for (unsigned int y = margin; y < iconSize - margin; ++y) {
+        for (unsigned int x = stemXStart; x < stemXEnd; ++x) {
+            icon.setPixel({x, y}, accent);
+        }
+    }
+
+    return icon;
+}
+} // namespace
 
 Application::Application()
     : _window(sf::VideoMode({Constants::WINDOW_WIDTH, Constants::WINDOW_HEIGHT}),
-              Constants::WINDOW_TITLE, sf::Style::Default, sf::State::Windowed,
+              Constants::windowTitle(), sf::Style::Default, sf::State::Windowed,
               sf::ContextSettings{0u, 0u, 0u}), // Changed from 16u to 0u
       _colorManager(_eventBus) {
     LOG_INFO("Application", "Application creation started.");
+    try {
+        const auto exeDir = getExecutableDirectory();
+        std::filesystem::current_path(exeDir);
+        LOG_INFO("Application", "Working directory set to %s.", exeDir.string().c_str());
+    } catch (const std::exception &e) {
+        LOG_WARN("Application", "Unable to set working directory: %s", e.what());
+    }
+    {
+        sf::Image icon = createAppIcon();
+        const auto size = icon.getSize();
+        if (size.x > 0 && size.y > 0) {
+            _window.setIcon(icon);
+            LOG_INFO("Application", "Window icon applied.");
+        } else {
+            LOG_WARN("Application", "Generated icon has invalid size, skipping icon setup.");
+        }
+    }
     try {
         unsigned int numThreads = std::thread::hardware_concurrency();
         _threadPool = std::make_unique<ThreadPool>(numThreads > 0 ? numThreads : 1);
